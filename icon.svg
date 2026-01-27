@@ -1,0 +1,12 @@
+<svg width="128" height="128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="128" height="128" fill="#1a1a2e"/>
+
+  <!-- Ball -->
+  <circle cx="64" cy="64" r="30" fill="#0f3460"/>
+  <circle cx="64" cy="64" r="25" fill="#16213e"/>
+  <circle cx="50" cy="50" r="8" fill="#e94560" opacity="0.7"/>
+
+  <!-- Paddle hint on right side -->
+  <rect x="110" y="44" width="8" height="40" fill="#e94560" rx="2"/>
+</svg>
