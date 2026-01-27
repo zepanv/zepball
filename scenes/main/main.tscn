@@ -1,0 +1,115 @@
+[gd_scene load_steps=6 format=3 uid="uid://b4yv3q5xwxqje"]
+
+[ext_resource type="Script" path="res://scripts/game_manager.gd" id="1_vx8fn"]
+[ext_resource type="PackedScene" uid="uid://c8n3qvp0xjb4h" path="res://scenes/gameplay/paddle.tscn" id="2_paddle"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_top_wall"]
+size = Vector2(1280, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_bottom_wall"]
+size = Vector2(1280, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
+size = Vector2(20, 720)
+
+[node name="Main" type="Node2D"]
+
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("1_vx8fn")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 1280.0
+offset_bottom = 720.0
+color = Color(0.101961, 0.101961, 0.180392, 1)
+
+[node name="PlayArea" type="Node2D" parent="."]
+
+[node name="Walls" type="Node2D" parent="PlayArea"]
+
+[node name="TopWall" type="StaticBody2D" parent="PlayArea/Walls"]
+position = Vector2(640, 10)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayArea/Walls/TopWall"]
+shape = SubResource("RectangleShape2D_top_wall")
+
+[node name="Visual" type="ColorRect" parent="PlayArea/Walls/TopWall"]
+offset_left = -640.0
+offset_top = -10.0
+offset_right = 640.0
+offset_bottom = 10.0
+color = Color(0.580392, 0.27451, 0.376471, 1)
+
+[node name="BottomWall" type="StaticBody2D" parent="PlayArea/Walls"]
+position = Vector2(640, 710)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayArea/Walls/BottomWall"]
+shape = SubResource("RectangleShape2D_bottom_wall")
+
+[node name="Visual" type="ColorRect" parent="PlayArea/Walls/BottomWall"]
+offset_left = -640.0
+offset_top = -10.0
+offset_right = 640.0
+offset_bottom = 10.0
+color = Color(0.580392, 0.27451, 0.376471, 1)
+
+[node name="LeftWall" type="StaticBody2D" parent="PlayArea/Walls"]
+position = Vector2(10, 360)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayArea/Walls/LeftWall"]
+shape = SubResource("RectangleShape2D_left_wall")
+
+[node name="Visual" type="ColorRect" parent="PlayArea/Walls/LeftWall"]
+offset_left = -10.0
+offset_top = -360.0
+offset_right = 10.0
+offset_bottom = 360.0
+color = Color(0.580392, 0.27451, 0.376471, 1)
+
+[node name="Paddle" parent="PlayArea" instance=ExtResource("2_paddle")]
+position = Vector2(1200, 360)
+
+[node name="BrickContainer" type="Node2D" parent="PlayArea"]
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HUD" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopBar" type="HBoxContainer" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 20.0
+offset_top = 10.0
+offset_right = -20.0
+offset_bottom = 40.0
+grow_horizontal = 2
+
+[node name="ScoreLabel" type="Label" parent="UI/HUD/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "SCORE: 0"
+vertical_alignment = 1
+
+[node name="LogoLabel" type="Label" parent="UI/HUD/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
+text = "ZEP BALL"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LivesLabel" type="Label" parent="UI/HUD/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "LIVES: 3"
+horizontal_alignment = 2
+vertical_alignment = 1

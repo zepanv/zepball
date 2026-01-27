@@ -13,7 +13,7 @@ config_version=5
 config/name="Zep Ball"
 config/description="A breakout-style game with a vertical paddle on the right side"
 run/main_scene="res://scenes/main/main.tscn"
-config/features=PackedStringArray("4.3", "Forward Plus")
+config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
 [display]
