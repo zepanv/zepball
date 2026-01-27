@@ -8,7 +8,7 @@ size = Vector2(20, 120)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_visual"]
 size = Vector2(20, 120)
 
-[node name="Paddle" type="CharacterBody2D"]
+[node name="Paddle" type="CharacterBody2D" groups=["paddle"]]
 script = ExtResource("1_paddle_script")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
