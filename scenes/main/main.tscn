@@ -1,10 +1,11 @@
-[gd_scene load_steps=9 format=3 uid="uid://b4yv3q5xwxqje"]
+[gd_scene format=3 uid="uid://b4yv3q5xwxqje"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
-[ext_resource type="Script" path="res://scripts/game_manager.gd" id="1_vx8fn"]
+[ext_resource type="Script" uid="uid://yxqdqtevfj10" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://bk1f1awmycmra" path="res://scripts/game_manager.gd" id="1_vx8fn"]
 [ext_resource type="PackedScene" uid="uid://c8n3qvp0xjb4h" path="res://scenes/gameplay/paddle.tscn" id="2_paddle"]
 [ext_resource type="PackedScene" uid="uid://dg5yn2kx3ycl7" path="res://scenes/gameplay/ball.tscn" id="3_ball"]
-[ext_resource type="Script" path="res://scripts/hud.gd" id="5_hud"]
+[ext_resource type="Script" uid="uid://cd402sduj2c04" path="res://scripts/hud.gd" id="5_hud"]
+[ext_resource type="Script" path="res://scripts/camera_shake.gd" id="6_camera"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_top_wall"]
 size = Vector2(1280, 20)
@@ -15,71 +16,75 @@ size = Vector2(1280, 20)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_left_wall"]
 size = Vector2(20, 720)
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=1255899685]
 script = ExtResource("1_main")
 
-[node name="GameManager" type="Node" parent="." groups=["game_manager"]]
+[node name="GameManager" type="Node" parent="." unique_id=2127678697 groups=["game_manager"]]
 script = ExtResource("1_vx8fn")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Camera2D" type="Camera2D" parent="."]
+offset = Vector2(640, 360)
+script = ExtResource("6_camera")
+
+[node name="Background" type="ColorRect" parent="." unique_id=983165]
 offset_right = 1280.0
 offset_bottom = 720.0
 color = Color(0.101961, 0.101961, 0.180392, 1)
 
-[node name="PlayArea" type="Node2D" parent="."]
+[node name="PlayArea" type="Node2D" parent="." unique_id=997880386]
 
-[node name="Walls" type="Node2D" parent="PlayArea"]
+[node name="Walls" type="Node2D" parent="PlayArea" unique_id=1061126140]
 
-[node name="TopWall" type="StaticBody2D" parent="PlayArea/Walls"]
+[node name="TopWall" type="StaticBody2D" parent="PlayArea/Walls" unique_id=1628563015]
 position = Vector2(640, 10)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayArea/Walls/TopWall"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayArea/Walls/TopWall" unique_id=1961590240]
 shape = SubResource("RectangleShape2D_top_wall")
 
-[node name="Visual" type="ColorRect" parent="PlayArea/Walls/TopWall"]
+[node name="Visual" type="ColorRect" parent="PlayArea/Walls/TopWall" unique_id=1209882337]
 offset_left = -640.0
 offset_top = -10.0
 offset_right = 640.0
 offset_bottom = 10.0
 color = Color(0.580392, 0.27451, 0.376471, 1)
 
-[node name="BottomWall" type="StaticBody2D" parent="PlayArea/Walls"]
+[node name="BottomWall" type="StaticBody2D" parent="PlayArea/Walls" unique_id=217679944]
 position = Vector2(640, 710)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayArea/Walls/BottomWall"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayArea/Walls/BottomWall" unique_id=2044791458]
 shape = SubResource("RectangleShape2D_bottom_wall")
 
-[node name="Visual" type="ColorRect" parent="PlayArea/Walls/BottomWall"]
+[node name="Visual" type="ColorRect" parent="PlayArea/Walls/BottomWall" unique_id=1960664934]
 offset_left = -640.0
 offset_top = -10.0
 offset_right = 640.0
 offset_bottom = 10.0
 color = Color(0.580392, 0.27451, 0.376471, 1)
 
-[node name="LeftWall" type="StaticBody2D" parent="PlayArea/Walls"]
+[node name="LeftWall" type="StaticBody2D" parent="PlayArea/Walls" unique_id=665968198]
 position = Vector2(10, 360)
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayArea/Walls/LeftWall"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PlayArea/Walls/LeftWall" unique_id=1587859752]
 shape = SubResource("RectangleShape2D_left_wall")
 
-[node name="Visual" type="ColorRect" parent="PlayArea/Walls/LeftWall"]
+[node name="Visual" type="ColorRect" parent="PlayArea/Walls/LeftWall" unique_id=1057090101]
 offset_left = -10.0
 offset_top = -360.0
 offset_right = 10.0
 offset_bottom = 360.0
 color = Color(0.580392, 0.27451, 0.376471, 1)
 
-[node name="Paddle" parent="PlayArea" instance=ExtResource("2_paddle")]
+[node name="Paddle" parent="PlayArea" unique_id=1322829124 instance=ExtResource("2_paddle")]
 position = Vector2(1200, 360)
 
-[node name="Ball" parent="PlayArea" instance=ExtResource("3_ball")]
+[node name="Ball" parent="PlayArea" unique_id=1966993306 instance=ExtResource("3_ball")]
 position = Vector2(1170, 360)
 
-[node name="BrickContainer" type="Node2D" parent="PlayArea"]
+[node name="BrickContainer" type="Node2D" parent="PlayArea" unique_id=1950042473]
 
-[node name="UI" type="CanvasLayer" parent="."]
+[node name="UI" type="CanvasLayer" parent="." unique_id=697711571]
 
-[node name="HUD" type="Control" parent="UI"]
+[node name="HUD" type="Control" parent="UI" unique_id=1423036420]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -89,7 +94,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("5_hud")
 
-[node name="TopBar" type="HBoxContainer" parent="UI/HUD"]
+[node name="TopBar" type="HBoxContainer" parent="UI/HUD" unique_id=332138551]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
@@ -99,14 +104,14 @@ offset_right = -20.0
 offset_bottom = 40.0
 grow_horizontal = 2
 
-[node name="ScoreLabel" type="Label" parent="UI/HUD/TopBar"]
+[node name="ScoreLabel" type="Label" parent="UI/HUD/TopBar" unique_id=535110992]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "SCORE: 0"
 vertical_alignment = 1
 
-[node name="LogoLabel" type="Label" parent="UI/HUD/TopBar"]
+[node name="LogoLabel" type="Label" parent="UI/HUD/TopBar" unique_id=681007208]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 24
@@ -114,10 +119,21 @@ text = "ZEP BALL"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="LivesLabel" type="Label" parent="UI/HUD/TopBar"]
+[node name="LivesLabel" type="Label" parent="UI/HUD/TopBar" unique_id=909154586]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "LIVES: 3"
 horizontal_alignment = 2
 vertical_alignment = 1
+
+[node name="PowerUpIndicators" type="VBoxContainer" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140.0
+offset_top = 60.0
+offset_right = -10.0
+offset_bottom = 200.0
+grow_horizontal = 0

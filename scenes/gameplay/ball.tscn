@@ -5,7 +5,7 @@
 [sub_resource type="CircleShape2D" id="CircleShape2D_ball"]
 radius = 8.0
 
-[node name="Ball" type="CharacterBody2D"]
+[node name="Ball" type="CharacterBody2D" groups=["ball"]]
 script = ExtResource("1_ball_script")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
@@ -17,3 +17,22 @@ offset_top = -8.0
 offset_right = 8.0
 offset_bottom = 8.0
 color = Color(0.988235, 0.913725, 0.309804, 1)
+
+[node name="Trail" type="CPUParticles2D" parent="."]
+emitting = false
+amount = 15
+lifetime = 0.25
+preprocess = 0.1
+explosiveness = 0.1
+randomness = 0.3
+emission_shape = 1
+emission_sphere_radius = 4.0
+direction = Vector2(0, 0)
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 0.0
+initial_velocity_max = 20.0
+scale_amount_min = 3.0
+scale_amount_max = 5.0
+scale_amount_curve = null
+color = Color(0.988235, 0.913725, 0.309804, 0.8)

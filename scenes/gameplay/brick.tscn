@@ -11,35 +11,27 @@ script = ExtResource("1_brick_script")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_brick")
 
-[node name="Visual" type="ColorRect" parent="."]
-offset_left = -29.0
-offset_top = -14.0
-offset_right = 29.0
-offset_bottom = 14.0
-color = Color(0.0588235, 0.772549, 0.627451, 1)
-
-[node name="Border" type="ColorRect" parent="."]
-offset_left = -29.0
-offset_top = -14.0
-offset_right = 29.0
-offset_bottom = 14.0
-color = Color(0, 0, 0, 0.3)
-mouse_filter = 2
+[node name="Sprite" type="Sprite2D" parent="."]
+texture_filter = 1
+region_enabled = true
+region_rect = Rect2(0, 0, 64, 64)
 
 [node name="Particles" type="CPUParticles2D" parent="."]
 emitting = false
-amount = 20
-lifetime = 0.5
+amount = 40
+lifetime = 0.6
 one_shot = true
 explosiveness = 1.0
-randomness = 0.5
+randomness = 0.7
 emission_shape = 1
-emission_sphere_radius = 15.0
+emission_sphere_radius = 20.0
 direction = Vector2(0, -1)
 spread = 180.0
-gravity = Vector2(0, 400)
-initial_velocity_min = 100.0
-initial_velocity_max = 200.0
+gravity = Vector2(0, 500)
+initial_velocity_min = 150.0
+initial_velocity_max = 300.0
+angular_velocity_min = -360.0
+angular_velocity_max = 360.0
 scale_amount_min = 2.0
-scale_amount_max = 4.0
+scale_amount_max = 5.0
 color = Color(0.0588235, 0.772549, 0.627451, 1)

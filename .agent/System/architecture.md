@@ -52,7 +52,9 @@ Paddle (CharacterBody2D) [Script: paddle.gd]
 - Position: Fixed X (~1200), variable Y (40 to 680)
 - Size: ~20px wide, ~120px tall
 - Movement: Vertical only (keyboard + mouse)
+- Input priority: Mouse movement overrides keyboard while the mouse is moving; keyboard controls when mouse is idle
 - Velocity tracking: For spin mechanics
+- Pause behavior: Paddle movement halts while game state is PAUSED
 
 ### Ball Scene (ball.tscn)
 
@@ -71,6 +73,7 @@ Ball (CharacterBody2D) [Script: ball.gd]
 - Initial position: Attached to paddle
 - Velocity: Constant magnitude (~400 px/s)
 - Physics: Reflection on collision + spin from paddle
+- State gating: Ball movement stops when game state is PAUSED or not PLAYING
 
 ### Brick Scene (brick.tscn)
 
@@ -91,6 +94,8 @@ Brick (StaticBody2D) [Script: brick.gd]
 - Size: ~60px wide, ~30px tall
 - Grid layout: 5x8 typical starting configuration
 - Score value: Based on type
+- Level completion: Main tracks a breakable-brick counter and completes when it reaches zero
+- Break flow: On break, collisions are disabled immediately so the ball can’t re-hit while particles play
 
 ### HUD Scene (hud.tscn)
 
@@ -127,6 +132,11 @@ HUD (CanvasLayer) [Script: hud.gd]
 (0,720) ──────────────────── (1280,720)
 ```
 
+**Window Scaling:**
+- Stretch mode: canvas_items
+- Aspect: keep (uniform scale with letterboxing)
+- Runtime enforcement: `Main` sets window content scale mode/aspect/size on startup
+
 ### Key Positions
 - **Paddle X**: 1200 (80px from right edge)
 - **Paddle Y Range**: 40 to 680 (respects top/bottom margins)
@@ -162,6 +172,9 @@ HUD (CanvasLayer) [Script: hud.gd]
 ```
 
 **Implemented in:** `game_manager.gd`
+
+## Debug / Testing Controls
+- `C`: Hit all bricks (breaks normals and strongs) for rapid level testing
 
 ### State Transitions
 - **MAIN_MENU** → **READY**: User clicks "Start"

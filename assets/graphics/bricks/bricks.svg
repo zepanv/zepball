@@ -1,0 +1,30 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <g id="brick">
+      <rect width="64" height="64" fill="currentColor"/>
+      <path d="M0,0 L64,0 L56,8 L8,8 L8,56 L0,64 Z" fill="white" opacity="0.4"/>
+      <path d="M64,64 L0,64 L8,56 L56,56 L56,8 L64,0 Z" fill="black" opacity="0.4"/>
+      <rect x="8" y="8" width="48" height="48" fill="white" opacity="0.1"/>
+    </g>
+  </defs>
+
+  <use href="#brick" x="0" y="0" color="#E74C3C" />
+  <use href="#brick" x="64" y="0" color="#E67E22" />
+  <use href="#brick" x="128" y="0" color="#F1C40F" />
+  <use href="#brick" x="192" y="0" color="#D35400" />
+
+  <use href="#brick" x="0" y="64" color="#2ECC71" />
+  <use href="#brick" x="64" y="64" color="#27AE60" />
+  <use href="#brick" x="128" y="64" color="#1ABC9C" />
+  <use href="#brick" x="192" y="64" color="#16A085" />
+
+  <use href="#brick" x="0" y="128" color="#3498DB" />
+  <use href="#brick" x="64" y="128" color="#2980B9" />
+  <use href="#brick" x="128" y="128" color="#9B59B6" />
+  <use href="#brick" x="192" y="128" color="#8E44AD" />
+
+  <use href="#brick" x="0" y="192" color="#ECF0F1" />
+  <use href="#brick" x="64" y="192" color="#95A5A6" />
+  <use href="#brick" x="128" y="192" color="#7F8C8D" />
+  <use href="#brick" x="192" y="192" color="#34495E" />
+</svg>

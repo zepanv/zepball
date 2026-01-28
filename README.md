@@ -24,7 +24,7 @@ The game is now in a **playable state** with core mechanics implemented:
 
 ### Running the Game
 1. Open Godot Engine
-2. Click "Import" and select `/Users/tcowart/Projects/zepball/project.godot`
+2. Click "Import" and select `zepball/project.godot`
 3. Press **F5** to run the game
 
 ### Controls
@@ -90,9 +90,13 @@ zepball/
 - [ ] Screen shake on impacts
 - [ ] Ball trail effect
 - [ ] Better brick visuals
+- [ ] **[NEW] Penetrating Spin**: High spin allows ball to break through multiple bricks
 
 ### 📋 Phase 3: Features & Content
-- [ ] Power-ups (multi-ball, paddle size, sticky ball, bombs)
+- [ ] **[NEW] Force Fields / Arrows**: Level elements that push/pull the ball (Gravity zones)
+- [ ] **[NEW] Difficulty Modes**: Easy (slow), Normal, Hard (fast)
+- [ ] **[NEW] Expanded Power-ups**: 18 types including Warp, Repel, Guns, Big/Small Ball
+- [ ] Power-ups system implementation
 - [ ] Multiple levels (5-10 unique layouts)
 - [ ] Level selection menu
 - [ ] Main menu
@@ -102,7 +106,6 @@ zepball/
 ### 📦 Phase 4: Distribution
 - [ ] Export templates setup
 - [ ] Mac, Linux, Windows builds
-- [ ] Itch.io page
 - [ ] Icon and metadata
 
 ## Tech Stack
@@ -151,6 +154,7 @@ Current working features:
 - [ ] No way to restart without F5
 - [ ] Ball can get stuck in pure vertical motion (edge case)
 - [ ] No main menu
+- [ ] First shot should go straight or curve if paddle moving.
 
 ## Contributing
 
