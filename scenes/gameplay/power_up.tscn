@@ -1,15 +1,16 @@
 [gd_scene format=3 uid="uid://c7d8faf0g1h2i"]
 
-[ext_resource type="Script" path="res://scripts/power_up.gd" id="1_powerup_script"]
+[ext_resource type="Script" uid="uid://bmsia47wxut84" path="res://scripts/power_up.gd" id="1_powerup_script"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_powerup"]
 size = Vector2(40, 40)
 
-[node name="PowerUp" type="Area2D" groups=["powerup"]]
+[node name="PowerUp" type="Area2D" unique_id=1750065778 groups=["powerup"]]
 script = ExtResource("1_powerup_script")
+margin = Vector2(4, 4)
 
-[node name="Sprite" type="Sprite2D" parent="."]
+[node name="Sprite" type="Sprite2D" parent="." unique_id=1722732414]
 texture_filter = 1
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=535347329]
 shape = SubResource("RectangleShape2D_powerup")

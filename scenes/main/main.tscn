@@ -5,7 +5,7 @@
 [ext_resource type="PackedScene" uid="uid://c8n3qvp0xjb4h" path="res://scenes/gameplay/paddle.tscn" id="2_paddle"]
 [ext_resource type="PackedScene" uid="uid://dg5yn2kx3ycl7" path="res://scenes/gameplay/ball.tscn" id="3_ball"]
 [ext_resource type="Script" uid="uid://cd402sduj2c04" path="res://scripts/hud.gd" id="5_hud"]
-[ext_resource type="Script" path="res://scripts/camera_shake.gd" id="6_camera"]
+[ext_resource type="Script" uid="uid://cackwqtivfnbj" path="res://scripts/camera_shake.gd" id="6_camera"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_top_wall"]
 size = Vector2(1280, 20)
@@ -22,7 +22,7 @@ script = ExtResource("1_main")
 [node name="GameManager" type="Node" parent="." unique_id=2127678697 groups=["game_manager"]]
 script = ExtResource("1_vx8fn")
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1929968535]
 offset = Vector2(640, 360)
 script = ExtResource("6_camera")
 
@@ -128,7 +128,7 @@ text = "LIVES: 3"
 horizontal_alignment = 2
 vertical_alignment = 1
 
-[node name="PowerUpIndicators" type="VBoxContainer" parent="UI/HUD"]
+[node name="PowerUpIndicators" type="VBoxContainer" parent="UI/HUD" unique_id=771174618]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
