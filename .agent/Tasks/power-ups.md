@@ -1,72 +1,71 @@
 # Power-Up System Implementation Plan
 
+## Status: ✅ PARTIALLY IMPLEMENTED (4 power-ups)
+
 ## Overview
-Power-ups are a critical component of Zep Ball, adding variety, strategy, and chaos to the core gameplay loop. They appear when bricks are broken and fall towards the bottom of the screen. The player collects them with the paddle.
+Power-ups add variety and momentum to the core gameplay loop. They spawn when bricks are broken and move horizontally toward the paddle on the right. The player collects them with the paddle.
 
 ## Power-Up Types
-Based on the z-ball review, we will implement the following power-ups:
 
-### Player Benefiting (Buffs)
-1.  **Big Ball**: Makes ball jumbo sized.
-2.  **Small Ball**: Makes ball miniature.
-3.  **Expand**: Lengthens bar size (Big Paddle).
-4.  **Triple Ball**: Makes one ball become three.
-5.  **Bomb Ball**: Engulfs ball with fire.
-6.  **Grab**: Causes ball to stick onto bar.
-7.  **Slow Down**: Decreases speed of ball.
-8.  **Brick Through**: Lets ball slice through bricks.
-9.  **Warp**: Lets you instantly reach the next level.
-10. **Air Ball**: Lets ball bounce off screen and bounce back like a grenade.
-11. **Double Score**: Gives you twice the usual points for brick breaking.
-12. **Extra Life**: Gives you extra bar of life.
-13. **Mystery**: Gives you one powerup at random.
-14. **Bomb**: Transforms bricks into an explosive.
+### Implemented (Current)
+1. **Expand**: Big paddle (height 130 → 180, 15s).
+2. **Contract**: Small paddle (height 130 → 80, 10s).
+3. **Speed Up**: Faster ball (speed 500 → 650, 12s).
+4. **Triple Ball**: Spawns 2 additional balls (instant; no timer).
 
-### Player Hinderance (Debuffs) - "Anxiety Inducing"
-15. **Contract**: Shortens bar size (Small Paddle).
-16. **Speed Up**: Increases speed of ball.
-17. **Repel**: Causes ball to deviate away from bar more strongly.
-18. **Magnet**: Causes ball to gravitate toward bar more strongly.
+### Planned (Not Implemented)
+5. **Big Ball**: Makes ball jumbo sized.  
+6. **Small Ball**: Makes ball miniature.  
+7. **Bomb Ball**: Engulfs ball with fire.  
+8. **Grab**: Causes ball to stick onto bar.  
+9. **Slow Down**: Decreases speed of ball.  
+10. **Brick Through**: Lets ball slice through bricks.  
+11. **Warp**: Lets you instantly reach the next level.  
+12. **Air Ball**: Lets ball bounce off screen and bounce back like a grenade.  
+13. **Double Score**: Gives you twice the usual points for brick breaking.  
+14. **Extra Life**: Gives you extra bar of life.  
+15. **Mystery**: Gives you one power-up at random.  
+16. **Bomb**: Transforms bricks into an explosive.  
+17. **Repel**: Causes ball to deviate away from bar more strongly.  
+18. **Magnet**: Causes ball to gravitate toward bar more strongly.  
 
-## Mechanics
+## Mechanics (Current)
 
 ### Spawning
-- **Chance**: Each brick has a chance to spawn a power-up (e.g., 20%).
-- **Drop Logic**: Power-ups spawn at the brick's location and move horizontally towards the right (towards the paddle).
-- **Gravity/Physics**: They should move in a straight line or have slight gravity. They are *not* the ball; if they pass the paddle, they are lost.
+- **Chance**: 20% per breakable brick.
+- **Spawn point**: Brick's global position.
+- **Movement**: Horizontal to the right at 150 px/s.
+- **Miss behavior**: If `x > 1300`, power-up is freed.
 
 ### Collection
-- **Collision**: Area2D on the power-up detects `body_entered` with the Paddle (CharacterBody2D).
-- **Effect**: On collision, the power-up calls an `apply_effect()` method on the GameManager or Paddle and then `queue_free()`.
+- **Collision**: Area2D `body_entered` with the paddle group.
+- **Effect**: Signal emitted to main controller; power-up is freed.
 
 ### Duration
-- **Time-based**: Most effects last for varying durations (e.g., 10-15 seconds).
-- **Life-based**: Some persist until a life is lost (e.g., Guns, Sticky).
-- **Instant**: Warp, Extra Life.
+- **Time-based**: Expand (15s), Contract (10s), Speed Up (12s).
+- **Instant**: Triple Ball.
 
-## Implementation Architecture
+## Implementation Architecture (Current)
 
-### `PowerUp` Class (Base Scene)
+### `PowerUp` Scene (`scenes/gameplay/power_up.tscn`)
 - `Area2D` for collision.
-- `Sprite2D` for the icon.
-- `type`: Enum or String identifier.
-- `duration`: Float.
+- `Sprite2D` icon from sprite atlas (`assets/graphics/powerups/powerups.jpg`).
+- `PowerUpType` enum (Expand, Contract, Speed Up, Triple Ball).
 
-### `PowerUpManager` (or Game Manager extension)
-- Handles the active power-up timers.
-- Stacks effects (e.g., Big Paddle + Guns).
-- Clears effects on level complete or life lost.
+### `PowerUpManager` (autoload)
+- Tracks active timed effects in a dictionary.
+- Refreshes timers on re-collection.
+- Resets paddle size and ball speed on expiry.
 
-## Visuals
-- Distinct icons for each power-up.
-- Color coding: Green/Blue for Buffs, Red for Debuffs.
-- Timer UI: Show active power-ups and remaining time on the HUD.
+## Visuals (Current)
+- Icons from a 5x5 power-up atlas.
+- HUD shows active timed effects with countdown text.
 
 ## Tasks
-- [ ] Create base `power_up.tscn` and script.
-- [ ] Define `PowerUpType` enum.
-- [ ] Implement spawning logic in `Brick`.
-- [ ] Implement collision logic in `Paddle`.
-- [ ] Implement effect logic in `GameManager` / `Paddle` / `Ball`.
-- [ ] Create assets/icons for 18 power-ups.
-- [ ] Add HUD indicators for active effects.
+- [x] Create base `power_up.tscn` and script.
+- [x] Define `PowerUpType` enum.
+- [x] Implement spawning logic in `Brick`.
+- [x] Implement collision logic in `PowerUp` (Area2D `body_entered`).
+- [x] Implement effect logic in `Main` / `Paddle` / `Ball`.
+- [x] Add HUD indicators for active timed effects.
+- [ ] Expand power-up catalog beyond current 4 types.

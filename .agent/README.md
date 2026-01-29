@@ -1,67 +1,54 @@
 # Zep Ball - Documentation Index
 
-Welcome to the Zep Ball project documentation! This folder contains all technical documentation, implementation plans, and standard operating procedures for the project.
+This folder contains the canonical documentation for the Zep Ball codebase.
 
-## 📁 Documentation Structure
+## Documentation Structure
 
 ### System/
-Contains documentation about the current state of the system, architecture decisions, and technical foundation.
-
-- **architecture.md** - Godot scene structure, node hierarchy, and system design
-- **tech-stack.md** - Technology choices, rationale for using Godot 4.x, and key decisions
+Current system state, architecture, and technical foundation.
+- `System/architecture.md` - Project architecture, scene graph, core systems, and gameplay flow.
+- `System/tech-stack.md` - Engine, settings, input map, and runtime configuration.
 
 ### Tasks/
-Project Requirements Documents (PRDs) and implementation plans for specific features.
-
-- **core-mechanics.md** - Paddle, ball, and collision system implementation
-- **tile-system.md** - Brick/tile breaking mechanics and grid layout
-- **power-ups.md** - Power-up system design and implementation plan
-- **ui-system.md** - User interface, menus, and HUD elements
-- **audio-system.md** - Sound effects and music integration
-- **save-system.md** - Player profiles, high scores, and save data
+PRDs and implementation plans for individual features.
+- `Tasks/core-mechanics.md` - Paddle, ball, and collision system design.
+- `Tasks/tile-system.md` - Brick/tile system plan.
+- `Tasks/level-system.md` - Level data, loader, and progression plan.
+- `Tasks/power-ups.md` - Power-up system design and implementation plan.
+- `Tasks/ui-system.md` - UI, menus, and HUD plans.
+- `Tasks/audio-system.md` - Audio system plan (SFX, music, and volume controls).
+- `Tasks/save-system.md` - Save data, high scores, and persistence plan.
 
 ### SOP/
-Standard Operating Procedures - best practices for common development tasks.
+Best practices and workflows for development.
+- `SOP/godot-workflow.md` - Working with Godot scenes, nodes, and signals.
 
-- **godot-workflow.md** - Working with Godot: adding scenes, nodes, signals
-- **adding-scenes.md** - How to create and integrate new scene files
-- **git-workflow.md** - Commit practices and branch management
-- **testing-workflow.md** - How to test and playtest changes
+## Project Snapshot
+- **Genre**: Breakout/arkanoid-style 2D game with a right-side paddle.
+- **Current gameplay**: Paddle movement, ball physics with spin, brick breaking, score/lives, pause, power-ups, and HUD.
+- **Level system**: A test grid is generated at runtime; no external level data yet.
+- **Persistence**: No save system or database implemented.
 
-## 🎮 Project Overview
+## Tech Stack Snapshot
+- **Engine**: Godot 4.6 (project config features include 4.6).
+- **Language**: GDScript.
+- **Main scene**: `res://scenes/main/main.tscn`.
 
-Zep Ball is a breakout/arkanoid-style game with a unique vertical paddle positioned on the right side of the screen. Key features:
+## Quick Links
+- `System/architecture.md`
+- `System/tech-stack.md`
+- `Tasks/core-mechanics.md`
+- `SOP/godot-workflow.md`
 
-- **Vertical right-side paddle** - Unique gameplay mechanic
-- **Physics-based ball mechanics** - Paddle spin affects ball trajectory
-- **Level-based progression** - Multiple levels with increasing difficulty
-- **Power-up system** - Multi-ball, paddle modifications, special abilities
-- **High score tracking** - Save player profiles and achievements
-- **Cross-platform** - Mac, Linux, Windows support via Godot exports
-
-## 🛠 Tech Stack
-
-- **Engine**: Godot 4.3+
-- **Language**: GDScript (Python-like scripting)
-- **Version Control**: Git
-- **Asset Sources**: Kenney.nl, OpenGameArt, Freesound.org
-
-## 📋 Quick Links
-
-- [Project Plan](/plan/brainstorm.md)
-- [System Architecture](.agent/System/architecture.md)
-- [Tech Stack Rationale](.agent/System/tech-stack.md)
-- [Godot Workflow](.agent/SOP/godot-workflow.md)
-
-## 🚀 Development Phases
-
-1. **Setup & Infrastructure** ✓ (Current)
-2. **Core Mechanics** - Paddle, ball, basic physics
-3. **Tiles & Breaking** - Brick system and collision
-4. **Polish & Game Feel** - Audio, particles, UI
-5. **Features & Content** - Power-ups, levels, menus
-6. **Export & Distribution** - Multi-platform builds
+## Roadmap Snapshot
+- Phase 1: Core Mechanics ✅
+- Phase 2: Visual Polish ✅
+- Phase 3: Core Power-ups ✅
+- Phase 4: UI System & Game Flow ⏳
+- Phase 5: Level System & Content ⏳
+- Phase 6: Audio System 📅
+- Phase 7: Advanced Features 📅
 
 ---
 
-*Last Updated: 2026-01-27*
+Last Updated: 2026-01-29

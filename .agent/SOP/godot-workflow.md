@@ -326,6 +326,9 @@ git commit -m "feat: Implement paddle vertical movement
 - Velocity tracking for spin mechanics"
 ```
 
+### Versioning Note
+Do not increment version numbers in README or project files unless explicitly requested.
+
 ## Asset Integration
 
 ### Importing Sprites

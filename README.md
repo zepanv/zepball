@@ -153,11 +153,11 @@ Current working features:
 
 ## Known Issues / TODOs
 
-- [ ] No audio yet
-- [ ] Game over screen needs UI
-- [ ] Level complete screen needs UI
-- [ ] No way to restart without F5
-- [ ] No main menu
+- [ ] No audio yet (tracked in `.agent/Tasks/audio-system.md`)
+- [ ] Game over screen needs UI (tracked in `.agent/Tasks/ui-system.md`)
+- [ ] Level complete screen needs UI (tracked in `.agent/Tasks/ui-system.md`)
+- [ ] No way to restart without F5 (tracked in `.agent/Tasks/ui-system.md`)
+- [ ] No main menu (tracked in `.agent/Tasks/ui-system.md`)
 
 ## Contributing
 

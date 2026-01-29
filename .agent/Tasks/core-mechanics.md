@@ -25,18 +25,18 @@ Create a playable prototype with:
 - CharacterBody2D-based paddle on right side (x=1200)
 - Dual control scheme:
   - Keyboard: W/S and Up/Down arrow keys
-  - Mouse: Follows Y position
-- Boundary clamping (Y: 60-660)
+  - Mouse: Direct Y-following with a deadzone
+- Boundary clamping derived from wall offsets and current paddle height
 - Velocity tracking for spin mechanics
-- Smooth movement at 500 px/s
+- Movement speed: 1000 px/s (keyboard); mouse uses direct positioning
 
 **Key Code Patterns:**
 ```gdscript
 # Velocity calculation for spin
-var actual_velocity_y: float = (position.y - previous_y) / delta
+actual_velocity_y = (position.y - previous_y) / delta
 
-# Boundary clamping
-position.y = clamp(position.y, MIN_Y, MAX_Y)
+# Boundary clamping (dynamic based on paddle height)
+position.y = clamp(position.y, min_y, max_y)
 ```
 
 ### 2. Ball System ✅
@@ -46,20 +46,20 @@ position.y = clamp(position.y, MIN_Y, MAX_Y)
 - `scripts/ball.gd`
 
 **Features Implemented:**
-- CharacterBody2D with circle collision (radius 8px)
-- Constant speed physics (400 px/s)
+- CharacterBody2D with circle collision (radius 16px)
+- Constant speed physics (base 500 px/s)
 - Launch from paddle on Space/Click
 - Collision detection with:
   - Walls: Simple reflection
   - Paddle: Reflection + spin mechanics
   - Bricks: Reflection + destruction signal
-- Ball lost detection (x > 1300)
+- Ball lost detection (x > 1300), with safety handling for left/top/bottom escapes
 - Auto-reset to paddle after life lost
 
 **Physics Approach:**
 - Arcade-style constant speed (normalized velocity each frame)
 - Paddle spin: `velocity.y += paddle_velocity * SPIN_FACTOR`
-- Reflection: `velocity.bounce(collision_normal)`
+- Reflection: `velocity = velocity.bounce(collision_normal)`
 - Prevents pure vertical motion (MAX_VERTICAL_ANGLE = 0.8)
 
 **Spin Mechanics:**
@@ -77,13 +77,14 @@ velocity.y += paddle_velocity * SPIN_FACTOR  # SPIN_FACTOR = 0.3
 - `scripts/brick.gd`
 
 **Features Implemented:**
-- StaticBody2D with rectangle collision (58x28)
-- Three brick types:
-  - Normal: 1 hit, 10 points, teal color
-  - Strong: 2 hits, 20 points, pink color
-  - Unbreakable: Never breaks, gray color
+- StaticBody2D with rectangle collision (48x48)
+- Multiple brick types:
+  - Normal: 1 hit, 10 points
+  - Strong: 2 hits, 20 points
+  - Unbreakable: Never breaks
+  - Gold/Red/Blue/Green/Purple/Orange variants (1-2 hits, 15-50 points)
 - CPUParticles2D destruction effect
-- Color-coded visual feedback
+- Sprite-based visuals (square textures scaled to 48x48)
 - Signal-based score integration
 
 **Brick Hit Logic:**
@@ -94,7 +95,7 @@ func hit():
         break_brick()  # Emit particles, signal score, queue_free()
     else:
         # Darken color for damaged state
-        $Visual.color = brick_color.darkened(0.3)
+        $Sprite.modulate = brick_color.darkened(0.3)
 ```
 
 ### 4. Game Manager ✅
@@ -148,7 +149,7 @@ PLAYING → (all bricks broken) → LEVEL_COMPLETE
 - `scripts/main.gd`
 
 **Features Implemented:**
-- Background (dark blue-grey: #1a1a2e)
+- Random background selection (7 images), rendered in a CanvasLayer
 - Three walls (top, bottom, left) with collision
 - Paddle instance (right side)
 - Ball instance
@@ -156,16 +157,16 @@ PLAYING → (all bricks broken) → LEVEL_COMPLETE
 - HUD overlay
 - Signal orchestration:
   - Ball → GameManager
-  - Bricks → GameManager
+  - Bricks → Main → GameManager
   - GameManager → HUD
 
 **Level Generation:**
 ```gdscript
 func create_test_level():
     # 5 rows x 8 columns = 40 bricks
-    # Row 0: Strong bricks (pink)
-    # Rows 1-4: Normal bricks (teal)
-    # Grid starts at (150, 150) with 60x30 spacing
+    # Row 0: Strong bricks
+    # Rows 1-4: Normal bricks
+    # Grid starts at (150, 150) with 48px bricks and 3px spacing
 ```
 
 ## Technical Decisions
@@ -200,21 +201,21 @@ paddle_reference = get_tree().get_first_node_in_group("paddle")
 
 ## Challenges Encountered
 
-### 1. Ball Clipping Through Paddle
-**Problem**: At high speeds, ball would pass through paddle without collision
-**Solution**: Used `move_and_collide()` instead of direct position changes
+### 1. Ball-to-ball collisions causing jitter
+**Problem**: Multi-ball overlaps could cause collision jitter
+**Solution**: Test-only collision check and ignore ball-to-ball collisions
 
 ### 2. Pure Vertical Ball Motion
 **Problem**: Ball could get stuck bouncing purely vertically
 **Solution**: Added MAX_VERTICAL_ANGLE constraint to force horizontal component
 
 ### 3. Brick Signal Connections
-**Problem**: Bricks instantiated at runtime weren't connected to GameManager
+**Problem**: Bricks instantiated at runtime weren't connected
 **Solution**: `connect_brick_signals()` in main.gd after level generation
 
-### 4. Ball Reset Timing
-**Problem**: Ball would reset before player could see what happened
-**Solution**: Signal emits immediately, GameManager handles delay if needed (future)
+### 4. Out-of-bounds safety
+**Problem**: Extra balls could escape through non-right boundaries
+**Solution**: Mark escape as error and remove extra balls immediately
 
 ## Testing Results
 
@@ -237,85 +238,15 @@ paddle_reference = get_tree().get_first_node_in_group("paddle")
 
 ### Edge Cases to Monitor
 - Ball stuck in vertical bounce (mitigated, not eliminated)
-- Ball hitting brick corner (seems OK, needs more testing)
-- Multiple balls (future feature, not yet supported)
-- Very fast ball speeds (currently capped at 400 px/s)
+- Ball hitting brick corners (needs more testing)
+- Multi-ball spawns near edges (spawn logic guards against this)
+- Very fast ball speeds (currently capped at 650 px/s during power-up)
 
-## Performance Notes
+## Next Phase Pointers
 
-- **FPS**: Solid 60 FPS on M1 MacBook Pro
-- **Memory**: ~50-80 MB (Godot overhead + game)
-- **Physics**: No performance issues with 40 bricks + ball + paddle
-- **Particles**: CPUParticles2D performs well (20 particles per brick)
-
-## Code Quality
-
-### Strengths
-- Clear variable names and comments
-- Signals used appropriately
-- Constants for magic numbers
-- GDScript typing where beneficial
-- Organized file structure
-
-### Areas for Improvement (Future Refactoring)
-- Magic numbers in main.gd level generation
-- No level data format yet (hardcoded grid)
-- Some duplicate color definitions
-- No configuration file for game constants
-- Limited error handling (assumes nodes exist)
-
-## Files Created
-
-**Scenes (6):**
-- `scenes/main/main.tscn` - Root game scene
-- `scenes/gameplay/paddle.tscn` - Reusable paddle
-- `scenes/gameplay/ball.tscn` - Reusable ball
-- `scenes/gameplay/brick.tscn` - Reusable brick template
-
-**Scripts (6):**
-- `scripts/main.gd` - Main scene controller
-- `scripts/game_manager.gd` - Global game state
-- `scripts/paddle.gd` - Paddle movement
-- `scripts/ball.gd` - Ball physics
-- `scripts/brick.gd` - Brick behavior
-- `scripts/hud.gd` - HUD updates
-
-**Documentation (4):**
-- `.agent/README.md` - Documentation index
-- `.agent/System/architecture.md` - System design
-- `.agent/System/tech-stack.md` - Technology decisions
-- `.agent/SOP/godot-workflow.md` - Development procedures
-- `README.md` - Project readme
-- `.agent/Tasks/core-mechanics.md` - This file
-
-**Total Lines of Code:**
-- GDScript: ~450 lines
-- Scene files: ~350 lines (generated)
-- Documentation: ~2000+ lines
-
-## Git Commits
-
-1. Initial commit: `.gitignore`
-2. Project structure and configuration
-3. Documentation (System + SOP)
-4. Core game structure and paddle
-5. Complete gameplay loop (ball + bricks + HUD)
-6. README
-
-**Total commits**: 6
-**Clean history**: Each commit is working state
-
-## Next Phase: Polish & Game Feel
-
-See `.agent/Tasks/audio-system.md` and `.agent/Tasks/visual-effects.md` (to be created)
-
-**Priorities for Phase 2:**
-1. Sound effects (immediate game feel improvement)
-2. Background music
-3. Improved particle effects
-4. Screen shake
-5. Better brick visuals (gradients, borders)
-6. Ball trail effect
+- UI and game flow (menus, game over, level complete).
+- Level system and external level data.
+- Audio system.
 
 ## Success Criteria: ACHIEVED ✅
 
@@ -333,6 +264,5 @@ See `.agent/Tasks/audio-system.md` and `.agent/Tasks/visual-effects.md` (to be c
 
 ---
 
-*Completed: 2026-01-27*
-*Implementation Time: ~1 session*
+*Completed: 2026-01-27*  
 *Godot Version: 4.6*
