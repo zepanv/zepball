@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://bqrvajttd5r1r" path="res://assets/graphics/paddles/paddleBlu.png" id="2_paddle_texture"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_paddle"]
-size = Vector2(24, 104)
+size = Vector2(24, 130)
 
 [node name="Paddle" type="CharacterBody2D" groups=["paddle"]]
 script = ExtResource("1_paddle_script")
@@ -14,4 +14,5 @@ shape = SubResource("RectangleShape2D_paddle")
 
 [node name="Visual" type="Sprite2D" parent="."]
 rotation = 1.5708
+scale = Vector2(1.25, 1)
 texture = ExtResource("2_paddle_texture")

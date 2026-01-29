@@ -20,11 +20,6 @@ enum BrickType {
 @export var brick_type: BrickType = BrickType.NORMAL
 @export var brick_color: Color = Color(0.059, 0.773, 0.627)  # Teal (fallback for ColorRect mode)
 
-# Sprite atlas configuration
-# SVG has 4x4 grid of 64x64 pixel bricks
-const BRICK_WIDTH = 64
-const BRICK_HEIGHT = 64
-
 # State
 var hits_remaining: int = 1
 var score_value: int = 10
@@ -91,69 +86,44 @@ func _ready():
 	print("Brick ready: type=", BrickType.keys()[brick_type], " hits=", hits_remaining)
 
 func setup_sprite():
-	"""Configure sprite atlas region based on brick type
-	SVG layout (4x4 grid, 64x64 each):
-	Row 0: Red, Orange, Yellow, DarkOrange
-	Row 1: Green, DarkGreen, Cyan, DarkCyan
-	Row 2: Blue, DarkBlue, Purple, DarkPurple
-	Row 3: White, LightGray, Gray, DarkGray
+	"""Load PNG texture based on brick type
+	Uses square textures (32x32) for all brick types
+	- Normal bricks: regular square textures
+	- Strong bricks: square_glossy textures
 	"""
 	var sprite = $Sprite
+	var texture_path = ""
 
-	# Load the brick spritesheet (SVG)
-	var texture = load("res://assets/graphics/bricks/bricks.svg")
-	if not texture:
-		print("ERROR: Could not load brick spritesheet at res://assets/graphics/bricks/bricks.svg")
-		return
-
-	# Map brick types to grid positions (row, col)
-	var atlas_row = 0
-	var atlas_col = 0
-
+	# Map brick types to texture files
 	match brick_type:
 		BrickType.NORMAL:
-			atlas_row = 1  # Row 1
-			atlas_col = 2  # Cyan
+			texture_path = "res://assets/graphics/bricks/element_green_square.png"
 		BrickType.STRONG:
-			atlas_row = 0  # Row 0
-			atlas_col = 0  # Red
+			texture_path = "res://assets/graphics/bricks/element_red_square_glossy.png"
 		BrickType.UNBREAKABLE:
-			atlas_row = 3  # Row 3
-			atlas_col = 2  # Gray
+			texture_path = "res://assets/graphics/bricks/element_grey_square.png"
 		BrickType.GOLD:
-			atlas_row = 0  # Row 0
-			atlas_col = 2  # Yellow (gold-ish)
+			texture_path = "res://assets/graphics/bricks/element_yellow_square_glossy.png"
 		BrickType.RED:
-			atlas_row = 0  # Row 0
-			atlas_col = 0  # Red
+			texture_path = "res://assets/graphics/bricks/element_red_square.png"
 		BrickType.BLUE:
-			atlas_row = 2  # Row 2
-			atlas_col = 0  # Blue
+			texture_path = "res://assets/graphics/bricks/element_blue_square.png"
 		BrickType.GREEN:
-			atlas_row = 1  # Row 1
-			atlas_col = 0  # Green
+			texture_path = "res://assets/graphics/bricks/element_green_square.png"
 		BrickType.PURPLE:
-			atlas_row = 2  # Row 2
-			atlas_col = 2  # Purple
+			texture_path = "res://assets/graphics/bricks/element_purple_square.png"
 		BrickType.ORANGE:
-			atlas_row = 0  # Row 0
-			atlas_col = 1  # Orange
+			texture_path = "res://assets/graphics/bricks/element_yellow_square.png"
 
-	# Calculate atlas position (64x64 grid)
-	var atlas_x = atlas_col * BRICK_WIDTH
-	var atlas_y = atlas_row * BRICK_HEIGHT
+	# Load texture
+	var texture = load(texture_path)
+	if not texture:
+		print("ERROR: Could not load brick texture: ", texture_path)
+		return
 
-	# Create AtlasTexture for this brick
-	var atlas = AtlasTexture.new()
-	atlas.atlas = texture
-	atlas.region = Rect2(atlas_x, atlas_y, BRICK_WIDTH, BRICK_HEIGHT)
-
-	sprite.texture = atlas
-
-	# Scale sprite to match collision shape (58x28 target size)
-	var scale_x = 58.0 / BRICK_WIDTH
-	var scale_y = 28.0 / BRICK_HEIGHT
-	sprite.scale = Vector2(scale_x, scale_y)
+	sprite.texture = texture
+	# Scale to 1.5x (48px) - textures are 32x32
+	sprite.scale = Vector2(1.5, 1.5)
 
 func hit(impact_direction: Vector2 = Vector2.ZERO):
 	"""Called when ball collides with brick

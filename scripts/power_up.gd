@@ -32,6 +32,11 @@ func _ready():
 	print("PowerUp spawned: ", PowerUpType.keys()[power_up_type])
 
 func _physics_process(delta):
+	# Stop movement if level is complete or game over
+	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if game_manager and (game_manager.game_state == game_manager.GameState.LEVEL_COMPLETE or game_manager.game_state == game_manager.GameState.GAME_OVER):
+		return
+
 	# Move horizontally toward right edge
 	position.x += move_speed * delta
 

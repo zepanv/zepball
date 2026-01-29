@@ -6,9 +6,9 @@ extends CharacterBody2D
 
 # Movement constants
 const PADDLE_SPEED = 1000.0  # Pixels per second
-const MIN_Y = 60.0          # Top boundary (respects HUD)
-const MAX_Y = 660.0         # Bottom boundary (respects screen)
-const BASE_HEIGHT = 104.0   # Default paddle height (matches sprite)
+const WALL_TOP_Y = 20.0     # Top wall bottom edge
+const WALL_BOTTOM_Y = 700.0 # Bottom wall top edge
+const BASE_HEIGHT = 130.0   # Default paddle height (matches collision shape)
 
 # Control mode
 @export var use_mouse_control: bool = true
@@ -26,7 +26,7 @@ var actual_velocity_y: float = 0.0
 var game_manager = null
 
 # Power-up effects
-var current_height: float = 104.0
+var current_height: float = 130.0
 
 func _ready():
 	print("Paddle ready at position: ", position)
@@ -38,6 +38,11 @@ func _physics_process(delta):
 	# Store old position for velocity calculation
 	previous_y = position.y
 
+	# Calculate dynamic boundaries based on current paddle height
+	var half_height = current_height / 2.0
+	var min_y = WALL_TOP_Y + half_height
+	var max_y = WALL_BOTTOM_Y - half_height
+
 	# Get input direction
 	var input_velocity = Vector2.ZERO
 
@@ -46,28 +51,30 @@ func _physics_process(delta):
 		var direction = Input.get_axis("move_up", "move_down")
 		input_velocity.y = direction * PADDLE_SPEED
 
-	# Mouse control (override keyboard only when the mouse is moving)
+	# Mouse control (direct position setting for instant response)
 	if use_mouse_control:
 		var mouse_y = get_viewport().get_mouse_position().y
 		var mouse_moved = abs(mouse_y - last_mouse_y) > MOUSE_MOVE_DEADZONE
 		last_mouse_y = mouse_y
 
 		if mouse_moved:
-			var target_y = clamp(mouse_y, MIN_Y, MAX_Y)
-			var distance_to_target = target_y - position.y
-			if abs(distance_to_target) > MOUSE_TARGET_DEADZONE:
-				input_velocity.y = clamp(distance_to_target * MOUSE_FOLLOW_GAIN, -PADDLE_SPEED, PADDLE_SPEED)
-			else:
-				input_velocity.y = 0.0
+			# Subtract offset to center paddle on mouse cursor (compensate for visual offset)
+			# The paddle visual appears below its position, so we move it up
+			var mouse_y_adjusted = mouse_y - half_height
+			var target_y = clamp(mouse_y_adjusted, min_y, max_y)
+			position.y = target_y
+			# Set velocity to 0 since we're using direct positioning
+			input_velocity.y = 0.0
 
 	# Set velocity
 	velocity = input_velocity
 
-	# Move paddle
-	move_and_slide()
+	# Move paddle (only matters for keyboard control now)
+	if input_velocity.y != 0:
+		move_and_slide()
 
-	# Clamp position to boundaries
-	position.y = clamp(position.y, MIN_Y, MAX_Y)
+	# Clamp position to boundaries (dynamic based on paddle height)
+	position.y = clamp(position.y, min_y, max_y)
 
 	# Calculate actual velocity (for spin mechanics)
 	actual_velocity_y = (position.y - previous_y) / delta
@@ -94,12 +101,13 @@ func set_paddle_height(new_height: float):
 	"""Change paddle height with animation"""
 	current_height = new_height
 
-	# Update visual if it exists (Sprite2D - scale in Y direction)
+	# Update visual if it exists (Sprite2D rotated 90°, so scale X for height)
 	if has_node("Visual"):
 		var visual = $Visual
-		var scale_y = new_height / BASE_HEIGHT
+		var scale_factor = new_height / BASE_HEIGHT
 		var tween = create_tween()
-		tween.tween_property(visual, "scale:y", scale_y, 0.2)
+		# Paddle is rotated 90°, so X axis is vertical (height)
+		tween.tween_property(visual, "scale:x", scale_factor, 0.2)
 
 	# Update collision shape
 	if has_node("CollisionShape2D"):

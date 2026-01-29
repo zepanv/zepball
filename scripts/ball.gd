@@ -17,6 +17,7 @@ var current_speed: float = BASE_current_speed
 var is_attached_to_paddle = true
 var paddle_reference = null
 var game_manager = null
+var is_main_ball: bool = true  # Identifies the original ball in the scene
 
 # Signals
 signal ball_lost
@@ -24,6 +25,9 @@ signal brick_hit(brick)
 
 func _ready():
 	print("Ball initialized")
+	# Add to ball group for collision detection
+	add_to_group("ball")
+
 	# Find paddle in parent scene
 	paddle_reference = get_tree().get_first_node_in_group("paddle")
 	game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -33,6 +37,11 @@ func _ready():
 		print("Warning: Ball couldn't find paddle!")
 
 func _physics_process(delta):
+	# Stop ball movement if level is complete or game over
+	if game_manager and (game_manager.game_state == game_manager.GameState.LEVEL_COMPLETE or game_manager.game_state == game_manager.GameState.GAME_OVER):
+		velocity = Vector2.ZERO
+		return
+
 	if is_attached_to_paddle:
 		# Ball follows paddle until launched
 		if paddle_reference:
@@ -43,18 +52,87 @@ func _physics_process(delta):
 			launch_ball()
 	else:
 		# Ball is in motion
-		var collision = move_and_collide(velocity * delta)
+		# First check if we would collide with another ball
+		var test_collision = move_and_collide(velocity * delta, true, true)  # test_only=true, safe_margin=true
 
-		if collision:
-			handle_collision(collision)
+		if test_collision and test_collision.get_collider().is_in_group("ball"):
+			# Would collide with another ball - just move through it without collision
+			position += velocity * delta
+		else:
+			# Normal collision detection for walls, paddle, bricks
+			var collision = move_and_collide(velocity * delta)
+			if collision:
+				handle_collision(collision)
 
-		# Check if ball passed right edge (lost)
-		if position.x > 1300:  # Past right boundary
-			ball_lost.emit()
-			reset_ball()
+		# Check if ball went out of bounds
+		var out_of_bounds = false
+		var boundary_name = ""
+		var is_error_boundary = false
+
+		if position.x > 1300:  # Past right boundary (lost)
+			out_of_bounds = true
+			boundary_name = "RIGHT (past paddle)"
+			ball_lost.emit(self)
+			# Handler in main.gd will determine if this causes life loss
+		elif position.x < 0:  # Past left wall (shouldn't happen!)
+			out_of_bounds = true
+			is_error_boundary = true
+			boundary_name = "LEFT (ERROR!)"
+			print("WARNING: Ball escaped through LEFT boundary!")
+			ball_lost.emit(self)
+		elif position.y < 0:  # Above top wall (shouldn't happen!)
+			out_of_bounds = true
+			is_error_boundary = true
+			boundary_name = "TOP (ERROR!)"
+			print("WARNING: Ball escaped through TOP boundary!")
+			ball_lost.emit(self)
+		elif position.y > 720:  # Below bottom wall (shouldn't happen!)
+			out_of_bounds = true
+			is_error_boundary = true
+			boundary_name = "BOTTOM (ERROR!)"
+			print("WARNING: Ball escaped through BOTTOM boundary!")
+			ball_lost.emit(self)
+
+		if out_of_bounds:
+			print("=== BALL OUT OF BOUNDS ===")
+			print("  Boundary: ", boundary_name)
+			print("  Position: ", position, " (X: ", position.x, ", Y: ", position.y, ")")
+			print("  Velocity: ", velocity, " (X: ", velocity.x, ", Y: ", velocity.y, ")")
+			print("  Speed: ", current_speed)
+			print("  Is main ball: ", is_main_ball)
+
+			# CRITICAL: Remove balls that escape through error boundaries immediately
+			# They should never exist outside the play area
+			if is_error_boundary:
+				print("  ACTION: Removing ball from scene (error boundary)")
+
+				# Main ball should be reset, not removed
+				if is_main_ball:
+					print("  Main ball escaping - resetting to paddle")
+					call_deferred("reset_ball")
+				else:
+					# Extra balls can be safely removed
+					# Stop processing this ball
+					set_physics_process(false)
+					# Make it invisible
+					visible = false
+					# Disable collisions (deferred to avoid physics query errors)
+					set_deferred("collision_layer", 0)
+					set_deferred("collision_mask", 0)
+					# Schedule for removal (deferred to avoid issues during physics)
+					call_deferred("queue_free")
+
+			print("==========================")
 
 		# Maintain constant speed (arcade feel)
 		velocity = velocity.normalized() * current_speed
+
+		# Rotate ball to show movement/spin (only if actually moving)
+		# Rotation based on distance traveled (creates rolling effect)
+		if has_node("Visual") and velocity.length() > 10.0:
+			var visual = $Visual
+			var rotation_speed = current_speed / 16.0  # Ball radius for natural rolling
+			visual.rotation += rotation_speed * delta
 
 func launch_ball():
 	"""Launch ball from paddle at initial angle
@@ -86,7 +164,8 @@ func launch_ball():
 		$Trail.emitting = true
 
 	# Notify game manager
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if not game_manager:
+		game_manager = get_tree().get_first_node_in_group("game_manager")
 	if game_manager:
 		game_manager.start_playing()
 
@@ -94,6 +173,10 @@ func handle_collision(collision: KinematicCollision2D):
 	"""Handle ball collision with walls, paddle, or bricks"""
 	var collider = collision.get_collider()
 	var normal = collision.get_normal()
+
+	# Ignore ball-to-ball collisions entirely (prevents physics pausing)
+	if collider.is_in_group("ball"):
+		return
 
 	# Check what we hit
 	if collider.is_in_group("paddle"):
@@ -153,3 +236,9 @@ func reset_ball_speed():
 	if not is_attached_to_paddle:
 		velocity = velocity.normalized() * current_speed
 	print("Ball speed reset to 500")
+
+func enable_collision_immunity(duration: float = 0.5):
+	"""No longer needed - ball-to-ball collisions disabled at physics layer"""
+	# Balls no longer collide with each other at all (mask excludes layer 1)
+	# This function kept for compatibility but does nothing
+	pass

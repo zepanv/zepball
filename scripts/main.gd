@@ -116,13 +116,14 @@ func _configure_background_rect():
 	# In screen space (CanvasLayer), use viewport size and anchor to fill screen
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	background.position = Vector2.ZERO
-	background.size = get_viewport().get_visible_rect().size
+	# Use set_deferred to avoid anchor warning
+	background.set_deferred("size", get_viewport().get_visible_rect().size)
 
 
 func create_test_level():
-	"""Create a simple 5x5 grid of bricks for testing"""
-	var brick_width = 60
-	var brick_height = 30
+	"""Create a grid of square bricks for testing"""
+	var brick_size = 48  # Square bricks (32px texture * 1.5 scale)
+	var spacing = 3      # Gap between bricks
 	var start_x = 150
 	var start_y = 150
 	var rows = 5
@@ -132,8 +133,8 @@ func create_test_level():
 		for col in range(cols):
 			var brick = BRICK_SCENE.instantiate()
 			brick.position = Vector2(
-				start_x + col * brick_width,
-				start_y + row * brick_height
+				start_x + col * (brick_size + spacing),
+				start_y + row * (brick_size + spacing)
 			)
 
 			# Vary brick types by row
@@ -180,9 +181,35 @@ func check_level_complete():
 		print("Level complete!")
 		game_manager.complete_level()
 
-func _on_ball_lost():
-	print("Main: Ball was lost!")
-	game_manager.lose_life()
+func _on_ball_lost(lost_ball):
+	"""Handle ball loss - only lose life if this is the last ball in play"""
+	# Get all balls currently in play (before removing this one)
+	var balls_in_play = get_tree().get_nodes_in_group("ball")
+
+	# Check if this is the last ball
+	if balls_in_play.size() <= 1:
+		# Last ball lost - lose a life and reset main ball
+		print("Main: Last ball was lost! Losing life.")
+		game_manager.lose_life()
+
+		# Always reset the main ball to paddle (with null check)
+		if lost_ball == ball:
+			# The main ball was the last one - reset it if still valid
+			if is_instance_valid(ball) and ball.has_method("reset_ball"):
+				ball.reset_ball()
+			else:
+				print("WARNING: Cannot reset main ball - instance is invalid")
+		else:
+			# An extra ball was the last one - remove it and reset main ball
+			lost_ball.queue_free()
+			if is_instance_valid(ball) and ball.has_method("reset_ball"):
+				ball.reset_ball()
+			else:
+				print("WARNING: Cannot reset main ball - instance is invalid")
+	else:
+		# Still have other balls in play - no life penalty
+		print("Main: Ball lost, but ", balls_in_play.size() - 1, " ball(s) still in play")
+		lost_ball.queue_free()
 
 func _on_level_complete():
 	"""Stop the ball when the level is complete"""
@@ -252,15 +279,53 @@ func _on_power_up_collected(type):
 
 func spawn_additional_balls():
 	"""Spawn 2 additional balls for multi-ball power-up"""
-	print("=== SPAWNING TRIPLE BALL ===")
+	print("\n" + "=".repeat(60))
+	print("=== SPAWNING TRIPLE BALL POWER-UP ===")
+	print("=".repeat(60))
 
-	if not ball:
-		print("ERROR: No ball reference found")
+	# Find any active ball in play (not just the main ball reference)
+	var active_balls = get_tree().get_nodes_in_group("ball")
+	var source_ball = null
+
+	# Prefer a ball that's in motion (not attached to paddle)
+	for b in active_balls:
+		if not b.is_attached_to_paddle:
+			source_ball = b
+			break
+
+	# If no moving ball, use any ball (including attached one)
+	if not source_ball and active_balls.size() > 0:
+		source_ball = active_balls[0]
+
+	# If still no ball, use the main ball reference as fallback
+	if not source_ball:
+		source_ball = ball
+
+	if not source_ball:
+		print("ERROR: No ball reference found (no balls in scene)")
 		return
 
-	print("Current ball position: ", ball.position)
-	print("Current ball velocity: ", ball.velocity)
-	print("Current ball speed: ", ball.current_speed)
+	# Safety check: Don't spawn if ball is too close to edges
+	# This prevents spawning balls outside play area
+	if source_ball.position.x > 1100:
+		print("WARNING: Cannot spawn triple ball - source ball too close to paddle (X=", source_ball.position.x, ")")
+		print("  Triple ball power-up wasted - ball must be in play area to spawn extras")
+		return
+	if source_ball.position.x < 50:
+		print("WARNING: Cannot spawn triple ball - source ball too close to left wall (X=", source_ball.position.x, ")")
+		print("  Triple ball power-up wasted - ball must be in play area to spawn extras")
+		return
+	if source_ball.position.y < 50 or source_ball.position.y > 670:
+		print("WARNING: Cannot spawn triple ball - source ball too close to top/bottom (Y=", source_ball.position.y, ")")
+		print("  Triple ball power-up wasted - ball must be in play area to spawn extras")
+		return
+
+	print("\n[SOURCE BALL STATE]")
+	print("  Position: ", source_ball.position, " (X: ", source_ball.position.x, ", Y: ", source_ball.position.y, ")")
+	print("  Velocity: ", source_ball.velocity, " (X: ", source_ball.velocity.x, ", Y: ", source_ball.velocity.y, ")")
+	print("  Speed: ", source_ball.current_speed)
+	print("  Is attached: ", source_ball.is_attached_to_paddle)
+	print("  Velocity angle: ", rad_to_deg(atan2(source_ball.velocity.y, source_ball.velocity.x)), "° (0°=right, 90°=down, 180°=left, 270°=up)")
 
 	# Get ball scene
 	var ball_scene = load("res://scenes/gameplay/ball.tscn")
@@ -268,43 +333,83 @@ func spawn_additional_balls():
 		print("ERROR: Could not load ball scene")
 		return
 
+	# Enable collision immunity on source ball
+	if source_ball.has_method("enable_collision_immunity"):
+		source_ball.enable_collision_immunity(0.5)
+
 	# Spawn 2 additional balls
 	for i in range(2):
-		print("\n--- Spawning ball ", i + 1, " ---")
+		print("\n" + "-".repeat(50))
+		print("[SPAWNING BALL #", i + 1, "]")
+		print("-".repeat(50))
+
 		var new_ball = ball_scene.instantiate()
 
-		# Position at current ball location
-		new_ball.position = ball.position
-		print("New ball position: ", new_ball.position)
+		# Mark as extra ball (won't count as life loss)
+		new_ball.is_main_ball = false
+
+		# Position with small offset to prevent physics overlap issues
+		# Offset perpendicular to source ball's velocity direction
+		var offset_distance = 20.0  # pixels apart
+		var perpendicular_offset = Vector2(0, offset_distance * (1 if i == 0 else -1))
+		new_ball.position = source_ball.position + perpendicular_offset
+		print("  Spawn Position: ", new_ball.position, " (X: ", new_ball.position.x, ", Y: ", new_ball.position.y, ")")
+		print("  Position Offset: ", perpendicular_offset, " (from source ball)")
 
 		# Launch with safe angles based on current ball position
-		# If ball is near top (Y < 200), send both balls downward
-		# If ball is near bottom (Y > 520), send both balls upward
-		# Otherwise, send one up and one down
+		# Angles: 0° = right, 90° = down, 180° = left, 270° = up
+		# CRITICAL: Use only SAFE angles (120°-240°) to prevent any escapes
 		var angle_offset = 0.0
+		var zone = ""
+		var base_angle = 180.0  # Default: leftward
 
-		if ball.position.y < 200:
-			# Near top - both balls go slightly downward
-			angle_offset = -5.0 if i == 0 else -15.0
-		elif ball.position.y > 520:
-			# Near bottom - both balls go slightly upward
-			angle_offset = 5.0 if i == 0 else 15.0
-		else:
-			# Middle area - spread up and down
+		# CRITICAL: Check boundaries and adjust angles to prevent escapes
+		# All angles constrained to 120°-240° range (safe zone)
+		# Check left wall (X < 100) - shoot RIGHT-DOWN
+		if source_ball.position.x < 100:
+			# Near left: shoot toward right-down quadrant (90° to 120°)
+			base_angle = 105.0  # Right-down diagonal
 			angle_offset = -10.0 if i == 0 else 10.0
+			zone = "NEAR LEFT (shooting RIGHT+DOWN)"
+		# Check top wall (Y < 150) - shoot DOWN-LEFT
+		elif source_ball.position.y < 150:
+			# Near top: shoot down-left (200°-220°)
+			base_angle = 210.0  # Down-left
+			angle_offset = -5.0 if i == 0 else 5.0
+			zone = "NEAR TOP (shooting DOWN+LEFT)"
+		# Check bottom wall (Y > 570) - shoot LEFT-UP (but still safe)
+		elif source_ball.position.y > 570:
+			# Near bottom: shoot left-up but stay in safe range (150°-160°)
+			base_angle = 155.0  # Left-up but safe
+			angle_offset = -5.0 if i == 0 else 5.0
+			zone = "NEAR BOTTOM (shooting LEFT+UP safe)"
+		# Normal position - horizontal spread
+		else:
+			# Center area - horizontal spread (175°-185°)
+			base_angle = 180.0
+			angle_offset = -5.0 if i == 0 else 5.0
+			zone = "CENTER"
 
-		var target_angle = 180.0 + angle_offset
+		var target_angle = base_angle + angle_offset
+
+		# SAFETY CLAMP: Ensure angle is always in safe range
+		target_angle = clamp(target_angle, 120.0, 240.0)
+		print("  Angle clamped to safe range: ", target_angle, "° (120°-240° safe zone)")
 		var angle_rad = deg_to_rad(target_angle)
 
-		print("Ball Y position: ", ball.position.y, " -> Using angle offset: ", angle_offset, "°")
+		print("  Zone: ", zone, " (X=", source_ball.position.x, ", Y=", source_ball.position.y, ")")
+		print("  Base Angle: ", base_angle, "° (0°=right, 180°=left)")
+		print("  Angle Offset: ", angle_offset, "°")
+		print("  Target Angle: ", target_angle, "°")
 
-		new_ball.velocity = Vector2(cos(angle_rad), sin(angle_rad)) * ball.current_speed
+		new_ball.velocity = Vector2(cos(angle_rad), sin(angle_rad)) * source_ball.current_speed
 		new_ball.is_attached_to_paddle = false
 
-		print("Target angle: ", target_angle, "° (180° = straight left)")
-		print("Calculated velocity: ", new_ball.velocity)
-		print("Velocity magnitude: ", new_ball.velocity.length())
-		print("Velocity angle check: ", rad_to_deg(atan2(new_ball.velocity.y, new_ball.velocity.x)), "°")
+		print("  Calculated Velocity: ", new_ball.velocity)
+		print("    - X component: ", new_ball.velocity.x, " (negative=left, positive=right)")
+		print("    - Y component: ", new_ball.velocity.y, " (negative=up, positive=down)")
+		print("  Velocity Magnitude: ", new_ball.velocity.length(), " (should be ", source_ball.current_speed, ")")
+		print("  Velocity Angle (verify): ", rad_to_deg(atan2(new_ball.velocity.y, new_ball.velocity.x)), "°")
 
 		# Enable trail
 		if new_ball.has_node("Trail"):
@@ -313,9 +418,16 @@ func spawn_additional_balls():
 		# Add to scene
 		play_area.add_child(new_ball)
 
+		# Enable collision immunity to prevent spawn collision issues
+		if new_ball.has_method("enable_collision_immunity"):
+			new_ball.enable_collision_immunity(0.5)
+
 		# Connect signals
 		new_ball.ball_lost.connect(_on_ball_lost)
 
-		print("Ball ", i + 1, " added to scene successfully")
+		print("  ✓ Ball #", i + 1, " added to scene successfully")
 
+	print("\n" + "=".repeat(60))
 	print("=== TRIPLE BALL SPAWN COMPLETE ===")
+	print("Total balls in play: ", get_tree().get_nodes_in_group("ball").size())
+	print("=".repeat(60) + "\n")
