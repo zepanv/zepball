@@ -8,10 +8,29 @@ var shake_intensity: float = 0.0
 var shake_duration: float = 0.0
 var shake_timer: float = 0.0
 var original_offset: Vector2 = Vector2.ZERO
+var intensity_multiplier: float = 1.0  # From settings
 
 func _ready():
 	# Store original offset
 	original_offset = offset
+
+	# Load screen shake intensity setting
+	_load_intensity_setting()
+
+func _load_intensity_setting():
+	"""Load and apply screen shake intensity from settings"""
+	var setting = SaveManager.get_screen_shake_intensity()
+	match setting:
+		"Off":
+			intensity_multiplier = 0.0
+		"Low":
+			intensity_multiplier = 0.5
+		"Medium":
+			intensity_multiplier = 1.0
+		"High":
+			intensity_multiplier = 1.5
+		_:
+			intensity_multiplier = 1.0  # Default to Medium
 
 func _process(delta):
 	if shake_timer > 0:
@@ -34,6 +53,7 @@ func shake(intensity: float, duration: float):
 	intensity: How far the camera shakes (pixels)
 	duration: How long the shake lasts (seconds)
 	"""
-	shake_intensity = intensity
+	# Apply intensity multiplier from settings
+	shake_intensity = intensity * intensity_multiplier
 	shake_duration = duration
 	shake_timer = duration

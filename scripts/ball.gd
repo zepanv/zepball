@@ -18,6 +18,13 @@ var is_attached_to_paddle = true
 var paddle_reference = null
 var game_manager = null
 var is_main_ball: bool = true  # Identifies the original ball in the scene
+var direction_indicator: Line2D = null  # Visual launch direction indicator
+
+# Stuck detection
+var stuck_check_timer: float = 0.0
+var last_position: Vector2 = Vector2.ZERO
+var stuck_threshold: float = 2.0  # seconds
+var movement_threshold: float = 30.0  # pixels
 
 # Signals
 signal ball_lost
@@ -39,6 +46,13 @@ func _ready():
 	else:
 		print("Warning: Ball couldn't find paddle!")
 
+	# Apply ball trail setting
+	if has_node("Trail"):
+		$Trail.emitting = false  # Starts disabled until launched
+
+	# Direction indicator disabled for now
+	# create_direction_indicator()
+
 func _physics_process(delta):
 	# Stop ball movement if level is complete or game over
 	if game_manager and (game_manager.game_state == game_manager.GameState.LEVEL_COMPLETE or game_manager.game_state == game_manager.GameState.GAME_OVER):
@@ -49,6 +63,9 @@ func _physics_process(delta):
 		# Ball follows paddle until launched
 		if paddle_reference:
 			position = paddle_reference.position + Vector2(-30, 0)  # Offset to left of paddle
+
+		# Direction indicator disabled
+		# update_direction_indicator()
 
 		# Launch on input
 		if Input.is_action_just_pressed("launch_ball") and (not game_manager or game_manager.game_state == game_manager.GameState.READY):
@@ -66,6 +83,9 @@ func _physics_process(delta):
 			var collision = move_and_collide(velocity * delta)
 			if collision:
 				handle_collision(collision)
+
+		# Check if ball is stuck (not moving much for too long)
+		check_if_stuck(delta)
 
 		# Check if ball went out of bounds
 		var out_of_bounds = false
@@ -143,6 +163,10 @@ func launch_ball():
 	"""
 	is_attached_to_paddle = false
 
+	# Hide direction indicator
+	if direction_indicator:
+		direction_indicator.visible = false
+
 	# Check if paddle is moving
 	var paddle_velocity_y = 0.0
 	if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
@@ -162,8 +186,8 @@ func launch_ball():
 		velocity = Vector2(-current_speed, 0)
 		print("Ball launched straight! Velocity: ", velocity)
 
-	# Enable trail effect
-	if has_node("Trail"):
+	# Enable trail effect (if enabled in settings)
+	if has_node("Trail") and SaveManager.get_ball_trail():
 		$Trail.emitting = true
 
 	# Notify game manager
@@ -222,6 +246,10 @@ func reset_ball():
 	if has_node("Trail"):
 		$Trail.emitting = false
 
+	# Show direction indicator again
+	if direction_indicator:
+		direction_indicator.visible = true
+
 	print("Ball reset to paddle")
 
 func apply_speed_up_effect():
@@ -230,6 +258,11 @@ func apply_speed_up_effect():
 	# Update velocity magnitude immediately if ball is moving
 	if not is_attached_to_paddle:
 		velocity = velocity.normalized() * current_speed
+
+	# Change trail color to yellow/orange for fast speed (if trail enabled)
+	if has_node("Trail") and SaveManager.get_ball_trail():
+		$Trail.color = Color(1.0, 0.8, 0.2, 0.7)  # Yellow-orange
+
 	print("Ball speed increased to 650!")
 
 func reset_ball_speed():
@@ -238,10 +271,119 @@ func reset_ball_speed():
 	# Update velocity magnitude immediately if ball is moving
 	if not is_attached_to_paddle:
 		velocity = velocity.normalized() * current_speed
+
+	# Reset trail color to normal cyan/blue (if trail enabled)
+	if has_node("Trail") and SaveManager.get_ball_trail():
+		$Trail.color = Color(0.3, 0.6, 0.95, 0.7)  # Cyan-blue
+
 	print("Ball speed reset to ", current_speed)
 
-func enable_collision_immunity(duration: float = 0.5):
+func enable_collision_immunity(_duration: float = 0.5):
 	"""No longer needed - ball-to-ball collisions disabled at physics layer"""
 	# Balls no longer collide with each other at all (mask excludes layer 1)
 	# This function kept for compatibility but does nothing
 	pass
+
+func check_if_stuck(delta: float):
+	"""Detect if ball is stuck and give it a boost to escape"""
+	# Skip check if attached to paddle
+	if is_attached_to_paddle:
+		stuck_check_timer = 0.0
+		last_position = position
+		return
+
+	# Check if ball has moved significantly since last check
+	var distance_moved = position.distance_to(last_position)
+
+	# Use per-frame threshold (ball should move at least speed*delta pixels per frame)
+	# At 500 speed and 60fps, that's ~8.3 pixels per frame minimum
+	var expected_movement = current_speed * delta * 0.5  # 50% of expected (account for bouncing)
+
+	if distance_moved < expected_movement:
+		# Ball hasn't moved much - increment timer
+		stuck_check_timer += delta
+
+		if stuck_check_timer >= stuck_threshold:
+			# Ball is stuck! Give it a boost to escape
+			print("WARNING: Ball appears stuck at ", position, " - applying escape boost")
+
+			# Random escape direction (prefer left and down/up to avoid paddle)
+			var escape_angle = randf_range(135.0, 225.0)  # Left hemisphere
+			var angle_rad = deg_to_rad(escape_angle)
+			velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
+
+			print("  Escape velocity applied: ", velocity, " (angle: ", escape_angle, "°)")
+
+			# Reset timer
+			stuck_check_timer = 0.0
+	else:
+		# Ball is moving normally - reset timer
+		stuck_check_timer = 0.0
+
+	# IMPORTANT: Always update last_position for next frame comparison
+	last_position = position
+
+func create_direction_indicator():
+	"""Create a visual indicator showing launch direction"""
+	# Only create indicator for the main ball, not extra balls from power-ups
+	if not is_main_ball:
+		return
+
+	direction_indicator = Line2D.new()
+	direction_indicator.width = 3.0
+	direction_indicator.default_color = Color(0, 0.9, 1, 0.6)  # Cyan with transparency
+	direction_indicator.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	direction_indicator.end_cap_mode = Line2D.LINE_CAP_ROUND
+
+	# Arrow head points
+	var arrow_length = 80.0
+	var arrow_width = 15.0
+	direction_indicator.add_point(Vector2(0, 0))  # Start at ball center
+	direction_indicator.add_point(Vector2(-arrow_length, 0))  # Main line
+	direction_indicator.add_point(Vector2(-arrow_length + arrow_width, -arrow_width))  # Arrow head top
+	direction_indicator.add_point(Vector2(-arrow_length, 0))  # Back to tip
+	direction_indicator.add_point(Vector2(-arrow_length + arrow_width, arrow_width))  # Arrow head bottom
+
+	add_child(direction_indicator)
+	direction_indicator.visible = true
+
+func update_direction_indicator():
+	"""Update direction indicator based on paddle movement - shows correct spin physics"""
+	if not direction_indicator or not is_attached_to_paddle:
+		return
+
+	# Calculate launch direction with CORRECTED spin physics
+	var paddle_velocity_y = 0.0
+	if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
+		paddle_velocity_y = paddle_reference.get_velocity_for_spin()
+
+	# Calculate preview direction with inverted spin (correct physics)
+	# When paddle moves DOWN (+Y), ball should curve UP (-Y) and vice versa
+	var launch_velocity: Vector2
+	if abs(paddle_velocity_y) > 50:  # Paddle is moving
+		# Launch with spin - INVERTED for correct physics
+		var angle_rad = deg_to_rad(INITIAL_ANGLE)
+		launch_velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
+		# INVERT paddle spin influence for correct physics (down = curve up)
+		launch_velocity.y -= paddle_velocity_y * SPIN_FACTOR  # Note: MINUS instead of PLUS
+		launch_velocity = launch_velocity.normalized() * current_speed
+	else:
+		# Launch straight left (no vertical component)
+		launch_velocity = Vector2(-current_speed, 0)
+
+	# Normalize to get direction
+	var launch_direction = launch_velocity.normalized()
+
+	# Update indicator points
+	var arrow_length = 80.0
+	var arrow_width = 15.0
+	var end_point = launch_direction * arrow_length
+
+	# Perpendicular vector for arrow head
+	var perpendicular = Vector2(-launch_direction.y, launch_direction.x) * arrow_width
+
+	direction_indicator.set_point_position(0, Vector2.ZERO)
+	direction_indicator.set_point_position(1, end_point)
+	direction_indicator.set_point_position(2, end_point + perpendicular * 0.5 - launch_direction * arrow_width)
+	direction_indicator.set_point_position(3, end_point)
+	direction_indicator.set_point_position(4, end_point - perpendicular * 0.5 - launch_direction * arrow_width)

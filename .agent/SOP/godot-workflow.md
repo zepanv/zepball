@@ -329,6 +329,124 @@ git commit -m "feat: Implement paddle vertical movement
 ### Versioning Note
 Do not increment version numbers in README or project files unless explicitly requested.
 
+## Save System Compatibility
+
+### CRITICAL: Always Check Save Format When Adding Features
+
+When adding new features that modify the save data structure, you **MUST** add migration logic to handle existing save files. Failure to do this will cause crashes for users with existing saves.
+
+### When to Add Migration Logic
+
+Add migration code whenever you:
+- ✅ Add new keys to the save_data dictionary
+- ✅ Add new statistics or achievement tracking
+- ✅ Add new settings or preferences
+- ✅ Change the structure of existing save data
+- ✅ Rename or remove save data keys
+
+### Migration Pattern
+
+**Location:** `scripts/save_manager.gd` in the `load_save()` function
+
+**Template:**
+```gdscript
+func load_save() -> void:
+	# ... existing load code ...
+
+	save_data = loaded_data
+
+	# MIGRATION: Add new section if it doesn't exist
+	if not save_data.has("new_section"):
+		print("Adding new_section to save data...")
+		save_data["new_section"] = {
+			"new_field_1": default_value,
+			"new_field_2": default_value
+		}
+		save_to_disk()  # Save the migrated data immediately
+
+	# ... rest of load code ...
+```
+
+### Example: Adding Statistics Section (2026-01-29)
+
+**Problem:** Added statistics tracking, but old saves don't have "statistics" key.
+**Result:** Game crashes with "Invalid access to property 'statistics'" when viewing stats.
+
+**Solution:**
+```gdscript
+# Migrate old saves that don't have statistics
+if not save_data.has("statistics"):
+	print("Adding statistics section to save data...")
+	save_data["statistics"] = {
+		"total_bricks_broken": 0,
+		"total_power_ups_collected": 0,
+		"total_levels_completed": 0,
+		"total_playtime": 0.0,
+		"highest_combo": 0,
+		"highest_score": 0,
+		"total_games_played": 0,
+		"perfect_clears": 0
+	}
+	save_to_disk()
+```
+
+### Migration Checklist
+
+Before committing changes that modify save data:
+- [ ] Added migration code in `load_save()` to handle old saves
+- [ ] Updated `create_default_save()` with new structure
+- [ ] Tested with both new save (delete user://save_data.json) and old save
+- [ ] Verified migration preserves existing player progress
+- [ ] Checked that new features work with migrated data
+- [ ] Added print statement for debugging migration
+
+### Testing Save Migrations
+
+**Test with old save:**
+1. Run game with existing save file
+2. Check console for migration messages
+3. Verify new feature doesn't crash
+4. Check that old data (levels, scores) still works
+
+**Test with new save:**
+1. Delete `user://save_data.json` (see SaveManager.get_save_file_location())
+2. Run game to create fresh save
+3. Verify all features work with new structure
+
+**Finding save file:**
+```gdscript
+# Run this in game or debug console
+print(SaveManager.get_save_file_location())
+
+# Typical locations:
+# macOS: ~/Library/Application Support/Godot/app_userdata/[ProjectName]/
+# Linux: ~/.local/share/godot/app_userdata/[ProjectName]/
+# Windows: %APPDATA%/Godot/app_userdata/[ProjectName]/
+```
+
+### Save Version System
+
+The save file includes a `"version"` field for major migrations:
+
+```gdscript
+const SAVE_VERSION = 1  # Increment for breaking changes
+
+# Check version and perform major migration if needed
+if loaded_data.get("version", 0) < SAVE_VERSION:
+	print("Performing major save migration from v", loaded_data.get("version"), " to v", SAVE_VERSION)
+	# Perform migration...
+	save_data["version"] = SAVE_VERSION
+	save_to_disk()
+```
+
+**When to increment SAVE_VERSION:**
+- Major restructuring that can't be handled by simple key checks
+- Removing old data that's no longer needed
+- Changing data types (e.g., String to int)
+- Multiple related changes that should happen atomically
+
+**For simple additions:** Use `if not save_data.has("key")` checks (no version bump needed)
+
 ## Asset Integration
 
 ### Importing Sprites
@@ -440,6 +558,6 @@ Before committing:
 
 ---
 
-*Last Updated: 2026-01-27*
+*Last Updated: 2026-01-29*
 *Godot Version: 4.6*
 *See: architecture.md for scene structure details*

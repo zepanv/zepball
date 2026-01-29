@@ -28,11 +28,18 @@ var game_manager = null
 # Power-up effects
 var current_height: float = 130.0
 
+# Settings
+var sensitivity_multiplier: float = 1.0
+
 func _ready():
 	print("Paddle ready at position: ", position)
 	previous_y = position.y
 	last_mouse_y = get_viewport().get_mouse_position().y
 	game_manager = get_tree().get_first_node_in_group("game_manager")
+
+	# Load paddle sensitivity setting
+	sensitivity_multiplier = SaveManager.get_paddle_sensitivity()
+	print("Paddle sensitivity: ", sensitivity_multiplier, "x")
 
 func _physics_process(delta):
 	# Store old position for velocity calculation
@@ -49,7 +56,7 @@ func _physics_process(delta):
 	# Keyboard control
 	if use_keyboard_control:
 		var direction = Input.get_axis("move_up", "move_down")
-		input_velocity.y = direction * PADDLE_SPEED
+		input_velocity.y = direction * PADDLE_SPEED * sensitivity_multiplier
 
 	# Mouse control (direct position setting for instant response)
 	if use_mouse_control:
@@ -62,8 +69,13 @@ func _physics_process(delta):
 			# The paddle visual appears below its position, so we move it up
 			var mouse_y_adjusted = mouse_y - half_height
 			var target_y = clamp(mouse_y_adjusted, min_y, max_y)
-			position.y = target_y
-			# Set velocity to 0 since we're using direct positioning
+
+			# Apply sensitivity: lerp toward target faster/slower based on sensitivity
+			# Higher sensitivity = faster response (less lerp smoothing)
+			var lerp_speed = 0.3 * sensitivity_multiplier  # Base lerp speed scaled by sensitivity
+			position.y = lerp(position.y, target_y, lerp_speed)
+
+			# Set velocity to 0 since we're using positioning
 			input_velocity.y = 0.0
 
 	# Set velocity

@@ -67,10 +67,12 @@ func _ready():
 		game_manager.score_changed.connect(hud._on_score_changed)
 		game_manager.lives_changed.connect(hud._on_lives_changed)
 		game_manager.level_complete.connect(_on_level_complete)
+		game_manager.game_over.connect(_on_game_over)
 		print("Connected GameManager signals to HUD")
 
-	# Create initial test level
-	create_test_level()
+	# Load level from MenuController (or level 1 as fallback)
+	var level_id = MenuController.get_current_level_id()
+	load_level(level_id)
 
 	# Connect existing bricks
 	connect_brick_signals()
@@ -138,8 +140,31 @@ func _configure_background_rect():
 	background.set_deferred("size", get_viewport().get_visible_rect().size)
 
 
+func load_level(level_id: int):
+	"""Load a level from JSON using LevelLoader"""
+	print("Loading level ", level_id)
+
+	var level_result = LevelLoader.instantiate_level(level_id, brick_container)
+
+	if level_result["success"]:
+		print("Level loaded: ", level_result["name"])
+		print("  Description: ", level_result["description"])
+		print("  Total bricks: ", level_result["total_bricks"])
+		print("  Breakable bricks: ", level_result["breakable_count"])
+
+		# Update game manager with level info
+		if game_manager:
+			game_manager.current_level = level_id
+
+		# Show level intro
+		if hud and hud.has_method("show_level_intro"):
+			hud.show_level_intro(level_id, level_result["name"], level_result["description"])
+	else:
+		push_error("Failed to load level ", level_id, " - falling back to test level")
+		create_test_level()
+
 func create_test_level():
-	"""Create a grid of square bricks for testing"""
+	"""Create a grid of square bricks for testing (fallback)"""
 	var rows = 5
 	var cols = 8
 
@@ -178,9 +203,19 @@ func _on_brick_broken(score_value: int):
 	print("Main: Brick broken, adding score: ", score_value)
 	game_manager.add_score(score_value)
 
-	# Trigger screen shake (intensity scales with score)
+	# Track statistic
+	SaveManager.increment_stat("total_bricks_broken")
+
+	# Trigger screen shake (intensity scales with score AND combo)
 	if camera and camera.has_method("shake"):
-		var intensity = 2.0 + (score_value / 50.0) * 3.0  # 2-5 pixels based on score
+		var base_intensity = 2.0 + (score_value / 50.0) * 3.0  # 2-5 pixels based on score
+
+		# Scale with combo multiplier (higher combo = more shake)
+		var combo_multiplier = 1.0
+		if game_manager and game_manager.combo >= 3:
+			combo_multiplier = 1.0 + (game_manager.combo - 2) * 0.15  # +15% per combo over 2
+
+		var intensity = min(base_intensity * combo_multiplier, 12.0)  # Cap at 12 pixels
 		camera.shake(intensity, 0.15)
 
 	# Decrement breakable brick count and check completion immediately
@@ -206,36 +241,68 @@ func _on_ball_lost(lost_ball):
 		print("Main: Last ball was lost! Losing life.")
 		game_manager.lose_life()
 
-		# Always reset the main ball to paddle (with null check)
-		if lost_ball == ball:
-			# The main ball was the last one - reset it if still valid
-			if is_instance_valid(ball) and ball.has_method("reset_ball"):
-				ball.reset_ball()
+		# Find the actual main ball in the scene
+		var main_ball_ref = null
+		for b in balls_in_play:
+			if b.is_main_ball:
+				main_ball_ref = b
+				break
+
+		# If we found a main ball, use it
+		if main_ball_ref and is_instance_valid(main_ball_ref):
+			if main_ball_ref.has_method("reset_ball"):
+				main_ball_ref.reset_ball()
+				ball = main_ball_ref  # Update reference
 			else:
-				print("WARNING: Cannot reset main ball - instance is invalid")
+				print("ERROR: Main ball has no reset_ball method")
+		# Otherwise try the scene's ball reference
+		elif is_instance_valid(ball) and ball.has_method("reset_ball"):
+			ball.reset_ball()
 		else:
-			# An extra ball was the last one - remove it and reset main ball
+			print("WARNING: Cannot reset main ball - no valid main ball found")
+			print("  Scene ball reference valid: ", is_instance_valid(ball))
+			print("  Lost ball is main: ", lost_ball.is_main_ball if lost_ball else "null")
+			# Try to recover by finding ANY ball in the scene
+			if balls_in_play.size() > 0 and is_instance_valid(balls_in_play[0]):
+				print("  RECOVERY: Using first available ball as main ball")
+				balls_in_play[0].is_main_ball = true
+				ball = balls_in_play[0]
+				if ball.has_method("reset_ball"):
+					ball.reset_ball()
+
+		# Clean up the lost ball if it's not the one we're using
+		if lost_ball != ball and is_instance_valid(lost_ball):
 			lost_ball.queue_free()
-			if is_instance_valid(ball) and ball.has_method("reset_ball"):
-				ball.reset_ball()
-			else:
-				print("WARNING: Cannot reset main ball - instance is invalid")
 	else:
 		# Still have other balls in play - no life penalty
 		print("Main: Ball lost, but ", balls_in_play.size() - 1, " ball(s) still in play")
-		lost_ball.queue_free()
+		if is_instance_valid(lost_ball):
+			lost_ball.queue_free()
 
 func _on_level_complete():
-	"""Stop the ball when the level is complete"""
+	"""Handle level completion - stop ball and transition to complete screen"""
+	print("Main: Level complete handler triggered")
+
+	# Stop the ball
 	if ball and ball.has_method("reset_ball"):
 		ball.reset_ball()
+
+	# Show level complete screen with final score
+	MenuController.show_level_complete(game_manager.score)
+
+func _on_game_over():
+	"""Handle game over - transition to game over screen"""
+	print("Main: Game over handler triggered")
+
+	# Show game over screen with final score
+	MenuController.show_game_over(game_manager.score)
 
 func _input(event):
 	"""Handle input for restart and debug/testing"""
 	# Restart with input action
 	if Input.is_action_just_pressed("restart_game"):
-		print("Restarting game...")
-		get_tree().reload_current_scene()
+		print("Restarting level...")
+		MenuController.restart_current_level()
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		# DEBUG ONLY: Difficulty selection (remove once main menu exists)
@@ -291,6 +358,9 @@ func _on_power_up_collected(type):
 	"""Handle power-up collection"""
 	print("Main: Power-up collected, type: ", type)
 
+	# Track statistic
+	SaveManager.increment_stat("total_power_ups_collected")
+
 	# Apply power-up effect based on type
 	match type:
 		0:  # EXPAND
@@ -306,16 +376,24 @@ func _on_power_up_collected(type):
 				ball.apply_speed_up_effect()
 				PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SPEED_UP, ball)
 		3:  # TRIPLE_BALL
-			spawn_additional_balls()
+			# Defer spawning to avoid physics query conflict during collision callback
+			call_deferred("spawn_additional_balls_with_retry", 3)  # Try up to 3 times
 			# TRIPLE_BALL doesn't have a timer, so we don't add it to PowerUpManager
 
-func spawn_additional_balls():
-	"""Spawn 2 additional balls for multi-ball power-up"""
-	print("\n" + "=".repeat(60))
-	print("=== SPAWNING TRIPLE BALL POWER-UP ===")
-	print("=".repeat(60))
+func spawn_additional_balls_with_retry(retries_remaining: int = 3):
+	"""Try to spawn additional balls, retrying if ball is in a bad position"""
+	var result = try_spawn_additional_balls()
 
-	# Find any active ball in play (not just the main ball reference)
+	if not result and retries_remaining > 1:
+		print("Retrying triple ball spawn in 0.5 seconds... (", retries_remaining - 1, " attempts left)")
+		await get_tree().create_timer(0.5).timeout
+		spawn_additional_balls_with_retry(retries_remaining - 1)
+	elif not result:
+		print("ERROR: Failed to spawn triple ball after all retries - power-up wasted")
+
+func try_spawn_additional_balls() -> bool:
+	"""Attempt to spawn additional balls - returns true if successful, false if position is bad"""
+	# Find any active ball in play
 	var active_balls = get_tree().get_nodes_in_group("ball")
 	var source_ball = null
 
@@ -335,22 +413,28 @@ func spawn_additional_balls():
 
 	if not source_ball:
 		print("ERROR: No ball reference found (no balls in scene)")
-		return
+		return false
 
 	# Safety check: Don't spawn if ball is too close to edges
-	# This prevents spawning balls outside play area
 	if source_ball.position.x > 1100:
 		print("WARNING: Cannot spawn triple ball - source ball too close to paddle (X=", source_ball.position.x, ")")
-		print("  Triple ball power-up wasted - ball must be in play area to spawn extras")
-		return
+		return false
 	if source_ball.position.x < 50:
 		print("WARNING: Cannot spawn triple ball - source ball too close to left wall (X=", source_ball.position.x, ")")
-		print("  Triple ball power-up wasted - ball must be in play area to spawn extras")
-		return
+		return false
 	if source_ball.position.y < 50 or source_ball.position.y > 670:
 		print("WARNING: Cannot spawn triple ball - source ball too close to top/bottom (Y=", source_ball.position.y, ")")
-		print("  Triple ball power-up wasted - ball must be in play area to spawn extras")
-		return
+		return false
+
+	# Position is good - spawn the balls
+	spawn_additional_balls(source_ball)
+	return true
+
+func spawn_additional_balls(source_ball):
+	"""Spawn 2 additional balls for multi-ball power-up - source_ball position already validated"""
+	print("\n" + "=".repeat(60))
+	print("=== SPAWNING TRIPLE BALL POWER-UP ===")
+	print("=".repeat(60))
 
 	print("\n[SOURCE BALL STATE]")
 	print("  Position: ", source_ball.position, " (X: ", source_ball.position.x, ", Y: ", source_ball.position.y, ")")

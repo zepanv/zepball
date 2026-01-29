@@ -170,8 +170,8 @@ func break_brick(impact_direction: Vector2 = Vector2.ZERO):
 	if has_node("Visual"):
 		$Visual.visible = false
 
-	# Play particle effect
-	if has_node("Particles"):
+	# Play particle effect (if enabled in settings)
+	if has_node("Particles") and SaveManager.get_particle_effects():
 		var particles = $Particles
 
 		# Set particle direction based on impact (reflect the ball's direction)
@@ -186,7 +186,9 @@ func break_brick(impact_direction: Vector2 = Vector2.ZERO):
 		particles.emitting = true
 
 		# Wait for particles to finish, then remove brick
-		await get_tree().create_timer(0.6).timeout
+		# Check if still in tree before awaiting (scene might be changing)
+		if is_inside_tree():
+			await get_tree().create_timer(0.6).timeout
 
 	# Remove brick from scene
 	queue_free()

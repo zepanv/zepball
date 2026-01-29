@@ -1,0 +1,68 @@
+{
+  "level_id": 8,
+  "name": "Pyramid of Power",
+  "description": "Climb the pyramid of increasingly tough bricks",
+  "grid": {
+    "rows": 8,
+    "cols": 8,
+    "start_x": 150,
+    "start_y": 80,
+    "brick_size": 48,
+    "spacing": 3
+  },
+  "bricks": [
+    {"row": 0, "col": 3, "type": "GOLD"},
+    {"row": 0, "col": 4, "type": "GOLD"},
+
+    {"row": 1, "col": 2, "type": "PURPLE"},
+    {"row": 1, "col": 3, "type": "PURPLE"},
+    {"row": 1, "col": 4, "type": "PURPLE"},
+    {"row": 1, "col": 5, "type": "PURPLE"},
+
+    {"row": 2, "col": 2, "type": "STRONG"},
+    {"row": 2, "col": 3, "type": "STRONG"},
+    {"row": 2, "col": 4, "type": "STRONG"},
+    {"row": 2, "col": 5, "type": "STRONG"},
+
+    {"row": 3, "col": 1, "type": "ORANGE"},
+    {"row": 3, "col": 2, "type": "ORANGE"},
+    {"row": 3, "col": 3, "type": "GOLD"},
+    {"row": 3, "col": 4, "type": "GOLD"},
+    {"row": 3, "col": 5, "type": "ORANGE"},
+    {"row": 3, "col": 6, "type": "ORANGE"},
+
+    {"row": 4, "col": 1, "type": "STRONG"},
+    {"row": 4, "col": 2, "type": "STRONG"},
+    {"row": 4, "col": 3, "type": "STRONG"},
+    {"row": 4, "col": 4, "type": "STRONG"},
+    {"row": 4, "col": 5, "type": "STRONG"},
+    {"row": 4, "col": 6, "type": "STRONG"},
+
+    {"row": 5, "col": 0, "type": "NORMAL"},
+    {"row": 5, "col": 1, "type": "NORMAL"},
+    {"row": 5, "col": 2, "type": "RED"},
+    {"row": 5, "col": 3, "type": "RED"},
+    {"row": 5, "col": 4, "type": "RED"},
+    {"row": 5, "col": 5, "type": "RED"},
+    {"row": 5, "col": 6, "type": "NORMAL"},
+    {"row": 5, "col": 7, "type": "NORMAL"},
+
+    {"row": 6, "col": 0, "type": "NORMAL"},
+    {"row": 6, "col": 1, "type": "NORMAL"},
+    {"row": 6, "col": 2, "type": "NORMAL"},
+    {"row": 6, "col": 3, "type": "NORMAL"},
+    {"row": 6, "col": 4, "type": "NORMAL"},
+    {"row": 6, "col": 5, "type": "NORMAL"},
+    {"row": 6, "col": 6, "type": "NORMAL"},
+    {"row": 6, "col": 7, "type": "NORMAL"},
+
+    {"row": 7, "col": 0, "type": "NORMAL"},
+    {"row": 7, "col": 1, "type": "NORMAL"},
+    {"row": 7, "col": 2, "type": "NORMAL"},
+    {"row": 7, "col": 3, "type": "NORMAL"},
+    {"row": 7, "col": 4, "type": "NORMAL"},
+    {"row": 7, "col": 5, "type": "NORMAL"},
+    {"row": 7, "col": 6, "type": "NORMAL"},
+    {"row": 7, "col": 7, "type": "NORMAL"}
+  ]
+}

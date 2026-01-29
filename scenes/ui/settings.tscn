@@ -1,0 +1,183 @@
+[gd_scene format=3 uid="uid://djh8k2nan3p4q"]
+
+[ext_resource type="Script" path="res://scripts/ui/settings.gd" id="1_settings"]
+
+[node name="Settings" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_settings")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.15, 1)
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -320.0
+offset_right = 400.0
+offset_bottom = 320.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 15
+
+[node name="TitleLabel" type="Label" parent="Panel/VBoxContainer"]
+layout_mode = 2
+text = "SETTINGS"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 32
+
+[node name="HSeparator" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ScreenShakeSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ShakeTitle" type="Label" parent="Panel/VBoxContainer/ScreenShakeSection"]
+layout_mode = 2
+text = "Screen Shake Intensity"
+theme_override_font_sizes/font_size = 18
+
+[node name="ShakeButtons" type="HBoxContainer" parent="Panel/VBoxContainer/ScreenShakeSection"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="OffButton" type="Button" parent="Panel/VBoxContainer/ScreenShakeSection/ShakeButtons"]
+custom_minimum_size = Vector2(90, 40)
+layout_mode = 2
+text = "OFF"
+
+[node name="LowButton" type="Button" parent="Panel/VBoxContainer/ScreenShakeSection/ShakeButtons"]
+custom_minimum_size = Vector2(90, 40)
+layout_mode = 2
+text = "LOW"
+
+[node name="MediumButton" type="Button" parent="Panel/VBoxContainer/ScreenShakeSection/ShakeButtons"]
+custom_minimum_size = Vector2(90, 40)
+layout_mode = 2
+text = "MEDIUM"
+
+[node name="HighButton" type="Button" parent="Panel/VBoxContainer/ScreenShakeSection/ShakeButtons"]
+custom_minimum_size = Vector2(90, 40)
+layout_mode = 2
+text = "HIGH"
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="EffectsSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EffectsTitle" type="Label" parent="Panel/VBoxContainer/EffectsSection"]
+layout_mode = 2
+text = "Visual Effects"
+theme_override_font_sizes/font_size = 18
+
+[node name="ParticlesCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection"]
+layout_mode = 2
+button_pressed = true
+text = "Particle Effects"
+
+[node name="TrailCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection"]
+layout_mode = 2
+button_pressed = true
+text = "Ball Trail"
+
+[node name="HSeparator3" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="ControlsSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ControlsTitle" type="Label" parent="Panel/VBoxContainer/ControlsSection"]
+layout_mode = 2
+text = "Controls"
+theme_override_font_sizes/font_size = 18
+
+[node name="SensitivityLabel" type="Label" parent="Panel/VBoxContainer/ControlsSection"]
+layout_mode = 2
+text = "Paddle Sensitivity: 1.0x"
+
+[node name="SensitivitySlider" type="HSlider" parent="Panel/VBoxContainer/ControlsSection"]
+layout_mode = 2
+min_value = 0.5
+max_value = 2.0
+step = 0.1
+value = 1.0
+
+[node name="HSeparator4" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="AudioSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AudioTitle" type="Label" parent="Panel/VBoxContainer/AudioSection"]
+layout_mode = 2
+text = "Audio"
+theme_override_font_sizes/font_size = 18
+
+[node name="MusicLabel" type="Label" parent="Panel/VBoxContainer/AudioSection"]
+layout_mode = 2
+text = "Music Volume: 100%"
+
+[node name="MusicSlider" type="HSlider" parent="Panel/VBoxContainer/AudioSection"]
+layout_mode = 2
+min_value = -40.0
+max_value = 0.0
+step = 1.0
+value = 0.0
+
+[node name="SFXLabel" type="Label" parent="Panel/VBoxContainer/AudioSection"]
+layout_mode = 2
+text = "SFX Volume: 100%"
+
+[node name="SFXSlider" type="HSlider" parent="Panel/VBoxContainer/AudioSection"]
+layout_mode = 2
+min_value = -40.0
+max_value = 0.0
+step = 1.0
+value = 0.0
+
+[node name="BackButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = -80.0
+offset_right = 160.0
+offset_bottom = -40.0
+grow_vertical = 0
+text = "Back to Menu"
