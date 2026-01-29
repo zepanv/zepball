@@ -6,7 +6,8 @@
 - **Version Control**: Git.
 
 ## Project Settings (project.godot)
-- **Main scene**: `res://scenes/main/main.tscn`.
+- **Run main scene**: `res://scenes/ui/main_menu.tscn`.
+- **Gameplay scene**: `res://scenes/main/main.tscn`.
 - **Window size**: 1600x900.
 - **Stretch mode**: `canvas_items`.
 - **2D gravity**: 0 (no gravity).
@@ -16,24 +17,27 @@
 - `move_up`: Up Arrow, W.
 - `move_down`: Down Arrow, S.
 - `launch_ball`: Space, Left Mouse Button.
-- `restart_game`: R key. ✅ NEW
+- `restart_game`: R key.
 - `ui_cancel`: Escape.
 
 ## Autoloads
 - `PowerUpManager`: `res://scripts/power_up_manager.gd`.
-- `DifficultyManager`: `res://scripts/difficulty_manager.gd`. ✅ NEW
+- `DifficultyManager`: `res://scripts/difficulty_manager.gd`.
+- `SaveManager`: `res://scripts/save_manager.gd`.
+- `LevelLoader`: `res://scripts/level_loader.gd`.
+- `MenuController`: `res://scripts/ui/menu_controller.gd`.
 
 ## Asset Formats in Use
 - **Sprites and textures**: PNG, JPG.
 - **Vector icon**: SVG (`icon.svg`).
-- **Level data**: JSON (5 files in `levels/` folder). ✅ NEW
+- **Level data**: JSON (10 files in `levels/`).
 
-## Not Implemented Yet
-- Persistent save data or database.
-- Audio system and assets.
-- Menus and scene management beyond the main gameplay scene.
+## Audio Status
+- **Audio playback system**: Not implemented (no AudioManager, no assets).
+- **Audio buses**: Settings UI expects "Music" and "SFX" buses to exist.
+- **Settings**: Music/SFX volume sliders persist via SaveManager and apply via AudioServer.
 
 ## Related Docs
 - `System/architecture.md`
 - `SOP/godot-workflow.md`
-- `Tasks/ui-system.md`
+- `Tasks/Completed/ui-system.md`

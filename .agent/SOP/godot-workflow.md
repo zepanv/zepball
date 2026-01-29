@@ -5,7 +5,7 @@
 ### Starting a Coding Session
 1. Open Godot Editor (double-click project.godot or launch from Godot)
 2. Pull latest changes if using remote repo: `git pull`
-3. Check current task: `cat .agent/Tasks/[current-feature].md`
+3. Check current task: `cat .agent/Tasks/Backlog/[current-feature].md`
 4. Review last commit: `git log -1`
 
 ### During Development

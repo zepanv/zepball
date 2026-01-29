@@ -160,7 +160,7 @@ PLAYING → (all bricks broken) → LEVEL_COMPLETE
   - Bricks → Main → GameManager
   - GameManager → HUD
 
-**Level Generation:**
+**Level Generation (Fallback):**
 ```gdscript
 func create_test_level():
     # 5 rows x 8 columns = 40 bricks
@@ -168,6 +168,7 @@ func create_test_level():
     # Rows 1-4: Normal bricks
     # Grid starts at (150, 150) with 48px bricks and 3px spacing
 ```
+**Note**: This test grid is only used if `LevelLoader` fails to load JSON levels.
 
 ## Technical Decisions
 

@@ -11,20 +11,25 @@ Current system state, architecture, and technical foundation.
 
 ### Tasks/
 PRDs and implementation plans for features (both implemented and future).
-- `Tasks/core-mechanics.md` - Paddle, ball, and collision system design ✅ IMPLEMENTED
-- `Tasks/tile-system.md` - Brick/tile system plan ✅ IMPLEMENTED
-- `Tasks/level-system.md` - Level data, loader, and progression plan ✅ IMPLEMENTED
-- `Tasks/power-ups.md` - Power-up system design and implementation plan ✅ IMPLEMENTED
-- `Tasks/ui-system.md` - UI, menus, and HUD plans ✅ IMPLEMENTED
-- `Tasks/save-system.md` - Save data, high scores, and persistence plan ✅ IMPLEMENTED
-- `Tasks/audio-system.md` - Audio system plan (SFX, music) 📅 NOT YET IMPLEMENTED
-- **`Tasks/future-features.md`** - Planned features for future development (Time Attack, Survival, Settings enhancements, advanced gameplay)
+- **`Tasks/Completed/`** - Implemented feature plans and final notes.
+  - `Tasks/Completed/core-mechanics.md` - Paddle, ball, and collision system design ✅ IMPLEMENTED
+  - `Tasks/Completed/tile-system.md` - Brick/tile system plan ✅ IMPLEMENTED
+  - `Tasks/Completed/level-system.md` - Level data, loader, and progression plan ✅ IMPLEMENTED
+  - `Tasks/Completed/power-ups.md` - Power-up system design and implementation plan ✅ IMPLEMENTED
+  - `Tasks/Completed/ui-system.md` - UI, menus, and HUD plans ✅ IMPLEMENTED
+  - `Tasks/Completed/save-system.md` - Save data, high scores, and persistence plan ✅ IMPLEMENTED
+- **`Tasks/Backlog/`** - Not yet implemented or future work.
+  - `Tasks/Backlog/audio-system.md` - Audio system plan (SFX, music) 📅 NOT YET IMPLEMENTED
+  - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay)
+  - `Tasks/Backlog/power-up-expansion.md` - Additional power-ups beyond the current four
+  - `Tasks/Backlog/tile-advanced-elements.md` - Force zones, special bricks, and advanced tile behaviors
+  - `Tasks/Backlog/ui-gaps.md` - Launch indicator + level complete breakdown
 
 ### SOP/
 Best practices and workflows for development.
 - **`SOP/godot-workflow.md`** - Working with Godot scenes, nodes, signals, and **CRITICAL: Save System Compatibility** section for handling save data migrations.
 
-## Current Game State (v0.3.0+)
+## Current Game State (2026-01-29 15:27 EST)
 
 ### Core Features ✅ COMPLETE
 - **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 9 brick types, collision detection, score tracking
@@ -39,16 +44,17 @@ Best practices and workflows for development.
 - **8 Tracked Stats**: Bricks broken, power-ups collected, levels completed, playtime, highest combo, highest score, games played, perfect clears
 - **12 Achievements**: Ranging from "First Blood" (1 brick) to "Champion" (all 10 levels) with progress tracking
 - **Stats Screen**: Full statistics display with achievement list and progress bars
+- **Note**: `total_playtime` and `total_games_played` are displayed but not currently incremented in gameplay code.
 
 ### Settings System ✅ COMPLETE
-- **Gameplay Settings**:
+- **Gameplay Settings (6)**:
   - Screen shake intensity (Off/Low/Medium/High)
   - Particle effects toggle
   - Ball trail toggle
   - Paddle sensitivity (0.5x - 2.0x)
-- **Audio Settings**:
   - Music volume (-40dB to 0dB)
   - SFX volume (-40dB to 0dB)
+- **Difficulty** is selected in the main menu and persisted in SaveManager.
 - **All settings persist** via SaveManager with automatic migration
 
 ### Score Multipliers ✅ COMPLETE
@@ -68,7 +74,8 @@ Best practices and workflows for development.
 ## Tech Stack
 - **Engine**: Godot 4.6
 - **Language**: GDScript
-- **Main Scene**: `res://scenes/main/main.tscn`
+- **Run Main Scene**: `res://scenes/ui/main_menu.tscn`
+- **Gameplay Scene**: `res://scenes/main/main.tscn`
 - **Autoloads**: PowerUpManager, DifficultyManager, SaveManager, LevelLoader, MenuController
 
 ## Autoload Singletons (Global Systems)
@@ -82,7 +89,7 @@ These are always accessible and control key game systems:
 ## Quick Start for New Developers
 1. **Read** `System/architecture.md` - Complete system overview with all features documented
 2. **Check** `SOP/godot-workflow.md` - Development workflows and **save migration best practices**
-3. **Explore** `Tasks/future-features.md` - See what's planned for future development
+3. **Explore** `Tasks/Backlog/future-features.md` - See what's planned for future development
 4. **Note**: Save system has automatic migration - see SOP for how to add new fields safely
 
 ## Development Roadmap
@@ -98,16 +105,16 @@ These are always accessible and control key game systems:
 - Save system with JSON persistence
 - Statistics tracking (8 stats)
 - Achievement system (12 achievements)
-- Settings system (7 customizable options)
+- Settings system (6 UI controls + difficulty persistence)
 - Score multipliers (Difficulty, Combo, Streak, Perfect Clear)
 
 ### 📅 Phase 7: Audio System (FUTURE)
 - Music tracks
 - Sound effects (brick break, power-up, paddle hit, etc.)
-- Audio already wired in settings (volume controls ready)
+- Audio buses and assets not yet implemented
 
 ### 📅 Phase 8: Advanced Features (FUTURE)
-See `Tasks/future-features.md` for detailed plans:
+See `Tasks/Backlog/future-features.md` for detailed plans:
 - Game Modes: Time Attack, Survival, Iron Ball, One Life
 - QoL: Enhanced level select with star ratings, quick actions, skip options
 - Advanced Gameplay: Ball speed zones, brick chains, paddle abilities
@@ -147,9 +154,9 @@ zepball/
 │   ├── System/
 │   │   ├── architecture.md    # Complete system architecture ⭐ START HERE
 │   │   └── tech-stack.md      # Technical configuration
-│   ├── Tasks/                 # Feature PRDs
-│   │   ├── future-features.md # Future development plans
-│   │   └── ... (other tasks)
+│   ├── Tasks/
+│   │   ├── Completed/         # Implemented feature plans
+│   │   └── Backlog/           # Future work
 │   └── SOP/
 │       └── godot-workflow.md  # Development workflows + save migration ⚠️ IMPORTANT
 ├── project.godot              # Project config with autoloads
@@ -197,17 +204,21 @@ This affects: screen shake, particles, trail, paddle sensitivity.
 4. **Scene Transitions** (`brick.gd:190`) - Check `is_inside_tree()` before await
 5. **Physics Callbacks** (`main.gd:276`) - Use `call_deferred()` for spawns
 
+## Doc Status Summary
+- **System Docs**: `System/architecture.md`, `System/tech-stack.md` (current)
+- **Completed Tasks**: Implemented features documented in `Tasks/Completed/`
+- **Backlog**: Open items tracked in `Tasks/Backlog/`
+- **SOP**: `SOP/godot-workflow.md` for workflows and save migration
+
 ## Getting Help
 - **Architecture Questions**: See `System/architecture.md`
 - **Development Workflow**: See `SOP/godot-workflow.md`
-- **Future Features**: See `Tasks/future-features.md`
+- **Future Features**: See `Tasks/Backlog/future-features.md`
 - **Godot Help**: https://docs.godotengine.org/en/stable/
 
 ---
 
-**Last Updated**: 2026-01-29 (Settings Menu, Score Multipliers, Documentation Update)
-**Game Version**: v0.3.0+
-**Godot Version**: 4.6
+**Last Updated**: 2026-01-29 15:27 EST (Docs refresh and tasks reorg)
 **Total Levels**: 10
 **Total Achievements**: 12
 **Documentation Status**: ✅ Up-to-date with all implemented features

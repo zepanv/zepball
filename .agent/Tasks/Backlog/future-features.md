@@ -61,25 +61,23 @@ These are features that have been designed but not yet implemented. All features
 
 ## Quality of Life Improvements
 
-### Settings Menu
-- **Description**: Customizable game settings
+### Settings Enhancements
+- **Description**: Add advanced options beyond the current settings screen
 - **Features**:
   - **Gameplay**:
-    - Screen shake intensity (Off, Low, Medium, High)
-    - Particle effects (On/Off)
-    - Ball trail (On/Off)
     - Combo flash intensity
+    - Level intro duration
+    - Skip level intro setting
   - **Controls**:
-    - Paddle sensitivity slider
     - Key rebinding
   - **Display**:
     - Show FPS toggle
-    - Level intro duration
-  - Save all settings in SaveManager
+  - **UX**:
+    - Apply settings without reloading gameplay scene
 - **Implementation**:
-  - Create settings.tscn scene
-  - Add settings dictionary to SaveManager
-  - Apply settings on game load
+  - Extend settings UI and SaveManager schema
+  - Apply new settings in HUD and gameplay scripts
+  - Add keybind editor and input map persistence
 
 ### Enhanced Level Select
 - **Description**: Better level browsing experience
@@ -138,25 +136,22 @@ These are features that have been designed but not yet implemented. All features
   - Visual effects for zones
 
 ### Brick Chains
-- **Description**: Chain reactions for strategic gameplay
+- **Description**: Connected bricks that break in sequence
 - **Features**:
-  - Breaking a brick can trigger nearby bricks of same type
-  - Chain breaks award bonus points (50 per chained brick)
-  - Maximum chain distance: 2 bricks away
-  - Visual effect showing chain propagation
-  - Encourages strategic aiming
+  - Chain reaction effect
+  - Bonus points for chain length
+  - Special brick type to trigger
 - **Implementation**:
-  - Add chain detection in brick.gd
-  - Recursive chain breaking
-  - Chain visual effects (lightning between bricks)
-  - Chain bonus scoring
+  - Add chain metadata in level JSON
+  - Propagate break events
+  - Add chain score bonus in GameManager
 
 ### Paddle Abilities
-- **Description**: Active abilities for the paddle
+- **Description**: Skill-based paddle actions with cooldowns
 - **Features**:
-  - **Charge Shot**: Hold Space to charge, release for power shot (breaks STRONG bricks in one hit)
-  - **Temporary Shield**: Press S for 2-second shield (ball can't be lost)
-  - **Cooldown System**: Abilities have cooldown timers
+  - **Magnet**: Temporarily stick ball to paddle
+  - **Pulse**: Send shockwave to knock nearby balls upward
+  - **Shield**: Temporary block on right edge to prevent ball loss
   - Visual indicators for charge/cooldown state
 - **Implementation**:
   - Add ability system to paddle.gd
@@ -164,32 +159,19 @@ These are features that have been designed but not yet implemented. All features
   - Visual feedback for charge levels
   - HUD indicators for ability status
 
-### Score Multipliers
-- **Description**: Persistent multipliers for skilled play
-- **Features**:
-  - **No-Miss Streak**: +10% score per 5 consecutive non-miss hits
-  - **Perfect Clear**: 2x score if level completed without missing ball
-  - **Speed Bonus**: +50% score if level completed under par time
-  - Multiplier UI indicator showing current bonuses
-  - Encourages careful, skilled play
-- **Implementation**:
-  - Track hit streaks in GameManager
-  - Calculate multipliers on score addition
-  - Show multiplier breakdown on level complete
-
 ---
 
 ## Implementation Priority
 
 **High Priority:**
-1. Settings Menu (most requested QoL feature)
+1. Settings Enhancements (most requested QoL upgrades)
 2. Enhanced Level Select (better UX)
 3. Time Attack Mode (easiest mode to add)
 
 **Medium Priority:**
 4. Quick Actions (small improvements, big impact)
 5. Survival Mode (good for replayability)
-6. Score Multipliers (enhances core gameplay)
+6. Skip Options (easy wins)
 
 **Low Priority:**
 7. Advanced abilities (complex, can wait)

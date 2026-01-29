@@ -23,7 +23,7 @@ zepball/
 │       └── settings.tscn      # Game settings configuration
 ├── scripts/
 │   ├── main.gd                # Main gameplay controller
-│   ├── game_manager.gd        # Game state and scoring (autoload)
+│   ├── game_manager.gd        # Game state and scoring (scene node in main.tscn)
 │   ├── ball.gd                # Ball physics and collision
 │   ├── paddle.gd              # Paddle movement and input
 │   ├── brick.gd               # Brick types and breaking logic
@@ -65,7 +65,7 @@ These nodes are always loaded and accessible throughout the game:
 Main (Node2D) [scripts/main.gd]
 ├── GameManager (Node) [scripts/game_manager.gd] (group: game_manager)
 ├── Camera2D [scripts/camera_shake.gd]
-├── Background (ColorRect) [runtime: replaced by TextureRect in CanvasLayer]
+├── Background (ColorRect) [editor placeholder; moved to BackgroundLayer at runtime]
 ├── PlayArea (Node2D)
 │   ├── Walls (Node2D)
 │   │   ├── TopWall (StaticBody2D + CollisionShape2D)
@@ -83,6 +83,9 @@ Main (Node2D) [scripts/main.gd]
         ├── PauseMenu (Control) - Enhanced pause screen
         ├── LevelIntro (Control) - Level name fade-in/out
         └── DebugOverlay (PanelContainer) - FPS and ball stats (backtick key)
+
+BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
+└── Background (TextureRect) - Randomized image, full-viewport, 0.85 alpha
 ```
 
 ## Core Systems and Responsibilities
@@ -599,11 +602,11 @@ All 7 settings auto-save and load:
 
 ## Related Docs
 - `System/tech-stack.md` - Engine version, project settings, input configuration
-- `Tasks/future-features.md` - Planned features (Time Attack, Survival mode, etc.)
+- `Tasks/Backlog/future-features.md` - Planned features (Time Attack, Survival mode, etc.)
 - `SOP/godot-workflow.md` - Development workflows, save migration, debugging
-- `Tasks/save-system.md` - Save system implementation details
-- `Tasks/level-system.md` - Level JSON format and design guidelines
-- `Tasks/ui-system.md` - Menu system architecture and flow
+- `Tasks/Completed/save-system.md` - Save system implementation details
+- `Tasks/Completed/level-system.md` - Level JSON format and design guidelines
+- `Tasks/Completed/ui-system.md` - Menu system architecture and flow
 
 ---
 

@@ -3,12 +3,12 @@
 ## Status: ⏳ NOT STARTED
 
 ## Overview
-Add sound effects and background music to improve game feel. Audio is currently not implemented in the codebase.
+Add sound effects and background music to improve game feel. Audio playback and assets are not implemented; settings already include Music/SFX volume sliders and SaveManager fields.
 
 ## Goals
 - Provide immediate feedback for gameplay actions (hits, breaks, power-ups).
 - Add background music for ambience.
-- Provide volume controls (SFX/Music) in UI.
+- Provide volume controls (SFX/Music) in UI (already present in Settings; needs real audio wiring).
 
 ## Proposed Architecture
 - **AudioManager** (autoload) to centralize playback and volume state.
@@ -42,8 +42,8 @@ Add sound effects and background music to improve game feel. Audio is currently 
   - Level complete / game over
   - Combo milestone sounds
 - [ ] Add background music track and loop configuration.
-- [ ] Add UI volume sliders (link to `Tasks/ui-system.md`).
+- [ ] Verify Settings UI volume sliders drive AudioManager/buses correctly (`Tasks/Completed/ui-system.md` already implements sliders).
 
 ## Related Docs
-- `Tasks/ui-system.md`
+- `Tasks/Completed/ui-system.md`
 - `System/architecture.md`

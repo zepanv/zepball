@@ -2,30 +2,29 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Status: Phase 1 Complete! 🎮
+## Current Status: 2026-01-29 15:27 EST (Playable)
 
-The game is now in a **playable state** with core mechanics implemented:
+The game is fully playable with menus, progression, and settings:
 
-- ✅ Paddle movement (keyboard + mouse)
-- ✅ Ball physics with collision detection
-- ✅ Paddle spin mechanics (paddle movement affects ball trajectory)
-- ✅ Brick breaking system with particle effects
-- ✅ Score tracking and lives system
-- ✅ HUD display (score, lives, logo)
-- ✅ Test level (5x8 brick grid)
-- ✅ Level completion detection
-- ✅ Game over on life loss
+- ✅ Main menu, level select, settings, stats, game over, level complete
+- ✅ 10 JSON-driven levels with progression and high scores
+- ✅ Difficulty modes (Easy/Normal/Hard) with multipliers
+- ✅ Power-ups (Expand, Contract, Speed Up, Triple Ball)
+- ✅ Statistics + achievements tracking
+- ✅ Settings (shake, particles, trail, sensitivity, audio levels)
+- ✅ HUD with combo + multiplier display
+
+Audio playback and assets are not implemented yet.
 
 ## Quick Start
 
 ### Requirements
 - **Godot 4.6** (or later)
-- Download from: https://godotengine.org/download
 
 ### Running the Game
 1. Open Godot Engine
 2. Click "Import" and select `zepball/project.godot`
-3. Press **F5** to run the game
+3. Press **F5** to run
 
 ### Controls
 - **W / Up Arrow**: Move paddle up
@@ -33,45 +32,38 @@ The game is now in a **playable state** with core mechanics implemented:
 - **Mouse**: Paddle follows mouse Y position
 - **Space / Left Click**: Launch ball
 - **Escape**: Pause/unpause game
-- **R**: Restart game (no more F5 needed!)
+- **R**: Restart current level
+- **Backtick (`)**: Toggle debug overlay
 
 ### Debug Controls (Debug Build Only)
-- **E/N/H**: Set difficulty to Easy/Normal/Hard (temporary - will move to main menu)
+- **E/N/H**: Set difficulty to Easy/Normal/Hard
 - **C**: Clear all bricks
 - **1**: Spawn triple ball power-up
 
-## How to Play
+## Game Features
 
-1. Move the paddle (right side of screen) to keep the ball in play
-2. Launch the ball with Space or Left Click
-3. Break all the bricks to complete the level
-4. Don't let the ball pass the right edge or you'll lose a life
-5. Game over when you run out of lives (starts with 3)
+### Core Mechanics
+- Paddle spin affects ball trajectory
+- 9 brick types with score values and hit counts
+- Combo and no-miss streak multipliers
+- Perfect clear bonus on level completion
 
-## Game Mechanics
+### Progression
+- 10 levels loaded from JSON
+- Unlocks next level on completion
+- High scores per level
 
-### Unique Feature: Paddle Spin
-- Moving the paddle while hitting the ball adds **vertical spin**
-- Moving up while hitting: ball curves upward
-- Moving down while hitting: ball curves downward
-- Creates dynamic gameplay unlike traditional Breakout
+### Power-Ups
+- Expand, Contract, Speed Up, Triple Ball
+- Timed effects managed by PowerUpManager
+- HUD timers for active effects
 
-### Combo System
-- Consecutive brick hits build a combo multiplier
-- 3+ combo: Bonus points activated (10% extra per hit)
-- Combo resets when you lose a ball
-- Visual feedback shows "COMBO x#!" on screen
-
-### Brick Types
-- **Normal (Teal)**: 1 hit to break, 10 points
-- **Strong (Pink)**: 2 hits to break, 20 points
-- **Unbreakable (Gray)**: Cannot be destroyed (not in test level)
-
-### Difficulty Modes
-- **Easy**: 0.8x ball speed, 0.8x score multiplier
-- **Normal**: 1.0x ball speed, 1.0x score multiplier (default)
-- **Hard**: 1.2x ball speed, 1.5x score multiplier
-- **Note**: Difficulty selection will be available in the main menu (coming soon). Currently locked during gameplay.
+### Settings
+- Screen shake intensity
+- Particle effects toggle
+- Ball trail toggle
+- Paddle sensitivity
+- Music/SFX volume (UI + save, audio not yet wired)
 
 ## Project Structure
 
@@ -80,66 +72,17 @@ zepball/
 ├── .agent/              # Project documentation
 │   ├── README.md       # Documentation index
 │   ├── System/         # Architecture and tech decisions
-│   └── SOP/            # Development procedures
+│   ├── SOP/            # Development procedures
+│   └── Tasks/          # Completed + backlog feature docs
 ├── scenes/
-│   ├── main/           # Main game scene
-│   └── gameplay/       # Paddle, ball, brick scenes
+│   ├── main/           # Gameplay scene
+│   ├── gameplay/       # Paddle, ball, brick, power-up scenes
+│   └── ui/             # Menus and screens
 ├── scripts/            # GDScript files
-├── assets/             # Graphics, audio, fonts (to be added)
-├── levels/             # Level data files (future)
+├── levels/             # Level JSON files (10 levels)
+├── assets/             # Graphics
 └── project.godot       # Godot project configuration
 ```
-
-## Development Phases
-
-### ✅ Phase 1: Core Mechanics (COMPLETE)
-- [x] Project setup and structure
-- [x] Paddle movement (keyboard + mouse)
-- [x] Ball physics and collision
-- [x] Brick system
-- [x] Game state management
-- [x] HUD and scoring
-- [x] Test level
-
-### ✅ Phase 2: Visual Polish (COMPLETE)
-- [x] Random background images from asset pack
-- [x] Screen shake on brick impacts
-- [x] Ball trail effect
-- [x] Paddle sprite graphics (Kenney assets)
-- [x] Brick sprite graphics with variety
-- [x] Particle effects on brick break
-- [x] Power-up visual indicators
-- [x] Improved pause system with UI indicator
-
-### 🚧 Phase 3: Audio & Power-ups (Next)
-- [ ] Sound effects (paddle hit, brick break, wall bounce, ball lost)
-- [ ] Background music
-- [ ] **[NEW] Penetrating Spin**: High spin allows ball to break through multiple bricks
-
-### 📋 Phase 4: Features & Content
-- [x] Power-ups system (Expand, Contract, Speed Up, Triple Ball)
-- [ ] **[NEW] Force Fields / Arrows**: Level elements that push/pull the ball (Gravity zones)
-- [ ] **[NEW] Difficulty Modes**: Easy (slow), Normal, Hard (fast)
-- [ ] **[NEW] Expanded Power-ups**: More types including Warp, Repel, Guns, Big/Small Ball
-- [ ] Multiple levels (5-10 unique layouts)
-- [ ] Level selection menu
-- [ ] Main menu
-- [ ] Game over screen with retry option
-- [ ] High score persistence
-
-### 📦 Phase 5: Distribution
-- [ ] Export templates setup
-- [ ] Mac, Linux, Windows builds
-- [ ] Icon and metadata
-
-## Tech Stack
-
-- **Engine**: Godot 4.6
-- **Language**: GDScript
-- **Target Platforms**: macOS, Linux, Windows
-- **Resolution**: 1600x900 (16:9), scalable with canvas_items stretch mode
-
-See `.agent/System/tech-stack.md` for detailed rationale.
 
 ## Documentation
 
@@ -150,49 +93,13 @@ All technical documentation is in the `.agent/` folder:
 - **[.agent/System/tech-stack.md](.agent/System/tech-stack.md)** - Technology decisions and conventions
 - **[.agent/SOP/godot-workflow.md](.agent/SOP/godot-workflow.md)** - Development workflows and best practices
 
-## Testing Checklist
+## Known Gaps / Backlog
 
-Current working features:
-- [x] Paddle moves with W/S keys
-- [x] Paddle follows mouse Y position
-- [x] Paddle stays within screen bounds
-- [x] Ball attaches to paddle on start
-- [x] Ball launches on Space/Click
-- [x] Ball bounces off walls correctly
-- [x] Ball bounces off paddle
-- [x] Paddle spin affects ball trajectory
-- [x] Ball breaks bricks on collision
-- [x] Bricks show particle effect when broken
-- [x] Score increases when bricks break
-- [x] Lives decrease when ball is lost
-- [x] Ball resets to paddle after life lost
-- [x] Game over when lives reach 0
-- [x] Level completes when all bricks broken
-
-## Recent Updates
-
-- ✅ Added restart handler (R key) - no more F5 needed!
-- ✅ Implemented difficulty system with Easy/Normal/Hard modes
-- ✅ Difficulty indicator displayed on HUD (top-right corner)
-- ✅ Game Over and Level Complete overlays with instructions
-- ✅ Combo system - consecutive hits give bonus points (10% per hit after 3x combo)
-- ✅ Created 5 unique level layouts in JSON format
-- ✅ Improved code quality with named constants and better documentation
-
-## Known Issues / TODOs
-
-- [ ] No audio yet (tracked in `.agent/Tasks/audio-system.md`)
-- [ ] Game over screen needs UI (tracked in `.agent/Tasks/ui-system.md`)
-- [ ] Level complete screen needs UI (tracked in `.agent/Tasks/ui-system.md`)
-- [ ] No main menu (tracked in `.agent/Tasks/ui-system.md`)
-- [ ] Level data files created but not yet loaded (need LevelLoader implementation)
-
-## Contributing
-
-This is a learning/exploration project. The codebase prioritizes:
-- **Clarity** over cleverness
-- **Simplicity** over premature optimization
-- **Working features** over theoretical perfection
+- **Audio system**: `.agent/Tasks/Backlog/audio-system.md`
+- **Additional power-ups**: `.agent/Tasks/Backlog/power-up-expansion.md`
+- **Advanced tile mechanics**: `.agent/Tasks/Backlog/tile-advanced-elements.md`
+- **UI gaps (launch indicator + score breakdown)**: `.agent/Tasks/Backlog/ui-gaps.md`
+- **Future features**: `.agent/Tasks/Backlog/future-features.md`
 
 ## Asset Credits
 - Graphics: Kenney Vleugels (kenney.nl)
@@ -205,8 +112,6 @@ TBD - Personal project, not yet open source
 
 ---
 
-**Version**: 0.2.1 (Difficulty & Combo Update)
-**Last Updated**: 2026-01-29
-**Godot Version**: 4.6+
+**Last Updated**: 2026-01-29 15:27 EST
 
-**Ready to play! Press F5 in Godot!** 🎮✨
+**Ready to play!** 🎮
