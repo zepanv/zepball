@@ -8,7 +8,7 @@ extends CharacterBody2D
 const PADDLE_SPEED = 1000.0  # Pixels per second
 const MIN_Y = 60.0          # Top boundary (respects HUD)
 const MAX_Y = 660.0         # Bottom boundary (respects screen)
-const BASE_HEIGHT = 120.0   # Default paddle height
+const BASE_HEIGHT = 104.0   # Default paddle height (matches sprite)
 
 # Control mode
 @export var use_mouse_control: bool = true
@@ -26,7 +26,7 @@ var actual_velocity_y: float = 0.0
 var game_manager = null
 
 # Power-up effects
-var current_height: float = 120.0
+var current_height: float = 104.0
 
 func _ready():
 	print("Paddle ready at position: ", position)
@@ -35,9 +35,6 @@ func _ready():
 	game_manager = get_tree().get_first_node_in_group("game_manager")
 
 func _physics_process(delta):
-	if game_manager and game_manager.game_state == game_manager.GameState.PAUSED:
-		return
-
 	# Store old position for velocity calculation
 	previous_y = position.y
 
@@ -97,12 +94,12 @@ func set_paddle_height(new_height: float):
 	"""Change paddle height with animation"""
 	current_height = new_height
 
-	# Update visual if it exists
+	# Update visual if it exists (Sprite2D - scale in Y direction)
 	if has_node("Visual"):
 		var visual = $Visual
+		var scale_y = new_height / BASE_HEIGHT
 		var tween = create_tween()
-		tween.tween_property(visual, "size:y", new_height, 0.2)
-		tween.tween_property(visual, "position:y", -new_height / 2, 0.2)
+		tween.tween_property(visual, "scale:y", scale_y, 0.2)
 
 	# Update collision shape
 	if has_node("CollisionShape2D"):

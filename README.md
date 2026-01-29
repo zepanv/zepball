@@ -32,7 +32,7 @@ The game is now in a **playable state** with core mechanics implemented:
 - **S / Down Arrow**: Move paddle down
 - **Mouse**: Paddle follows mouse Y position
 - **Space / Left Click**: Launch ball
-- **Escape**: Pause (WIP)
+- **Escape**: Pause/unpause game
 
 ## How to Play
 
@@ -83,27 +83,33 @@ zepball/
 - [x] HUD and scoring
 - [x] Test level
 
-### 🚧 Phase 2: Polish & Game Feel (Next)
+### ✅ Phase 2: Visual Polish (COMPLETE)
+- [x] Random background images from asset pack
+- [x] Screen shake on brick impacts
+- [x] Ball trail effect
+- [x] Paddle sprite graphics (Kenney assets)
+- [x] Brick sprite graphics with variety
+- [x] Particle effects on brick break
+- [x] Power-up visual indicators
+- [x] Improved pause system with UI indicator
+
+### 🚧 Phase 3: Audio & Power-ups (Next)
 - [ ] Sound effects (paddle hit, brick break, wall bounce, ball lost)
 - [ ] Background music
-- [ ] Improved particle effects
-- [ ] Screen shake on impacts
-- [ ] Ball trail effect
-- [ ] Better brick visuals
 - [ ] **[NEW] Penetrating Spin**: High spin allows ball to break through multiple bricks
 
-### 📋 Phase 3: Features & Content
+### 📋 Phase 4: Features & Content
+- [x] Power-ups system (Expand, Contract, Speed Up, Triple Ball)
 - [ ] **[NEW] Force Fields / Arrows**: Level elements that push/pull the ball (Gravity zones)
 - [ ] **[NEW] Difficulty Modes**: Easy (slow), Normal, Hard (fast)
-- [ ] **[NEW] Expanded Power-ups**: 18 types including Warp, Repel, Guns, Big/Small Ball
-- [ ] Power-ups system implementation
+- [ ] **[NEW] Expanded Power-ups**: More types including Warp, Repel, Guns, Big/Small Ball
 - [ ] Multiple levels (5-10 unique layouts)
 - [ ] Level selection menu
 - [ ] Main menu
 - [ ] Game over screen with retry option
 - [ ] High score persistence
 
-### 📦 Phase 4: Distribution
+### 📦 Phase 5: Distribution
 - [ ] Export templates setup
 - [ ] Mac, Linux, Windows builds
 - [ ] Icon and metadata
@@ -113,7 +119,7 @@ zepball/
 - **Engine**: Godot 4.6
 - **Language**: GDScript
 - **Target Platforms**: macOS, Linux, Windows
-- **Resolution**: 1280x720 (16:9)
+- **Resolution**: 1600x900 (16:9), scalable with canvas_items stretch mode
 
 See `.agent/System/tech-stack.md` for detailed rationale.
 
@@ -148,13 +154,10 @@ Current working features:
 ## Known Issues / TODOs
 
 - [ ] No audio yet
-- [ ] Pause menu not implemented
 - [ ] Game over screen needs UI
 - [ ] Level complete screen needs UI
 - [ ] No way to restart without F5
-- [ ] Ball can get stuck in pure vertical motion (edge case)
 - [ ] No main menu
-- [ ] First shot should go straight or curve if paddle moving.
 
 ## Contributing
 
@@ -163,14 +166,10 @@ This is a learning/exploration project. The codebase prioritizes:
 - **Simplicity** over premature optimization
 - **Working features** over theoretical perfection
 
-## Asset Credits (Placeholder)
-
-Currently using colored rectangles for all visuals.
-
-**Planned asset sources:**
-- Graphics: Kenney.nl, OpenGameArt.org, AI-generated
-- Audio: Freesound.org, Incompetech (Kevin MacLeod)
-- Fonts: Google Fonts
+## Asset Credits
+- Graphics: Kenney Vleugels (kenney.nl)
+- Backgrounds: AI-generated space/abstract backgrounds
+- Audio: TBD (Freesound.org, Incompetech)
 
 ## License
 
@@ -178,8 +177,8 @@ TBD - Personal project, not yet open source
 
 ---
 
-**Version**: 0.1.0 (Playable Prototype)
-**Last Updated**: 2026-01-27
+**Version**: 0.2.0 (Polished Prototype)
+**Last Updated**: 2026-01-29
 **Godot Version**: 4.6+
 
 **Ready to play! Press F5 in Godot!** 🎮✨

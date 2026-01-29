@@ -29,6 +29,9 @@ signal game_over()
 signal state_changed(new_state: GameState)
 
 func _ready():
+	# Set this node to always process, even when paused (so pause toggle works)
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
 	print("GameManager initialized")
 	print("Starting lives: ", lives)
 	print("Starting score: ", score)
@@ -46,6 +49,9 @@ func set_state(new_state: GameState):
 		game_state = new_state
 		state_changed.emit(new_state)
 		print("Game state changed to: ", GameState.keys()[new_state])
+
+		# Use Godot's built-in pause system
+		get_tree().paused = (new_state == GameState.PAUSED)
 
 ## Add points to score
 func add_score(points: int):

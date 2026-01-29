@@ -13,8 +13,12 @@ Main (Node2D)
 ├── GameManager (Node) [Script: game_manager.gd]
 │   └── Manages: score, lives, level state, game flow
 │
-├── Background (ColorRect or Sprite2D)
-│   └── Solid color or tiled texture
+├── BackgroundLayer (CanvasLayer, layer -100)
+│   └── Background (TextureRect)
+│       └── Random texture from asset pack, rendered in screen space
+│
+├── Camera2D [Script: camera_shake.gd]
+│   └── Screen shake effects on brick impacts
 │
 ├── PlayArea (Node2D)
 │   ├── Walls (Node2D)
@@ -31,90 +35,104 @@ Main (Node2D)
 │   └── BrickContainer (Node2D)
 │       └── Brick instances (from brick.tscn)
 │
-└── UI (CanvasLayer) [Instance of hud.tscn]
-    └── Always rendered on top
+└── UI (CanvasLayer, process_mode: ALWAYS) [Script: hud.gd]
+    └── HUD (Control)
+        ├── TopBar (score, lives, logo)
+        ├── PowerUpIndicators (active power-up timers)
+        └── PauseLabel (shown when paused)
 ```
 
 ### Paddle Scene (paddle.tscn)
 
 ```
 Paddle (CharacterBody2D) [Script: paddle.gd]
-├── Sprite (Sprite2D or ColorRect)
-│   └── Visual representation (placeholder: colored rectangle)
+├── Visual (Sprite2D)
+│   └── Texture: paddleBlu.png (Kenney asset), rotated 90°
 │
-├── CollisionShape (CollisionShape2D)
-│   └── Shape: RectangleShape2D
-│
-└── PaddleTrail (Line2D) [Optional visual effect]
+└── CollisionShape (CollisionShape2D)
+    └── Shape: RectangleShape2D (24x104)
 ```
 
 **Key Properties:**
-- Position: Fixed X (~1200), variable Y (40 to 680)
-- Size: ~20px wide, ~120px tall
+- Position: Fixed X (~1200), variable Y (60 to 660)
+- Size: 24px wide, 104px tall (sprite dimensions when rotated)
 - Movement: Vertical only (keyboard + mouse)
 - Input priority: Mouse movement overrides keyboard while the mouse is moving; keyboard controls when mouse is idle
 - Velocity tracking: For spin mechanics
-- Pause behavior: Paddle movement halts while game state is PAUSED
+- Pause behavior: Respects Godot's tree pause system
+- Power-up effects: Scale sprite vertically for expand/contract
 
 ### Ball Scene (ball.tscn)
 
 ```
 Ball (CharacterBody2D) [Script: ball.gd]
-├── Sprite (Sprite2D or ColorRect)
-│   └── Visual: Circle (placeholder: colored square)
+├── Sprite (Sprite2D)
+│   └── Visual: Circle sprite
 │
 ├── CollisionShape (CollisionShape2D)
 │   └── Shape: CircleShape2D (radius ~8px)
 │
-└── Trail (CPUParticles2D or Line2D) [Optional effect]
+└── Trail (CPUParticles2D)
+    └── Particle trail effect when ball is moving
 ```
 
 **Key Properties:**
 - Initial position: Attached to paddle
-- Velocity: Constant magnitude (~400 px/s)
+- Velocity: Constant magnitude (500 px/s base, 650 with speed power-up)
 - Physics: Reflection on collision + spin from paddle
-- State gating: Ball movement stops when game state is PAUSED or not PLAYING
+- Pause behavior: Respects Godot's tree pause system
+- Multiple balls: Triple ball power-up spawns additional ball instances
 
 ### Brick Scene (brick.tscn)
 
 ```
 Brick (StaticBody2D) [Script: brick.gd]
-├── Sprite (Sprite2D or ColorRect)
-│   └── Visual: Rectangle with color based on type
+├── Visual (Sprite2D)
+│   └── Texture: Various brick sprites (Kenney assets)
+│       └── Colors: Blue, Green, Grey, Purple, Red, Yellow
+│       └── Shapes: Diamond, Polygon, Rectangle, Square
+│       └── Variants: Normal and Glossy
 │
 ├── CollisionShape (CollisionShape2D)
 │   └── Shape: RectangleShape2D
 │
 └── BreakParticles (GPUParticles2D)
-    └── Emitted on brick destruction
+    └── Emitted on brick destruction, color-matched to brick
 ```
 
 **Key Properties:**
-- Types: Normal, Strong (2 hits), Unbreakable
+- Types: Normal (1 hit, 10 pts), Strong (2 hits, 20 pts), Unbreakable
 - Size: ~60px wide, ~30px tall
 - Grid layout: 5x8 typical starting configuration
 - Score value: Based on type
 - Level completion: Main tracks a breakable-brick counter and completes when it reaches zero
-- Break flow: On break, collisions are disabled immediately so the ball can’t re-hit while particles play
+- Break flow: On break, collisions are disabled immediately so the ball can't re-hit while particles play
+- Power-ups: 20% chance to spawn power-up on break
 
 ### HUD Scene (hud.tscn)
 
 ```
-HUD (CanvasLayer) [Script: hud.gd]
-└── Container (Control)
+UI (CanvasLayer, process_mode: ALWAYS) [Script: hud.gd]
+└── HUD (Control)
     ├── TopBar (HBoxContainer)
-    │   ├── ScoreLabel (Label)
-    │   │   └── Position: Top-left
-    │   │
-    │   ├── LogoPlaceholder (Label or TextureRect)
-    │   │   └── Position: Top-center
-    │   │
-    │   └── LivesLabel (Label)
-    │       └── Position: Top-right
+    │   ├── ScoreLabel (Label) - Top-left
+    │   ├── LogoLabel (Label) - Top-center
+    │   └── LivesLabel (Label) - Top-right
     │
-    └── GameOverScreen (Panel) [Initially hidden]
+    ├── PowerUpIndicators (VBoxContainer)
+    │   └── Dynamic power-up timers (top-right)
+    │
+    ├── PauseLabel (Label) - Center screen
+    │   └── Shows "PAUSED" when game is paused
+    │
+    └── GameOverScreen (Panel) [WIP]
         └── Shows: Final score, retry/quit options
 ```
+
+**Key Properties:**
+- Process mode: ALWAYS (updates even when game is paused)
+- Power-up indicators: Shows active effects with countdown timers
+- Pause indicator: Automatically shown/hidden based on game state
 
 ## Coordinate System
 
@@ -133,9 +151,10 @@ HUD (CanvasLayer) [Script: hud.gd]
 ```
 
 **Window Scaling:**
+- Viewport size: 1600x900 (design resolution)
 - Stretch mode: canvas_items
-- Aspect: keep (uniform scale with letterboxing)
-- Runtime enforcement: `Main` sets window content scale mode/aspect/size on startup
+- Window: Resizable, starts at 1600x900, no max size constraints
+- Background: Rendered in CanvasLayer to fill screen properly during resize
 
 ### Key Positions
 - **Paddle X**: 1200 (80px from right edge)
@@ -168,10 +187,17 @@ HUD (CanvasLayer) [Script: hud.gd]
        │                 ├─→ Lives > 0 → READY
        │                 └─→ Lives = 0 → GAME_OVER
        │
-       └──→ Pause → PAUSED
+       └──→ Pause (Escape) ⇄ PAUSED
 ```
 
 **Implemented in:** `game_manager.gd`
+
+**Pause System:**
+- Uses Godot's built-in `get_tree().paused` for automatic pause handling
+- GameManager has `PROCESS_MODE_ALWAYS` to toggle pause
+- UI has `PROCESS_MODE_ALWAYS` to show pause indicator and update timers
+- All gameplay nodes automatically pause (ball, paddle, power-ups, etc.)
+- Press ESC to pause/unpause
 
 ## Debug / Testing Controls
 - `C`: Hit all bricks (breaks normals and strongs) for rapid level testing
@@ -242,10 +268,14 @@ func _physics_process(delta):
 - Smoothing: Option to add lerp for smoother mouse tracking
 
 **Constants:**
-- `PADDLE_SPEED = 500` (pixels/second)
-- `PADDLE_WIDTH = 20`
-- `PADDLE_HEIGHT = 120`
-- `MIN_Y = 40`, `MAX_Y = 680`
+- `PADDLE_SPEED = 1000` (pixels/second)
+- `PADDLE_WIDTH = 24`
+- `BASE_HEIGHT = 104` (default paddle height)
+- `MIN_Y = 60`, `MAX_Y = 660`
+
+**Power-up Effects:**
+- Expand: 180px height for 15 seconds
+- Contract: 80px height for 10 seconds
 
 ### Brick Physics (brick.gd)
 
@@ -279,6 +309,13 @@ signal score_changed(new_score)
 signal lives_changed(new_lives)
 signal level_complete
 signal game_over
+signal state_changed(new_state)
+```
+
+**PowerUpManager Signals:**
+```gdscript
+signal effect_applied(type: PowerUpType)
+signal effect_expired(type: PowerUpType)
 ```
 
 **Signal Connections (in _ready()):**
@@ -392,15 +429,15 @@ func load_high_score() -> int:
 Godot's autoload system for global access:
 
 **Project Settings → Autoload:**
-- **GameManager**: `res://scripts/game_manager.gd`
+- **PowerUpManager**: `res://scripts/power_up_manager.gd` - Manages timed power-up effects
 - **SaveManager**: `res://scripts/save_manager.gd` (when implemented)
 - **AudioManager**: `res://scripts/audio_manager.gd` (when implemented)
 
 **Usage:**
 ```gdscript
 # From any script:
-GameManager.add_score(10)
-SaveManager.save_high_score(GameManager.score)
+PowerUpManager.apply_effect(PowerUpManager.PowerUpType.EXPAND, paddle)
+var time_left = PowerUpManager.get_time_remaining(PowerUpManager.PowerUpType.EXPAND)
 ```
 
 ## Performance Considerations
@@ -432,12 +469,13 @@ For particles and power-ups, consider object pools:
 - Smoothing: Optional for camera shake
 
 ### Layering (Z-index)
-- Background: z-index -1
+- Background: CanvasLayer (layer -100)
 - Bricks: z-index 0
 - Ball: z-index 1
 - Paddle: z-index 1
 - Particles: z-index 2
-- UI: CanvasLayer (always on top)
+- Power-ups: z-index 1
+- UI: CanvasLayer (layer 0, always on top)
 
 ### Particle Effects
 
@@ -557,20 +595,23 @@ if DEBUG_MODE:
 - `scenes/ui/hud.tscn` - In-game UI overlay
 
 ### Core Script Files
-- `scripts/game_manager.gd` - Global game state (Autoload)
+- `scripts/game_manager.gd` - Game state management
+- `scripts/power_up_manager.gd` - Timed power-up effects (Autoload)
 - `scripts/paddle.gd` - Paddle movement logic
 - `scripts/ball.gd` - Ball physics and collision
 - `scripts/brick.gd` - Brick destruction logic
+- `scripts/power_up.gd` - Power-up collectible
 - `scripts/hud.gd` - UI update handlers
+- `scripts/camera_shake.gd` - Camera shake effects
+- `scripts/main.gd` - Main scene orchestration
 
 ### To Be Created
 - `scripts/save_manager.gd` - Save/load system
 - `scripts/audio_manager.gd` - Sound and music control
 - `scripts/level_loader.gd` - Load levels from data files
-- `scripts/power_up.gd` - Power-up base class
 
 ---
 
-*Last Updated: 2026-01-27*
-*Architecture Version: 1.0 (Initial Design)*
+*Last Updated: 2026-01-29*
+*Architecture Version: 1.1 (Visual Polish + Power-ups)*
 *See: tech-stack.md for technology decisions*

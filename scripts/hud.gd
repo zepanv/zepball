@@ -8,7 +8,12 @@ extends Control
 @onready var logo_label = $TopBar/LogoLabel
 @onready var powerup_container = $PowerUpIndicators
 
+var pause_label: Label = null
+
 func _ready():
+	# Allow UI to process even when game is paused
+	process_mode = Node.PROCESS_MODE_ALWAYS
+
 	print("HUD ready")
 	# Initial values will be connected via main.gd signals
 
@@ -16,6 +21,28 @@ func _ready():
 	if PowerUpManager:
 		PowerUpManager.effect_applied.connect(_on_effect_applied)
 		PowerUpManager.effect_expired.connect(_on_effect_expired)
+
+	# Create pause indicator
+	pause_label = Label.new()
+	pause_label.text = "PAUSED"
+	pause_label.add_theme_font_size_override("font_size", 48)
+	pause_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	pause_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	pause_label.set_anchors_preset(Control.PRESET_CENTER)
+	pause_label.position = Vector2(-100, -24)
+	pause_label.size = Vector2(200, 48)
+	pause_label.visible = false
+	add_child(pause_label)
+
+	# Connect to game state changes
+	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if game_manager:
+		game_manager.state_changed.connect(_on_game_state_changed)
+
+func _on_game_state_changed(new_state):
+	"""Show/hide pause indicator based on game state"""
+	if pause_label:
+		pause_label.visible = (new_state == 3)  # 3 = PAUSED
 
 func _on_score_changed(new_score: int):
 	"""Update score display"""

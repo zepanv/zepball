@@ -83,6 +83,7 @@ position = Vector2(1170, 360)
 [node name="BrickContainer" type="Node2D" parent="PlayArea" unique_id=1950042473]
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=697711571]
+process_mode = 3
 
 [node name="HUD" type="Control" parent="UI" unique_id=1423036420]
 layout_mode = 3

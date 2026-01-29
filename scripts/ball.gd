@@ -33,9 +33,6 @@ func _ready():
 		print("Warning: Ball couldn't find paddle!")
 
 func _physics_process(delta):
-	if game_manager and game_manager.game_state == game_manager.GameState.PAUSED:
-		return
-
 	if is_attached_to_paddle:
 		# Ball follows paddle until launched
 		if paddle_reference:
@@ -45,9 +42,6 @@ func _physics_process(delta):
 		if Input.is_action_just_pressed("launch_ball") and (not game_manager or game_manager.game_state == game_manager.GameState.READY):
 			launch_ball()
 	else:
-		if game_manager and game_manager.game_state != game_manager.GameState.PLAYING:
-			velocity = Vector2.ZERO
-			return
 		# Ball is in motion
 		var collision = move_and_collide(velocity * delta)
 

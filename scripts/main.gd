@@ -34,6 +34,10 @@ func _ready():
 
 	# Set up background
 	setup_background()
+	var viewport = get_viewport()
+	if viewport:
+		viewport.size_changed.connect(_configure_background_rect)
+	_configure_background_rect()
 
 	# Connect ball signals to game manager
 	if ball:
@@ -66,6 +70,11 @@ func setup_background():
 		print("Warning: Could not load background: ", selected_bg)
 		return
 
+	# Move background to a CanvasLayer so it renders in screen space
+	var bg_layer = CanvasLayer.new()
+	bg_layer.name = "BackgroundLayer"
+	bg_layer.layer = -100
+
 	# Convert ColorRect to TextureRect if needed
 	if background is ColorRect:
 		# Remove ColorRect and create TextureRect
@@ -73,23 +82,41 @@ func setup_background():
 		texture_rect.name = "Background"
 		texture_rect.texture = texture
 		texture_rect.stretch_mode = TextureRect.STRETCH_SCALE
-		texture_rect.size = Vector2(1280, 720)
 		texture_rect.modulate.a = 0.85  # Slight dimming so it doesn't distract
 
-		# Replace in scene tree
-		var parent = background.get_parent()
-		var index = background.get_index()
-		parent.remove_child(background)
-		parent.add_child(texture_rect)
-		parent.move_child(texture_rect, index)
+		# Move to CanvasLayer
+		var old_parent = background.get_parent()
+		old_parent.remove_child(background)
 		background.queue_free()
+
+		add_child(bg_layer)
+		bg_layer.add_child(texture_rect)
 		background = texture_rect
 
 		print("Background loaded: ", selected_bg)
 	elif background is TextureRect:
 		background.texture = texture
+		background.stretch_mode = TextureRect.STRETCH_SCALE
 		background.modulate.a = 0.85
+
+		# Move to CanvasLayer
+		var old_parent = background.get_parent()
+		old_parent.remove_child(background)
+		add_child(bg_layer)
+		bg_layer.add_child(background)
+
 		print("Background loaded: ", selected_bg)
+
+	_configure_background_rect()
+
+func _configure_background_rect():
+	"""Make the background fit the viewport."""
+	if not background or not (background is Control):
+		return
+	# In screen space (CanvasLayer), use viewport size and anchor to fill screen
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	background.position = Vector2.ZERO
+	background.size = get_viewport().get_visible_rect().size
 
 
 func create_test_level():
