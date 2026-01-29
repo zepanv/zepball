@@ -1,0 +1,68 @@
+{
+  "level_id": 5,
+  "name": "The Fortress",
+  "description": "A challenging fortress with strong defenses",
+  "grid": {
+    "rows": 8,
+    "cols": 9,
+    "start_x": 120,
+    "start_y": 80,
+    "brick_size": 48,
+    "spacing": 3
+  },
+  "bricks": [
+    {"row": 0, "col": 0, "type": "STRONG"},
+    {"row": 0, "col": 1, "type": "STRONG"},
+    {"row": 0, "col": 2, "type": "STRONG"},
+    {"row": 0, "col": 3, "type": "STRONG"},
+    {"row": 0, "col": 4, "type": "STRONG"},
+    {"row": 0, "col": 5, "type": "STRONG"},
+    {"row": 0, "col": 6, "type": "STRONG"},
+    {"row": 0, "col": 7, "type": "STRONG"},
+    {"row": 0, "col": 8, "type": "STRONG"},
+
+    {"row": 1, "col": 0, "type": "STRONG"},
+    {"row": 1, "col": 2, "type": "NORMAL"},
+    {"row": 1, "col": 3, "type": "NORMAL"},
+    {"row": 1, "col": 4, "type": "NORMAL"},
+    {"row": 1, "col": 5, "type": "NORMAL"},
+    {"row": 1, "col": 6, "type": "NORMAL"},
+    {"row": 1, "col": 8, "type": "STRONG"},
+
+    {"row": 2, "col": 0, "type": "STRONG"},
+    {"row": 2, "col": 2, "type": "NORMAL"},
+    {"row": 2, "col": 3, "type": "NORMAL"},
+    {"row": 2, "col": 4, "type": "NORMAL"},
+    {"row": 2, "col": 5, "type": "NORMAL"},
+    {"row": 2, "col": 6, "type": "NORMAL"},
+    {"row": 2, "col": 8, "type": "STRONG"},
+
+    {"row": 3, "col": 1, "type": "STRONG"},
+    {"row": 3, "col": 2, "type": "NORMAL"},
+    {"row": 3, "col": 3, "type": "NORMAL"},
+    {"row": 3, "col": 4, "type": "NORMAL"},
+    {"row": 3, "col": 5, "type": "NORMAL"},
+    {"row": 3, "col": 6, "type": "NORMAL"},
+    {"row": 3, "col": 7, "type": "STRONG"},
+
+    {"row": 4, "col": 1, "type": "STRONG"},
+    {"row": 4, "col": 2, "type": "NORMAL"},
+    {"row": 4, "col": 3, "type": "NORMAL"},
+    {"row": 4, "col": 4, "type": "NORMAL"},
+    {"row": 4, "col": 5, "type": "NORMAL"},
+    {"row": 4, "col": 6, "type": "NORMAL"},
+    {"row": 4, "col": 7, "type": "STRONG"},
+
+    {"row": 5, "col": 2, "type": "STRONG"},
+    {"row": 5, "col": 3, "type": "NORMAL"},
+    {"row": 5, "col": 4, "type": "NORMAL"},
+    {"row": 5, "col": 5, "type": "NORMAL"},
+    {"row": 5, "col": 6, "type": "STRONG"},
+
+    {"row": 6, "col": 3, "type": "STRONG"},
+    {"row": 6, "col": 4, "type": "NORMAL"},
+    {"row": 6, "col": 5, "type": "STRONG"},
+
+    {"row": 7, "col": 4, "type": "STRONG"}
+  ]
+}

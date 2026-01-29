@@ -22,7 +22,10 @@ The entry point of the game.
 - **Score**: Current score.
 - **Lives**: Remaining lives.
 - **Power-up Status**: Active timed effects with countdown text.
+- **Difficulty Indicator**: ✅ Shows current difficulty in top-right corner.
+- **Combo Counter**: ✅ Shows combo multiplier (visible at 3+ combo).
 - **Pause Indicator**: "PAUSED" label shown when game state is paused.
+- **Game State Overlays**: ✅ Game Over and Level Complete text overlays.
 
 ### 3. Level Selection (Planned)
 A grid or list of available levels.
@@ -51,19 +54,26 @@ A grid or list of available levels.
 - `scenes/ui/game_over.tscn`
 - `scenes/ui/settings.tscn`
 
-### Scripts (Planned)
-- `scripts/ui/menu_controller.gd`: Handles navigation.
-- `scripts/ui/difficulty_manager.gd`: Stores selected difficulty.
+### Scripts
+- `scripts/ui/menu_controller.gd`: Handles navigation (Planned).
+- `scripts/difficulty_manager.gd`: **✅ IMPLEMENTED** - Autoload singleton managing difficulty settings.
 
 ## Tasks
 - [x] HUD shows power-up timers and pause indicator.
-- [ ] Create Main Menu scene with Difficulty Selector.
-- [ ] Add difficulty selection logic (Easy/Normal/Hard) and persist selection.
-- [ ] Implement pause menu (resume/restart/main menu) or expand pause overlay.
-- [ ] Implement Game Over / Level Complete screens.
+- [x] **Add difficulty selection logic (Easy/Normal/Hard)** - DifficultyManager singleton implemented with speed/score multipliers.
+- [x] **Add difficulty indicator to HUD** - Shows current difficulty in top-right corner.
+- [x] **Add combo counter to HUD** - Shows combo multiplier with visual feedback.
+- [x] **Add a restart flow (R key input)** - Players can press R to restart without F5.
+- [x] **Add game over/level complete overlays** - Simple text overlays with instructions.
+- [ ] **Enhanced pause screen** - Add control hints and instructions instead of just "PAUSED".
+- [ ] **FPS/Debug overlay** - Toggleable overlay showing FPS, ball velocity, active balls count.
+- [ ] **Ball launch direction indicator** - Visual arrow showing launch direction when ball attached.
+- [ ] **Level name display** - Show level name/description when level starts (fade in/out).
+- [ ] Create Main Menu scene with Difficulty Selector UI.
+- [ ] Persist difficulty selection across sessions.
+- [ ] Upgrade Game Over / Level Complete to full scenes (vs simple overlays).
 - [ ] Implement scene management for UI/gameplay transitions.
 - [ ] Create Level Selection screen.
-- [ ] Add a restart flow (Retry button or input) so players don't need to press F5.
 - [ ] Add audio volume controls (SFX/Music) once audio system exists.
 
 ## Phase 4 Detailed Plan (UI and Game Flow)
@@ -78,8 +88,14 @@ A grid or list of available levels.
 
 ### 2. Main Menu
 - Title, Play, Difficulty selector (Easy/Normal/Hard), Options, Quit.
-- Difficulty choice should write to a shared setting node (e.g., `DifficultyManager` singleton).
-- Play should transition to the gameplay scene and set state to `READY`.
+- **✅ BACKEND READY**: `DifficultyManager` singleton implemented with three levels:
+  - Easy: 0.8x speed, 0.8x score
+  - Normal: 1.0x speed, 1.0x score
+  - Hard: 1.2x speed, 1.5x score
+- **✅ DIFFICULTY LOCKING**: Difficulty is locked during gameplay, only changeable in main menu.
+- **DEBUG CONTROLS**: E/N/H keys toggle difficulty (debug build only, temporary until main menu exists).
+- TODO: Create UI scene for difficulty selection.
+- Play should transition to the gameplay scene, lock difficulty, and set state to `READY`.
 
 ### 3. Game Over and Level Complete
 - Game Over:
@@ -91,9 +107,10 @@ A grid or list of available levels.
   - Next Level (placeholder until level system exists)
   - Main Menu
 
-### 4. Restart Flow (No F5)
-- Add retry input (e.g., R key) and/or a UI button to restart.
-- Implement in `MenuController` or in `main.gd` (but keep flow consistent).
+### 4. Restart Flow (No F5) ✅ IMPLEMENTED
+- **✅ DONE**: R key input action added to restart game (`main.gd:221`).
+- **✅ DONE**: `restart_game` input action registered in `project.godot`.
+- TODO: Add UI button to restart (for game over/level complete screens).
 
 ### 5. Pause Menu (Optional)
 - Replace the simple PAUSED label with a minimal menu:
@@ -112,17 +129,23 @@ A grid or list of available levels.
 - Menu buttons call `MenuController` methods for scene changes.
 
 ## Acceptance Criteria
-- Player can start the game from a main menu.
-- Player can restart without pressing F5.
-- Game over and level complete screens appear at the right time.
-- Difficulty selection affects gameplay variables (ball speed multiplier).
-- Audio sliders change SFX/Music volume once audio exists.
+- [ ] Player can start the game from a main menu.
+- [x] **Player can restart without pressing F5** (R key implemented).
+- [ ] Game over and level complete screens appear at the right time.
+- [x] **Difficulty selection affects gameplay variables** (speed + score multipliers working).
+- [ ] Difficulty persists across sessions.
+- [ ] Audio sliders change SFX/Music volume once audio exists.
+
+## Recent Progress (2026-01-29)
+- ✅ Restart handler implemented (R key) - no F5 needed
+- ✅ DifficultyManager singleton created with speed/score multipliers
+- ✅ Debug controls for difficulty testing (E/N/H keys)
 
 ## Expanded TODOs from README
 - No main menu -> Main Menu scene and routing (see tasks above).
 - Game over screen needs UI -> Game Over screen with retry/main menu.
 - Level complete screen needs UI -> Level Complete screen with next level.
-- No way to restart without F5 -> Add retry button and/or input handler.
+- ~~No way to restart without F5~~ -> ✅ R key restart implemented.
 - No audio yet -> See `Tasks/audio-system.md`.
 
 ## Related Docs

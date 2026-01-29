@@ -1,0 +1,44 @@
+{
+  "level_id": 3,
+  "name": "Checkered Challenge",
+  "description": "A checkerboard pattern with gaps",
+  "grid": {
+    "rows": 6,
+    "cols": 8,
+    "start_x": 150,
+    "start_y": 120,
+    "brick_size": 48,
+    "spacing": 3
+  },
+  "bricks": [
+    {"row": 0, "col": 0, "type": "NORMAL"},
+    {"row": 0, "col": 2, "type": "NORMAL"},
+    {"row": 0, "col": 4, "type": "NORMAL"},
+    {"row": 0, "col": 6, "type": "NORMAL"},
+
+    {"row": 1, "col": 1, "type": "NORMAL"},
+    {"row": 1, "col": 3, "type": "NORMAL"},
+    {"row": 1, "col": 5, "type": "NORMAL"},
+    {"row": 1, "col": 7, "type": "NORMAL"},
+
+    {"row": 2, "col": 0, "type": "STRONG"},
+    {"row": 2, "col": 2, "type": "STRONG"},
+    {"row": 2, "col": 4, "type": "STRONG"},
+    {"row": 2, "col": 6, "type": "STRONG"},
+
+    {"row": 3, "col": 1, "type": "STRONG"},
+    {"row": 3, "col": 3, "type": "STRONG"},
+    {"row": 3, "col": 5, "type": "STRONG"},
+    {"row": 3, "col": 7, "type": "STRONG"},
+
+    {"row": 4, "col": 0, "type": "NORMAL"},
+    {"row": 4, "col": 2, "type": "NORMAL"},
+    {"row": 4, "col": 4, "type": "NORMAL"},
+    {"row": 4, "col": 6, "type": "NORMAL"},
+
+    {"row": 5, "col": 1, "type": "NORMAL"},
+    {"row": 5, "col": 3, "type": "NORMAL"},
+    {"row": 5, "col": 5, "type": "NORMAL"},
+    {"row": 5, "col": 7, "type": "NORMAL"}
+  ]
+}

@@ -9,7 +9,7 @@ Zep Ball is a 2D breakout/arkanoid-style game built with Godot. The paddle sits 
 - `scenes/gameplay/`: Reusable gameplay scenes (`ball.tscn`, `paddle.tscn`, `brick.tscn`, `power_up.tscn`).
 - `scripts/`: All gameplay logic in GDScript.
 - `assets/graphics/`: Sprites, backgrounds, and particle textures.
-- `levels/`: Reserved for future level data (currently empty).
+- `levels/`: Level data files in JSON format (5 starter levels created). ✅ NEW
 
 ## Runtime Scene Graph (main.tscn)
 ```
@@ -44,12 +44,18 @@ Main (Node2D) [scripts/main.gd]
 - Handles ball loss logic (life loss only if last ball in play).
 - Spawns and manages power-ups and multi-ball behavior.
 - Loads a random background image at startup.
+- Handles restart input (R key) via `restart_game` action. ✅ NEW
+- Debug controls for difficulty selection (E/N/H keys). ✅ NEW
+- Uses named constants for layout values (BRICK_SIZE, BRICK_SPACING, etc.). ✅ NEW
 
 ### Game State (`scripts/game_manager.gd`)
-- Owns score, lives, and current level counters.
+- Owns score, lives, current level counters, and combo counter. ✅ NEW
+- Score is multiplied by difficulty when added. ✅ NEW
+- Combo system tracks consecutive brick hits and adds 10% bonus per hit after 3x combo. ✅ NEW
+- Combo resets on life loss. ✅ NEW
 - Defines state machine: `MAIN_MENU`, `READY`, `PLAYING`, `PAUSED`, `LEVEL_COMPLETE`, `GAME_OVER`.
 - Uses Godot pause system (`get_tree().paused`) when state is `PAUSED`.
-- Emits signals for UI updates and state changes.
+- Emits signals for UI updates and state changes (`combo_changed` added). ✅ NEW
 
 ### Paddle (`scripts/paddle.gd` + `scenes/gameplay/paddle.tscn`)
 - CharacterBody2D with vertical movement on the right side.
@@ -61,6 +67,7 @@ Main (Node2D) [scripts/main.gd]
 
 ### Ball (`scripts/ball.gd` + `scenes/gameplay/ball.tscn`)
 - CharacterBody2D with constant-speed movement.
+- Base speed (500) is multiplied by difficulty on spawn and reset. ✅ NEW
 - Launches from paddle on `launch_ball` action.
 - Collision handling:
   - Paddle: reflect + spin based on paddle velocity.
@@ -92,10 +99,25 @@ Main (Node2D) [scripts/main.gd]
 - Resets paddle size or ball speed when effects expire.
 - `TRIPLE_BALL` is immediate and does not use timers.
 
+### Difficulty Manager (`scripts/difficulty_manager.gd`) ✅ NEW
+- Autoload singleton (`DifficultyManager`) managing game difficulty settings.
+- Three difficulty levels:
+  - **Easy**: 0.8x ball speed, 0.8x score multiplier
+  - **Normal**: 1.0x ball speed, 1.0x score multiplier (default)
+  - **Hard**: 1.2x ball speed, 1.5x score multiplier
+- Difficulty locking system prevents changes during gameplay.
+- Ball speed is automatically adjusted on spawn and reset.
+- Score rewards are multiplied in `GameManager.add_score()`.
+- Debug controls (debug build only): E/N/H keys to switch difficulty (temporary until main menu).
+
 ### HUD (`scripts/hud.gd`)
 - Displays score and lives via GameManager signals.
 - Shows active timed power-ups with countdown timers.
-- Shows a pause label when state is `PAUSED`.
+- Shows difficulty indicator in top-left (below top bar) to avoid overlap. ✅ NEW
+- Shows combo counter (visible when 3+ combo). ✅ NEW
+- Shows pause label when state is `PAUSED`.
+- Shows game over overlay when state is `GAME_OVER`. ✅ NEW
+- Shows level complete overlay when state is `LEVEL_COMPLETE`. ✅ NEW
 
 ### Camera Shake (`scripts/camera_shake.gd`)
 - Camera2D script that provides `shake(intensity, duration)`.
@@ -105,6 +127,7 @@ Main (Node2D) [scripts/main.gd]
 - `move_up`: Up Arrow, W
 - `move_down`: Down Arrow, S
 - `launch_ball`: Space, Left Mouse Button
+- `restart_game`: R key ✅ NEW
 - `ui_cancel`: Escape (pause toggle)
 
 ## Gameplay Flow

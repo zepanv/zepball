@@ -68,4 +68,9 @@ Power-ups add variety and momentum to the core gameplay loop. They spawn when br
 - [x] Implement collision logic in `PowerUp` (Area2D `body_entered`).
 - [x] Implement effect logic in `Main` / `Paddle` / `Ball`.
 - [x] Add HUD indicators for active timed effects.
-- [ ] Expand power-up catalog beyond current 4 types.
+- [ ] **Expand power-up catalog** - Add next batch of power-ups:
+  - [ ] **Slow Down**: Decreases ball speed (opposite of Speed Up).
+  - [ ] **Extra Life**: Instant +1 life effect.
+  - [ ] **Big Ball**: Increases ball size/scale.
+  - [ ] **Small Ball**: Decreases ball size/scale.
+- [ ] Add remaining planned power-ups (Grab, Brick Through, Warp, etc.).

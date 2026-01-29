@@ -16,14 +16,17 @@
 - `move_up`: Up Arrow, W.
 - `move_down`: Down Arrow, S.
 - `launch_ball`: Space, Left Mouse Button.
+- `restart_game`: R key. ✅ NEW
 - `ui_cancel`: Escape.
 
 ## Autoloads
 - `PowerUpManager`: `res://scripts/power_up_manager.gd`.
+- `DifficultyManager`: `res://scripts/difficulty_manager.gd`. ✅ NEW
 
 ## Asset Formats in Use
 - **Sprites and textures**: PNG, JPG.
 - **Vector icon**: SVG (`icon.svg`).
+- **Level data**: JSON (5 files in `levels/` folder). ✅ NEW
 
 ## Not Implemented Yet
 - Persistent save data or database.

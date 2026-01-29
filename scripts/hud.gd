@@ -9,6 +9,10 @@ extends Control
 @onready var powerup_container = $PowerUpIndicators
 
 var pause_label: Label = null
+var difficulty_label: Label = null
+var game_over_label: Label = null
+var level_complete_label: Label = null
+var combo_label: Label = null
 
 func _ready():
 	# Allow UI to process even when game is paused
@@ -34,15 +38,93 @@ func _ready():
 	pause_label.visible = false
 	add_child(pause_label)
 
+	# Create difficulty indicator (positioned below score/lives to avoid overlap)
+	difficulty_label = Label.new()
+	difficulty_label.text = "DIFFICULTY: " + DifficultyManager.get_difficulty_name()
+	difficulty_label.add_theme_font_size_override("font_size", 14)
+	difficulty_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	difficulty_label.position = Vector2(10, 50)  # Below top bar
+	difficulty_label.size = Vector2(200, 25)
+	difficulty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	add_child(difficulty_label)
+
+	# Connect to difficulty changes
+	if DifficultyManager:
+		DifficultyManager.difficulty_changed.connect(_on_difficulty_changed)
+
+	# Create game over overlay
+	game_over_label = Label.new()
+	game_over_label.text = "GAME OVER\n\nPress R to Restart"
+	game_over_label.add_theme_font_size_override("font_size", 64)
+	game_over_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	game_over_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	game_over_label.set_anchors_preset(Control.PRESET_CENTER)
+	game_over_label.position = Vector2(-300, -100)
+	game_over_label.size = Vector2(600, 200)
+	game_over_label.modulate = Color(1.0, 0.3, 0.3)  # Red tint
+	game_over_label.visible = false
+	add_child(game_over_label)
+
+	# Create level complete overlay
+	level_complete_label = Label.new()
+	level_complete_label.text = "LEVEL COMPLETE!\n\nPress R to Continue"
+	level_complete_label.add_theme_font_size_override("font_size", 64)
+	level_complete_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	level_complete_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	level_complete_label.set_anchors_preset(Control.PRESET_CENTER)
+	level_complete_label.position = Vector2(-400, -100)
+	level_complete_label.size = Vector2(800, 200)
+	level_complete_label.modulate = Color(0.3, 1.0, 0.3)  # Green tint
+	level_complete_label.visible = false
+	add_child(level_complete_label)
+
+	# Create combo counter
+	combo_label = Label.new()
+	combo_label.text = ""  # Hidden until combo starts
+	combo_label.add_theme_font_size_override("font_size", 32)
+	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	combo_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	combo_label.set_anchors_preset(Control.PRESET_CENTER)
+	combo_label.position = Vector2(-150, 150)  # Below center
+	combo_label.size = Vector2(300, 50)
+	combo_label.modulate = Color(1.0, 0.8, 0.2)  # Gold color
+	combo_label.visible = false
+	add_child(combo_label)
+
 	# Connect to game state changes
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
 	if game_manager:
 		game_manager.state_changed.connect(_on_game_state_changed)
+		game_manager.combo_changed.connect(_on_combo_changed)
 
 func _on_game_state_changed(new_state):
-	"""Show/hide pause indicator based on game state"""
+	"""Show/hide overlays based on game state"""
 	if pause_label:
 		pause_label.visible = (new_state == 3)  # 3 = PAUSED
+	if game_over_label:
+		game_over_label.visible = (new_state == 5)  # 5 = GAME_OVER
+	if level_complete_label:
+		level_complete_label.visible = (new_state == 4)  # 4 = LEVEL_COMPLETE
+
+func _on_difficulty_changed(new_difficulty):
+	"""Update difficulty display when changed"""
+	if difficulty_label:
+		difficulty_label.text = "DIFFICULTY: " + DifficultyManager.get_difficulty_name()
+
+func _on_combo_changed(new_combo: int):
+	"""Update combo display"""
+	if not combo_label:
+		return
+
+	if new_combo >= 3:
+		combo_label.visible = true
+		combo_label.text = "COMBO x" + str(new_combo) + "!"
+		# Scale effect for visual feedback
+		combo_label.scale = Vector2(1.2, 1.2)
+		var tween = create_tween()
+		tween.tween_property(combo_label, "scale", Vector2(1.0, 1.0), 0.2)
+	else:
+		combo_label.visible = false
 
 func _on_score_changed(new_score: int):
 	"""Update score display"""

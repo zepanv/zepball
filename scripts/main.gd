@@ -1,6 +1,14 @@
 extends Node2D
 
-## Main scene controller - Connects signals between systems
+## Main scene controller - Orchestrates gameplay systems
+##
+## Responsibilities:
+## - Connect signals between gameplay systems (ball, bricks, power-ups, game manager)
+## - Manage level layout and brick spawning
+## - Handle ball loss logic (life deduction when last ball is lost)
+## - Coordinate power-up spawning and collection
+## - Track breakable brick count for level completion
+## - Background selection and setup
 
 @onready var game_manager = $GameManager
 @onready var ball = $PlayArea/Ball
@@ -14,6 +22,16 @@ extends Node2D
 # Brick scene to instantiate
 const BRICK_SCENE = preload("res://scenes/gameplay/brick.tscn")
 const BASE_RESOLUTION = Vector2i(1280, 720)
+
+# Level layout constants
+const BRICK_SIZE = 48         # Square brick size in pixels
+const BRICK_SPACING = 3       # Gap between bricks
+const LEVEL_START_X = 150     # Default X position for level start
+const LEVEL_START_Y = 150     # Default Y position for level start
+
+# Boundary constants
+const RIGHT_BOUNDARY = 1300   # Past paddle (ball lost)
+const POWER_UP_MISS_X = 1300  # X position where power-ups despawn
 
 # Available backgrounds
 const BACKGROUNDS = [
@@ -122,10 +140,6 @@ func _configure_background_rect():
 
 func create_test_level():
 	"""Create a grid of square bricks for testing"""
-	var brick_size = 48  # Square bricks (32px texture * 1.5 scale)
-	var spacing = 3      # Gap between bricks
-	var start_x = 150
-	var start_y = 150
 	var rows = 5
 	var cols = 8
 
@@ -133,8 +147,8 @@ func create_test_level():
 		for col in range(cols):
 			var brick = BRICK_SCENE.instantiate()
 			brick.position = Vector2(
-				start_x + col * (brick_size + spacing),
-				start_y + row * (brick_size + spacing)
+				LEVEL_START_X + col * (BRICK_SIZE + BRICK_SPACING),
+				LEVEL_START_Y + row * (BRICK_SIZE + BRICK_SPACING)
 			)
 
 			# Vary brick types by row
@@ -217,8 +231,26 @@ func _on_level_complete():
 		ball.reset_ball()
 
 func _input(event):
-	"""Debug/testing inputs"""
+	"""Handle input for restart and debug/testing"""
+	# Restart with input action
+	if Input.is_action_just_pressed("restart_game"):
+		print("Restarting game...")
+		get_tree().reload_current_scene()
+
 	if event is InputEventKey and event.pressed and not event.echo:
+		# DEBUG ONLY: Difficulty selection (remove once main menu exists)
+		# TODO: Move difficulty selection to main menu
+		if OS.is_debug_build():
+			if event.keycode == KEY_E:
+				DifficultyManager.unlock_difficulty()
+				DifficultyManager.set_difficulty(DifficultyManager.Difficulty.EASY)
+			elif event.keycode == KEY_N:
+				DifficultyManager.unlock_difficulty()
+				DifficultyManager.set_difficulty(DifficultyManager.Difficulty.NORMAL)
+			elif event.keycode == KEY_H:
+				DifficultyManager.unlock_difficulty()
+				DifficultyManager.set_difficulty(DifficultyManager.Difficulty.HARD)
+
 		if event.keycode == KEY_C:
 			_hit_all_bricks()
 		elif event.keycode == KEY_1:

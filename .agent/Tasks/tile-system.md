@@ -10,6 +10,7 @@ This document covers the current brick system and the future level/force-field d
 - **Strong Brick**: 2 hits, 20 points.
 - **Unbreakable Block**: Never breaks.
 - **Themed Variants**: Gold/Red/Blue/Green/Purple/Orange (1-2 hits, 15-50 points).
+- **Particle Effects**: Break particles currently use generic colors (TODO: match brick colors).
 
 ## 2. Force Fields / Arrows (Planned)
 A key feature from z-ball, "Arrows" are zones that apply a strong force to the ball, often making gameplay difficult ("anxiety inducing").
@@ -33,6 +34,10 @@ A key feature from z-ball, "Arrows" are zones that apply a strong force to the b
   - If ball has "Penetrating Spin" (high RPM), it destroys the brick *without* bouncing, effectively passing through it.
   - This requires the Ball script to check its spin vs brick resistance before calculating collision physics.
 
+- **Special Bricks (Planned)**:
+  - **Bomb Tile**: When hit, also damages or destroys surrounding tiles (adjacent 4 or 8 neighbors).
+  - **Design Note**: Special brick behavior should be data-driven so levels can place them intentionally.
+
 ## 4. Level Layout (Current vs Planned)
 
 **Current**:
@@ -40,16 +45,20 @@ A key feature from z-ball, "Arrows" are zones that apply a strong force to the b
 - No external level data format yet.
 
 **Planned**:
-- **Grid System**: 1280x720 play area.
 - **Data Format**: JSON or Custom Resource defining:
   - Brick positions and types.
   - Force Field positions and directions.
   - Power-up drop tables.
 
 ## Tasks
+- [ ] **Match particle colors to brick colors** - Make break particles use brick's color:
+  - [ ] Pass brick color/modulate to particle system on break.
+  - [ ] Update particle color in CPUParticles2D based on brick type.
+  - [ ] Improve visual feedback and polish.
 - [ ] Implement `ForceArrow` scene (Area2D).
 - [ ] Add physics override logic to `Ball.gd` to handle force zones.
 - [ ] Implement Penetrating Spin logic in `Ball.gd` and `Brick.gd`.
+- [ ] Implement special brick behaviors (e.g., Bomb tile splash damage).
 - [ ] Define a future level editor workflow (tooling TBD).
 
 ## Level System

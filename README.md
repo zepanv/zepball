@@ -33,6 +33,12 @@ The game is now in a **playable state** with core mechanics implemented:
 - **Mouse**: Paddle follows mouse Y position
 - **Space / Left Click**: Launch ball
 - **Escape**: Pause/unpause game
+- **R**: Restart game (no more F5 needed!)
+
+### Debug Controls (Debug Build Only)
+- **E/N/H**: Set difficulty to Easy/Normal/Hard (temporary - will move to main menu)
+- **C**: Clear all bricks
+- **1**: Spawn triple ball power-up
 
 ## How to Play
 
@@ -50,10 +56,22 @@ The game is now in a **playable state** with core mechanics implemented:
 - Moving down while hitting: ball curves downward
 - Creates dynamic gameplay unlike traditional Breakout
 
+### Combo System
+- Consecutive brick hits build a combo multiplier
+- 3+ combo: Bonus points activated (10% extra per hit)
+- Combo resets when you lose a ball
+- Visual feedback shows "COMBO x#!" on screen
+
 ### Brick Types
 - **Normal (Teal)**: 1 hit to break, 10 points
 - **Strong (Pink)**: 2 hits to break, 20 points
 - **Unbreakable (Gray)**: Cannot be destroyed (not in test level)
+
+### Difficulty Modes
+- **Easy**: 0.8x ball speed, 0.8x score multiplier
+- **Normal**: 1.0x ball speed, 1.0x score multiplier (default)
+- **Hard**: 1.2x ball speed, 1.5x score multiplier
+- **Note**: Difficulty selection will be available in the main menu (coming soon). Currently locked during gameplay.
 
 ## Project Structure
 
@@ -151,13 +169,23 @@ Current working features:
 - [x] Game over when lives reach 0
 - [x] Level completes when all bricks broken
 
+## Recent Updates
+
+- ✅ Added restart handler (R key) - no more F5 needed!
+- ✅ Implemented difficulty system with Easy/Normal/Hard modes
+- ✅ Difficulty indicator displayed on HUD (top-right corner)
+- ✅ Game Over and Level Complete overlays with instructions
+- ✅ Combo system - consecutive hits give bonus points (10% per hit after 3x combo)
+- ✅ Created 5 unique level layouts in JSON format
+- ✅ Improved code quality with named constants and better documentation
+
 ## Known Issues / TODOs
 
 - [ ] No audio yet (tracked in `.agent/Tasks/audio-system.md`)
 - [ ] Game over screen needs UI (tracked in `.agent/Tasks/ui-system.md`)
 - [ ] Level complete screen needs UI (tracked in `.agent/Tasks/ui-system.md`)
-- [ ] No way to restart without F5 (tracked in `.agent/Tasks/ui-system.md`)
 - [ ] No main menu (tracked in `.agent/Tasks/ui-system.md`)
+- [ ] Level data files created but not yet loaded (need LevelLoader implementation)
 
 ## Contributing
 
@@ -177,7 +205,7 @@ TBD - Personal project, not yet open source
 
 ---
 
-**Version**: 0.2.0 (Polished Prototype)
+**Version**: 0.2.1 (Difficulty & Combo Update)
 **Last Updated**: 2026-01-29
 **Godot Version**: 4.6+
 

@@ -28,6 +28,9 @@ func _ready():
 	# Add to ball group for collision detection
 	add_to_group("ball")
 
+	# Apply difficulty multiplier to base speed
+	current_speed = BASE_current_speed * DifficultyManager.get_speed_multiplier()
+
 	# Find paddle in parent scene
 	paddle_reference = get_tree().get_first_node_in_group("paddle")
 	game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -230,12 +233,12 @@ func apply_speed_up_effect():
 	print("Ball speed increased to 650!")
 
 func reset_ball_speed():
-	"""Reset ball speed to normal"""
-	current_speed = BASE_current_speed
+	"""Reset ball speed to normal (with difficulty multiplier applied)"""
+	current_speed = BASE_current_speed * DifficultyManager.get_speed_multiplier()
 	# Update velocity magnitude immediately if ball is moving
 	if not is_attached_to_paddle:
 		velocity = velocity.normalized() * current_speed
-	print("Ball speed reset to 500")
+	print("Ball speed reset to ", current_speed)
 
 func enable_collision_immunity(duration: float = 0.5):
 	"""No longer needed - ball-to-ball collisions disabled at physics layer"""

@@ -1,0 +1,36 @@
+{
+  "level_id": 1,
+  "name": "First Contact",
+  "description": "Learn the basics - break all the bricks!",
+  "grid": {
+    "rows": 4,
+    "cols": 6,
+    "start_x": 200,
+    "start_y": 200,
+    "brick_size": 48,
+    "spacing": 3
+  },
+  "bricks": [
+    {"row": 0, "col": 0, "type": "NORMAL"},
+    {"row": 0, "col": 1, "type": "NORMAL"},
+    {"row": 0, "col": 2, "type": "NORMAL"},
+    {"row": 0, "col": 3, "type": "NORMAL"},
+    {"row": 0, "col": 4, "type": "NORMAL"},
+    {"row": 0, "col": 5, "type": "NORMAL"},
+
+    {"row": 1, "col": 0, "type": "NORMAL"},
+    {"row": 1, "col": 1, "type": "NORMAL"},
+    {"row": 1, "col": 2, "type": "NORMAL"},
+    {"row": 1, "col": 3, "type": "NORMAL"},
+    {"row": 1, "col": 4, "type": "NORMAL"},
+    {"row": 1, "col": 5, "type": "NORMAL"},
+
+    {"row": 2, "col": 1, "type": "NORMAL"},
+    {"row": 2, "col": 2, "type": "NORMAL"},
+    {"row": 2, "col": 3, "type": "NORMAL"},
+    {"row": 2, "col": 4, "type": "NORMAL"},
+
+    {"row": 3, "col": 2, "type": "NORMAL"},
+    {"row": 3, "col": 3, "type": "NORMAL"}
+  ]
+}
