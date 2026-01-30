@@ -36,6 +36,16 @@ var set_saved_combo: int = 0
 var set_saved_no_miss: int = 0
 var set_saved_perfect: bool = true
 
+# Score breakdown state (level + set)
+var last_level_breakdown: Dictionary = {}
+var last_level_time_seconds: float = 0.0
+var last_level_score_raw: int = 0
+var last_level_score_final: int = 0
+var set_breakdown: Dictionary = {}
+var set_total_time_seconds: float = 0.0
+var set_score_before_bonus: int = 0
+var set_perfect_bonus: int = 0
+
 # Signals
 signal scene_changed(scene_path: String)
 
@@ -144,6 +154,7 @@ func start_set(set_id: int) -> void:
 	set_saved_combo = 0
 	set_saved_no_miss = 0
 	set_saved_perfect = true
+	_reset_set_breakdown()
 
 	# Start first level in the set
 	if set_level_ids.size() > 0:
@@ -206,6 +217,9 @@ func show_level_complete(final_score: int) -> void:
 	else:
 		current_score = final_score
 
+	# Capture per-level breakdown before leaving gameplay
+	_capture_level_breakdown(game_manager)
+
 	# Save game state for set mode (before scene changes)
 	if current_play_mode == PlayMode.SET and game_manager:
 		set_saved_score = current_score
@@ -264,8 +278,11 @@ func show_set_complete(final_score: int) -> void:
 	"""Show set complete screen with cumulative score and bonuses"""
 	# Check for perfect set clear (3x bonus if all lives intact and no continues used)
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	set_score_before_bonus = final_score
+	set_perfect_bonus = 0
 	if game_manager and game_manager.lives == 3 and game_manager.is_perfect_clear and not game_manager.had_continue:
 		current_score = final_score * 3
+		set_perfect_bonus = current_score - final_score
 	else:
 		current_score = final_score
 
@@ -300,6 +317,102 @@ func get_current_score() -> int:
 func get_was_perfect_clear() -> bool:
 	"""Check if the last completed level was a perfect clear"""
 	return was_perfect_clear
+
+func get_last_level_breakdown() -> Dictionary:
+	"""Return the last completed level's score breakdown"""
+	return last_level_breakdown.duplicate()
+
+func get_last_level_time_seconds() -> float:
+	"""Return the elapsed time for the last completed level"""
+	return last_level_time_seconds
+
+func get_last_level_score_raw() -> int:
+	"""Return the last completed level's raw score before perfect clear"""
+	return last_level_score_raw
+
+func get_last_level_score_final() -> int:
+	"""Return the last completed level's final score after perfect clear"""
+	return last_level_score_final
+
+func get_set_breakdown() -> Dictionary:
+	"""Return the accumulated set breakdown"""
+	return set_breakdown.duplicate()
+
+func get_set_total_time_seconds() -> float:
+	"""Return the total elapsed time across the set"""
+	return set_total_time_seconds
+
+func get_set_score_before_bonus() -> int:
+	"""Return the set score before perfect set bonus"""
+	return set_score_before_bonus
+
+func get_set_perfect_bonus() -> int:
+	"""Return the perfect set bonus amount"""
+	return set_perfect_bonus
+
+func _create_empty_breakdown() -> Dictionary:
+	return {
+		"base_points": 0,
+		"difficulty_bonus": 0,
+		"combo_bonus": 0,
+		"streak_bonus": 0,
+		"double_bonus": 0,
+		"perfect_clear_bonus": 0
+	}
+
+func _sum_breakdown(breakdown: Dictionary) -> int:
+	return int(breakdown.get("base_points", 0)) \
+		+ int(breakdown.get("difficulty_bonus", 0)) \
+		+ int(breakdown.get("combo_bonus", 0)) \
+		+ int(breakdown.get("streak_bonus", 0)) \
+		+ int(breakdown.get("double_bonus", 0))
+
+func _capture_level_breakdown(game_manager: Node) -> void:
+	var breakdown = _create_empty_breakdown()
+	var level_time = 0.0
+	var level_score_raw = 0
+
+	if game_manager:
+		if game_manager.has_method("get_score_breakdown"):
+			breakdown = game_manager.get_score_breakdown()
+		if game_manager.has_method("get_level_time_seconds"):
+			level_time = game_manager.get_level_time_seconds()
+
+	level_score_raw = _sum_breakdown(breakdown)
+
+	var previous_set_score = 0
+	if current_play_mode == PlayMode.SET:
+		previous_set_score = set_saved_score
+
+	var level_score_applied = current_score - previous_set_score
+	var perfect_clear_bonus = max(level_score_applied - level_score_raw, 0)
+
+	last_level_breakdown = breakdown.duplicate()
+	last_level_breakdown["perfect_clear_bonus"] = perfect_clear_bonus
+	last_level_time_seconds = level_time
+	last_level_score_raw = level_score_raw
+	last_level_score_final = level_score_raw + perfect_clear_bonus
+
+	if current_play_mode == PlayMode.SET:
+		_accumulate_set_breakdown(last_level_breakdown, level_time)
+
+func _accumulate_set_breakdown(level_breakdown: Dictionary, level_time: float) -> void:
+	if set_breakdown.is_empty():
+		set_breakdown = _create_empty_breakdown()
+
+	set_breakdown["base_points"] += int(level_breakdown.get("base_points", 0))
+	set_breakdown["difficulty_bonus"] += int(level_breakdown.get("difficulty_bonus", 0))
+	set_breakdown["combo_bonus"] += int(level_breakdown.get("combo_bonus", 0))
+	set_breakdown["streak_bonus"] += int(level_breakdown.get("streak_bonus", 0))
+	set_breakdown["double_bonus"] += int(level_breakdown.get("double_bonus", 0))
+	set_breakdown["perfect_clear_bonus"] += int(level_breakdown.get("perfect_clear_bonus", 0))
+	set_total_time_seconds += level_time
+
+func _reset_set_breakdown() -> void:
+	set_breakdown = _create_empty_breakdown()
+	set_total_time_seconds = 0.0
+	set_score_before_bonus = 0
+	set_perfect_bonus = 0
 
 func is_gameplay_active() -> bool:
 	"""Check if we're currently in a gameplay scene"""

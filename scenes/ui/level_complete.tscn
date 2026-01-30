@@ -27,10 +27,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -250.0
-offset_right = 300.0
-offset_bottom = 250.0
+offset_left = -380.0
+offset_top = -330.0
+offset_right = 380.0
+offset_bottom = 330.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 20
@@ -68,18 +68,105 @@ text = "PERFECT CLEAR! (2x Score Bonus)"
 horizontal_alignment = 1
 visible = false
 
-[node name="UnlockedLabel" type="Label" parent="VBoxContainer"]
+[node name="Spacer2" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="BreakdownContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="BreakdownTitleLabel" type="Label" parent="VBoxContainer/HBoxContainer/BreakdownContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "SCORE BREAKDOWN"
+horizontal_alignment = 1
+
+[node name="BaseScoreLabel" type="Label" parent="VBoxContainer/HBoxContainer/BreakdownContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 20
+text = "Base Score: 0"
+horizontal_alignment = 1
+
+[node name="DifficultyBonusLabel" type="Label" parent="VBoxContainer/HBoxContainer/BreakdownContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 20
+text = "Difficulty Bonus: +0"
+horizontal_alignment = 1
+
+[node name="ComboBonusLabel" type="Label" parent="VBoxContainer/HBoxContainer/BreakdownContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 20
+text = "Combo Bonus: +0"
+horizontal_alignment = 1
+
+[node name="StreakBonusLabel" type="Label" parent="VBoxContainer/HBoxContainer/BreakdownContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 20
+text = "Streak Bonus: +0"
+horizontal_alignment = 1
+
+[node name="DoubleBonusLabel" type="Label" parent="VBoxContainer/HBoxContainer/BreakdownContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 20
+text = "Power-Up Bonus: +0"
+horizontal_alignment = 1
+
+[node name="PerfectBonusLabel" type="Label" parent="VBoxContainer/HBoxContainer/BreakdownContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.2, 1)
+theme_override_font_sizes/font_size = 20
+text = "Perfect Clear Bonus: +0"
+horizontal_alignment = 1
+
+[node name="TotalScoreLabel" type="Label" parent="VBoxContainer/HBoxContainer/BreakdownContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "Total: 0"
+horizontal_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="VBoxContainer/HBoxContainer/BreakdownContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Time: 00:00"
+horizontal_alignment = 1
+
+[node name="SetTotalLabel" type="Label" parent="VBoxContainer/HBoxContainer/BreakdownContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "Set Total: 0"
+horizontal_alignment = 1
+visible = false
+
+[node name="ButtonsContainer" type="VBoxContainer" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="UnlockedLabel" type="Label" parent="VBoxContainer/HBoxContainer/ButtonsContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 24
 text = ""
 horizontal_alignment = 1
 
-[node name="Spacer2" type="Control" parent="VBoxContainer"]
+[node name="Spacer3" type="Control" parent="VBoxContainer/HBoxContainer/ButtonsContainer"]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 
-[node name="NextLevelButton" type="Button" parent="VBoxContainer"]
+[node name="NextLevelButton" type="Button" parent="VBoxContainer/HBoxContainer/ButtonsContainer"]
 custom_minimum_size = Vector2(0, 60)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 1, 0.5, 1)
@@ -87,7 +174,7 @@ theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 32
 text = "NEXT LEVEL"
 
-[node name="LevelSelectButton" type="Button" parent="VBoxContainer"]
+[node name="LevelSelectButton" type="Button" parent="VBoxContainer/HBoxContainer/ButtonsContainer"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
@@ -95,7 +182,7 @@ theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 28
 text = "LEVEL SELECT"
 
-[node name="MenuButton" type="Button" parent="VBoxContainer"]
+[node name="MenuButton" type="Button" parent="VBoxContainer/HBoxContainer/ButtonsContainer"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
@@ -103,6 +190,6 @@ theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 24
 text = "MAIN MENU"
 
-[connection signal="pressed" from="VBoxContainer/NextLevelButton" to="." method="_on_next_level_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/LevelSelectButton" to="." method="_on_level_select_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/MenuButton" to="." method="_on_menu_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/ButtonsContainer/NextLevelButton" to="." method="_on_next_level_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/ButtonsContainer/LevelSelectButton" to="." method="_on_level_select_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/ButtonsContainer/MenuButton" to="." method="_on_menu_button_pressed"]

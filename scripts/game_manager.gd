@@ -29,6 +29,16 @@ var had_continue: bool = false  # True if player used continue in set mode
 const PLAYTIME_FLUSH_INTERVAL = 5.0  # seconds
 var playtime_accumulator: float = 0.0
 var playtime_since_flush: float = 0.0
+var level_time_seconds: float = 0.0
+
+# Score breakdown tracking (per level)
+var score_breakdown: Dictionary = {
+	"base_points": 0,
+	"difficulty_bonus": 0,
+	"combo_bonus": 0,
+	"streak_bonus": 0,
+	"double_bonus": 0
+}
 
 # Combo thresholds for bonuses
 const COMBO_BONUS_THRESHOLD = 3  # Combo must be at least this to get bonuses
@@ -51,6 +61,7 @@ signal state_changed(new_state: GameState)
 func _ready():
 	# Set this node to always process, even when paused (so pause toggle works)
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_reset_level_breakdown()
 
 	print("GameManager initialized")
 	print("Starting lives: ", lives)
@@ -67,6 +78,7 @@ func _process(_delta):
 	if game_state == GameState.READY or game_state == GameState.PLAYING:
 		playtime_accumulator += _delta
 		playtime_since_flush += _delta
+		level_time_seconds += _delta
 
 		if playtime_since_flush >= PLAYTIME_FLUSH_INTERVAL:
 			_flush_playtime()
@@ -83,23 +95,41 @@ func set_state(new_state: GameState):
 
 ## Add points to score (with difficulty, combo, and streak multipliers applied)
 func add_score(points: int):
+	var base_points = points
+
 	# Apply difficulty multiplier
 	var adjusted_points = int(points * DifficultyManager.get_score_multiplier())
+	var difficulty_bonus = adjusted_points - base_points
 
 	# Apply combo bonus (10% extra per hit above threshold)
+	var combo_bonus = 0
 	if combo >= COMBO_BONUS_THRESHOLD:
 		var combo_multiplier = 1.0 + (combo - COMBO_BONUS_THRESHOLD + 1) * COMBO_BONUS_PER_HIT
-		adjusted_points = int(adjusted_points * combo_multiplier)
+		var combo_points = int(adjusted_points * combo_multiplier)
+		combo_bonus = combo_points - adjusted_points
+		adjusted_points = combo_points
 
 	# Apply no-miss streak bonus (10% per 5 consecutive hits)
+	var streak_bonus = 0
 	if no_miss_hits >= STREAK_HITS_PER_BONUS:
 		var streak_tiers = floorf(no_miss_hits / float(STREAK_HITS_PER_BONUS))
 		var streak_multiplier = 1.0 + (streak_tiers * STREAK_BONUS_PER_TIER)
-		adjusted_points = int(adjusted_points * streak_multiplier)
+		var streak_points = int(adjusted_points * streak_multiplier)
+		streak_bonus = streak_points - adjusted_points
+		adjusted_points = streak_points
 
 	# Apply double score power-up (2x multiplier)
+	var double_bonus = 0
 	if PowerUpManager.is_double_score_active():
-		adjusted_points = int(adjusted_points * 2.0)
+		var double_points = int(adjusted_points * 2.0)
+		double_bonus = double_points - adjusted_points
+		adjusted_points = double_points
+
+	score_breakdown["base_points"] += base_points
+	score_breakdown["difficulty_bonus"] += difficulty_bonus
+	score_breakdown["combo_bonus"] += combo_bonus
+	score_breakdown["streak_bonus"] += streak_bonus
+	score_breakdown["double_bonus"] += double_bonus
 
 	score += adjusted_points
 	score_changed.emit(score)
@@ -206,6 +236,7 @@ func reset_game():
 	combo_changed.emit(combo)
 	no_miss_streak_changed.emit(no_miss_hits)
 	print("Game reset")
+	_reset_level_breakdown()
 
 ## Start playing (ball launched)
 func start_playing():
@@ -216,6 +247,22 @@ func start_playing():
 func check_perfect_clear() -> bool:
 	"""Check if player achieved a perfect clear (all lives intact)"""
 	return is_perfect_clear and lives == 3
+
+func get_score_breakdown() -> Dictionary:
+	"""Return a copy of the current level's score breakdown"""
+	return score_breakdown.duplicate()
+
+func get_level_time_seconds() -> float:
+	"""Return the elapsed time for the current level"""
+	return level_time_seconds
+
+func _reset_level_breakdown():
+	level_time_seconds = 0.0
+	score_breakdown["base_points"] = 0
+	score_breakdown["difficulty_bonus"] = 0
+	score_breakdown["combo_bonus"] = 0
+	score_breakdown["streak_bonus"] = 0
+	score_breakdown["double_bonus"] = 0
 
 func _flush_playtime():
 	"""Persist accumulated playtime to SaveManager"""

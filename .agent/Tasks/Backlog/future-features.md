@@ -149,7 +149,6 @@ These are features that have been designed but not yet implemented. All features
 ### Paddle Abilities
 - **Description**: Skill-based paddle actions with cooldowns
 - **Features**:
-  - **Magnet**: Temporarily stick ball to paddle
   - **Pulse**: Send shockwave to knock nearby balls upward
   - **Shield**: Temporary block on right edge to prevent ball loss
   - Visual indicators for charge/cooldown state

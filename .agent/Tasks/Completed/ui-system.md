@@ -9,7 +9,7 @@ The UI system manages menus, HUD, and overlays. Scene transitions are handled by
 - **Main Menu** (`scenes/ui/main_menu.tscn`): Play, difficulty selection, stats, settings, quit.
 - **Level Select** (`scenes/ui/level_select.tscn`): Unlock status + high scores.
 - **Game Over** (`scenes/ui/game_over.tscn`).
-- **Level Complete** (`scenes/ui/level_complete.tscn`).
+- **Level Complete** (`scenes/ui/level_complete.tscn`): Score breakdown (base + bonuses + time).
 - **Stats** (`scenes/ui/stats.tscn`).
 - **Settings** (`scenes/ui/settings.tscn`): screen shake, particles, trail, sensitivity, music/SFX volumes.
 
@@ -29,7 +29,6 @@ The UI system manages menus, HUD, and overlays. Scene transitions are handled by
 
 ## Known Gaps (Tracked in Backlog)
 - Launch direction indicator is currently disabled in `scripts/ball.gd`.
-- Level complete score breakdown (accuracy/time bonus) is not implemented.
 
 See `Tasks/Backlog/ui-gaps.md`.
 

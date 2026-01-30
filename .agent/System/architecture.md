@@ -300,12 +300,14 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 
 5. **Level Complete** (`scenes/ui/level_complete.tscn`)
    - Final score display
+   - Score breakdown (base + bonuses + time)
    - High score notification if beaten
    - “Perfect Clear” bonus message (2x)
    - Continue Set (set mode) or Next Level (individual mode)
 
 6. **Set Complete** (`scenes/ui/set_complete.tscn`)
    - Cumulative score
+   - Score breakdown (base + bonuses + set time)
    - Perfect set bonus message (3x)
    - Set high score display
 

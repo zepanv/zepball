@@ -6,8 +6,18 @@ extends Control
 @onready var score_label = $VBoxContainer/ScoreLabel
 @onready var high_score_label = $VBoxContainer/HighScoreLabel
 @onready var perfect_clear_label = $VBoxContainer/PerfectClearLabel
-@onready var unlocked_label = $VBoxContainer/UnlockedLabel
-@onready var next_level_button = $VBoxContainer/NextLevelButton
+@onready var breakdown_title_label = $VBoxContainer/HBoxContainer/BreakdownContainer/BreakdownTitleLabel
+@onready var base_score_label = $VBoxContainer/HBoxContainer/BreakdownContainer/BaseScoreLabel
+@onready var difficulty_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/DifficultyBonusLabel
+@onready var combo_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/ComboBonusLabel
+@onready var streak_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/StreakBonusLabel
+@onready var double_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/DoubleBonusLabel
+@onready var perfect_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/PerfectBonusLabel
+@onready var total_score_label = $VBoxContainer/HBoxContainer/BreakdownContainer/TotalScoreLabel
+@onready var time_label = $VBoxContainer/HBoxContainer/BreakdownContainer/TimeLabel
+@onready var set_total_label = $VBoxContainer/HBoxContainer/BreakdownContainer/SetTotalLabel
+@onready var unlocked_label = $VBoxContainer/HBoxContainer/ButtonsContainer/UnlockedLabel
+@onready var next_level_button = $VBoxContainer/HBoxContainer/ButtonsContainer/NextLevelButton
 
 func _ready():
 	"""Initialize level complete screen"""
@@ -17,9 +27,16 @@ func _ready():
 	var final_score = MenuController.get_current_score()
 	var level_id = MenuController.get_current_level_id()
 	var was_perfect = MenuController.get_was_perfect_clear()
+	var breakdown = MenuController.get_last_level_breakdown()
+	var level_time = MenuController.get_last_level_time_seconds()
+	var level_score_raw = MenuController.get_last_level_score_raw()
+	var level_score_final = MenuController.get_last_level_score_final()
 
 	# Display score
-	score_label.text = "Score: " + str(final_score)
+	if MenuController.current_play_mode == MenuController.PlayMode.SET:
+		score_label.text = "Level Score: " + str(level_score_final)
+	else:
+		score_label.text = "Score: " + str(level_score_final)
 
 	# Display perfect clear message if achieved
 	if was_perfect:
@@ -37,13 +54,34 @@ func _ready():
 		high_score_label.text = "High Score: " + str(high_score)
 		high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
 
+	# Populate score breakdown
+	var base_points = int(breakdown.get("base_points", 0))
+	var difficulty_bonus = int(breakdown.get("difficulty_bonus", 0))
+	var combo_bonus = int(breakdown.get("combo_bonus", 0))
+	var streak_bonus = int(breakdown.get("streak_bonus", 0))
+	var double_bonus = int(breakdown.get("double_bonus", 0))
+	var perfect_bonus = int(breakdown.get("perfect_clear_bonus", 0))
+
+	breakdown_title_label.text = "SCORE BREAKDOWN"
+	base_score_label.text = "Base Score: " + str(base_points)
+	difficulty_bonus_label.text = "Difficulty Bonus: " + _format_bonus(difficulty_bonus)
+	combo_bonus_label.text = "Combo Bonus: " + _format_bonus(combo_bonus)
+	streak_bonus_label.text = "Streak Bonus: " + _format_bonus(streak_bonus)
+	double_bonus_label.text = "Power-Up Bonus: " + _format_bonus(double_bonus)
+	perfect_bonus_label.text = "Perfect Clear Bonus: " + _format_bonus(perfect_bonus)
+	total_score_label.text = "Total: " + str(level_score_raw + perfect_bonus)
+	time_label.text = "Time: " + _format_time(level_time)
+
 	# Handle set mode vs individual mode
 	if MenuController.current_play_mode == MenuController.PlayMode.SET:
+		set_total_label.visible = true
+		set_total_label.text = "Set Total: " + str(final_score)
 		# In set mode, show continue button (no auto-advance - let player take a break)
 		next_level_button.text = "CONTINUE SET"
 		unlocked_label.text = "Ready for next level"
 		next_level_button.disabled = false
 	else:
+		set_total_label.visible = false
 		# In individual mode, show normal next level options
 		if LevelLoader.has_next_level(level_id):
 			var next_level_id = LevelLoader.get_next_level_id(level_id)
@@ -70,3 +108,14 @@ func _on_menu_button_pressed():
 	"""Return to main menu"""
 	print("Main Menu button pressed")
 	MenuController.show_main_menu()
+
+func _format_bonus(value: int) -> String:
+	if value > 0:
+		return "+" + str(value)
+	return str(value)
+
+func _format_time(seconds: float) -> String:
+	var total_seconds = int(seconds)
+	var minutes = int(total_seconds / 60.0)
+	var secs = int(total_seconds % 60)
+	return "%02d:%02d" % [minutes, secs]
