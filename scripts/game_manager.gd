@@ -23,6 +23,12 @@ var current_level: int = 1
 var combo: int = 0  # Consecutive brick hits
 var no_miss_hits: int = 0  # Consecutive hits without losing ball
 var is_perfect_clear: bool = true  # True if no lives lost this level
+var had_continue: bool = false  # True if player used continue in set mode
+
+# Playtime tracking
+const PLAYTIME_FLUSH_INTERVAL = 5.0  # seconds
+var playtime_accumulator: float = 0.0
+var playtime_since_flush: float = 0.0
 
 # Combo thresholds for bonuses
 const COMBO_BONUS_THRESHOLD = 3  # Combo must be at least this to get bonuses
@@ -56,6 +62,14 @@ func _process(_delta):
 		set_state(GameState.PAUSED)
 	elif Input.is_action_just_pressed("ui_cancel") and game_state == GameState.PAUSED:
 		set_state(GameState.PLAYING)
+
+	# Track playtime during active gameplay states (exclude pause/menu)
+	if game_state == GameState.READY or game_state == GameState.PLAYING:
+		playtime_accumulator += _delta
+		playtime_since_flush += _delta
+
+		if playtime_since_flush >= PLAYTIME_FLUSH_INTERVAL:
+			_flush_playtime()
 
 ## Set game state and emit signal
 func set_state(new_state: GameState):
@@ -185,6 +199,7 @@ func reset_game():
 	combo = 0
 	no_miss_hits = 0
 	is_perfect_clear = true
+	had_continue = false
 	set_state(GameState.READY)
 	score_changed.emit(score)
 	lives_changed.emit(lives)
@@ -201,3 +216,15 @@ func start_playing():
 func check_perfect_clear() -> bool:
 	"""Check if player achieved a perfect clear (all lives intact)"""
 	return is_perfect_clear and lives == 3
+
+func _flush_playtime():
+	"""Persist accumulated playtime to SaveManager"""
+	if playtime_accumulator <= 0.0:
+		return
+	SaveManager.increment_stat("total_playtime", playtime_accumulator)
+	playtime_accumulator = 0.0
+	playtime_since_flush = 0.0
+
+func _exit_tree():
+	"""Flush any remaining playtime on scene exit"""
+	_flush_playtime()

@@ -25,12 +25,14 @@
 - `DifficultyManager`: `res://scripts/difficulty_manager.gd`.
 - `SaveManager`: `res://scripts/save_manager.gd`.
 - `LevelLoader`: `res://scripts/level_loader.gd`.
+- `SetLoader`: `res://scripts/set_loader.gd`.
 - `MenuController`: `res://scripts/ui/menu_controller.gd`.
 
 ## Asset Formats in Use
 - **Sprites and textures**: PNG, JPG.
 - **Vector icon**: SVG (`icon.svg`).
 - **Level data**: JSON (10 files in `levels/`).
+- **Set data**: JSON (`data/level_sets.json`).
 
 ## Audio Status
 - **Audio playback system**: Not implemented (no AudioManager, no assets).

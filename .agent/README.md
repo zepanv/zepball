@@ -6,7 +6,7 @@ This folder contains the canonical documentation for the Zep Ball codebase. All 
 
 ### System/
 Current system state, architecture, and technical foundation.
-- **`System/architecture.md`** - Complete project architecture, autoload systems, core gameplay systems, scene graph, scoring mechanics, menu flow, and all implemented features. **Read this first for full context.**
+- **`System/architecture.md`** - Complete project architecture, autoload systems, core gameplay systems, set mode, scene graph, scoring mechanics, menu flow, and all implemented features. **Read this first for full context.**
 - **`System/tech-stack.md`** - Engine version, project settings, input map, and runtime configuration.
 
 ### Tasks/
@@ -21,7 +21,7 @@ PRDs and implementation plans for features (both implemented and future).
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
   - `Tasks/Backlog/audio-system.md` - Audio system plan (SFX, music) 📅 NOT YET IMPLEMENTED
   - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay)
-  - `Tasks/Backlog/power-up-expansion.md` - Additional power-ups beyond the current six
+  - `Tasks/Backlog/power-up-expansion.md` - Additional power-ups beyond the current 13
   - `Tasks/Backlog/tile-advanced-elements.md` - Force zones, special bricks, and advanced tile behaviors
   - `Tasks/Backlog/ui-gaps.md` - Launch indicator + level complete breakdown
 
@@ -29,40 +29,50 @@ PRDs and implementation plans for features (both implemented and future).
 Best practices and workflows for development.
 - **`SOP/godot-workflow.md`** - Working with Godot scenes, nodes, signals, and **CRITICAL: Save System Compatibility** section for handling save data migrations.
 
-## Current Game State (2026-01-30 20:00 EST)
+## Current Game State (2026-01-30)
 
 ### Core Features ✅ COMPLETE
 - **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 10 brick types (including bomb bricks), collision detection, score tracking
 - **Power-Ups**: 13 types with visual timers and effects (Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball)
 - **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks (75px radius)
 - **Difficulty**: 3 modes (Easy/Normal/Hard) with speed and score multipliers
-- **Levels**: 10 unique levels with enhanced vertical coverage and strategic bomb brick placement
-- **Menu System**: Complete flow (Main Menu, Level Select, Game Over, Level Complete, Stats, Settings)
-- **Progression**: Level unlocking - complete one to unlock the next
-- **Save System**: Persistent data for progress, high scores, statistics, achievements, and settings
+- **Levels**: 10 unique levels with varied brick mixes (bomb bricks appear in multiple levels)
+- **Menu System**: Complete flow (Main Menu, Set Select, Level Select, Game Over, Level Complete, Set Complete, Stats, Settings)
+- **Progression**: Level unlocking and high scores saved per level
+
+### Set Mode ✅ COMPLETE
+- **Set Data**: `data/level_sets.json` defines available sets
+- **Current Set**: 1 set, **Classic Challenge** (levels 1–10)
+- **Set Select**: Play set or view its levels
+- **Set Progression**: Score/lives/combo/streak carry across set levels
+- **Set Completion Bonus**: 3x score if all lives intact and no continues
+- **Set High Scores**: Saved separately from individual level scores
 
 ### Statistics & Achievements ✅ COMPLETE
-- **8 Tracked Stats**: Bricks broken, power-ups collected, levels completed, playtime, highest combo, highest score, games played, perfect clears
+- **10 Tracked Stats**: Bricks broken, power-ups collected, levels completed, individual levels completed, set runs completed, playtime, highest combo, highest score, games played, perfect clears
 - **12 Achievements**: Ranging from "First Blood" (1 brick) to "Champion" (all 10 levels) with progress tracking
 - **Stats Screen**: Full statistics display with achievement list and progress bars
-- **Note**: `total_playtime` and `total_games_played` are displayed but not currently incremented in gameplay code.
+- **Tracking**: `total_playtime` increments during READY/PLAYING (flushed every 5s), and `total_games_played` increments per level start
 
 ### Settings System ✅ COMPLETE
-- **Gameplay Settings (6)**:
+- **Gameplay Settings (7)**:
   - Screen shake intensity (Off/Low/Medium/High)
   - Particle effects toggle
   - Ball trail toggle
   - Paddle sensitivity (0.5x - 2.0x)
   - Music volume (-40dB to 0dB)
   - SFX volume (-40dB to 0dB)
-- **Difficulty** is selected in the main menu and persisted in SaveManager.
+  - Difficulty (Easy/Normal/Hard) saved from Main Menu
 - **All settings persist** via SaveManager with automatic migration
+- **Audio sliders apply immediately**; other gameplay settings apply on next scene load
 
 ### Score Multipliers ✅ COMPLETE
 - **Difficulty Multiplier**: 0.8x (Easy), 1.0x (Normal), 1.5x (Hard)
 - **Combo Multiplier**: 10% bonus per hit after 3x combo (e.g., 12x combo = 2.0x multiplier)
 - **No-Miss Streak**: 10% bonus per 5 consecutive hits without losing ball (e.g., 15 hits = 1.3x multiplier)
+- **Double Score Power-Up**: 2x multiplier while active
 - **Perfect Clear**: 2x final score bonus for completing level with all 3 lives intact
+- **Perfect Set**: 3x final score bonus for set completion with all lives intact and no continues
 - **All multipliers stack multiplicatively**
 - **Real-time HUD display** showing active bonuses with color coding
 
@@ -77,7 +87,7 @@ Best practices and workflows for development.
 - **Language**: GDScript
 - **Run Main Scene**: `res://scenes/ui/main_menu.tscn`
 - **Gameplay Scene**: `res://scenes/main/main.tscn`
-- **Autoloads**: PowerUpManager, DifficultyManager, SaveManager, LevelLoader, MenuController
+- **Autoloads**: PowerUpManager, DifficultyManager, SaveManager, LevelLoader, SetLoader, MenuController
 
 ## Autoload Singletons (Global Systems)
 These are always accessible and control key game systems:
@@ -85,12 +95,13 @@ These are always accessible and control key game systems:
 2. **DifficultyManager** - Difficulty modes with multipliers
 3. **SaveManager** - Save data, statistics, achievements, settings
 4. **LevelLoader** - Level JSON loading
-5. **MenuController** - Scene transitions and game flow
+5. **SetLoader** - Set JSON loading
+6. **MenuController** - Scene transitions and game flow
 
 ## Quick Start for New Developers
 1. **Read** `System/architecture.md` - Complete system overview with all features documented
 2. **Check** `SOP/godot-workflow.md` - Development workflows and **save migration best practices**
-3. **Explore** `Tasks/Backlog/future-features.md` - See what's planned for future development
+3. **Explore** `Tasks/Backlog/future-features.md` - Planned future development
 4. **Note**: Save system has automatic migration - see SOP for how to add new fields safely
 
 ## Development Roadmap
@@ -98,16 +109,17 @@ These are always accessible and control key game systems:
 ### ✅ Phase 1-5: Core Game (COMPLETE)
 - Phase 1: Core Mechanics (Paddle, Ball, Bricks, Collision)
 - Phase 2: Visual Polish (Particles, Camera Shake, Backgrounds)
-- Phase 3: Power-Ups (6 types with timers)
+- Phase 3: Power-Ups (13 types with timers)
 - Phase 4: UI System & Game Flow (Complete menu system)
 - Phase 5: Level System & Content (10 levels with progression)
 
 ### ✅ Phase 6: Progression Systems (COMPLETE)
 - Save system with JSON persistence
-- Statistics tracking (8 stats)
+- Statistics tracking (10 stats)
 - Achievement system (12 achievements)
-- Settings system (6 UI controls + difficulty persistence)
-- Score multipliers (Difficulty, Combo, Streak, Perfect Clear)
+- Settings system (7 UI controls + difficulty persistence)
+- Score multipliers (Difficulty, Combo, Streak, Double Score, Perfect Clear)
+- Set mode with cumulative scoring and set high scores
 
 ### 📅 Phase 7: Audio System (FUTURE)
 - Music tracks
@@ -122,40 +134,46 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ## Recent Update History
 
-### 2026-01-30 (Latest) - Power-Up Expansion & Bomb Bricks
-- ✅ **7 New Power-Ups**: Slow Down, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball
-- ✅ **Bomb Ball Power-Up**: Ball destroys surrounding bricks (75px radius) with orange-red glow
-- ✅ **Bomb Brick**: New special brick type that explodes when hit, destroying nearby bricks
-- ✅ **Enhanced Levels**: Levels 1, 3, and 5 expanded with 10-12 rows for better vertical coverage
-- ✅ **Strategic Placement**: Bomb bricks placed tactically in levels for interesting gameplay
-- ✅ **Bug Fixes**: Ball escape logic for top/bottom wall wedges, grab immunity, proper grab mechanics
-- ✅ **Debug Keys**: Simplified to key 1 for bomb_ball testing
+### 2026-01-30 (Latest) - Set Mode & Bomb Bricks
+- ✅ **Set Mode**: Set Select + Set Complete screens, set-level flow
+- ✅ **Set Data**: `data/level_sets.json` defines set(s)
+- ✅ **Set Scoring**: Perfect set bonus (3x) and set high scores
+- ✅ **Bomb Bricks**: Explosive bricks and bomb ball power-up (75px radius)
+- ✅ **Expanded Power-Ups**: 13 types total, with HUD timers
 
-### 2026-01-30 - Power-Up System Complete
-- ✅ **Power-Up Icons**: Split into individual PNGs with colored glow
-- ✅ **Ball Size Power-Ups**: Big Ball (2x size) and Small Ball (0.5x size)
-- ✅ **Overlap Handling**: Expand/Contract and Big/Small conflicts resolve to base size
-- ✅ **HUD Integration**: All power-ups show names and timers
+### 2026-01-30 - Playtime Tracking + Game Over Fix
+- ✅ **Playtime Tracking**: `total_playtime` now accumulates during READY/PLAYING and flushes every 5s
+- ✅ **Games Played Tracking**: `total_games_played` increments per level start
+- ✅ **Game Over Screen**: Fixed malformed `@onready` line for `high_score_label`
 
-### 2026-01-29 - Settings & Score Multipliers
-- ✅ **Settings Menu**: 6 customizable options (shake, particles, trail, sensitivity, audio)
+### 2026-01-30 - Set System Integration (from `temp/changelog.md`)
+- ✅ **Set System**: Set Select + Set Complete screens, PlayMode enum, state persistence across set levels
+- ✅ **Set Progression**: Set high scores and completion tracking
+- ✅ **Perfect Set Bonus**: 3x multiplier when all lives intact and no continues
+- ✅ **Continue Set**: Game Over allows resuming current set level (resets score/lives)
+- ✅ **Settings**: Clear Save Data button with confirmation dialog
+- ✅ **UI Fixes**: Combo label z-index below pause menu; set context UI in Level Select
+- ✅ **Data Fixes**: SetLoader int conversion for set_id; `set_display_name` rename in set select
+- ✅ **Gameplay Fix**: Paddle height bounds correctly update after expand/contract
+
+### 2026-01-30 - Settings & Score Multipliers
+- ✅ **Settings Menu**: 7 customizable options (shake, particles, trail, sensitivity, audio, difficulty)
 - ✅ **Score Multipliers**: No-miss streak (+10%/5 hits), Perfect Clear (2x final score)
 - ✅ **Multiplier HUD**: Real-time display of active bonuses with color coding
-- ✅ **Bug Fixes**: Ball stuck detection, integer division warnings, HUD overlap
 
 ### 2026-01-29 - Statistics & Achievements
-- ✅ **Statistics System**: 8 tracked stats (bricks, power-ups, combos, score, etc.)
+- ✅ **Statistics System**: 10 tracked stats (bricks, power-ups, combos, score, etc.)
 - ✅ **Achievement System**: 12 achievements with progress tracking
 - ✅ **Stats Screen**: Full UI for viewing statistics and achievements
 - ✅ **Save Migration**: Automatic save file updates for old saves
 
 ### 2026-01-29 - Content Expansion
-- ✅ **5 New Levels (6-10)**: Diamond Formation, Fortress, Pyramid, Corridors, The Gauntlet
-- ✅ **10 Total Levels**: Doubled content with creative patterns
+- ✅ **5 New Levels (6-10)**: Diamond Formation, Fortress, Pyramid of Power, Corridors, The Gauntlet
+- ✅ **10 Total Levels**: Expanded content with special bricks
 - ✅ **Enhanced UI**: Pause menu with level info, level intro animations, debug overlay
 
 ### 2026-01-29 - Core Systems
-- ✅ **Complete Menu System**: Main Menu, Level Select, Game Over, Level Complete screens
+- ✅ **Complete Menu System**: Main Menu, Set Select, Level Select, Game Over, Level Complete screens
 - ✅ **Level Progression**: Unlock system with high score tracking
 - ✅ **SaveManager**: Persistent save data with JSON format
 - ✅ **LevelLoader**: Dynamic level loading from JSON files
@@ -179,13 +197,14 @@ zepball/
 ├── scenes/
 │   ├── main/main.tscn         # Gameplay scene
 │   ├── gameplay/              # Reusable components (ball, paddle, brick, power-up)
-│   └── ui/                    # Menu screens (6 screens)
+│   └── ui/                    # Menu screens (8 screens)
 ├── scripts/                   # All game logic (GDScript)
 │   ├── main.gd                # Main gameplay controller
-│   ├── [autoload singletons]  # 5 global systems
+│   ├── [autoload singletons]  # 6 global systems
 │   ├── [gameplay scripts]     # Ball, paddle, brick, power-up, camera shake, hud
 │   └── ui/                    # Menu screen scripts
 ├── levels/                    # 10 level JSON files
+├── data/                      # Set data JSON
 └── assets/graphics/           # Sprites, backgrounds, power-ups
 ```
 
@@ -207,18 +226,22 @@ if not save_data.has("new_field"):
 ```
 
 ### Settings Apply Limitation
-Settings are loaded on scene `_ready()`. To apply setting changes, users must:
+Gameplay settings are loaded on scene `_ready()` (ball, paddle, camera). To apply these changes, users must:
 1. Exit to main menu
 2. Return to gameplay
 
-This affects: screen shake, particles, trail, paddle sensitivity.
+Audio volume changes apply immediately via AudioServer.
+
+### Known Issues
+- Set unlocking is stubbed; `highest_unlocked_set` is always 1 and all sets are effectively unlocked.
+- Debug logging is still verbose in multiple scripts.
 
 ### Complex Areas to Review
-1. **Triple Ball Spawn** (`main.gd:279-347`) - Retry system with angle validation (120°-240°)
-2. **Ball Stuck Detection** (`ball.gd:287-325`) - Dynamic threshold per-frame monitoring
-3. **Save Migration** (`save_manager.gd:160-180`) - Automatic field addition
-4. **Scene Transitions** (`brick.gd:190`) - Check `is_inside_tree()` before await
-5. **Physics Callbacks** (`main.gd:276`) - Use `call_deferred()` for spawns
+1. **Triple Ball Spawn** (`main.gd`) - Retry system with angle validation (120°-240°)
+2. **Ball Stuck Detection** (`ball.gd`) - Dynamic threshold per-frame monitoring
+3. **Save Migration** (`save_manager.gd`) - Automatic field addition
+4. **Scene Transitions** (`brick.gd`) - Check `is_inside_tree()` before await
+5. **Physics Callbacks** (`main.gd`) - Use `call_deferred()` for spawns
 
 ## Doc Status Summary
 - **System Docs**: `System/architecture.md`, `System/tech-stack.md` (current)
@@ -234,7 +257,8 @@ This affects: screen shake, particles, trail, paddle sensitivity.
 
 ---
 
-**Last Updated**: 2026-01-30 16:30 EST (SOP commit message format uses date/time)
+**Last Updated**: 2026-01-30
 **Total Levels**: 10
+**Total Sets**: 1
 **Total Achievements**: 12
-**Documentation Status**: ✅ Up-to-date with all implemented features
+**Documentation Status**: ✅ Up-to-date with current codebase

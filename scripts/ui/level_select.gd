@@ -4,13 +4,74 @@ extends Control
 ## Shows high scores and allows launching unlocked levels
 
 @onready var levels_grid = $VBoxContainer/LevelsGrid
+@onready var vbox_container = $VBoxContainer
+
+var set_header_label: Label = null
+var play_set_button: Button = null
 
 func _ready():
 	"""Initialize level select screen"""
-	print("Level Select loaded")
+	# Check if we're viewing a specific set
+	if MenuController.current_set_id != -1:
+		add_set_context_ui()
 
 	# Populate levels
 	populate_levels()
+
+func add_set_context_ui():
+	"""Add set header and Play Set button when viewing a set"""
+	var set_id = MenuController.current_set_id
+	var set_name = SetLoader.get_set_name(set_id)
+	var set_description = SetLoader.get_set_description(set_id)
+
+	# Create header label
+	set_header_label = Label.new()
+	set_header_label.text = "SET: " + set_name.to_upper()
+	set_header_label.set("theme_override_font_sizes/font_size", 32)
+	set_header_label.set("theme_override_colors/font_color", Color(0, 0.9, 1, 1))
+	set_header_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	# Insert at beginning of VBox
+	vbox_container.add_child(set_header_label)
+	vbox_container.move_child(set_header_label, 0)
+
+	# Create description label
+	var desc_label = Label.new()
+	desc_label.text = set_description
+	desc_label.set("theme_override_font_sizes/font_size", 18)
+	desc_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox_container.add_child(desc_label)
+	vbox_container.move_child(desc_label, 1)
+
+	# Create Play Set button
+	play_set_button = Button.new()
+	play_set_button.text = "PLAY THIS SET"
+	play_set_button.custom_minimum_size = Vector2(300, 55)
+	play_set_button.set("theme_override_colors/font_color", Color(0, 0.9, 1, 1))
+	play_set_button.set("theme_override_colors/font_hover_color", Color(0.9, 0.3, 0.4, 1))
+	play_set_button.set("theme_override_font_sizes/font_size", 28)
+	play_set_button.pressed.connect(_on_play_set_button_pressed)
+
+	# Create HBox to center the button
+	var button_hbox = HBoxContainer.new()
+	button_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	button_hbox.add_child(play_set_button)
+
+	# Insert before levels grid
+	var grid_index = levels_grid.get_index()
+	vbox_container.add_child(button_hbox)
+	vbox_container.move_child(button_hbox, grid_index)
+
+	# Add spacer
+	var spacer = Control.new()
+	spacer.custom_minimum_size = Vector2(0, 20)
+	vbox_container.add_child(spacer)
+	vbox_container.move_child(spacer, 2)
+
+func _on_play_set_button_pressed():
+	"""Start playing the current set"""
+	MenuController.start_set(MenuController.current_set_id)
 
 func populate_levels():
 	"""Create level buttons dynamically based on available levels"""
@@ -19,7 +80,6 @@ func populate_levels():
 		child.queue_free()
 
 	var total_levels = LevelLoader.get_total_level_count()
-	print("Total levels available: ", total_levels)
 
 	for level_id in range(1, total_levels + 1):
 		create_level_button(level_id)
@@ -102,7 +162,6 @@ func _on_level_panel_input(event: InputEvent, panel: PanelContainer):
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			var level_id = panel.get_meta("level_id")
-			print("Level ", level_id, " selected")
 			MenuController.start_level(level_id)
 
 func _on_level_hover_start(panel: PanelContainer):
@@ -114,6 +173,10 @@ func _on_level_hover_end(panel: PanelContainer):
 	panel.modulate = Color.WHITE
 
 func _on_back_button_pressed():
-	"""Return to main menu"""
-	print("Back to main menu")
-	MenuController.show_main_menu()
+	"""Return to appropriate screen (set select if from set, otherwise main menu)"""
+	if MenuController.current_set_id != -1:
+		# Coming from set select, go back to set select
+		MenuController.show_set_select()
+	else:
+		# Coming from main menu, go back to main menu
+		MenuController.show_main_menu()

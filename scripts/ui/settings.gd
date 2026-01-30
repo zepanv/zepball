@@ -24,6 +24,10 @@ extends Control
 @onready var music_label = $Panel/VBoxContainer/AudioSection/MusicLabel
 @onready var sfx_label = $Panel/VBoxContainer/AudioSection/SFXLabel
 
+# Clear save button
+@onready var clear_save_button = $Panel/VBoxContainer/DataSection/ClearSaveButton
+@onready var confirm_dialog = $ConfirmDialog
+
 func _ready():
 	"""Initialize settings menu with current values"""
 	# Connect buttons and sliders
@@ -45,6 +49,10 @@ func _ready():
 	# Audio sliders
 	music_slider.value_changed.connect(_on_music_volume_changed)
 	sfx_slider.value_changed.connect(_on_sfx_volume_changed)
+
+	# Clear save button
+	clear_save_button.pressed.connect(_on_clear_save_pressed)
+	confirm_dialog.confirmed.connect(_on_clear_save_confirmed)
 
 	# Load and apply current settings
 	_load_current_settings()
@@ -129,6 +137,18 @@ func _update_sfx_label(value: float):
 	"""Update SFX volume display label"""
 	var percentage = int((value + 40) / 40 * 100)  # Assuming -40 to 0 dB range
 	sfx_label.text = "SFX Volume: " + str(percentage) + "%"
+
+func _on_clear_save_pressed():
+	"""Show confirmation dialog before clearing save"""
+	confirm_dialog.popup_centered()
+
+func _on_clear_save_confirmed():
+	"""Clear all save data and return to main menu"""
+	print("Clearing save data...")
+	SaveManager.reset_save_data()
+
+	# Return to main menu to refresh everything
+	MenuController.show_main_menu()
 
 func _on_back_pressed():
 	"""Return to main menu"""

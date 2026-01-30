@@ -170,6 +170,39 @@ max_value = 0.0
 step = 1.0
 value = 0.0
 
+[node name="HSeparator5" type="HSeparator" parent="Panel/VBoxContainer"]
+layout_mode = 2
+
+[node name="DataSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DataTitle" type="Label" parent="Panel/VBoxContainer/DataSection"]
+layout_mode = 2
+text = "Save Data"
+theme_override_font_sizes/font_size = 18
+
+[node name="ClearSaveButton" type="Button" parent="Panel/VBoxContainer/DataSection"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.3, 0.4, 1)
+theme_override_colors/font_hover_color = Color(1, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 20
+text = "CLEAR SAVE DATA"
+
+[node name="ConfirmDialog" type="ConfirmationDialog" parent="."]
+title = "Clear Save Data"
+initial_position = 2
+size = Vector2i(400, 150)
+dialog_text = "Are you sure you want to clear ALL save data?
+This will reset:
+- Level progress
+- High scores
+- Statistics
+- Settings
+
+This action cannot be undone!"
+
 [node name="BackButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 2

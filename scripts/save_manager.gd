@@ -95,10 +95,17 @@ var save_data = {
 		"levels_completed": []  # Array of completed level IDs
 	},
 	"high_scores": {},  # Dictionary: level_id (String) -> score (int)
+	"set_progression": {
+		"highest_unlocked_set": 1,  # All sets unlocked by default
+		"sets_completed": []  # Array of completed set IDs
+	},
+	"set_high_scores": {},  # Dictionary: set_id (String) -> cumulative_score (int)
 	"statistics": {
 		"total_bricks_broken": 0,
 		"total_power_ups_collected": 0,
 		"total_levels_completed": 0,
+		"total_individual_levels_completed": 0,
+		"total_set_runs_completed": 0,
 		"total_playtime": 0.0,
 		"highest_combo": 0,
 		"highest_score": 0,
@@ -184,6 +191,35 @@ func load_save() -> void:
 		save_data["achievements"] = []
 		save_to_disk()
 
+	# Migrate old saves that don't have set progression
+	if not save_data.has("set_progression"):
+		print("Adding set progression to save data...")
+		save_data["set_progression"] = {
+			"highest_unlocked_set": 1,
+			"sets_completed": []
+		}
+		save_to_disk()
+
+	# Migrate old saves that don't have set high scores
+	if not save_data.has("set_high_scores"):
+		print("Adding set high scores to save data...")
+		save_data["set_high_scores"] = {}
+		save_to_disk()
+
+	# Migrate old saves that don't have new statistics
+	var stats_updated = false
+	if not save_data["statistics"].has("total_individual_levels_completed"):
+		# Migrate old total_levels_completed to individual count
+		save_data["statistics"]["total_individual_levels_completed"] = save_data["statistics"].get("total_levels_completed", 0)
+		stats_updated = true
+	if not save_data["statistics"].has("total_set_runs_completed"):
+		save_data["statistics"]["total_set_runs_completed"] = 0
+		stats_updated = true
+
+	if stats_updated:
+		print("Adding new statistics to save data...")
+		save_to_disk()
+
 	# Migrate old saves that don't have new settings
 	var settings_updated = false
 	if not save_data["settings"].has("screen_shake_intensity"):
@@ -232,10 +268,17 @@ func create_default_save() -> void:
 			"levels_completed": []
 		},
 		"high_scores": {},
+		"set_progression": {
+			"highest_unlocked_set": 1,
+			"sets_completed": []
+		},
+		"set_high_scores": {},
 		"statistics": {
 			"total_bricks_broken": 0,
 			"total_power_ups_collected": 0,
 			"total_levels_completed": 0,
+			"total_individual_levels_completed": 0,
+			"total_set_runs_completed": 0,
 			"total_playtime": 0.0,
 			"highest_combo": 0,
 			"highest_score": 0,
@@ -488,3 +531,42 @@ func save_paddle_sensitivity(sensitivity: float) -> void:
 func get_paddle_sensitivity() -> float:
 	"""Get paddle sensitivity preference"""
 	return save_data["settings"].get("paddle_sensitivity", 1.0)
+
+# ============================================================================
+# SET SYSTEM
+# ============================================================================
+
+func get_set_high_score(set_id: int) -> int:
+	"""Get the high score for a set (returns 0 if no score exists)"""
+	var key = str(set_id)
+	if save_data["set_high_scores"].has(key):
+		return save_data["set_high_scores"][key]
+	return 0
+
+func update_set_high_score(set_id: int, score: int) -> bool:
+	"""Update set high score if new score is higher. Returns true if high score was beaten."""
+	var key = str(set_id)
+	var current_high_score = get_set_high_score(set_id)
+
+	if score > current_high_score:
+		save_data["set_high_scores"][key] = score
+		save_to_disk()
+		print("New set high score for set ", set_id, ": ", score)
+		return true
+
+	return false
+
+func mark_set_completed(set_id: int) -> void:
+	"""Mark a set as completed"""
+	if not set_id in save_data["set_progression"]["sets_completed"]:
+		save_data["set_progression"]["sets_completed"].append(set_id)
+		save_to_disk()
+		print("Set ", set_id, " marked as completed")
+
+func is_set_unlocked(set_id: int) -> bool:
+	"""Check if a set is unlocked (all sets unlocked for now)"""
+	return set_id <= save_data["set_progression"]["highest_unlocked_set"] or set_id == 1
+
+func is_set_completed(set_id: int) -> bool:
+	"""Check if a set has been completed"""
+	return set_id in save_data["set_progression"]["sets_completed"]

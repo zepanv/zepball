@@ -49,9 +49,9 @@ func update_difficulty_display():
 	hard_button.modulate = Color.WHITE if difficulty_name == "Hard" else Color(0.6, 0.6, 0.6)
 
 func _on_play_button_pressed():
-	"""Handle Play button - go to level select"""
+	"""Handle Play button - go to set select"""
 	print("Play button pressed")
-	MenuController.show_level_select()
+	MenuController.show_set_select()
 
 func _on_easy_button_pressed():
 	"""Set difficulty to Easy"""

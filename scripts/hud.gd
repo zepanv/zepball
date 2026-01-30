@@ -34,6 +34,7 @@ func _ready():
 	# Create pause menu
 	pause_menu = create_pause_menu()
 	pause_menu.visible = false
+	pause_menu.z_index = 100  # Ensure pause menu is always on top
 	add_child(pause_menu)
 
 	# Create level intro display
@@ -104,6 +105,7 @@ func _ready():
 	combo_label.size = Vector2(300, 50)
 	combo_label.modulate = Color(1.0, 0.8, 0.2)  # Gold color
 	combo_label.visible = false
+	combo_label.z_index = 10  # Below pause menu but above game
 	add_child(combo_label)
 
 	# Create multiplier display (shows active score multipliers)

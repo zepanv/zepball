@@ -1,7 +1,7 @@
 # Zep Ball - System Architecture
 
 ## Overview
-Zep Ball is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 10 levels with progression, difficulty modes, combo multipliers, statistics tracking, achievements, and customizable settings.
+Zep Ball is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 10 levels, a set-play mode, difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
 
 ## Project Structure
 ```
@@ -15,10 +15,12 @@ zepball/
 │   │   ├── brick.tscn         # Breakable bricks with particles
 │   │   └── power_up.tscn      # Collectible power-ups
 │   └── ui/                    # Menu screens
-│       ├── main_menu.tscn     # Start screen with difficulty selection
-│       ├── level_select.tscn  # Level browser with unlock status
+│       ├── main_menu.tscn     # Start screen + difficulty selection
+│       ├── set_select.tscn    # Set browser (entry for Play)
+│       ├── level_select.tscn  # Level browser (individual or set context)
 │       ├── game_over.tscn     # Game over screen
 │       ├── level_complete.tscn # Level victory screen
+│       ├── set_complete.tscn  # Set completion summary
 │       ├── stats.tscn         # Statistics and achievements viewer
 │       └── settings.tscn      # Game settings configuration
 ├── scripts/
@@ -34,22 +36,27 @@ zepball/
 │   ├── difficulty_manager.gd  # Difficulty modes (autoload)
 │   ├── save_manager.gd        # Save data and persistence (autoload)
 │   ├── level_loader.gd        # Level loading from JSON (autoload)
+│   ├── set_loader.gd          # Set loading from JSON (autoload)
 │   └── ui/
 │       ├── menu_controller.gd # Scene transitions and flow (autoload)
 │       ├── main_menu.gd       # Main menu logic
+│       ├── set_select.gd      # Set select logic
 │       ├── level_select.gd    # Level selection grid
 │       ├── game_over.gd       # Game over screen logic
 │       ├── level_complete.gd  # Level complete screen logic
+│       ├── set_complete.gd    # Set complete screen logic
 │       ├── stats.gd           # Statistics display
 │       └── settings.gd        # Settings screen logic
 ├── levels/                    # Level definitions (JSON)
 │   ├── level_01.json through level_10.json
+├── data/
+│   └── level_sets.json        # Set definitions (JSON)
 ├── assets/
 │   └── graphics/
 │       ├── backgrounds/       # 7 background images
 │       ├── bricks/            # Brick sprite textures
 │       └── powerups/          # Power-up sprite PNGs (individual icons)
-└── .agent/                    # Documentation (this file)
+└── .agent/                    # Documentation (this folder)
 ```
 
 ## Autoload Singletons (Global Systems)
@@ -58,7 +65,8 @@ These nodes are always loaded and accessible throughout the game:
 2. **DifficultyManager** - `scripts/difficulty_manager.gd` - Difficulty settings and multipliers
 3. **SaveManager** - `scripts/save_manager.gd` - Save data, high scores, statistics, achievements
 4. **LevelLoader** - `scripts/level_loader.gd` - Loads levels from JSON files
-5. **MenuController** - `scripts/ui/menu_controller.gd` - Scene transitions and game flow
+5. **SetLoader** - `scripts/set_loader.gd` - Loads level sets from JSON
+6. **MenuController** - `scripts/ui/menu_controller.gd` - Scene transitions and game flow
 
 ## Runtime Scene Graph (Gameplay - main.tscn)
 ```
@@ -100,14 +108,12 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - Handles ball loss logic (life loss only if last ball in play)
 - Spawns and manages power-ups with 20% drop chance
 - Manages multi-ball behavior from TRIPLE_BALL power-up
-- Debug hotkeys in debug builds (1-5) to spawn power-ups for testing
+- Restores set-mode state between levels (score/lives/combo/streak)
 - Loads random background image at startup with dimming
 - Triggers camera shake on brick breaks (intensity scales with combo)
-- Handles stuck ball detection and auto-escape boost
-- Shows level intro display with fade animation
 
 **Key Methods**:
-- `create_level()` - Loads level from JSON and spawns bricks
+- `load_level(level_id)` - Loads level from JSON and spawns bricks
 - `_on_ball_lost(ball)` - Checks if main ball, handles life loss
 - `_on_brick_broken(score_value)` - Awards points, tracks progress, checks completion
 - `spawn_additional_balls_with_retry()` - Creates extra balls with retry logic
@@ -129,6 +135,7 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - `combo` - Consecutive brick hits (combo multiplier)
 - `no_miss_hits` - Streak without losing ball (streak multiplier)
 - `is_perfect_clear` - True if no lives lost this level (2x bonus)
+- `had_continue` - Set mode flag; disables perfect set bonus
 
 **Scoring System**:
 ```gdscript
@@ -137,7 +144,8 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 2. × Difficulty multiplier (0.8x Easy, 1.0x Normal, 1.5x Hard)
 3. × Combo multiplier (1.0 + (combo - 3 + 1) * 0.1, if combo >= 3)
 4. × Streak multiplier (1.0 + floor(no_miss_hits / 5) * 0.1, if hits >= 5)
-5. Perfect Clear: Final score × 2 (if completed with all lives)
+5. × Double Score power-up (2.0x if active)
+6. Perfect Clear: Final score × 2 (if completed with all lives)
 ```
 
 **Signals**:
@@ -170,28 +178,32 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 **Purpose**: Ball movement, collision, and spin mechanics.
 
 **Physics**:
-- Constant speed movement (BASE_SPEED = 500, adjusted by difficulty)
+- Constant speed movement (base 500, adjusted by difficulty)
 - Spin factor (0.3) - paddle velocity influences ball trajectory
 - Max vertical angle (0.8) - prevents pure horizontal/vertical bounces
 - Ball-to-ball collisions explicitly ignored (no physics conflicts)
 
 **Collision Handling**:
-- **Paddle**: Bounce + add spin from paddle velocity
+- **Paddle**: Bounce + add spin from paddle velocity (or grab if active)
 - **Bricks**: Bounce + notify brick with impact direction
 - **Walls**: Simple reflection
 - **Out of bounds**: Right edge = lost, others = error (auto-correct)
 
 **Special Features**:
 - Stuck detection: Monitors movement over 2 seconds, applies escape boost if needed
-- Trail particles: Cyan (normal speed), Yellow (SPEED_UP active)
+- Trail particles: Cyan (normal), Yellow (speed up), Blue (slow down)
 - Trail toggling based on settings
 
 **Power-Up Effects**:
 - `apply_speed_up_effect()` - 500 → 650 speed (12s)
+- `apply_slow_down_effect()` - 500 → 350 speed (12s)
 - `reset_ball_speed()` - Back to base × difficulty
 - `apply_big_ball_effect()` - 2.0x ball size (12s)
 - `apply_small_ball_effect()` - 0.5x ball size (12s)
 - `reset_ball_size()` - Back to base size
+- `enable_grab()` / `reset_grab_state()`
+- `enable_brick_through()` / `reset_brick_through()`
+- `enable_bomb_ball()` / `reset_bomb_ball()`
 
 ### 5. Brick System (`scripts/brick.gd` + `scenes/gameplay/brick.tscn`)
 **Purpose**: Breakable obstacles with varied types and scoring.
@@ -199,33 +211,42 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 **Brick Types**:
 | Type | Hits | Points | Color/Texture | Special |
 |------|------|--------|---------------|---------|
-| NORMAL | 1 | 10 | Cyan/Green | Standard brick |
-| STRONG | 2 | 20 | Pink/Red glossy | Requires 2 hits |
-| UNBREAKABLE | ∞ | 0 | Grey | Cannot be destroyed |
-| GOLD | 1 | 50 | Gold glossy | High value |
-| RED | 1 | 15 | Red | Themed brick |
-| BLUE | 1 | 15 | Blue | Themed brick |
-| GREEN | 1 | 15 | Green | Themed brick |
-| PURPLE | 2 | 25 | Purple | High value, 2 hits |
-| ORANGE | 1 | 20 | Orange | Mid-value |
+| NORMAL | 1 | 10 | Green square | Standard brick |
+| STRONG | 2 | 20 | Red glossy square | Requires 2 hits |
+| UNBREAKABLE | ∞ | 0 | Grey square | Cannot be destroyed |
+| GOLD | 1 | 50 | Yellow glossy square | High value |
+| RED | 1 | 15 | Red square | Themed brick |
+| BLUE | 1 | 15 | Blue square | Themed brick |
+| GREEN | 1 | 15 | Green square | Themed brick |
+| PURPLE | 2 | 25 | Purple square | 2 hits |
+| ORANGE | 1 | 20 | Yellow square | Mid-value |
+| BOMB | 1 | 30 | Special bomb sprite | Explodes nearby bricks |
 
 **On Break**:
 1. Emits `brick_broken(score_value)` signal
 2. 20% chance to spawn random power-up
 3. Plays particle burst (color-matched to brick) if particles enabled
-4. Disables collision immediately
-5. Waits 0.6s for particles, then removes from scene
+4. Bomb bricks destroy nearby bricks within 75px radius
+5. Disables collision immediately
+6. Waits 0.6s for particles, then removes from scene
 
 ### 6. Power-Up System (`scripts/power_up.gd` + `scripts/power_up_manager.gd`)
 **Power-Up Types**:
-| Type | Effect | Duration | Icon |
-|------|--------|----------|------|
-| EXPAND | Paddle height 130 → 180 | 15s | Green icon |
-| CONTRACT | Paddle height 130 → 80 | 10s | Red icon |
-| SPEED_UP | Ball speed 500 → 650 | 12s | Yellow icon |
-| TRIPLE_BALL | Spawns 2 extra balls | Instant | Blue icon |
-| BIG_BALL | Ball size 2.0x | 12s | Green icon |
-| SMALL_BALL | Ball size 0.5x | 12s | Red icon |
+| Type | Effect | Duration |
+|------|--------|----------|
+| EXPAND | Paddle height 130 → 180 | 15s |
+| CONTRACT | Paddle height 130 → 80 | 10s |
+| SPEED_UP | Ball speed 500 → 650 | 12s |
+| TRIPLE_BALL | Spawns 2 extra balls | Instant |
+| BIG_BALL | Ball size 2.0x | 12s |
+| SMALL_BALL | Ball size 0.5x | 12s |
+| SLOW_DOWN | Ball speed 500 → 350 | 12s |
+| EXTRA_LIFE | +1 life | Instant |
+| GRAB | Paddle grabs ball on contact | 15s |
+| BRICK_THROUGH | Ball passes through bricks | 12s |
+| DOUBLE_SCORE | Score multiplier ×2 | 15s |
+| MYSTERY | Random effect (excludes itself) | Instant |
+| BOMB_BALL | Ball destroys nearby bricks | 12s |
 
 **Power-Up Manager** (Autoload):
 - Tracks active timed effects and remaining time
@@ -236,61 +257,84 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - Emits `effect_applied(type)` and `effect_expired(type)` signals
 - Powers HUD timer display in top-right corner
 
-### 7. Menu System (`scripts/ui/menu_controller.gd` + menu scenes)
+### 7. Set System (`scripts/set_loader.gd` + set UI)
+**Purpose**: Curated multi-level runs with cumulative scoring.
+
+**Set Data** (`data/level_sets.json`):
+- `set_id`, `name`, `description`, `level_ids`, `unlock_condition`
+- Current data includes 1 set: **Classic Challenge** (levels 1-10)
+
+**Runtime Behavior**:
+- Main Menu → Set Select → Play Set or View Levels
+- Set play carries score/lives/combo/streak across levels
+- Level completion saves interim state in MenuController and restores in `main.gd`
+- Set completion applies **Perfect Set** bonus (3x) if all lives intact and no continues
+- Game Over in set mode allows **Continue Set** (marks `had_continue`)
+
+### 8. Menu System (`scripts/ui/menu_controller.gd` + menu scenes)
 **Purpose**: Scene transitions and game flow orchestration.
 
 **Menu Screens**:
 1. **Main Menu** (`scenes/ui/main_menu.tscn`)
-   - Play button → Level Select
+   - Play button → Set Select
    - Difficulty selector (Easy/Normal/Hard)
    - Stats button → Statistics screen
    - Settings button → Settings screen
    - Quit button
 
-2. **Level Select** (`scenes/ui/level_select.tscn`)
-   - Grid of 10 level buttons
-   - Shows unlock status and high scores
-   - Only unlocked levels are clickable
-   - Back to Main Menu button
+2. **Set Select** (`scenes/ui/set_select.tscn`)
+   - Cards for each set
+   - Play Set → starts set mode
+   - View Levels → opens Level Select scoped to set
 
-3. **Game Over** (`scenes/ui/game_over.tscn`)
+3. **Level Select** (`scenes/ui/level_select.tscn`)
+   - Grid of levels with unlock status and high scores
+   - In set context, shows set header and “Play This Set” button
+
+4. **Game Over** (`scenes/ui/game_over.tscn`)
    - Final score display
    - High score comparison
    - Retry level button
-   - Back to Level Select button
-
-4. **Level Complete** (`scenes/ui/level_complete.tscn`)
-   - Final score display
-   - High score notification if beaten
-   - "PERFECT CLEAR!" bonus message (2x score)
-   - Next Level button (continues progression)
-   - Level Select button
-
-5. **Statistics** (`scenes/ui/stats.tscn`)
-   - Global statistics display (bricks broken, power-ups, combos, etc.)
-   - Achievement list with progress bars
-   - 12 achievements total with unlock status
+   - Continue Set button (only in set mode)
    - Back to Main Menu button
 
-6. **Settings** (`scenes/ui/settings.tscn`)
+5. **Level Complete** (`scenes/ui/level_complete.tscn`)
+   - Final score display
+   - High score notification if beaten
+   - “Perfect Clear” bonus message (2x)
+   - Continue Set (set mode) or Next Level (individual mode)
+
+6. **Set Complete** (`scenes/ui/set_complete.tscn`)
+   - Cumulative score
+   - Perfect set bonus message (3x)
+   - Set high score display
+
+7. **Statistics** (`scenes/ui/stats.tscn`)
+   - Global statistics display
+   - Achievement list with progress bars
+
+8. **Settings** (`scenes/ui/settings.tscn`)
    - Screen shake intensity (Off/Low/Medium/High)
    - Particle effects toggle
    - Ball trail toggle
    - Paddle sensitivity slider (0.5x - 2.0x)
    - Music volume slider (-40dB to 0dB)
    - SFX volume slider (-40dB to 0dB)
+   - Clear Save Data button (confirmation dialog)
    - All settings persist via SaveManager
 
 **MenuController Functions**:
-- `show_main_menu()` / `show_level_select()` / `show_stats()` / `show_settings()`
+- `show_main_menu()` / `show_set_select()` / `show_level_select()` / `show_stats()` / `show_settings()`
 - `start_level(level_id)` - Loads gameplay scene with specified level
+- `start_set(set_id)` - Starts set mode and first level
 - `show_game_over(final_score)` - Shows game over screen, saves high score
 - `show_level_complete(final_score)` - Shows level complete, unlocks next level, checks perfect clear
+- `show_set_complete(final_score)` - Shows set summary and set high score
 - `restart_current_level()` - Reloads current level
 - Difficulty locking: Unlocked in menus, locked during gameplay
 
-### 8. Save System (`scripts/save_manager.gd`)
-**Purpose**: Persistent player data, statistics, and achievements.
+### 9. Save System (`scripts/save_manager.gd`)
+**Purpose**: Persistent player data, statistics, achievements, and settings.
 
 **Save Data Structure** (`user://save_data.json`):
 ```json
@@ -308,10 +352,19 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
     "1": 5420,
     "2": 3210
   },
+  "set_progression": {
+    "highest_unlocked_set": 1,
+    "sets_completed": [1]
+  },
+  "set_high_scores": {
+    "1": 12000
+  },
   "statistics": {
     "total_bricks_broken": 1523,
     "total_power_ups_collected": 245,
     "total_levels_completed": 8,
+    "total_individual_levels_completed": 6,
+    "total_set_runs_completed": 2,
     "total_playtime": 3725.5,
     "highest_combo": 27,
     "highest_score": 8940,
@@ -351,78 +404,65 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - Preserves existing player progress
 - See `SOP/godot-workflow.md` for save migration best practices
 
-### 9. Level System (`scripts/level_loader.gd` + JSON files)
+### 10. Level System (`scripts/level_loader.gd` + JSON files)
 **Purpose**: Load and manage level definitions from JSON.
 
 **Level Structure** (JSON):
 ```json
 {
-  "id": 1,
-  "name": "Getting Started",
-  "description": "Learn the basics and break some bricks!",
-  "difficulty": "easy",
+  "level_id": 1,
+  "name": "First Contact",
+  "description": "Learn the basics - break all the bricks!",
   "grid": {
-    "columns": 8,
     "rows": 5,
+    "cols": 8,
     "brick_size": 48,
-    "spacing": 4,
-    "offset_x": 40,
-    "offset_y": 100
+    "spacing": 3,
+    "start_x": 150,
+    "start_y": 150
   },
   "bricks": [
     {"row": 0, "col": 0, "type": "NORMAL"},
-    {"row": 0, "col": 1, "type": "STRONG"}
+    {"row": 0, "col": 1, "type": "STRONG"},
+    {"row": 0, "col": 2, "type": "BOMB"}
   ]
 }
 ```
 
-**10 Levels**:
-1. Getting Started (Tutorial - easy pattern)
-2. The Wall (Stacked rows)
-3. Checkerboard (Alternating pattern)
-4. The Corridor (Narrow gaps)
-5. Mixed Bag (All brick types)
-6. Diamond Formation (Diamond shape)
-7. Fortress (Unbreakable walls)
-8. The Pyramid (Triangle pattern)
-9. The Corridors (Multiple narrow paths)
-10. The Gauntlet (Dense, hard pattern)
+**Valid Brick Types**:
+- `NORMAL`, `STRONG`, `UNBREAKABLE`, `GOLD`, `RED`, `BLUE`, `GREEN`, `PURPLE`, `ORANGE`, `BOMB`
 
 **LevelLoader Functions**:
 - `level_exists(level_id)` - Check if level JSON exists
 - `instantiate_level(level_id, brick_container)` - Spawn bricks in scene
 - `get_level_info(level_id)` - Get name, description, metadata
 - `get_next_level_id(current_id)` - Returns -1 if no more levels
-- Automatically tracks total level count for progression
+- Uses directory scan to determine total level count
 
-### 10. Difficulty System (`scripts/difficulty_manager.gd`)
+### 11. Difficulty System (`scripts/difficulty_manager.gd`)
 **Purpose**: Game difficulty modes with multipliers.
 
 **Difficulty Modes**:
-| Mode | Ball Speed | Score Multiplier | Description |
-|------|------------|------------------|-------------|
-| Easy | 0.8x (400) | 0.8x | Slower, lower rewards |
-| Normal | 1.0x (500) | 1.0x | Standard gameplay |
-| Hard | 1.2x (600) | 1.5x | Faster, higher rewards |
+| Mode | Ball Speed Multiplier | Score Multiplier | Notes |
+|------|------------------------|------------------|-------|
+| Easy | 0.8x | 0.8x | Slower, lower rewards |
+| Normal | 1.0x | 1.0x | Standard gameplay |
+| Hard | 1.2x | 1.5x | Faster, higher rewards |
 
 **Features**:
 - Difficulty locking: Prevents changes during active gameplay
 - Auto-applies to ball speed on spawn and reset
 - Score multiplier applied in `GameManager.add_score()`
 - Difficulty selection saved to SaveManager
-- Can be changed in Main Menu or via Settings
 
-### 11. HUD System (`scripts/hud.gd`)
+### 12. HUD System (`scripts/hud.gd`)
 **Purpose**: In-game UI overlay with dynamic elements.
 
 **HUD Elements**:
 - **TopBar**: Score, Logo, Lives (always visible)
 - **Difficulty Label**: "DIFFICULTY: NORMAL" (top-left, below score)
 - **Multiplier Display**: Shows active score bonuses (top-left, below difficulty)
-  - Example: "MULTIPLIERS:\nHard: 1.5x\nCombo: 1.4x\nStreak: 1.2x"
-  - Color-coded: White (base), Yellow (1.1x-1.5x), Orange (1.5x+)
 - **Combo Counter**: "COMBO x12!" (center, visible when combo >= 3)
-  - Elastic bounce animation at milestones (5, 10, 15...)
 - **Power-Up Timers**: Active effects with countdown (top-right)
 - **Pause Menu**: Enhanced pause screen with level info, resume, restart, main menu
 - **Level Intro**: Fade in/out display of level name and description
@@ -438,7 +478,7 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - `DifficultyManager.difficulty_changed` → Update difficulty label and multipliers
 - `PowerUpManager.effect_applied/expired` → Add/remove power-up timers
 
-### 12. Camera Shake (`scripts/camera_shake.gd`)
+### 13. Camera Shake (`scripts/camera_shake.gd`)
 **Purpose**: Screen shake effects for game feel.
 
 **Features**:
@@ -446,7 +486,6 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - Intensity scales with combo multiplier in gameplay
 - Settings-based multiplier: Off (0x), Low (0.5x), Medium (1.0x), High (1.5x)
 - Gradual intensity reduction over duration
-- Applied on brick breaks and special events
 
 ## Input Map (project.godot)
 - `move_up`: Up Arrow, W - Paddle up
@@ -460,8 +499,9 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 ### Menu Flow
 ```
 Main Menu
-  ├─→ PLAY → Level Select
-  │            ├─→ Select Level → Gameplay (main.tscn)
+  ├─→ PLAY → Set Select
+  │            ├─→ PLAY SET → Gameplay (main.tscn)
+  │            ├─→ VIEW LEVELS → Level Select → Gameplay (main.tscn)
   │            └─→ BACK → Main Menu
   ├─→ STATS → Statistics Screen → BACK → Main Menu
   ├─→ SETTINGS → Settings Screen → BACK → Main Menu
@@ -469,13 +509,19 @@ Main Menu
 
 Gameplay (main.tscn)
   ├─→ Level Complete → Level Complete Screen
-  │                      ├─→ NEXT LEVEL → Next level gameplay
+  │                      ├─→ CONTINUE SET (set mode)
+  │                      ├─→ NEXT LEVEL (individual mode)
   │                      ├─→ LEVEL SELECT → Level Select
   │                      └─→ MAIN MENU → Main Menu
   └─→ Game Over → Game Over Screen
                    ├─→ RETRY → Restart current level
-                   ├─→ LEVEL SELECT → Level Select
+                   ├─→ CONTINUE SET (set mode)
                    └─→ MAIN MENU → Main Menu
+
+Set Complete → Set Complete Screen
+  ├─→ NEXT SET (if available)
+  ├─→ SET SELECT
+  └─→ MAIN MENU
 ```
 
 ### Gameplay Loop
@@ -489,13 +535,17 @@ Gameplay (main.tscn)
 4. **Lose Ball**: Falls off right edge
    - If last ball → Lose life, reset combo/streak, return to READY
    - If extra balls remain → Remove ball, continue playing
-5. **Level Complete**: All breakable bricks destroyed
+5. **Level Complete**:
    - Check perfect clear (all lives intact → 2x score bonus)
    - Save high score, mark level completed
    - Unlock next level
    - Check and unlock achievements
    - Show Level Complete screen
-6. **Game Over**: Lives reach 0
+6. **Set Mode Only**:
+   - Save score/lives/combo/streak after each level
+   - Restore saved state at next level
+   - Perfect Set bonus (3x) if all lives intact and no continues
+7. **Game Over**: Lives reach 0
    - Save final score if high score
    - Show Game Over screen
 
@@ -505,9 +555,10 @@ Base brick = 10 points
 Difficulty = Hard (1.5x)
 Combo = 12x (1.0 + 10 * 0.1 = 2.0x)
 Streak = 15 hits (1.0 + 3 * 0.1 = 1.3x)
+Double Score = 2.0x
 
 Calculation:
-10 × 1.5 × 2.0 × 1.3 = 39 points per brick
+10 × 1.5 × 2.0 × 1.3 × 2.0 = 78 points per brick
 
 If Perfect Clear at end:
 Final score × 2
@@ -517,11 +568,12 @@ Final score × 2
 
 ### Graphics
 - **Brick Sprites**: Square textures (32x32) scaled to 48x48
-  - 9 brick types with color-coded textures
-  - Glossy variants for high-value bricks
+  - Standard and glossy variants
+  - Special bomb brick sprite scaled to 48px
 - **Ball Trail**: CPUParticles2D with color changes
   - Cyan (normal speed)
-  - Yellow (SPEED_UP active)
+  - Yellow (speed up)
+  - Blue (slow down)
   - Toggleable in settings
 - **Brick Particles**: 40 particles per break
   - Color-matched to brick type
@@ -531,9 +583,9 @@ Final score × 2
 - **Power-Up Icons**: Individual PNGs with colored glow (green = good, red = bad)
 
 ### Audio System (Not Yet Implemented)
-- Music volume control in settings (saved)
-- SFX volume control in settings (saved)
-- Audio buses ready: "Music" and "SFX"
+- Music/SFX volume controls exist in settings
+- AudioServer is called on settings change, expecting "Music" and "SFX" buses
+- No AudioManager or assets are present yet
 
 ## Data Persistence
 
@@ -547,15 +599,17 @@ Final score × 2
 ### Statistics Tracked
 1. `total_bricks_broken` - Cumulative bricks destroyed
 2. `total_power_ups_collected` - Cumulative power-ups picked up
-3. `total_levels_completed` - Cumulative level clears
-4. `total_playtime` - Total seconds played (not yet implemented)
-5. `highest_combo` - Best combo multiplier achieved
-6. `highest_score` - Best score in any single level
-7. `total_games_played` - Total gameplay sessions (not yet implemented)
-8. `perfect_clears` - Levels completed with all lives intact
+3. `total_levels_completed` - Total levels completed (all modes)
+4. `total_individual_levels_completed` - Individual mode completions
+5. `total_set_runs_completed` - Completed set runs
+6. `total_playtime` - Total seconds played (incremented during READY/PLAYING; flushed every 5s)
+7. `highest_combo` - Best combo achieved
+8. `highest_score` - Best score in any single level
+9. `total_games_played` - Total gameplay sessions (incremented per level start)
+10. `perfect_clears` - Levels completed with all lives intact
 
 ### Settings Persistence
-All 7 settings auto-save and load:
+All settings auto-save and load:
 1. Difficulty (Easy/Normal/Hard)
 2. Music volume (dB)
 3. SFX volume (dB)
@@ -566,15 +620,15 @@ All 7 settings auto-save and load:
 
 ## Complex or Risky Areas
 
-### 1. Triple Ball Spawn Logic (`scripts/main.gd:279-347`)
+### 1. Triple Ball Spawn Logic (`scripts/main.gd`)
 **Risk**: Extra balls can escape through walls if spawned at bad angles.
 **Mitigation**:
 - Retry system with 3 attempts and 0.5s delays
-- Position validation before spawning (checks Y position)
+- Position validation before spawning (checks X/Y position)
 - Safe angle range clamp (120°-240°)
 - Failure message if all retries exhausted
 
-### 2. Ball Stuck Detection (`scripts/ball.gd:287-325`)
+### 2. Ball Stuck Detection (`scripts/ball.gd`)
 **Risk**: Ball can get stuck in unbreakable brick formations.
 **Mitigation**:
 - Per-frame movement monitoring with dynamic threshold
@@ -583,35 +637,35 @@ All 7 settings auto-save and load:
 - Random escape angle in left hemisphere (135° - 225°)
 - Always updates `last_position` for accurate comparison
 
-### 3. Save Data Migration (`scripts/save_manager.gd:160-180`)
+### 3. Save Data Migration (`scripts/save_manager.gd`)
 **Risk**: Old save files crash when accessing new fields.
 **Mitigation**:
 - Version number in save data
 - Automatic migration on load
 - Adds missing fields with defaults
 - Preserves existing player progress
-- See `SOP/godot-workflow.md` for best practices
 
-### 4. Ball Collision During Scene Transition (`scripts/brick.gd:190`)
+### 4. Ball Collision During Scene Transition (`scripts/brick.gd`)
 **Risk**: Brick tries to create timer during scene unload, causing crash.
 **Mitigation**:
 - Check `is_inside_tree()` before `await get_tree().create_timer()`
-- Prevents crash when level completes during particle animation
 
-### 5. Physics Callback Conflicts (`scripts/main.gd:276`)
+### 5. Physics Callback Conflicts (`scripts/main.gd`)
 **Risk**: Spawning objects during collision callback causes "flushing queries" error.
 **Mitigation**:
 - Use `call_deferred()` when spawning balls from collision events
-- Delays spawn until after physics step completes
 
 ### 6. Settings Apply Without Restart
-**Risk**: Changing settings doesn't affect current gameplay.
-**Solution**: Settings are read on scene load (ball, paddle, camera on `_ready()`)
-**Limitation**: Must return to main menu and reload level for changes to apply
+**Limitation**: Gameplay settings are read on scene `_ready()` (ball, paddle, camera).
+**Workaround**: Return to main menu and reload gameplay to apply changes.
+**Exception**: Audio sliders apply immediately via AudioServer.
+
+## Known Issues and Gaps
+- Set unlocking is stubbed; `highest_unlocked_set` is always 1 and all sets are effectively unlocked.
+- Debug logging is still verbose in multiple scripts.
 
 ## Related Docs
 - `System/tech-stack.md` - Engine version, project settings, input configuration
-- `Tasks/Backlog/future-features.md` - Planned features (Time Attack, Survival mode, etc.)
 - `SOP/godot-workflow.md` - Development workflows, save migration, debugging
 - `Tasks/Completed/save-system.md` - Save system implementation details
 - `Tasks/Completed/level-system.md` - Level JSON format and design guidelines
@@ -619,7 +673,8 @@ All 7 settings auto-save and load:
 
 ---
 
-**Last Updated**: 2026-01-30 (Power-up icons split into PNGs, Big/Small Ball power-ups, debug spawns)
+**Last Updated**: 2026-01-30
 **Godot Version**: 4.6
 **Total Levels**: 10
+**Total Sets**: 1
 **Total Achievements**: 12

@@ -37,17 +37,24 @@ func _ready():
 		high_score_label.text = "High Score: " + str(high_score)
 		high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
 
-	# Check if next level exists
-	if LevelLoader.has_next_level(level_id):
-		var next_level_id = LevelLoader.get_next_level_id(level_id)
-		var next_level_info = LevelLoader.get_level_info(next_level_id)
-		unlocked_label.text = "Unlocked: " + next_level_info.get("name", "Next Level")
+	# Handle set mode vs individual mode
+	if MenuController.current_play_mode == MenuController.PlayMode.SET:
+		# In set mode, show continue button (no auto-advance - let player take a break)
+		next_level_button.text = "CONTINUE SET"
+		unlocked_label.text = "Ready for next level"
 		next_level_button.disabled = false
 	else:
-		unlocked_label.text = "All Levels Complete!"
-		unlocked_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1))
-		next_level_button.disabled = true
-		next_level_button.text = "NO MORE LEVELS"
+		# In individual mode, show normal next level options
+		if LevelLoader.has_next_level(level_id):
+			var next_level_id = LevelLoader.get_next_level_id(level_id)
+			var next_level_info = LevelLoader.get_level_info(next_level_id)
+			unlocked_label.text = "Unlocked: " + next_level_info.get("name", "Next Level")
+			next_level_button.disabled = false
+		else:
+			unlocked_label.text = "All Levels Complete!"
+			unlocked_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1))
+			next_level_button.disabled = true
+			next_level_button.text = "NO MORE LEVELS"
 
 func _on_next_level_button_pressed():
 	"""Continue to next level"""

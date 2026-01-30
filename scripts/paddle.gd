@@ -110,26 +110,33 @@ func reset_paddle_height():
 func set_paddle_height(new_height: float):
 	"""Change paddle height with animation"""
 	current_height = new_height
+
+	# Update collision shape FIRST (before calculating bounds)
+	if has_node("CollisionShape2D"):
+		var collision = $CollisionShape2D
+		if collision.shape is RectangleShape2D:
+			# Duplicate the shape if it's shared to avoid affecting other instances
+			if not collision.shape.is_local_to_scene():
+				collision.shape = collision.shape.duplicate()
+
+			# Create a new size vector with updated height
+			var new_size = collision.shape.size
+			new_size.y = new_height
+			collision.shape.size = new_size
+
 	# Ensure paddle stays within dynamic bounds after size change
 	var half_height = current_height / 2.0
 	var min_y = WALL_TOP_Y + half_height
 	var max_y = WALL_BOTTOM_Y - half_height
 	position.y = clamp(position.y, min_y, max_y)
 
-	# Update visual if it exists (Sprite2D rotated 90°, so scale X for height)
+	# Update visual with animation (Sprite2D rotated 90°, so scale X for height)
 	if has_node("Visual"):
 		var visual = $Visual
 		var scale_factor = new_height / BASE_HEIGHT
 		var tween = create_tween()
 		# Paddle is rotated 90°, so X axis is vertical (height)
 		tween.tween_property(visual, "scale:x", scale_factor, 0.2)
-
-	# Update collision shape
-	if has_node("CollisionShape2D"):
-		var collision = $CollisionShape2D
-		if collision.shape is RectangleShape2D:
-			var tween = create_tween()
-			tween.tween_property(collision.shape, "size:y", new_height, 0.2)
 
 func _input(event):
 	# Debug: Toggle control modes with keys
