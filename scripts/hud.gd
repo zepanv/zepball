@@ -234,6 +234,12 @@ func create_powerup_indicator(type) -> Control:
 		2:  # SPEED_UP
 			name_label.text = "FAST BALL"
 			name_label.modulate = Color(1.0, 0.8, 0.3)  # Yellow
+		4:  # BIG_BALL
+			name_label.text = "BIG BALL"
+			name_label.modulate = Color(0.3, 0.8, 0.3)  # Green
+		5:  # SMALL_BALL
+			name_label.text = "SMALL BALL"
+			name_label.modulate = Color(0.8, 0.3, 0.3)  # Red
 
 	name_label.add_theme_font_size_override("font_size", 14)
 	hbox.add_child(name_label)

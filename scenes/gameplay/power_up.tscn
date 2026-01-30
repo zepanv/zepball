@@ -9,6 +9,10 @@ size = Vector2(40, 40)
 script = ExtResource("1_powerup_script")
 margin = Vector2(4, 4)
 
+[node name="Glow" type="Sprite2D" parent="." unique_id=900217433]
+texture_filter = 1
+z_index = -1
+
 [node name="Sprite" type="Sprite2D" parent="." unique_id=1722732414]
 texture_filter = 1
 

@@ -6,9 +6,13 @@ extends CharacterBody2D
 
 # Ball physics constants
 const BASE_current_speed = 500.0   # Base speed (pixels/second)
+const BASE_RADIUS = 16.0
+const BASE_VISUAL_SCALE = Vector2(0.0185, 0.0185)
 const SPIN_FACTOR = 0.3         # How much paddle velocity affects ball
 const MAX_VERTICAL_ANGLE = 0.8  # Prevent pure vertical/horizontal motion
 const INITIAL_ANGLE = -45.0     # Launch angle (degrees, toward left)
+const TOP_WALL_Y = 20.0
+const BOTTOM_WALL_Y = 700.0
 
 # Dynamic speed (can be modified by power-ups)
 var current_speed: float = BASE_current_speed
@@ -25,6 +29,7 @@ var stuck_check_timer: float = 0.0
 var last_position: Vector2 = Vector2.ZERO
 var stuck_threshold: float = 2.0  # seconds
 var movement_threshold: float = 30.0  # pixels
+var ball_radius: float = BASE_RADIUS
 
 # Signals
 signal ball_lost
@@ -52,6 +57,12 @@ func _ready():
 
 	# Direction indicator disabled for now
 	# create_direction_indicator()
+	if has_node("CollisionShape2D"):
+		var collision = $CollisionShape2D
+		if collision.shape is CircleShape2D:
+			ball_radius = collision.shape.radius
+	if has_node("Visual"):
+		$Visual.scale = BASE_VISUAL_SCALE
 
 func _physics_process(delta):
 	# Stop ball movement if level is complete or game over
@@ -219,6 +230,16 @@ func handle_collision(collision: KinematicCollision2D):
 		if abs(velocity.x) < current_speed * (1.0 - MAX_VERTICAL_ANGLE):
 			velocity.x = sign(velocity.x) * current_speed * (1.0 - MAX_VERTICAL_ANGLE)
 
+		# Prevent paddle-bottom wall wedge by nudging ball upward at the boundary
+		var min_y = TOP_WALL_Y + ball_radius
+		var max_y = BOTTOM_WALL_Y - ball_radius
+		if position.y < min_y:
+			position.y = min_y
+			velocity.y = abs(velocity.y)
+		elif position.y > max_y:
+			position.y = max_y
+			velocity.y = -abs(velocity.y)
+
 		print("Ball hit paddle, velocity: ", velocity)
 
 	elif collider.is_in_group("brick"):
@@ -252,6 +273,7 @@ func reset_ball():
 
 	print("Ball reset to paddle")
 
+
 func apply_speed_up_effect():
 	"""Increase ball speed to 650 for 12 seconds"""
 	current_speed = 650.0
@@ -277,6 +299,40 @@ func reset_ball_speed():
 		$Trail.color = Color(0.3, 0.6, 0.95, 0.7)  # Cyan-blue
 
 	print("Ball speed reset to ", current_speed)
+
+func apply_big_ball_effect():
+	"""Double ball size for power-up duration"""
+	_set_ball_radius(BASE_RADIUS * 2.0)
+
+func apply_small_ball_effect():
+	"""Half ball size for power-up duration"""
+	_set_ball_radius(BASE_RADIUS * 0.5)
+
+func reset_ball_size():
+	"""Reset ball to base size"""
+	_set_ball_radius(BASE_RADIUS)
+
+func get_ball_radius() -> float:
+	return ball_radius
+
+func set_ball_radius(new_radius: float):
+	_set_ball_radius(new_radius)
+
+func get_base_radius() -> float:
+	return BASE_RADIUS
+
+func set_ball_size_multiplier(multiplier: float):
+	_set_ball_radius(BASE_RADIUS * multiplier)
+
+func _set_ball_radius(new_radius: float):
+	ball_radius = new_radius
+	if has_node("CollisionShape2D"):
+		var collision = $CollisionShape2D
+		if collision.shape is CircleShape2D:
+			collision.shape.radius = new_radius
+	if has_node("Visual"):
+		var scale_factor = new_radius / BASE_RADIUS
+		$Visual.scale = BASE_VISUAL_SCALE * scale_factor
 
 func enable_collision_immunity(_duration: float = 0.5):
 	"""No longer needed - ball-to-ball collisions disabled at physics layer"""

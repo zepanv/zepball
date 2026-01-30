@@ -53,6 +53,7 @@ position.y = clamp(position.y, min_y, max_y)
   - Walls: Simple reflection
   - Paddle: Reflection + spin mechanics
   - Bricks: Reflection + destruction signal
+- Anti-wedge nudge on paddle collision near top/bottom boundaries to keep ball in play
 - Ball lost detection (x > 1300), with safety handling for left/top/bottom escapes
 - Auto-reset to paddle after life lost
 

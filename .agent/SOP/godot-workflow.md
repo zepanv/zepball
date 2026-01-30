@@ -326,6 +326,40 @@ git commit -m "feat: Implement paddle vertical movement
 - Velocity tracking for spin mechanics"
 ```
 
+### Commit Message Format (Required)
+All commits must follow the format used in commit `7d91afb`. Use:
+
+```
+<type>: <short summary> (YYYY-MM-DD HH:MM)
+
+Major Features:
+- Feature area
+  - Subdetail
+  - Subdetail
+
+Quality of Life:
+- Improvement
+  - Subdetail
+
+Level System:
+- Content changes
+  - Subdetail
+
+Code Improvements:
+- Technical changes
+  - Subdetail
+
+Documentation:
+- Doc updates
+
+Co-Authored-By: <Name> <email>   # Only when applicable
+```
+
+Notes:
+- `<type>` should be `feat`, `fix`, `refactor`, `docs`, or `chore`.
+- Include a date/time tag in the subject, e.g. `(2026-01-30 16:30)`.
+- Omit sections that don’t apply, but keep headings for major changes.
+
 ### Versioning Note
 Do not increment version numbers in README or project files unless explicitly requested.
 
@@ -558,6 +592,6 @@ Before committing:
 
 ---
 
-*Last Updated: 2026-01-29*
+*Last Updated: 2026-01-30*
 *Godot Version: 4.6*
 *See: architecture.md for scene structure details*

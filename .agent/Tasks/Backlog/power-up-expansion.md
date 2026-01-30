@@ -3,7 +3,7 @@
 ## Status: 📋 BACKLOG
 
 ## Why
-`Tasks/Completed/power-ups.md` lists several power-ups beyond the current four (Expand, Contract, Speed Up, Triple Ball). Those additional power-ups are not implemented in code or assets.
+`Tasks/Completed/power-ups.md` lists several power-ups beyond the current six (Expand, Contract, Speed Up, Triple Ball, Big Ball, Small Ball). Those additional power-ups are not implemented in code or assets.
 
 ## Scope
 Implement the next batch of power-ups plus infrastructure updates to support future additions.
@@ -11,7 +11,6 @@ Implement the next batch of power-ups plus infrastructure updates to support fut
 ## Missing Power-Ups (from existing plan)
 - Slow Down (inverse of Speed Up)
 - Extra Life
-- Big Ball / Small Ball
 - Grab (ball sticks to paddle)
 - Brick Through (pierce bricks)
 - Warp (skip to next level)
@@ -22,9 +21,9 @@ Implement the next batch of power-ups plus infrastructure updates to support fut
 - Air Ball
 
 ## Implementation Notes
-- Extend `PowerUpType` enum in `scripts/power_up.gd` and update sprite atlas mapping.
+- Extend `PowerUpType` enum in `scripts/power_up.gd` and add icon PNG bindings.
 - Add effect logic:
-  - Ball size, speed modifiers, collision behavior.
+  - Ball behavior (speed, collision modifiers).
   - Paddle state changes (grab, magnet, repel).
   - Score modifiers (double score) via GameManager.
   - Progression effects (warp) via MenuController/LevelLoader.

@@ -8,7 +8,9 @@ enum PowerUpType {
 	EXPAND,
 	CONTRACT,
 	SPEED_UP,
-	TRIPLE_BALL
+	TRIPLE_BALL,
+	BIG_BALL,
+	SMALL_BALL
 }
 
 # Active effects with their remaining time
@@ -20,7 +22,9 @@ const EFFECT_DURATIONS = {
 	PowerUpType.EXPAND: 15.0,
 	PowerUpType.CONTRACT: 10.0,
 	PowerUpType.SPEED_UP: 12.0,
-	PowerUpType.TRIPLE_BALL: 0.0  # Permanent (doesn't expire)
+	PowerUpType.TRIPLE_BALL: 0.0,  # Permanent (doesn't expire)
+	PowerUpType.BIG_BALL: 12.0,
+	PowerUpType.SMALL_BALL: 12.0
 }
 
 # Signals
@@ -40,6 +44,8 @@ func _process(delta):
 func apply_effect(type: PowerUpType, target_node: Node):
 	"""Apply a power-up effect with timer"""
 	var duration = EFFECT_DURATIONS.get(type, 0.0)
+	if target_node and not is_instance_valid(target_node):
+		target_node = null
 
 	# If effect already active, refresh timer
 	if active_effects.has(type):
@@ -55,6 +61,11 @@ func apply_effect(type: PowerUpType, target_node: Node):
 
 	effect_applied.emit(type)
 
+	if type == PowerUpType.EXPAND or type == PowerUpType.CONTRACT:
+		_update_paddle_size(target_node)
+	elif type == PowerUpType.BIG_BALL or type == PowerUpType.SMALL_BALL:
+		_update_ball_size(target_node)
+
 func remove_effect(type: PowerUpType):
 	"""Remove an active effect and reset to default"""
 	if not active_effects.has(type):
@@ -66,17 +77,114 @@ func remove_effect(type: PowerUpType):
 	# Reset based on type
 	match type:
 		PowerUpType.EXPAND, PowerUpType.CONTRACT:
-			if target and target.has_method("reset_paddle_height"):
-				target.reset_paddle_height()
+			active_effects.erase(type)
+			var paddle_target = _get_paddle_target()
+			_update_paddle_size(paddle_target)
+			effect_expired.emit(type)
+			print("Power-up expired: ", PowerUpType.keys()[type])
+			return
 		PowerUpType.SPEED_UP:
 			if target and target.has_method("reset_ball_speed"):
 				target.reset_ball_speed()
+		PowerUpType.BIG_BALL, PowerUpType.SMALL_BALL:
+			active_effects.erase(type)
+			var ball_target = _get_ball_target()
+			_update_ball_size(ball_target)
+			effect_expired.emit(type)
+			print("Power-up expired: ", PowerUpType.keys()[type])
+			return
 
 	# Remove from active effects
 	active_effects.erase(type)
 
 	effect_expired.emit(type)
 	print("Power-up expired: ", PowerUpType.keys()[type])
+
+func _get_paddle_target() -> Node:
+	if active_effects.has(PowerUpType.EXPAND):
+		return active_effects[PowerUpType.EXPAND].target_node
+	if active_effects.has(PowerUpType.CONTRACT):
+		return active_effects[PowerUpType.CONTRACT].target_node
+	return get_tree().get_first_node_in_group("paddle")
+
+func _update_paddle_size(target_node: Node):
+	if not target_node:
+		target_node = _get_paddle_target()
+	if not target_node:
+		return
+
+	var has_expand = active_effects.has(PowerUpType.EXPAND)
+	var has_contract = active_effects.has(PowerUpType.CONTRACT)
+
+	if has_expand and has_contract:
+		if target_node.has_method("reset_paddle_height"):
+			target_node.reset_paddle_height()
+		return
+
+	if has_expand:
+		if target_node.has_method("apply_expand_effect"):
+			target_node.apply_expand_effect()
+	elif has_contract:
+		if target_node.has_method("apply_contract_effect"):
+			target_node.apply_contract_effect()
+	else:
+		if target_node.has_method("reset_paddle_height"):
+			target_node.reset_paddle_height()
+
+func _get_ball_target() -> Node:
+	var big_target = _get_effect_target(PowerUpType.BIG_BALL)
+	if big_target:
+		return big_target
+	var small_target = _get_effect_target(PowerUpType.SMALL_BALL)
+	if small_target:
+		return small_target
+	var fallback = get_tree().get_first_node_in_group("ball")
+	if is_instance_valid(fallback):
+		return fallback
+	return null
+
+func _update_ball_size(target_node: Node):
+	if not target_node:
+		target_node = _get_ball_target()
+	if not target_node:
+		return
+
+	var has_big = active_effects.has(PowerUpType.BIG_BALL)
+	var has_small = active_effects.has(PowerUpType.SMALL_BALL)
+
+	if has_big and has_small:
+		if target_node.has_method("reset_ball_size"):
+			target_node.reset_ball_size()
+		return
+
+	if has_big:
+		if target_node.has_method("apply_big_ball_effect"):
+			target_node.apply_big_ball_effect()
+	elif has_small:
+		if target_node.has_method("apply_small_ball_effect"):
+			target_node.apply_small_ball_effect()
+	else:
+		if target_node.has_method("reset_ball_size"):
+			target_node.reset_ball_size()
+
+func _get_effect_target(effect_type: int) -> Node:
+	if active_effects.has(effect_type):
+		var target = active_effects[effect_type].target_node
+		if is_instance_valid(target):
+			return target
+		active_effects[effect_type].target_node = null
+	return null
+
+func get_ball_size_multiplier() -> float:
+	var has_big = active_effects.has(PowerUpType.BIG_BALL)
+	var has_small = active_effects.has(PowerUpType.SMALL_BALL)
+	if has_big and has_small:
+		return 1.0
+	if has_big:
+		return 2.0
+	if has_small:
+		return 0.5
+	return 1.0
 
 func get_active_effects() -> Array:
 	"""Get list of currently active power-up types"""

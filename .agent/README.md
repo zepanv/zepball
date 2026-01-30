@@ -21,7 +21,7 @@ PRDs and implementation plans for features (both implemented and future).
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
   - `Tasks/Backlog/audio-system.md` - Audio system plan (SFX, music) 📅 NOT YET IMPLEMENTED
   - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay)
-  - `Tasks/Backlog/power-up-expansion.md` - Additional power-ups beyond the current four
+  - `Tasks/Backlog/power-up-expansion.md` - Additional power-ups beyond the current six
   - `Tasks/Backlog/tile-advanced-elements.md` - Force zones, special bricks, and advanced tile behaviors
   - `Tasks/Backlog/ui-gaps.md` - Launch indicator + level complete breakdown
 
@@ -29,11 +29,11 @@ PRDs and implementation plans for features (both implemented and future).
 Best practices and workflows for development.
 - **`SOP/godot-workflow.md`** - Working with Godot scenes, nodes, signals, and **CRITICAL: Save System Compatibility** section for handling save data migrations.
 
-## Current Game State (2026-01-29 15:27 EST)
+## Current Game State (2026-01-30 16:00 EST)
 
 ### Core Features ✅ COMPLETE
 - **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 9 brick types, collision detection, score tracking
-- **Power-Ups**: 4 types (Expand, Contract, Speed Up, Triple Ball) with visual timers
+- **Power-Ups**: 6 types (Expand, Contract, Speed Up, Triple Ball, Big Ball, Small Ball) with visual timers
 - **Difficulty**: 3 modes (Easy/Normal/Hard) with speed and score multipliers
 - **Levels**: 10 unique levels with creative patterns and increasing difficulty
 - **Menu System**: Complete flow (Main Menu, Level Select, Game Over, Level Complete, Stats, Settings)
@@ -97,7 +97,7 @@ These are always accessible and control key game systems:
 ### ✅ Phase 1-5: Core Game (COMPLETE)
 - Phase 1: Core Mechanics (Paddle, Ball, Bricks, Collision)
 - Phase 2: Visual Polish (Particles, Camera Shake, Backgrounds)
-- Phase 3: Power-Ups (4 types with timers)
+- Phase 3: Power-Ups (6 types with timers)
 - Phase 4: UI System & Game Flow (Complete menu system)
 - Phase 5: Level System & Content (10 levels with progression)
 
@@ -121,7 +121,13 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ## Recent Update History
 
-### 2026-01-29 (Latest) - Settings & Score Multipliers
+### 2026-01-30 (Latest) - Power-Up Updates
+- ✅ **Power-Up Icons**: Split into individual PNGs with colored glow
+- ✅ **New Power-Ups**: Big Ball (2x size) and Small Ball (0.5x size)
+- ✅ **Overlap Handling**: Expand/Contract and Big/Small conflicts resolve to base size
+- ✅ **Debug Keys**: 1-5 spawn power-ups for testing (debug builds)
+
+### 2026-01-29 - Settings & Score Multipliers
 - ✅ **Settings Menu**: 6 customizable options (shake, particles, trail, sensitivity, audio)
 - ✅ **Score Multipliers**: No-miss streak (+10%/5 hits), Perfect Clear (2x final score)
 - ✅ **Multiplier HUD**: Real-time display of active bonuses with color coding
@@ -198,7 +204,7 @@ Settings are loaded on scene `_ready()`. To apply setting changes, users must:
 This affects: screen shake, particles, trail, paddle sensitivity.
 
 ### Complex Areas to Review
-1. **Triple Ball Spawn** (`main.gd:279-347`) - Retry system with angle validation
+1. **Triple Ball Spawn** (`main.gd:279-347`) - Retry system with angle validation (120°-240°)
 2. **Ball Stuck Detection** (`ball.gd:287-325`) - Dynamic threshold per-frame monitoring
 3. **Save Migration** (`save_manager.gd:160-180`) - Automatic field addition
 4. **Scene Transitions** (`brick.gd:190`) - Check `is_inside_tree()` before await
@@ -218,7 +224,7 @@ This affects: screen shake, particles, trail, paddle sensitivity.
 
 ---
 
-**Last Updated**: 2026-01-29 15:27 EST (Docs refresh and tasks reorg)
+**Last Updated**: 2026-01-30 16:30 EST (SOP commit message format uses date/time)
 **Total Levels**: 10
 **Total Achievements**: 12
 **Documentation Status**: ✅ Up-to-date with all implemented features

@@ -322,16 +322,31 @@ func _input(event):
 			_hit_all_bricks()
 		elif event.keycode == KEY_1:
 			# Debug: Spawn a triple ball power-up for testing
-			print("\n### DEBUG: Spawning TRIPLE_BALL power-up ###")
-			var powerup_scene = load("res://scenes/gameplay/power_up.tscn")
-			if powerup_scene:
-				var powerup = powerup_scene.instantiate()
-				powerup.power_up_type = 3  # TRIPLE_BALL
-				powerup.position = Vector2(1100, 360)  # Near paddle
-				_on_power_up_spawned(powerup)
-				print("TRIPLE_BALL power-up spawned at position: ", powerup.position)
-			else:
-				print("ERROR: Could not load power-up scene")
+			_spawn_debug_powerup("TRIPLE_BALL", 3)
+		elif event.keycode == KEY_2:
+			# Debug: Spawn an expand power-up for testing
+			_spawn_debug_powerup("EXPAND", 0)
+		elif event.keycode == KEY_3:
+			# Debug: Spawn a contract power-up for testing
+			_spawn_debug_powerup("CONTRACT", 1)
+		elif event.keycode == KEY_4:
+			# Debug: Spawn a big ball power-up for testing
+			_spawn_debug_powerup("BIG_BALL", 4)
+		elif event.keycode == KEY_5:
+			# Debug: Spawn a small ball power-up for testing
+			_spawn_debug_powerup("SMALL_BALL", 5)
+
+func _spawn_debug_powerup(label: String, powerup_type: int):
+	print("\n### DEBUG: Spawning ", label, " power-up ###")
+	var powerup_scene = load("res://scenes/gameplay/power_up.tscn")
+	if powerup_scene:
+		var powerup = powerup_scene.instantiate()
+		powerup.power_up_type = powerup_type
+		powerup.position = Vector2(1100, 360)  # Near paddle
+		_on_power_up_spawned(powerup)
+		print(label, " power-up spawned at position: ", powerup.position)
+	else:
+		print("ERROR: Could not load power-up scene")
 
 func _hit_all_bricks():
 	"""Hit all bricks (breaks normals, strongs via double hit)"""
@@ -364,17 +379,22 @@ func _on_power_up_collected(type):
 	# Apply power-up effect based on type
 	match type:
 		0:  # EXPAND
-			if paddle and paddle.has_method("apply_expand_effect"):
-				paddle.apply_expand_effect()
-				PowerUpManager.apply_effect(PowerUpManager.PowerUpType.EXPAND, paddle)
+			var paddle_target = paddle if is_instance_valid(paddle) else null
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.EXPAND, paddle_target)
 		1:  # CONTRACT
-			if paddle and paddle.has_method("apply_contract_effect"):
-				paddle.apply_contract_effect()
-				PowerUpManager.apply_effect(PowerUpManager.PowerUpType.CONTRACT, paddle)
+			var paddle_target = paddle if is_instance_valid(paddle) else null
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.CONTRACT, paddle_target)
 		2:  # SPEED_UP
-			if ball and ball.has_method("apply_speed_up_effect"):
-				ball.apply_speed_up_effect()
-				PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SPEED_UP, ball)
+			var ball_target = ball if is_instance_valid(ball) else null
+			if ball_target and ball_target.has_method("apply_speed_up_effect"):
+				ball_target.apply_speed_up_effect()
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SPEED_UP, ball_target)
+		4:  # BIG_BALL
+			var ball_target = ball if is_instance_valid(ball) else null
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BIG_BALL, ball_target)
+		5:  # SMALL_BALL
+			var ball_target = ball if is_instance_valid(ball) else null
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SMALL_BALL, ball_target)
 		3:  # TRIPLE_BALL
 			# Defer spawning to avoid physics query conflict during collision callback
 			call_deferred("spawn_additional_balls_with_retry", 3)  # Try up to 3 times
@@ -533,6 +553,9 @@ func spawn_additional_balls(source_ball):
 
 		# Add to scene
 		play_area.add_child(new_ball)
+		if PowerUpManager and new_ball.has_method("set_ball_size_multiplier"):
+			var size_multiplier = PowerUpManager.get_ball_size_multiplier()
+			new_ball.call_deferred("set_ball_size_multiplier", size_multiplier)
 
 		# Enable collision immunity to prevent spawn collision issues
 		if new_ball.has_method("enable_collision_immunity"):

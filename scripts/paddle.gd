@@ -65,10 +65,8 @@ func _physics_process(delta):
 		last_mouse_y = mouse_y
 
 		if mouse_moved:
-			# Subtract offset to center paddle on mouse cursor (compensate for visual offset)
-			# The paddle visual appears below its position, so we move it up
-			var mouse_y_adjusted = mouse_y - half_height
-			var target_y = clamp(mouse_y_adjusted, min_y, max_y)
+			# Center paddle on mouse cursor within bounds
+			var target_y = clamp(mouse_y, min_y, max_y)
 
 			# Apply sensitivity: lerp toward target faster/slower based on sensitivity
 			# Higher sensitivity = faster response (less lerp smoothing)
@@ -112,6 +110,11 @@ func reset_paddle_height():
 func set_paddle_height(new_height: float):
 	"""Change paddle height with animation"""
 	current_height = new_height
+	# Ensure paddle stays within dynamic bounds after size change
+	var half_height = current_height / 2.0
+	var min_y = WALL_TOP_Y + half_height
+	var max_y = WALL_BOTTOM_Y - half_height
+	position.y = clamp(position.y, min_y, max_y)
 
 	# Update visual if it exists (Sprite2D rotated 90°, so scale X for height)
 	if has_node("Visual"):

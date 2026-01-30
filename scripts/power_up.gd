@@ -8,18 +8,22 @@ enum PowerUpType {
 	EXPAND,      # Big paddle (height 120 → 180, 15s)
 	CONTRACT,    # Small paddle (height 120 → 80, 10s)
 	SPEED_UP,    # Faster ball (speed 500 → 650, 12s)
-	TRIPLE_BALL  # Spawn 2 additional balls
+	TRIPLE_BALL,  # Spawn 2 additional balls
+	BIG_BALL,     # Double ball size
+	SMALL_BALL    # Half ball size
 }
 
 # Configuration
 @export var power_up_type: PowerUpType = PowerUpType.EXPAND
 @export var move_speed: float = 150.0  # Pixels per second (horizontal)
 
-@export_group("Sprite Atlas Settings")
-@export var atlas_texture: Texture2D = preload("res://assets/graphics/powerups/powerups-transparent.png")
-@export var cell_size: Vector2 = Vector2(200, 200) # Increased size to capture full icon
-@export var spacing: Vector2 = Vector2(16, 56)     # Reduced vertical spacing to fix row 3 offset
-@export var margin: Vector2 = Vector2(10, 10)      # Increased margin to center row 0
+@export_group("Power-up Textures")
+@export var expand_texture: Texture2D = preload("res://assets/graphics/powerups/expand.png")
+@export var contract_texture: Texture2D = preload("res://assets/graphics/powerups/contract.png")
+@export var speed_up_texture: Texture2D = preload("res://assets/graphics/powerups/speed_up.png")
+@export var triple_ball_texture: Texture2D = preload("res://assets/graphics/powerups/triple_ball.png")
+@export var big_ball_texture: Texture2D = preload("res://assets/graphics/powerups/big_ball.png")
+@export var small_ball_texture: Texture2D = preload("res://assets/graphics/powerups/small_ball.png")
 
 # Signals
 signal collected(type: PowerUpType)
@@ -52,50 +56,51 @@ func setup_sprite():
 		return
 
 	var sprite = $Sprite
-
-	if not atlas_texture:
-		print("ERROR: No powerup texture loaded")
-		return
-
-	# Map power-up types to sprite positions
-	var atlas_row = 0
-	var atlas_col = 0
+	var texture: Texture2D = null
 
 	match power_up_type:
 		PowerUpType.EXPAND:
-			atlas_row = 3
-			atlas_col = 3  # Arrow up / expand icon
+			texture = expand_texture
 		PowerUpType.CONTRACT:
-			atlas_row = 3
-			atlas_col = 4  # Arrow down / shrink icon
+			texture = contract_texture
 		PowerUpType.SPEED_UP:
-			atlas_row = 0
-			atlas_col = 0  # Lightning / speed icon
+			texture = speed_up_texture
 		PowerUpType.TRIPLE_BALL:
-			atlas_row = 3
-			atlas_col = 2  # Multi-ball icon
+			texture = triple_ball_texture
+		PowerUpType.BIG_BALL:
+			texture = big_ball_texture
+		PowerUpType.SMALL_BALL:
+			texture = small_ball_texture
 
-	# Create atlas texture
-	var atlas = AtlasTexture.new()
-	atlas.atlas = atlas_texture
-	
-	# Calculate region with margin and spacing
-	var region_x = margin.x + atlas_col * (cell_size.x + spacing.x)
-	var region_y = margin.y + atlas_row * (cell_size.y + spacing.y)
-	
-	atlas.region = Rect2(
-		region_x,
-		region_y,
-		cell_size.x,
-		cell_size.y
-	)
+	if not texture:
+		print("ERROR: No powerup texture loaded for type: ", PowerUpType.keys()[power_up_type])
+		return
 
-	sprite.texture = atlas
+	sprite.texture = texture
 
 	# Scale to reasonable size (40×40 pixels)
-	# Use the actual cell size for scaling ratio
-	var scale_factor = 40.0 / cell_size.x
-	sprite.scale = Vector2(scale_factor, scale_factor)
+	var texture_size = texture.get_size()
+	if texture_size.x > 0 and texture_size.y > 0:
+		var scale_factor = 40.0 / max(texture_size.x, texture_size.y)
+		sprite.scale = Vector2(scale_factor, scale_factor)
+
+	if has_node("Glow"):
+		var glow = $Glow
+		glow.texture = texture
+		glow.scale = sprite.scale * 1.4
+
+		var glow_color = Color(0.2, 1.0, 0.2, 0.6)
+		match power_up_type:
+			PowerUpType.EXPAND, PowerUpType.TRIPLE_BALL, PowerUpType.BIG_BALL:
+				glow_color = Color(0.2, 1.0, 0.2, 0.6)
+			PowerUpType.CONTRACT, PowerUpType.SPEED_UP, PowerUpType.SMALL_BALL:
+				glow_color = Color(1.0, 0.25, 0.25, 0.6)
+
+		glow.modulate = glow_color
+
+		var glow_material = CanvasItemMaterial.new()
+		glow_material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		glow.material = glow_material
 
 func _on_body_entered(body):
 	"""Detect collision with paddle"""

@@ -48,7 +48,7 @@ zepball/
 │   └── graphics/
 │       ├── backgrounds/       # 7 background images
 │       ├── bricks/            # Brick sprite textures
-│       └── powerups/          # Power-up sprite atlas
+│       └── powerups/          # Power-up sprite PNGs (individual icons)
 └── .agent/                    # Documentation (this file)
 ```
 
@@ -100,6 +100,7 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - Handles ball loss logic (life loss only if last ball in play)
 - Spawns and manages power-ups with 20% drop chance
 - Manages multi-ball behavior from TRIPLE_BALL power-up
+- Debug hotkeys in debug builds (1-5) to spawn power-ups for testing
 - Loads random background image at startup with dimming
 - Triggers camera shake on brick breaks (intensity scales with combo)
 - Handles stuck ball detection and auto-escape boost
@@ -188,6 +189,9 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 **Power-Up Effects**:
 - `apply_speed_up_effect()` - 500 → 650 speed (12s)
 - `reset_ball_speed()` - Back to base × difficulty
+- `apply_big_ball_effect()` - 2.0x ball size (12s)
+- `apply_small_ball_effect()` - 0.5x ball size (12s)
+- `reset_ball_size()` - Back to base size
 
 ### 5. Brick System (`scripts/brick.gd` + `scenes/gameplay/brick.tscn`)
 **Purpose**: Breakable obstacles with varied types and scoring.
@@ -220,10 +224,15 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 | CONTRACT | Paddle height 130 → 80 | 10s | Red icon |
 | SPEED_UP | Ball speed 500 → 650 | 12s | Yellow icon |
 | TRIPLE_BALL | Spawns 2 extra balls | Instant | Blue icon |
+| BIG_BALL | Ball size 2.0x | 12s | Green icon |
+| SMALL_BALL | Ball size 0.5x | 12s | Red icon |
 
 **Power-Up Manager** (Autoload):
 - Tracks active timed effects and remaining time
 - Automatically resets paddle/ball when effects expire
+- Expand/Contract conflict: base size if both active
+- Big/Small conflict: base size if both active
+- Triple ball spawns inherit active ball size multiplier
 - Emits `effect_applied(type)` and `effect_expired(type)` signals
 - Powers HUD timer display in top-right corner
 
@@ -519,7 +528,7 @@ Final score × 2
   - Emits opposite to impact direction
   - Toggleable in settings
 - **Backgrounds**: 7 random images with 0.85 alpha dimming
-- **Power-Up Icons**: 5x5 sprite atlas (`powerups.jpg`)
+- **Power-Up Icons**: Individual PNGs with colored glow (green = good, red = bad)
 
 ### Audio System (Not Yet Implemented)
 - Music volume control in settings (saved)
@@ -562,7 +571,7 @@ All 7 settings auto-save and load:
 **Mitigation**:
 - Retry system with 3 attempts and 0.5s delays
 - Position validation before spawning (checks Y position)
-- Safe angle ranges (45°-135° and 225°-315°)
+- Safe angle range clamp (120°-240°)
 - Failure message if all retries exhausted
 
 ### 2. Ball Stuck Detection (`scripts/ball.gd:287-325`)
@@ -610,7 +619,7 @@ All 7 settings auto-save and load:
 
 ---
 
-**Last Updated**: 2026-01-29 (Settings Menu, Score Multipliers, Statistics, Achievements)
+**Last Updated**: 2026-01-30 (Power-up icons split into PNGs, Big/Small Ball power-ups, debug spawns)
 **Godot Version**: 4.6
 **Total Levels**: 10
 **Total Achievements**: 12
