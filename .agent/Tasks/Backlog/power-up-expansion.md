@@ -1,9 +1,9 @@
 # Power-Up Expansion - Additional Types
 
-## Status: ✅ COMPLETE (13 power-ups implemented)
+## Status: 🔶 PARTIALLY IMPLEMENTED (15 power-ups implemented, 1 remaining)
 
 ## Why
-Additional power-ups add variety and strategic depth to gameplay. All planned power-ups have been implemented.
+Additional power-ups add variety and strategic depth to gameplay. Most planned power-ups have been implemented.
 
 ## Recent Updates (2026-01-30)
 The following power-ups have been implemented:
@@ -13,16 +13,14 @@ The following power-ups have been implemented:
 - ✅ Brick Through (pierce bricks)
 - ✅ Double Score (2x score multiplier)
 - ✅ Mystery (random effect)
+- ✅ Air Ball (ball jumps to level center X on paddle hit)
+- ✅ Magnet (paddle attracts ball with gravity)
 
 ## Remaining Power-Ups (Not Yet Implemented)
-- Warp (skip to next level)
-- Bomb / Bomb Ball (destroy nearby bricks)
-- Magnet / Repel (attract/repel ball)
-- Air Ball (ball ignores gravity)
 - Block (temporary shield brick)
 
 ## Implementation Summary (2026-01-30)
-Completed implementation for 6 additional power-ups:
+Completed implementation for additional power-ups:
 - ✅ Extended `PowerUpType` enum in both `power_up.gd` and `power_up_manager.gd`
 - ✅ Added texture bindings for all new icons (slow_down.png, extra_life.png, etc.)
 - ✅ Configured glow colors (green for beneficial, yellow for mystery)
@@ -33,20 +31,18 @@ Completed implementation for 6 additional power-ups:
 - ✅ Implemented brick through (ball passes through bricks without bouncing)
 - ✅ Implemented double score multiplier (shown in HUD)
 - ✅ Implemented mystery (random effect selection)
-- ✅ Updated brick spawn list to include all 12 types
+- ✅ Implemented air ball brick hop behavior
+- ✅ Implemented magnet paddle gravity pull
+- ✅ Updated brick spawn list to include all 15 types
 - ✅ Added debug keys 6-9, 0, minus for testing new power-ups
 - ✅ Updated HUD to display double score in multiplier section
 
 ## Future Implementation Notes (Remaining Power-Ups)
-For the 5 remaining power-ups, follow the established pattern:
+For the 1 remaining power-up, follow the established pattern:
 - Add new types to `PowerUpType` enum
 - Add texture preloads and glow colors
 - Add durations to `EFFECT_DURATIONS`
-- Implement specific mechanics:
-  - **Warp**: Trigger level completion via MenuController
-  - **Bomb/Bomb Ball**: Destroy bricks in radius around impact point
-  - **Magnet/Repel**: Modify ball trajectory toward/away from paddle
-  - **Air Ball**: Disable gravity or add upward force to ball
+Implement specific mechanics:
   - **Block**: Spawn temporary protective brick near paddle
 
 ## Acceptance Criteria

@@ -24,6 +24,7 @@ var last_mouse_y: float = 0.0
 var previous_y: float = 0.0
 var actual_velocity_y: float = 0.0
 var game_manager = null
+var base_visual_scale: Vector2 = Vector2.ONE
 
 # Power-up effects
 var current_height: float = 130.0
@@ -40,6 +41,8 @@ func _ready():
 	# Load paddle sensitivity setting
 	sensitivity_multiplier = SaveManager.get_paddle_sensitivity()
 	print("Paddle sensitivity: ", sensitivity_multiplier, "x")
+	if has_node("Visual"):
+		base_visual_scale = $Visual.scale
 
 func _physics_process(delta):
 	# Store old position for velocity calculation
@@ -136,7 +139,7 @@ func set_paddle_height(new_height: float):
 		var scale_factor = new_height / BASE_HEIGHT
 		var tween = create_tween()
 		# Paddle is rotated 90°, so X axis is vertical (height)
-		tween.tween_property(visual, "scale:x", scale_factor, 0.2)
+		tween.tween_property(visual, "scale:x", base_visual_scale.x * scale_factor, 0.2)
 
 func _input(event):
 	# Debug: Toggle control modes with keys

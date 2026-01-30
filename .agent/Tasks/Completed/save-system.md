@@ -58,7 +58,8 @@ SaveManager handles persistent player data: progression, per-level high scores, 
 - **Gameplay**: increments brick and power-up statistics; updates combo/high score stats.
 
 ## Notes
-- `total_playtime` and `total_games_played` are displayed but not currently incremented in gameplay code.
+- `total_playtime` increments during READY/PLAYING (flushed every 5s) and on scene exit.
+- `total_games_played` increments per level start.
 
 ## Related Docs
 - `Tasks/Completed/ui-system.md`

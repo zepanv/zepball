@@ -204,6 +204,8 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - `enable_grab()` / `reset_grab_state()`
 - `enable_brick_through()` / `reset_brick_through()`
 - `enable_bomb_ball()` / `reset_bomb_ball()`
+- `enable_air_ball()` / `reset_air_ball()`
+- `enable_magnet()` / `reset_magnet()`
 
 ### 5. Brick System (`scripts/brick.gd` + `scenes/gameplay/brick.tscn`)
 **Purpose**: Breakable obstacles with varied types and scoring.
@@ -247,6 +249,8 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 | DOUBLE_SCORE | Score multiplier ×2 | 15s |
 | MYSTERY | Random effect (excludes itself) | Instant |
 | BOMB_BALL | Ball destroys nearby bricks | 12s |
+| AIR_BALL | Teleport to level center X on paddle hit | 12s |
+| MAGNET | Paddle gravity pull on ball | 12s |
 
 **Power-Up Manager** (Autoload):
 - Tracks active timed effects and remaining time

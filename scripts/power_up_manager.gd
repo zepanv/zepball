@@ -17,7 +17,9 @@ enum PowerUpType {
 	BRICK_THROUGH,
 	DOUBLE_SCORE,
 	MYSTERY,
-	BOMB_BALL
+	BOMB_BALL,
+	AIR_BALL,
+	MAGNET
 }
 
 # Active effects with their remaining time
@@ -38,7 +40,9 @@ const EFFECT_DURATIONS = {
 	PowerUpType.BRICK_THROUGH: 12.0,
 	PowerUpType.DOUBLE_SCORE: 15.0,
 	PowerUpType.MYSTERY: 0.0,  # Instant (doesn't expire, applies random effect)
-	PowerUpType.BOMB_BALL: 12.0
+	PowerUpType.BOMB_BALL: 12.0,
+	PowerUpType.AIR_BALL: 12.0,
+	PowerUpType.MAGNET: 12.0
 }
 
 # Signals
@@ -97,6 +101,18 @@ func apply_effect(type: PowerUpType, target_node: Node):
 		for ball in balls:
 			if ball.has_method("enable_bomb_ball"):
 				ball.enable_bomb_ball()
+	elif type == PowerUpType.AIR_BALL:
+		# Enable air ball on all balls
+		var balls = get_tree().get_nodes_in_group("ball")
+		for ball in balls:
+			if ball.has_method("enable_air_ball"):
+				ball.enable_air_ball()
+	elif type == PowerUpType.MAGNET:
+		# Enable magnet on all balls
+		var balls = get_tree().get_nodes_in_group("ball")
+		for ball in balls:
+			if ball.has_method("enable_magnet"):
+				ball.enable_magnet()
 
 func remove_effect(type: PowerUpType):
 	"""Remove an active effect and reset to default"""
@@ -146,6 +162,18 @@ func remove_effect(type: PowerUpType):
 			for ball in balls:
 				if ball.has_method("reset_bomb_ball"):
 					ball.reset_bomb_ball()
+		PowerUpType.AIR_BALL:
+			# Reset air ball state on all balls
+			var balls = get_tree().get_nodes_in_group("ball")
+			for ball in balls:
+				if ball.has_method("reset_air_ball"):
+					ball.reset_air_ball()
+		PowerUpType.MAGNET:
+			# Reset magnet state on all balls
+			var balls = get_tree().get_nodes_in_group("ball")
+			for ball in balls:
+				if ball.has_method("reset_magnet"):
+					ball.reset_magnet()
 
 	# Remove from active effects
 	active_effects.erase(type)
@@ -264,3 +292,11 @@ func is_double_score_active() -> bool:
 func is_bomb_ball_active() -> bool:
 	"""Check if bomb ball power-up is currently active"""
 	return active_effects.has(PowerUpType.BOMB_BALL)
+
+func is_air_ball_active() -> bool:
+	"""Check if air ball power-up is currently active"""
+	return active_effects.has(PowerUpType.AIR_BALL)
+
+func is_magnet_active() -> bool:
+	"""Check if magnet power-up is currently active"""
+	return active_effects.has(PowerUpType.MAGNET)

@@ -230,7 +230,7 @@ func try_spawn_power_up():
 	var powerup = powerup_scene.instantiate()
 
 	# Randomly select power-up type
-	var types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  # All power-up types
+	var types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]  # All power-up types
 	powerup.power_up_type = types[randi() % types.size()]
 
 	# Set position to brick position

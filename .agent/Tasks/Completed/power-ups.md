@@ -1,6 +1,6 @@
 # Power-Up System
 
-## Status: ✅ IMPLEMENTED (13 power-ups)
+## Status: ✅ IMPLEMENTED (15 power-ups)
 
 ## Overview
 Power-ups spawn from broken bricks and move horizontally toward the paddle. All power-ups are implemented with timers and HUD indicators.
@@ -19,6 +19,8 @@ Power-ups spawn from broken bricks and move horizontally toward the paddle. All 
 11. **Double Score**: 2x score multiplier (15s) - Green glow
 12. **Mystery**: Applies random power-up effect (instant) - Yellow glow
 13. **Bomb Ball**: Ball destroys surrounding bricks on impact (12s) - Green glow, ball has orange-red glow
+14. **Air Ball**: Ball jumps to the level's center and keeps velocity (12s) - Green glow
+15. **Magnet**: Paddle attracts ball with gravity (12s) - Green glow
 
 ## Core Mechanics (Implemented)
 - **Spawn Chance**: 20% per breakable brick.
@@ -29,7 +31,7 @@ Power-ups spawn from broken bricks and move horizontally toward the paddle. All 
 - **HUD**: Timed effects show countdowns in HUD. Double Score shows in multiplier display.
 - **Icons**: Power-up sprites now use individual PNGs in `assets/graphics/powerups/` (configured in `scripts/power_up.gd`).
 - **Glow**: Icons render with a colored additive glow:
-  - Green glow: Expand, Triple Ball, Big Ball, Slow Down, Extra Life, Grab, Brick Through, Double Score
+  - Green glow: Expand, Triple Ball, Big Ball, Slow Down, Extra Life, Grab, Brick Through, Double Score, Bomb Ball, Air Ball, Magnet
   - Red glow: Contract, Speed Up, Small Ball
   - Yellow glow: Mystery
 - **Expand/Contract Conflict**: If both are active, paddle returns to base size until one expires, then the remaining effect applies.
@@ -40,8 +42,10 @@ Power-ups spawn from broken bricks and move horizontally toward the paddle. All 
 - **Grab Mechanic**: When active (15s), balls stick to paddle at exact contact point. Balls grabbed on back of paddle are automatically repositioned to front (play area side) to prevent immediate loss. Player can click to re-launch at any time. Released balls have 200ms grab immunity to prevent immediate re-grab. When timer expires, new balls won't stick, but already-grabbed balls remain held until player releases them. Multiple balls can be grabbed at different positions on the paddle. Small random variation on launch prevents stacked balls from colliding.
 - **Brick Through**: Ball passes through bricks without bouncing, breaking them but maintaining trajectory.
 - **Double Score**: Multiplies all score gains by 2x while active, shown in HUD multiplier display.
-- **Mystery**: Randomly applies one of the other 12 power-up effects (excluding another Mystery).
+- **Mystery**: Randomly applies one of the other 14 power-up effects (excluding another Mystery).
 - **Bomb Ball**: When ball hits a brick, immediately adjacent bricks (75-pixel radius) are also destroyed. Ball glows orange-red while active. Useful for clearing tight clusters.
+- **Air Ball**: When ball hits the paddle, it teleports to the level center X while preserving the hit Y and continues with the same velocity.
+- **Magnet**: While active, the paddle exerts a gravity-like pull on the ball, curving its path.
 - **HUD Indicators**: All timed power-ups show name and countdown timer. Colors: green (beneficial), red (risky), blue (slow), gold (score), yellow (mystery), orange-red (bomb ball).
 - **Debug Spawns**: Key 1 spawns bomb_ball for testing (see `scripts/main.gd`).
 
@@ -51,10 +55,6 @@ Power-ups spawn from broken bricks and move horizontally toward the paddle. All 
 
 ## Additional Power-Ups (Future)
 Other power-ups remain in backlog for future expansion:
-- Warp (skip to next level)
-- Bomb / Bomb Ball (destroy nearby bricks)
-- Magnet / Repel (attract/repel ball)
-- Air Ball (ball ignores gravity)
 - Block (temporary shield brick)
 
 See `Tasks/Backlog/power-up-expansion.md` for details.

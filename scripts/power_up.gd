@@ -17,7 +17,9 @@ enum PowerUpType {
 	BRICK_THROUGH, # Ball pierces through bricks (12s)
 	DOUBLE_SCORE, # 2x score multiplier (15s)
 	MYSTERY,      # Random effect
-	BOMB_BALL     # Ball destroys surrounding bricks on impact (12s)
+	BOMB_BALL,    # Ball destroys surrounding bricks on impact (12s)
+	AIR_BALL,     # Ball jumps over bricks and lands center (12s)
+	MAGNET        # Paddle attracts ball with gravity
 }
 
 # Configuration
@@ -38,6 +40,8 @@ enum PowerUpType {
 @export var double_score_texture: Texture2D = preload("res://assets/graphics/powerups/double_score.png")
 @export var mystery_texture: Texture2D = preload("res://assets/graphics/powerups/mystery.png")
 @export var bomb_ball_texture: Texture2D = preload("res://assets/graphics/powerups/bomb_ball.png")
+@export var air_ball_texture: Texture2D = preload("res://assets/graphics/powerups/air_ball.png")
+@export var magnet_texture: Texture2D = preload("res://assets/graphics/powerups/magnet.png")
 
 # Signals
 signal collected(type: PowerUpType)
@@ -99,6 +103,10 @@ func setup_sprite():
 			texture = mystery_texture
 		PowerUpType.BOMB_BALL:
 			texture = bomb_ball_texture
+		PowerUpType.AIR_BALL:
+			texture = air_ball_texture
+		PowerUpType.MAGNET:
+			texture = magnet_texture
 
 	if not texture:
 		print("ERROR: No powerup texture loaded for type: ", PowerUpType.keys()[power_up_type])
@@ -123,7 +131,7 @@ func setup_sprite():
 				glow_color = Color(0.2, 1.0, 0.2, 0.6)  # Green
 			PowerUpType.CONTRACT, PowerUpType.SPEED_UP, PowerUpType.SMALL_BALL:
 				glow_color = Color(1.0, 0.25, 0.25, 0.6)  # Red
-			PowerUpType.SLOW_DOWN, PowerUpType.EXTRA_LIFE, PowerUpType.GRAB, PowerUpType.BRICK_THROUGH, PowerUpType.DOUBLE_SCORE, PowerUpType.BOMB_BALL:
+			PowerUpType.SLOW_DOWN, PowerUpType.EXTRA_LIFE, PowerUpType.GRAB, PowerUpType.BRICK_THROUGH, PowerUpType.DOUBLE_SCORE, PowerUpType.BOMB_BALL, PowerUpType.AIR_BALL, PowerUpType.MAGNET:
 				glow_color = Color(0.2, 1.0, 0.2, 0.6)  # Green
 			PowerUpType.MYSTERY:
 				glow_color = Color(1.0, 1.0, 0.2, 0.6)  # Yellow

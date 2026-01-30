@@ -10,6 +10,7 @@ The UI system manages menus, HUD, and overlays. Scene transitions are handled by
 - **Level Select** (`scenes/ui/level_select.tscn`): Unlock status + high scores.
 - **Game Over** (`scenes/ui/game_over.tscn`).
 - **Level Complete** (`scenes/ui/level_complete.tscn`): Score breakdown (base + bonuses + time).
+- **Set Complete** (`scenes/ui/set_complete.tscn`): Score breakdown (base + bonuses + set time).
 - **Stats** (`scenes/ui/stats.tscn`).
 - **Settings** (`scenes/ui/settings.tscn`): screen shake, particles, trail, sensitivity, music/SFX volumes.
 

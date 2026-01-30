@@ -347,6 +347,12 @@ func _input(event):
 		elif event.keycode == KEY_1:
 			# Debug: Spawn a bomb ball power-up for testing
 			_spawn_debug_powerup("BOMB_BALL", 12)
+		elif event.keycode == KEY_2:
+			# Debug: Spawn an air ball power-up for testing
+			_spawn_debug_powerup("AIR_BALL", 13)
+		elif event.keycode == KEY_3:
+			# Debug: Spawn a magnet power-up for testing
+			_spawn_debug_powerup("MAGNET", 14)
 
 func _spawn_debug_powerup(label: String, powerup_type: int):
 	print("\n### DEBUG: Spawning ", label, " power-up ###")
@@ -427,12 +433,16 @@ func _on_power_up_collected(type):
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.DOUBLE_SCORE, null)
 		11:  # MYSTERY
 			# Apply a random power-up effect (excluding mystery itself)
-			var random_types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]
+			var random_types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]
 			var random_type = random_types[randi() % random_types.size()]
 			print("Mystery power-up! Applying random effect: ", random_type)
 			_on_power_up_collected(random_type)
 		12:  # BOMB_BALL
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BOMB_BALL, null)
+		13:  # AIR_BALL
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.AIR_BALL, null)
+		14:  # MAGNET
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.MAGNET, null)
 
 func spawn_additional_balls_with_retry(retries_remaining: int = 3):
 	"""Try to spawn additional balls, retrying if ball is in a bad position"""

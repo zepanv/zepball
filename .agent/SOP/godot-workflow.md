@@ -357,7 +357,6 @@ Co-Authored-By: <Name> <email>   # Sign your work!
 
 Notes:
 - `<type>` should be `feat`, `fix`, `refactor`, `docs`, or `chore`.
-- Include a date/time tag in the subject, e.g. `(2026-01-30 16:30)`.
 - Omit sections that don’t apply, but keep headings for major changes.
 
 ### Versioning Note

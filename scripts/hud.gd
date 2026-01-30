@@ -263,6 +263,12 @@ func create_powerup_indicator(type) -> Control:
 		12:  # BOMB_BALL
 			name_label.text = "BOMB BALL"
 			name_label.modulate = Color(1.0, 0.4, 0.1)  # Orange-red
+		13:  # AIR_BALL
+			name_label.text = "AIR BALL"
+			name_label.modulate = Color(0.3, 0.8, 0.3)  # Green
+		14:  # MAGNET
+			name_label.text = "MAGNET"
+			name_label.modulate = Color(0.3, 0.8, 0.3)  # Green
 
 	name_label.add_theme_font_size_override("font_size", 14)
 	hbox.add_child(name_label)

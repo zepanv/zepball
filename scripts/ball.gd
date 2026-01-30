@@ -11,6 +11,7 @@ const BASE_VISUAL_SCALE = Vector2(0.0185, 0.0185)
 const SPIN_FACTOR = 0.3         # How much paddle velocity affects ball
 const MAX_VERTICAL_ANGLE = 0.8  # Prevent pure vertical/horizontal motion
 const INITIAL_ANGLE = -45.0     # Launch angle (degrees, toward left)
+const MAGNET_PULL = 800.0       # Paddle gravity strength for Magnet power-up
 const TOP_WALL_Y = 20.0
 const BOTTOM_WALL_Y = 700.0
 
@@ -26,6 +27,8 @@ var direction_indicator: Line2D = null  # Visual launch direction indicator
 var grab_enabled: bool = false  # Can ball be grabbed by paddle on contact
 var brick_through_enabled: bool = false  # Does ball pass through bricks
 var bomb_ball_enabled: bool = false  # Does ball destroy surrounding bricks
+var air_ball_enabled: bool = false  # Does ball jump over bricks to center
+var magnet_enabled: bool = false  # Does paddle attract ball
 var paddle_offset: Vector2 = Vector2(-30, 0)  # Offset from paddle when attached/grabbed
 var grab_immunity_timer: float = 0.0  # Prevents immediate re-grab after launch
 
@@ -102,6 +105,12 @@ func _physics_process(delta):
 			launch_ball()
 	else:
 		# Ball is in motion
+		# Apply magnet pull toward paddle (curve trajectory, keep speed)
+		if magnet_enabled or PowerUpManager.is_magnet_active():
+			if paddle_reference and velocity.dot(paddle_reference.position - position) > 0.0:
+				var pull_dir = (paddle_reference.position - position).normalized()
+				velocity = (velocity + pull_dir * MAGNET_PULL * delta).normalized() * current_speed
+
 		# First check if we would collide with another ball
 		var test_collision = move_and_collide(velocity * delta, true, true)  # test_only=true, safe_margin=true
 
@@ -249,6 +258,7 @@ func handle_collision(collision: KinematicCollision2D):
 
 	# Check what we hit
 	if collider.is_in_group("paddle"):
+		var hit_y = position.y
 		# Special case: Allow ball to pass through paddle if stuck near walls and moving left
 		# This prevents the ball from getting wedged between paddle and walls
 		const TOP_ESCAPE_ZONE_Y = 40.0  # Near top wall threshold
@@ -301,6 +311,11 @@ func handle_collision(collision: KinematicCollision2D):
 			elif position.y > max_y:
 				position.y = max_y
 				velocity.y = -abs(velocity.y)
+
+			if air_ball_enabled or PowerUpManager.is_air_ball_active():
+				_jump_to_level_center_x(hit_y)
+				print("Ball jumped to level center!")
+				return
 
 			print("Ball hit paddle, velocity: ", velocity)
 
@@ -422,6 +437,65 @@ func reset_bomb_ball():
 	if has_node("Visual"):
 		$Visual.modulate = Color(1.0, 1.0, 1.0, 1.0)  # White (normal)
 	print("Bomb ball disabled on ball")
+
+func enable_air_ball():
+	"""Enable air ball mode - ball jumps over bricks to center"""
+	air_ball_enabled = true
+	print("Air ball enabled on ball")
+
+func reset_air_ball():
+	"""Disable air ball mode"""
+	air_ball_enabled = false
+	print("Air ball disabled on ball")
+
+func enable_magnet():
+	"""Enable magnet mode - paddle attracts ball"""
+	magnet_enabled = true
+	print("Magnet enabled on ball")
+
+func reset_magnet():
+	"""Disable magnet mode"""
+	magnet_enabled = false
+	print("Magnet disabled on ball")
+
+func _jump_to_level_center_x(hit_y: float):
+	var center_x = _get_level_center_x()
+	position = Vector2(center_x, hit_y) + velocity.normalized() * 2.0
+
+func _get_level_center_x() -> float:
+	if game_manager:
+		var level_id = game_manager.current_level
+		var level_data = LevelLoader.load_level_data(level_id)
+		if not level_data.is_empty():
+			var grid = level_data.get("grid", {})
+			var brick_size = grid.get("brick_size", 48)
+			var spacing = grid.get("spacing", 3)
+			var start_x = grid.get("start_x", 150)
+			var start_y = grid.get("start_y", 150)
+			var bricks = level_data.get("bricks", [])
+			if bricks.size() > 0:
+				var min_row = bricks[0].get("row", 0)
+				var max_row = min_row
+				var min_col = bricks[0].get("col", 0)
+				var max_col = min_col
+				for brick_def in bricks:
+					var row = brick_def.get("row", 0)
+					var col = brick_def.get("col", 0)
+					min_row = min(min_row, row)
+					max_row = max(max_row, row)
+					min_col = min(min_col, col)
+					max_col = max(max_col, col)
+
+				var step = float(brick_size + spacing)
+				var center_x = start_x + ((min_col + max_col) / 2.0) * step
+				return center_x
+
+			return float(start_x)
+
+	var viewport = get_viewport()
+	if viewport:
+		return viewport.get_visible_rect().size.x * 0.5
+	return 640.0
 
 func destroy_surrounding_bricks(impact_position: Vector2):
 	"""Destroy bricks in a radius around the impact point (bomb ball effect)"""
