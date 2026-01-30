@@ -240,6 +240,27 @@ func create_powerup_indicator(type) -> Control:
 		5:  # SMALL_BALL
 			name_label.text = "SMALL BALL"
 			name_label.modulate = Color(0.8, 0.3, 0.3)  # Red
+		6:  # SLOW_DOWN
+			name_label.text = "SLOW BALL"
+			name_label.modulate = Color(0.3, 0.6, 1.0)  # Blue
+		7:  # EXTRA_LIFE (instant, shouldn't show timer but just in case)
+			name_label.text = "EXTRA LIFE"
+			name_label.modulate = Color(0.3, 0.8, 0.3)  # Green
+		8:  # GRAB
+			name_label.text = "GRAB"
+			name_label.modulate = Color(0.3, 0.8, 0.3)  # Green
+		9:  # BRICK_THROUGH
+			name_label.text = "BRICK THROUGH"
+			name_label.modulate = Color(0.3, 0.8, 0.3)  # Green
+		10:  # DOUBLE_SCORE
+			name_label.text = "DOUBLE SCORE"
+			name_label.modulate = Color(1.0, 0.8, 0.0)  # Gold
+		11:  # MYSTERY (instant, shouldn't show timer)
+			name_label.text = "MYSTERY"
+			name_label.modulate = Color(1.0, 1.0, 0.3)  # Yellow
+		12:  # BOMB_BALL
+			name_label.text = "BOMB BALL"
+			name_label.modulate = Color(1.0, 0.4, 0.1)  # Orange-red
 
 	name_label.add_theme_font_size_override("font_size", 14)
 	hbox.add_child(name_label)
@@ -657,6 +678,10 @@ func _update_multiplier_display():
 		var streak_mult = 1.0 + (streak_tiers * 0.1)
 		multipliers.append("Streak: " + str(snapped(streak_mult, 0.01)) + "x")
 
+	# Double score power-up
+	if PowerUpManager.is_double_score_active():
+		multipliers.append("Power-up: 2.0x")
+
 	# Update label
 	if multipliers.size() > 0:
 		multiplier_label.text = "MULTIPLIERS:\n" + "\n".join(multipliers)
@@ -669,6 +694,8 @@ func _update_multiplier_display():
 		if game_manager.no_miss_hits >= 5:
 			var streak_tiers = floorf(game_manager.no_miss_hits / 5.0)
 			total_mult *= (1.0 + (streak_tiers * 0.1))
+		if PowerUpManager.is_double_score_active():
+			total_mult *= 2.0
 
 		# Color coding
 		if total_mult >= 1.5:

@@ -321,20 +321,8 @@ func _input(event):
 		if event.keycode == KEY_C:
 			_hit_all_bricks()
 		elif event.keycode == KEY_1:
-			# Debug: Spawn a triple ball power-up for testing
-			_spawn_debug_powerup("TRIPLE_BALL", 3)
-		elif event.keycode == KEY_2:
-			# Debug: Spawn an expand power-up for testing
-			_spawn_debug_powerup("EXPAND", 0)
-		elif event.keycode == KEY_3:
-			# Debug: Spawn a contract power-up for testing
-			_spawn_debug_powerup("CONTRACT", 1)
-		elif event.keycode == KEY_4:
-			# Debug: Spawn a big ball power-up for testing
-			_spawn_debug_powerup("BIG_BALL", 4)
-		elif event.keycode == KEY_5:
-			# Debug: Spawn a small ball power-up for testing
-			_spawn_debug_powerup("SMALL_BALL", 5)
+			# Debug: Spawn a bomb ball power-up for testing
+			_spawn_debug_powerup("BOMB_BALL", 12)
 
 func _spawn_debug_powerup(label: String, powerup_type: int):
 	print("\n### DEBUG: Spawning ", label, " power-up ###")
@@ -399,6 +387,28 @@ func _on_power_up_collected(type):
 			# Defer spawning to avoid physics query conflict during collision callback
 			call_deferred("spawn_additional_balls_with_retry", 3)  # Try up to 3 times
 			# TRIPLE_BALL doesn't have a timer, so we don't add it to PowerUpManager
+		6:  # SLOW_DOWN
+			var ball_target = ball if is_instance_valid(ball) else null
+			if ball_target and ball_target.has_method("apply_slow_down_effect"):
+				ball_target.apply_slow_down_effect()
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SLOW_DOWN, ball_target)
+		7:  # EXTRA_LIFE
+			if game_manager:
+				game_manager.add_life()
+		8:  # GRAB
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.GRAB, null)
+		9:  # BRICK_THROUGH
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BRICK_THROUGH, null)
+		10:  # DOUBLE_SCORE
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.DOUBLE_SCORE, null)
+		11:  # MYSTERY
+			# Apply a random power-up effect (excluding mystery itself)
+			var random_types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]
+			var random_type = random_types[randi() % random_types.size()]
+			print("Mystery power-up! Applying random effect: ", random_type)
+			_on_power_up_collected(random_type)
+		12:  # BOMB_BALL
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BOMB_BALL, null)
 
 func spawn_additional_balls_with_retry(retries_remaining: int = 3):
 	"""Try to spawn additional balls, retrying if ball is in a bad position"""

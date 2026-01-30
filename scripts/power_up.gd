@@ -5,12 +5,19 @@ extends Area2D
 
 # Power-up types
 enum PowerUpType {
-	EXPAND,      # Big paddle (height 120 → 180, 15s)
-	CONTRACT,    # Small paddle (height 120 → 80, 10s)
-	SPEED_UP,    # Faster ball (speed 500 → 650, 12s)
+	EXPAND,       # Big paddle (height 120 → 180, 15s)
+	CONTRACT,     # Small paddle (height 120 → 80, 10s)
+	SPEED_UP,     # Faster ball (speed 500 → 650, 12s)
 	TRIPLE_BALL,  # Spawn 2 additional balls
 	BIG_BALL,     # Double ball size
-	SMALL_BALL    # Half ball size
+	SMALL_BALL,   # Half ball size
+	SLOW_DOWN,    # Slower ball (speed 500 → 350, 12s)
+	EXTRA_LIFE,   # Add one life
+	GRAB,         # Ball sticks to paddle (15s)
+	BRICK_THROUGH, # Ball pierces through bricks (12s)
+	DOUBLE_SCORE, # 2x score multiplier (15s)
+	MYSTERY,      # Random effect
+	BOMB_BALL     # Ball destroys surrounding bricks on impact (12s)
 }
 
 # Configuration
@@ -24,6 +31,13 @@ enum PowerUpType {
 @export var triple_ball_texture: Texture2D = preload("res://assets/graphics/powerups/triple_ball.png")
 @export var big_ball_texture: Texture2D = preload("res://assets/graphics/powerups/big_ball.png")
 @export var small_ball_texture: Texture2D = preload("res://assets/graphics/powerups/small_ball.png")
+@export var slow_down_texture: Texture2D = preload("res://assets/graphics/powerups/slow_down.png")
+@export var extra_life_texture: Texture2D = preload("res://assets/graphics/powerups/extra_life.png")
+@export var grab_texture: Texture2D = preload("res://assets/graphics/powerups/grab.png")
+@export var brick_through_texture: Texture2D = preload("res://assets/graphics/powerups/brick_through.png")
+@export var double_score_texture: Texture2D = preload("res://assets/graphics/powerups/double_score.png")
+@export var mystery_texture: Texture2D = preload("res://assets/graphics/powerups/mystery.png")
+@export var bomb_ball_texture: Texture2D = preload("res://assets/graphics/powerups/bomb_ball.png")
 
 # Signals
 signal collected(type: PowerUpType)
@@ -71,6 +85,20 @@ func setup_sprite():
 			texture = big_ball_texture
 		PowerUpType.SMALL_BALL:
 			texture = small_ball_texture
+		PowerUpType.SLOW_DOWN:
+			texture = slow_down_texture
+		PowerUpType.EXTRA_LIFE:
+			texture = extra_life_texture
+		PowerUpType.GRAB:
+			texture = grab_texture
+		PowerUpType.BRICK_THROUGH:
+			texture = brick_through_texture
+		PowerUpType.DOUBLE_SCORE:
+			texture = double_score_texture
+		PowerUpType.MYSTERY:
+			texture = mystery_texture
+		PowerUpType.BOMB_BALL:
+			texture = bomb_ball_texture
 
 	if not texture:
 		print("ERROR: No powerup texture loaded for type: ", PowerUpType.keys()[power_up_type])
@@ -89,12 +117,16 @@ func setup_sprite():
 		glow.texture = texture
 		glow.scale = sprite.scale * 1.4
 
-		var glow_color = Color(0.2, 1.0, 0.2, 0.6)
+		var glow_color = Color(0.2, 1.0, 0.2, 0.6)  # Default green
 		match power_up_type:
 			PowerUpType.EXPAND, PowerUpType.TRIPLE_BALL, PowerUpType.BIG_BALL:
-				glow_color = Color(0.2, 1.0, 0.2, 0.6)
+				glow_color = Color(0.2, 1.0, 0.2, 0.6)  # Green
 			PowerUpType.CONTRACT, PowerUpType.SPEED_UP, PowerUpType.SMALL_BALL:
-				glow_color = Color(1.0, 0.25, 0.25, 0.6)
+				glow_color = Color(1.0, 0.25, 0.25, 0.6)  # Red
+			PowerUpType.SLOW_DOWN, PowerUpType.EXTRA_LIFE, PowerUpType.GRAB, PowerUpType.BRICK_THROUGH, PowerUpType.DOUBLE_SCORE, PowerUpType.BOMB_BALL:
+				glow_color = Color(0.2, 1.0, 0.2, 0.6)  # Green
+			PowerUpType.MYSTERY:
+				glow_color = Color(1.0, 1.0, 0.2, 0.6)  # Yellow
 
 		glow.modulate = glow_color
 

@@ -2,17 +2,18 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Status: 2026-01-30 16:10 EST (Playable)
+## Current Status: 2026-01-30 20:00 EST (Fully Playable)
 
-The game is fully playable with menus, progression, and settings:
+The game is fully playable with extensive features:
 
 - ✅ Main menu, level select, settings, stats, game over, level complete
-- ✅ 10 JSON-driven levels with progression and high scores
+- ✅ 10 JSON-driven levels with enhanced vertical coverage and strategic bomb brick placement
 - ✅ Difficulty modes (Easy/Normal/Hard) with multipliers
-- ✅ Power-ups (Expand, Contract, Speed Up, Triple Ball, Big Ball, Small Ball)
-- ✅ Statistics + achievements tracking
+- ✅ **13 Power-ups**: Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball
+- ✅ **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks
+- ✅ Statistics + achievements tracking (12 achievements)
 - ✅ Settings (shake, particles, trail, sensitivity, audio levels)
-- ✅ HUD with combo + multiplier display
+- ✅ HUD with combo + multiplier display + power-up timers
 
 Audio playback and assets are not implemented yet.
 
@@ -38,29 +39,32 @@ Audio playback and assets are not implemented yet.
 ### Debug Controls (Debug Build Only)
 - **E/N/H**: Set difficulty to Easy/Normal/Hard
 - **C**: Clear all bricks
-- **1**: Spawn triple ball power-up
-- **2**: Spawn expand power-up
-- **3**: Spawn contract power-up
-- **4**: Spawn big ball power-up
-- **5**: Spawn small ball power-up
+- **1**: Spawn bomb ball power-up (test explosive effects)
 
 ## Game Features
 
 ### Core Mechanics
 - Paddle spin affects ball trajectory
-- 9 brick types with score values and hit counts
+- **10 brick types** including special bomb bricks that explode
 - Combo and no-miss streak multipliers
 - Perfect clear bonus on level completion
+- Ball escape logic prevents wedging in corners
 
 ### Progression
-- 10 levels loaded from JSON
+- 10 enhanced levels with better vertical coverage
+- Strategic bomb brick placement for tactical gameplay
 - Unlocks next level on completion
 - High scores per level
 
-### Power-Ups
-- Expand, Contract, Speed Up, Triple Ball, Big Ball, Small Ball
-- Timed effects managed by PowerUpManager
-- HUD timers for active effects
+### Power-Ups (13 Types)
+- **Paddle**: Expand, Contract
+- **Ball Speed**: Speed Up, Slow Down
+- **Ball Effects**: Triple Ball, Big Ball, Small Ball, Bomb Ball (explosive impacts)
+- **Special**: Extra Life, Grab (stick to paddle), Brick Through (pass through bricks)
+- **Score**: Double Score (2x multiplier)
+- **Mystery**: Random effect
+- Timed effects with HUD timers and visual indicators
+- Ball glows orange-red during bomb ball effect
 
 ### Settings
 - Screen shake intensity
@@ -116,6 +120,6 @@ TBD - Personal project, not yet open source
 
 ---
 
-**Last Updated**: 2026-01-30 16:10 EST
+**Last Updated**: 2026-01-30 20:00 EST
 
-**Ready to play!** 🎮
+**Ready to play with explosive action!** 🎮💥

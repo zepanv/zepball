@@ -23,6 +23,11 @@ var paddle_reference = null
 var game_manager = null
 var is_main_ball: bool = true  # Identifies the original ball in the scene
 var direction_indicator: Line2D = null  # Visual launch direction indicator
+var grab_enabled: bool = false  # Can ball be grabbed by paddle on contact
+var brick_through_enabled: bool = false  # Does ball pass through bricks
+var bomb_ball_enabled: bool = false  # Does ball destroy surrounding bricks
+var paddle_offset: Vector2 = Vector2(-30, 0)  # Offset from paddle when attached/grabbed
+var grab_immunity_timer: float = 0.0  # Prevents immediate re-grab after launch
 
 # Stuck detection
 var stuck_check_timer: float = 0.0
@@ -70,16 +75,30 @@ func _physics_process(delta):
 		velocity = Vector2.ZERO
 		return
 
+	# Decrement grab immunity timer
+	if grab_immunity_timer > 0.0:
+		grab_immunity_timer -= delta
+
 	if is_attached_to_paddle:
-		# Ball follows paddle until launched
+		# Ball follows paddle until launched, maintaining the attachment offset
 		if paddle_reference:
-			position = paddle_reference.position + Vector2(-30, 0)  # Offset to left of paddle
+			position = paddle_reference.position + paddle_offset
 
 		# Direction indicator disabled
 		# update_direction_indicator()
 
 		# Launch on input
-		if Input.is_action_just_pressed("launch_ball") and (not game_manager or game_manager.game_state == game_manager.GameState.READY):
+		# Allow launch in READY state, or anytime ball is attached during PLAYING (includes grabbed balls)
+		var can_launch = false
+		if not game_manager:
+			can_launch = true
+		elif game_manager.game_state == game_manager.GameState.READY:
+			can_launch = true
+		elif game_manager.game_state == game_manager.GameState.PLAYING:
+			# During gameplay, any attached ball can be launched (grabbed or waiting for respawn)
+			can_launch = true
+
+		if Input.is_action_just_pressed("launch_ball") and can_launch:
 			launch_ball()
 	else:
 		# Ball is in motion
@@ -174,6 +193,13 @@ func launch_ball():
 	"""
 	is_attached_to_paddle = false
 
+	# Set grab immunity to prevent immediate re-grab after launch
+	grab_immunity_timer = 0.2  # 200ms immunity
+
+	# Add small random position offset to prevent stacked balls from colliding
+	# This helps when multiple balls are grabbed at the same spot
+	position += Vector2(randf_range(-3.0, 3.0), randf_range(-3.0, 3.0))
+
 	# Hide direction indicator
 	if direction_indicator:
 		direction_indicator.visible = false
@@ -183,18 +209,23 @@ func launch_ball():
 	if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
 		paddle_velocity_y = paddle_reference.get_velocity_for_spin()
 
+	# Add small random variation to prevent stacked balls from colliding
+	# This helps when multiple grabbed balls are launched simultaneously
+	var angle_variation = randf_range(-5.0, 5.0)  # ±5 degrees
+
 	# If paddle is moving significantly, add vertical component
 	if abs(paddle_velocity_y) > 50:  # Minimum movement threshold
 		# Launch with spin based on paddle movement
-		var angle_rad = deg_to_rad(INITIAL_ANGLE)
+		var angle_rad = deg_to_rad(INITIAL_ANGLE + angle_variation)
 		velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
 		# Add paddle spin influence
 		velocity.y += paddle_velocity_y * SPIN_FACTOR
 		velocity = velocity.normalized() * current_speed
 		print("Ball launched with spin! Velocity: ", velocity)
 	else:
-		# Launch straight left (no vertical component)
-		velocity = Vector2(-current_speed, 0)
+		# Launch straight left with slight angle variation
+		var angle_rad = deg_to_rad(180.0 + angle_variation)  # 180° = straight left
+		velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
 		print("Ball launched straight! Velocity: ", velocity)
 
 	# Enable trail effect (if enabled in settings)
@@ -218,41 +249,84 @@ func handle_collision(collision: KinematicCollision2D):
 
 	# Check what we hit
 	if collider.is_in_group("paddle"):
-		# Paddle collision: reflect + add spin
-		velocity = velocity.bounce(normal)
+		# Special case: Allow ball to pass through paddle if stuck near walls and moving left
+		# This prevents the ball from getting wedged between paddle and walls
+		const TOP_ESCAPE_ZONE_Y = 40.0  # Near top wall threshold
+		const BOTTOM_ESCAPE_ZONE_Y = 660.0  # Near bottom wall threshold
 
-		# Add paddle spin influence
-		if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
-			var paddle_velocity = paddle_reference.get_velocity_for_spin()
-			velocity.y += paddle_velocity * SPIN_FACTOR
+		if position.y < TOP_ESCAPE_ZONE_Y and velocity.x < 0:
+			# Ball is near top wall and moving left - let it pass through paddle
+			print("Ball escaping through paddle (stuck near top wall)")
+			return
+		elif position.y > BOTTOM_ESCAPE_ZONE_Y and velocity.x < 0:
+			# Ball is near bottom wall and moving left - let it pass through paddle
+			print("Ball escaping through paddle (stuck near bottom wall)")
+			return
 
-		# Prevent pure vertical motion
-		if abs(velocity.x) < current_speed * (1.0 - MAX_VERTICAL_ANGLE):
-			velocity.x = sign(velocity.x) * current_speed * (1.0 - MAX_VERTICAL_ANGLE)
+		# Check if grab is enabled and ball is not immune to grab
+		if (grab_enabled or PowerUpManager.is_grab_active()) and grab_immunity_timer <= 0.0:
+			# Attach ball to paddle (grab mode) at the exact contact point
+			is_attached_to_paddle = true
+			velocity = Vector2.ZERO
+			# Store the current offset from paddle so ball sticks where it was grabbed
+			if paddle_reference:
+				paddle_offset = position - paddle_reference.position
+				# Ensure ball is on the front (left) side of paddle, not the back (right)
+				# Paddle is vertical on the right side, so negative X offset = front/left = good
+				# Positive X offset = back/right = bad (ball would be lost immediately)
+				if paddle_offset.x > 0:
+					# Ball grabbed on back side - move it to front side at same Y position
+					paddle_offset.x = -abs(paddle_offset.x)
+					print("Ball grabbed on back of paddle, moved to front")
+			print("Ball grabbed by paddle at offset: ", paddle_offset)
+		else:
+			# Paddle collision: reflect + add spin
+			velocity = velocity.bounce(normal)
 
-		# Prevent paddle-bottom wall wedge by nudging ball upward at the boundary
-		var min_y = TOP_WALL_Y + ball_radius
-		var max_y = BOTTOM_WALL_Y - ball_radius
-		if position.y < min_y:
-			position.y = min_y
-			velocity.y = abs(velocity.y)
-		elif position.y > max_y:
-			position.y = max_y
-			velocity.y = -abs(velocity.y)
+			# Add paddle spin influence
+			if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
+				var paddle_velocity = paddle_reference.get_velocity_for_spin()
+				velocity.y += paddle_velocity * SPIN_FACTOR
 
-		print("Ball hit paddle, velocity: ", velocity)
+			# Prevent pure vertical motion
+			if abs(velocity.x) < current_speed * (1.0 - MAX_VERTICAL_ANGLE):
+				velocity.x = sign(velocity.x) * current_speed * (1.0 - MAX_VERTICAL_ANGLE)
+
+			# Prevent paddle-bottom wall wedge by nudging ball upward at the boundary
+			var min_y = TOP_WALL_Y + ball_radius
+			var max_y = BOTTOM_WALL_Y - ball_radius
+			if position.y < min_y:
+				position.y = min_y
+				velocity.y = abs(velocity.y)
+			elif position.y > max_y:
+				position.y = max_y
+				velocity.y = -abs(velocity.y)
+
+			print("Ball hit paddle, velocity: ", velocity)
 
 	elif collider.is_in_group("brick"):
 		# Brick collision: reflect + notify brick
 		var old_velocity = velocity  # Store for particle direction
-		velocity = velocity.bounce(normal)
-		brick_hit.emit(collider)
+		var hit_brick_position = collider.global_position  # Store for bomb effect
 
-		# Tell brick it was hit with impact direction
-		if collider.has_method("hit"):
-			collider.hit(old_velocity.normalized())
+		# Check if brick through is enabled
+		if brick_through_enabled or PowerUpManager.is_brick_through_active():
+			# Don't bounce, just pass through and notify brick
+			brick_hit.emit(collider)
+			if collider.has_method("hit"):
+				collider.hit(old_velocity.normalized())
+			print("Ball passed through brick!")
+		else:
+			# Normal bounce behavior
+			velocity = velocity.bounce(normal)
+			brick_hit.emit(collider)
+			if collider.has_method("hit"):
+				collider.hit(old_velocity.normalized())
+			print("Ball hit brick")
 
-		print("Ball hit brick")
+		# Check if bomb ball is active - destroy surrounding bricks
+		if bomb_ball_enabled or PowerUpManager.is_bomb_ball_active():
+			destroy_surrounding_bricks(hit_brick_position)
 
 	else:
 		# Wall collision: simple reflection
@@ -287,12 +361,90 @@ func apply_speed_up_effect():
 
 	print("Ball speed increased to 650!")
 
+func apply_slow_down_effect():
+	"""Decrease ball speed to 350 for 12 seconds"""
+	current_speed = 350.0
+	# Update velocity magnitude immediately if ball is moving
+	if not is_attached_to_paddle:
+		velocity = velocity.normalized() * current_speed
+
+	# Change trail color to blue for slow speed (if trail enabled)
+	if has_node("Trail") and SaveManager.get_ball_trail():
+		$Trail.color = Color(0.2, 0.6, 1.0, 0.7)  # Blue
+
+	print("Ball speed decreased to 350!")
+
 func reset_ball_speed():
 	"""Reset ball speed to normal (with difficulty multiplier applied)"""
 	current_speed = BASE_current_speed * DifficultyManager.get_speed_multiplier()
 	# Update velocity magnitude immediately if ball is moving
 	if not is_attached_to_paddle:
 		velocity = velocity.normalized() * current_speed
+
+	# Reset trail color to default (if trail enabled)
+	if has_node("Trail") and SaveManager.get_ball_trail():
+		$Trail.color = Color(1.0, 1.0, 1.0, 0.5)  # Default white
+
+func enable_grab():
+	"""Enable grab mode - ball can stick to paddle"""
+	grab_enabled = true
+	print("Grab enabled on ball")
+
+func reset_grab_state():
+	"""Disable grab mode - already-grabbed balls stay held until player releases"""
+	grab_enabled = false
+	# Note: Balls that are currently attached (is_attached_to_paddle = true)
+	# will remain attached and can be manually launched by the player
+	print("Grab disabled on ball (held balls remain until released)")
+
+func enable_brick_through():
+	"""Enable brick through - ball passes through bricks"""
+	brick_through_enabled = true
+	print("Brick through enabled on ball")
+
+func reset_brick_through():
+	"""Disable brick through mode"""
+	brick_through_enabled = false
+	print("Brick through disabled on ball")
+
+func enable_bomb_ball():
+	"""Enable bomb ball mode - ball destroys surrounding bricks"""
+	bomb_ball_enabled = true
+	# Add orange/red glow to ball visual
+	if has_node("Visual"):
+		$Visual.modulate = Color(1.0, 0.4, 0.1, 1.0)  # Orange-red tint
+	print("Bomb ball enabled on ball")
+
+func reset_bomb_ball():
+	"""Disable bomb ball mode and remove glow"""
+	bomb_ball_enabled = false
+	# Reset ball visual to normal
+	if has_node("Visual"):
+		$Visual.modulate = Color(1.0, 1.0, 1.0, 1.0)  # White (normal)
+	print("Bomb ball disabled on ball")
+
+func destroy_surrounding_bricks(impact_position: Vector2):
+	"""Destroy bricks in a radius around the impact point (bomb ball effect)"""
+	const BOMB_RADIUS = 75.0  # Pixels - immediately adjacent bricks (left/right/above/below)
+
+	# Find all bricks in the scene
+	var all_bricks = get_tree().get_nodes_in_group("brick")
+	var destroyed_count = 0
+
+	for brick in all_bricks:
+		if not is_instance_valid(brick):
+			continue
+
+		# Check distance from impact point
+		var distance = brick.global_position.distance_to(impact_position)
+		if distance <= BOMB_RADIUS:
+			# Hit this brick with a fake velocity
+			if brick.has_method("hit"):
+				brick.hit(Vector2(-1, 0))  # Use left direction for consistency
+				destroyed_count += 1
+
+	if destroyed_count > 0:
+		print("Bomb ball destroyed ", destroyed_count, " surrounding bricks!")
 
 	# Reset trail color to normal cyan/blue (if trail enabled)
 	if has_node("Trail") and SaveManager.get_ball_trail():

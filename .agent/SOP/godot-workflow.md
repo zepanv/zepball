@@ -330,7 +330,7 @@ git commit -m "feat: Implement paddle vertical movement
 All commits must follow the format used in commit `7d91afb`. Use:
 
 ```
-<type>: <short summary> (YYYY-MM-DD HH:MM)
+<type>: <short summary>
 
 Major Features:
 - Feature area
@@ -352,7 +352,7 @@ Code Improvements:
 Documentation:
 - Doc updates
 
-Co-Authored-By: <Name> <email>   # Only when applicable
+Co-Authored-By: <Name> <email>   # Sign your work!
 ```
 
 Notes:
@@ -361,7 +361,7 @@ Notes:
 - Omit sections that don’t apply, but keep headings for major changes.
 
 ### Versioning Note
-Do not increment version numbers in README or project files unless explicitly requested.
+We are using date/time instead of version currently.
 
 ## Save System Compatibility
 

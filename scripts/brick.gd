@@ -13,7 +13,8 @@ enum BrickType {
 	BLUE,       # Ice brick, 15 points (row 1, col 2)
 	GREEN,      # Nature brick, 15 points (row 2, col 0)
 	PURPLE,     # Magic brick, 25 points (row 2, col 1)
-	ORANGE      # Energy brick, 20 points (row 2, col 2)
+	ORANGE,     # Energy brick, 20 points (row 2, col 2)
+	BOMB        # Explodes and destroys surrounding bricks, 30 points
 }
 
 # Configuration
@@ -71,6 +72,10 @@ func _ready():
 			hits_remaining = 1
 			score_value = 20
 			brick_color = Color(1.0, 0.5, 0.0)  # Orange
+		BrickType.BOMB:
+			hits_remaining = 1
+			score_value = 30
+			brick_color = Color(1.0, 0.3, 0.0)  # Orange-red
 
 	# Set up sprite if using Sprite2D
 	if has_node("Sprite"):
@@ -114,6 +119,8 @@ func setup_sprite():
 			texture_path = "res://assets/graphics/bricks/element_purple_square.png"
 		BrickType.ORANGE:
 			texture_path = "res://assets/graphics/bricks/element_yellow_square.png"
+		BrickType.BOMB:
+			texture_path = "res://assets/graphics/bricks/special_bomb.png"
 
 	# Load texture
 	var texture = load(texture_path)
@@ -122,8 +129,14 @@ func setup_sprite():
 		return
 
 	sprite.texture = texture
-	# Scale to 1.5x (48px) - textures are 32x32
-	sprite.scale = Vector2(1.5, 1.5)
+
+	# Scale based on brick type
+	# Most textures are 32x32, scaled to 1.5x = 48px
+	# Special bomb texture is 180x180, needs 48/180 = 0.267x
+	if brick_type == BrickType.BOMB:
+		sprite.scale = Vector2(0.267, 0.267)
+	else:
+		sprite.scale = Vector2(1.5, 1.5)
 
 func hit(impact_direction: Vector2 = Vector2.ZERO):
 	"""Called when ball collides with brick
@@ -154,6 +167,10 @@ func break_brick(impact_direction: Vector2 = Vector2.ZERO):
 
 	# Emit signal to game manager
 	brick_broken.emit(score_value)
+
+	# If this is a bomb brick, explode and destroy surrounding bricks
+	if brick_type == BrickType.BOMB:
+		explode_surrounding_bricks()
 
 	# Chance to spawn power-up
 	try_spawn_power_up()
@@ -213,7 +230,7 @@ func try_spawn_power_up():
 	var powerup = powerup_scene.instantiate()
 
 	# Randomly select power-up type
-	var types = [0, 1, 2, 3]  # EXPAND, CONTRACT, SPEED_UP, TRIPLE_BALL
+	var types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]  # All power-up types
 	powerup.power_up_type = types[randi() % types.size()]
 
 	# Set position to brick position
@@ -221,3 +238,28 @@ func try_spawn_power_up():
 
 	# Emit signal so main can add it to the scene
 	power_up_spawned.emit(powerup)
+
+func explode_surrounding_bricks():
+	"""Destroy bricks in a radius around this bomb brick"""
+	const BOMB_RADIUS = 75.0  # Same as bomb_ball power-up
+
+	# Find all bricks in the scene
+	var all_bricks = get_tree().get_nodes_in_group("brick")
+	var destroyed_count = 0
+
+	for brick in all_bricks:
+		if not is_instance_valid(brick):
+			continue
+		if brick == self:  # Don't count self
+			continue
+
+		# Check distance from this brick
+		var distance = brick.global_position.distance_to(global_position)
+		if distance <= BOMB_RADIUS:
+			# Hit this brick
+			if brick.has_method("hit"):
+				brick.hit(Vector2(-1, 0))  # Use left direction for consistency
+				destroyed_count += 1
+
+	if destroyed_count > 0:
+		print("Bomb brick exploded and destroyed ", destroyed_count, " surrounding bricks!")

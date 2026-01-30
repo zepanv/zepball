@@ -10,7 +10,14 @@ enum PowerUpType {
 	SPEED_UP,
 	TRIPLE_BALL,
 	BIG_BALL,
-	SMALL_BALL
+	SMALL_BALL,
+	SLOW_DOWN,
+	EXTRA_LIFE,
+	GRAB,
+	BRICK_THROUGH,
+	DOUBLE_SCORE,
+	MYSTERY,
+	BOMB_BALL
 }
 
 # Active effects with their remaining time
@@ -24,7 +31,14 @@ const EFFECT_DURATIONS = {
 	PowerUpType.SPEED_UP: 12.0,
 	PowerUpType.TRIPLE_BALL: 0.0,  # Permanent (doesn't expire)
 	PowerUpType.BIG_BALL: 12.0,
-	PowerUpType.SMALL_BALL: 12.0
+	PowerUpType.SMALL_BALL: 12.0,
+	PowerUpType.SLOW_DOWN: 12.0,
+	PowerUpType.EXTRA_LIFE: 0.0,  # Instant (doesn't expire)
+	PowerUpType.GRAB: 15.0,
+	PowerUpType.BRICK_THROUGH: 12.0,
+	PowerUpType.DOUBLE_SCORE: 15.0,
+	PowerUpType.MYSTERY: 0.0,  # Instant (doesn't expire, applies random effect)
+	PowerUpType.BOMB_BALL: 12.0
 }
 
 # Signals
@@ -65,6 +79,24 @@ func apply_effect(type: PowerUpType, target_node: Node):
 		_update_paddle_size(target_node)
 	elif type == PowerUpType.BIG_BALL or type == PowerUpType.SMALL_BALL:
 		_update_ball_size(target_node)
+	elif type == PowerUpType.GRAB:
+		# Enable grab on all balls
+		var balls = get_tree().get_nodes_in_group("ball")
+		for ball in balls:
+			if ball.has_method("enable_grab"):
+				ball.enable_grab()
+	elif type == PowerUpType.BRICK_THROUGH:
+		# Enable brick through on all balls
+		var balls = get_tree().get_nodes_in_group("ball")
+		for ball in balls:
+			if ball.has_method("enable_brick_through"):
+				ball.enable_brick_through()
+	elif type == PowerUpType.BOMB_BALL:
+		# Enable bomb ball on all balls
+		var balls = get_tree().get_nodes_in_group("ball")
+		for ball in balls:
+			if ball.has_method("enable_bomb_ball"):
+				ball.enable_bomb_ball()
 
 func remove_effect(type: PowerUpType):
 	"""Remove an active effect and reset to default"""
@@ -83,7 +115,7 @@ func remove_effect(type: PowerUpType):
 			effect_expired.emit(type)
 			print("Power-up expired: ", PowerUpType.keys()[type])
 			return
-		PowerUpType.SPEED_UP:
+		PowerUpType.SPEED_UP, PowerUpType.SLOW_DOWN:
 			if target and target.has_method("reset_ball_speed"):
 				target.reset_ball_speed()
 		PowerUpType.BIG_BALL, PowerUpType.SMALL_BALL:
@@ -93,6 +125,27 @@ func remove_effect(type: PowerUpType):
 			effect_expired.emit(type)
 			print("Power-up expired: ", PowerUpType.keys()[type])
 			return
+		PowerUpType.GRAB:
+			# Reset grab state on all balls
+			var balls = get_tree().get_nodes_in_group("ball")
+			for ball in balls:
+				if ball.has_method("reset_grab_state"):
+					ball.reset_grab_state()
+		PowerUpType.BRICK_THROUGH:
+			# Reset brick through state on all balls
+			var balls = get_tree().get_nodes_in_group("ball")
+			for ball in balls:
+				if ball.has_method("reset_brick_through"):
+					ball.reset_brick_through()
+		PowerUpType.DOUBLE_SCORE:
+			# Score multiplier is checked via active_effects, no reset needed
+			pass
+		PowerUpType.BOMB_BALL:
+			# Reset bomb ball state on all balls
+			var balls = get_tree().get_nodes_in_group("ball")
+			for ball in balls:
+				if ball.has_method("reset_bomb_ball"):
+					ball.reset_bomb_ball()
 
 	# Remove from active effects
 	active_effects.erase(type)
@@ -195,3 +248,19 @@ func get_time_remaining(type: PowerUpType) -> float:
 	if active_effects.has(type):
 		return active_effects[type].time_remaining
 	return 0.0
+
+func is_grab_active() -> bool:
+	"""Check if grab power-up is currently active"""
+	return active_effects.has(PowerUpType.GRAB)
+
+func is_brick_through_active() -> bool:
+	"""Check if brick through power-up is currently active"""
+	return active_effects.has(PowerUpType.BRICK_THROUGH)
+
+func is_double_score_active() -> bool:
+	"""Check if double score power-up is currently active"""
+	return active_effects.has(PowerUpType.DOUBLE_SCORE)
+
+func is_bomb_ball_active() -> bool:
+	"""Check if bomb ball power-up is currently active"""
+	return active_effects.has(PowerUpType.BOMB_BALL)

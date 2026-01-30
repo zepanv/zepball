@@ -3,10 +3,10 @@
   "name": "First Contact",
   "description": "Learn the basics - break all the bricks!",
   "grid": {
-    "rows": 4,
+    "rows": 10,
     "cols": 6,
     "start_x": 200,
-    "start_y": 200,
+    "start_y": 80,
     "brick_size": 48,
     "spacing": 3
   },
@@ -31,6 +31,32 @@
     {"row": 2, "col": 4, "type": "NORMAL"},
 
     {"row": 3, "col": 2, "type": "NORMAL"},
-    {"row": 3, "col": 3, "type": "NORMAL"}
+    {"row": 3, "col": 3, "type": "NORMAL"},
+
+    {"row": 4, "col": 2, "type": "BOMB"},
+    {"row": 4, "col": 3, "type": "NORMAL"},
+
+    {"row": 5, "col": 1, "type": "NORMAL"},
+    {"row": 5, "col": 2, "type": "NORMAL"},
+    {"row": 5, "col": 3, "type": "NORMAL"},
+    {"row": 5, "col": 4, "type": "NORMAL"},
+
+    {"row": 6, "col": 0, "type": "NORMAL"},
+    {"row": 6, "col": 1, "type": "NORMAL"},
+    {"row": 6, "col": 2, "type": "NORMAL"},
+    {"row": 6, "col": 3, "type": "NORMAL"},
+    {"row": 6, "col": 4, "type": "NORMAL"},
+    {"row": 6, "col": 5, "type": "NORMAL"},
+
+    {"row": 7, "col": 1, "type": "NORMAL"},
+    {"row": 7, "col": 2, "type": "NORMAL"},
+    {"row": 7, "col": 3, "type": "NORMAL"},
+    {"row": 7, "col": 4, "type": "NORMAL"},
+
+    {"row": 8, "col": 2, "type": "NORMAL"},
+    {"row": 8, "col": 3, "type": "NORMAL"},
+
+    {"row": 9, "col": 2, "type": "NORMAL"},
+    {"row": 9, "col": 3, "type": "NORMAL"}
   ]
 }

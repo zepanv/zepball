@@ -83,6 +83,10 @@ func add_score(points: int):
 		var streak_multiplier = 1.0 + (streak_tiers * STREAK_BONUS_PER_TIER)
 		adjusted_points = int(adjusted_points * streak_multiplier)
 
+	# Apply double score power-up (2x multiplier)
+	if PowerUpManager.is_double_score_active():
+		adjusted_points = int(adjusted_points * 2.0)
+
 	score += adjusted_points
 	score_changed.emit(score)
 
@@ -160,6 +164,12 @@ func lose_life():
 		game_over.emit()
 	else:
 		set_state(GameState.READY)
+
+func add_life():
+	"""Add one life (from Extra Life power-up)"""
+	lives += 1
+	lives_changed.emit(lives)
+	print("Extra life! Lives: ", lives)
 
 ## Complete current level
 func complete_level():

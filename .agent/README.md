@@ -29,13 +29,14 @@ PRDs and implementation plans for features (both implemented and future).
 Best practices and workflows for development.
 - **`SOP/godot-workflow.md`** - Working with Godot scenes, nodes, signals, and **CRITICAL: Save System Compatibility** section for handling save data migrations.
 
-## Current Game State (2026-01-30 16:00 EST)
+## Current Game State (2026-01-30 20:00 EST)
 
 ### Core Features ✅ COMPLETE
-- **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 9 brick types, collision detection, score tracking
-- **Power-Ups**: 6 types (Expand, Contract, Speed Up, Triple Ball, Big Ball, Small Ball) with visual timers
+- **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 10 brick types (including bomb bricks), collision detection, score tracking
+- **Power-Ups**: 13 types with visual timers and effects (Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball)
+- **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks (75px radius)
 - **Difficulty**: 3 modes (Easy/Normal/Hard) with speed and score multipliers
-- **Levels**: 10 unique levels with creative patterns and increasing difficulty
+- **Levels**: 10 unique levels with enhanced vertical coverage and strategic bomb brick placement
 - **Menu System**: Complete flow (Main Menu, Level Select, Game Over, Level Complete, Stats, Settings)
 - **Progression**: Level unlocking - complete one to unlock the next
 - **Save System**: Persistent data for progress, high scores, statistics, achievements, and settings
@@ -121,11 +122,20 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ## Recent Update History
 
-### 2026-01-30 (Latest) - Power-Up Updates
+### 2026-01-30 (Latest) - Power-Up Expansion & Bomb Bricks
+- ✅ **7 New Power-Ups**: Slow Down, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball
+- ✅ **Bomb Ball Power-Up**: Ball destroys surrounding bricks (75px radius) with orange-red glow
+- ✅ **Bomb Brick**: New special brick type that explodes when hit, destroying nearby bricks
+- ✅ **Enhanced Levels**: Levels 1, 3, and 5 expanded with 10-12 rows for better vertical coverage
+- ✅ **Strategic Placement**: Bomb bricks placed tactically in levels for interesting gameplay
+- ✅ **Bug Fixes**: Ball escape logic for top/bottom wall wedges, grab immunity, proper grab mechanics
+- ✅ **Debug Keys**: Simplified to key 1 for bomb_ball testing
+
+### 2026-01-30 - Power-Up System Complete
 - ✅ **Power-Up Icons**: Split into individual PNGs with colored glow
-- ✅ **New Power-Ups**: Big Ball (2x size) and Small Ball (0.5x size)
+- ✅ **Ball Size Power-Ups**: Big Ball (2x size) and Small Ball (0.5x size)
 - ✅ **Overlap Handling**: Expand/Contract and Big/Small conflicts resolve to base size
-- ✅ **Debug Keys**: 1-5 spawn power-ups for testing (debug builds)
+- ✅ **HUD Integration**: All power-ups show names and timers
 
 ### 2026-01-29 - Settings & Score Multipliers
 - ✅ **Settings Menu**: 6 customizable options (shake, particles, trail, sensitivity, audio)
