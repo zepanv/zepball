@@ -9,7 +9,7 @@ The game is fully playable with extensive features:
 - ✅ Main menu, level select, settings, stats, game over, level complete
 - ✅ 10 JSON-driven levels with enhanced vertical coverage and strategic bomb brick placement
 - ✅ Difficulty modes (Easy/Normal/Hard) with multipliers
-- ✅ **15 Power-ups**: Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet
+- ✅ **16 Power-ups**: Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block
 - ✅ **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks
 - ✅ Statistics + achievements tracking (12 achievements)
 - ✅ Settings (shake, particles, trail, sensitivity, audio levels)
@@ -42,6 +42,7 @@ Audio playback and assets are not implemented yet.
 - **1**: Spawn bomb ball power-up (test explosive effects)
 - **2**: Spawn air ball power-up
 - **3**: Spawn magnet power-up
+- **4**: Spawn block power-up
 
 ## Game Features
 
@@ -58,12 +59,13 @@ Audio playback and assets are not implemented yet.
 - Unlocks next level on completion
 - High scores per level
 
-### Power-Ups (15 Types)
+### Power-Ups (16 Types)
 - **Paddle**: Expand, Contract
 - **Ball Speed**: Speed Up, Slow Down
 - **Ball Effects**: Triple Ball, Big Ball, Small Ball, Bomb Ball (explosive impacts), Air Ball (teleport to level center X on paddle hit)
 - **Special**: Extra Life, Grab (stick to paddle), Brick Through (pass through bricks)
 - **Control**: Magnet (paddle gravity pull)
+- **Defense**: Block (temporary barrier bricks)
 - **Score**: Double Score (2x multiplier)
 - **Mystery**: Random effect
 - Timed effects with HUD timers and visual indicators
@@ -107,7 +109,6 @@ All technical documentation is in the `.agent/` folder:
 ## Known Gaps / Backlog
 
 - **Audio system**: `.agent/Tasks/Backlog/audio-system.md`
-- **Additional power-ups**: `.agent/Tasks/Backlog/power-up-expansion.md`
 - **Advanced tile mechanics**: `.agent/Tasks/Backlog/tile-advanced-elements.md`
 - **UI gaps (launch indicator)**: `.agent/Tasks/Backlog/ui-gaps.md`
 - **Future features**: `.agent/Tasks/Backlog/future-features.md`

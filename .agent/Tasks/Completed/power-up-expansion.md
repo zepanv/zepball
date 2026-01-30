@@ -1,9 +1,9 @@
 # Power-Up Expansion - Additional Types
 
-## Status: 🔶 PARTIALLY IMPLEMENTED (15 power-ups implemented, 1 remaining)
+## Status: ✅ COMPLETE (16 power-ups implemented)
 
 ## Why
-Additional power-ups add variety and strategic depth to gameplay. Most planned power-ups have been implemented.
+Additional power-ups add variety and strategic depth to gameplay. All planned power-ups have been implemented.
 
 ## Recent Updates (2026-01-30)
 The following power-ups have been implemented:
@@ -15,9 +15,10 @@ The following power-ups have been implemented:
 - ✅ Mystery (random effect)
 - ✅ Air Ball (ball jumps to level center X on paddle hit)
 - ✅ Magnet (paddle attracts ball with gravity)
+- ✅ Block (temporary protective bricks near paddle)
 
 ## Remaining Power-Ups (Not Yet Implemented)
-- Block (temporary shield brick)
+- None 🎉
 
 ## Implementation Summary (2026-01-30)
 Completed implementation for additional power-ups:
@@ -31,19 +32,15 @@ Completed implementation for additional power-ups:
 - ✅ Implemented brick through (ball passes through bricks without bouncing)
 - ✅ Implemented double score multiplier (shown in HUD)
 - ✅ Implemented mystery (random effect selection)
-- ✅ Implemented air ball brick hop behavior
+- ✅ Implemented air ball paddle-hit center jump
 - ✅ Implemented magnet paddle gravity pull
-- ✅ Updated brick spawn list to include all 15 types
-- ✅ Added debug keys 6-9, 0, minus for testing new power-ups
+- ✅ Implemented block barrier spawn near paddle
+- ✅ Updated brick spawn list to include all 16 types
+- ✅ Added debug keys 1-4 for testing Bomb/Air/Magnet/Block
 - ✅ Updated HUD to display double score in multiplier section
 
 ## Future Implementation Notes (Remaining Power-Ups)
-For the 1 remaining power-up, follow the established pattern:
-- Add new types to `PowerUpType` enum
-- Add texture preloads and glow colors
-- Add durations to `EFFECT_DURATIONS`
-Implement specific mechanics:
-  - **Block**: Spawn temporary protective brick near paddle
+- None (all planned power-ups are implemented)
 
 ## Acceptance Criteria
 - ✅ New power-ups spawn and apply correctly

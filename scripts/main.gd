@@ -28,6 +28,11 @@ const BRICK_SIZE = 48         # Square brick size in pixels
 const BRICK_SPACING = 3       # Gap between bricks
 const LEVEL_START_X = 150     # Default X position for level start
 const LEVEL_START_Y = 150     # Default Y position for level start
+const BLOCK_BRICK_WIDTH = 48
+const BLOCK_BRICK_HEIGHT = 64
+const BLOCK_OFFSET_X = 16
+const BLOCK_SEGMENT_COUNT = 4
+const BLOCK_COLOR_INTERVAL = 4.0
 
 # Boundary constants
 const RIGHT_BOUNDARY = 1300   # Past paddle (ball lost)
@@ -353,6 +358,9 @@ func _input(event):
 		elif event.keycode == KEY_3:
 			# Debug: Spawn a magnet power-up for testing
 			_spawn_debug_powerup("MAGNET", 14)
+		elif event.keycode == KEY_4:
+			# Debug: Spawn a block power-up for testing
+			_spawn_debug_powerup("BLOCK", 15)
 
 func _spawn_debug_powerup(label: String, powerup_type: int):
 	print("\n### DEBUG: Spawning ", label, " power-up ###")
@@ -365,6 +373,146 @@ func _spawn_debug_powerup(label: String, powerup_type: int):
 		print(label, " power-up spawned at position: ", powerup.position)
 	else:
 		print("ERROR: Could not load power-up scene")
+
+func _spawn_block_barrier(duration: float):
+	if not paddle or not play_area:
+		return
+
+	var barrier = Node2D.new()
+	barrier.name = "BlockBarrier"
+	play_area.add_child(barrier)
+
+	var paddle_width = _get_paddle_width()
+	var segment_height = BLOCK_BRICK_HEIGHT
+	var segment_width = BLOCK_BRICK_WIDTH
+	var segment_count = BLOCK_SEGMENT_COUNT
+	var step = segment_height + BRICK_SPACING
+	var start_y = paddle.position.y - ((segment_count - 1) * step) / 2.0
+	var base_x = paddle.position.x - (paddle_width / 2.0) - (segment_width / 2.0) - BLOCK_OFFSET_X
+
+	var block_texture = load("res://assets/graphics/bricks/element_green_rectangle.png")
+
+	for i in range(segment_count):
+		var brick = BRICK_SCENE.instantiate()
+		brick.brick_type = brick.BrickType.NORMAL
+		brick.power_up_spawn_chance = 0.0
+		brick.add_to_group("block_brick")
+		barrier.add_child(brick)
+		brick.position = Vector2(base_x, start_y + i * step)
+		_configure_block_brick(brick, block_texture, segment_width, segment_height)
+		if brick.has_signal("brick_broken"):
+			brick.brick_broken.connect(_on_block_brick_broken)
+
+	var timer = Timer.new()
+	timer.name = "BlockLifetimeTimer"
+	timer.one_shot = true
+	timer.wait_time = duration
+	barrier.add_child(timer)
+	timer.timeout.connect(_on_block_barrier_timeout.bind(barrier))
+	timer.start()
+
+	var color_timer = Timer.new()
+	color_timer.name = "BlockColorTimer"
+	color_timer.one_shot = false
+	color_timer.wait_time = 1.0
+	barrier.add_child(color_timer)
+	color_timer.timeout.connect(_update_block_barrier_color.bind(barrier))
+	color_timer.start()
+
+func _configure_block_brick(brick: Node, texture: Texture2D, segment_width: float, segment_height: float):
+	if not brick:
+		return
+
+	if brick.has_node("Sprite"):
+		var sprite = brick.get_node("Sprite")
+		if texture:
+			sprite.texture = texture
+			sprite.rotation_degrees = 90.0
+			var tex_size = texture.get_size()
+			if tex_size.x > 0 and tex_size.y > 0:
+				var scale_x = segment_width / tex_size.y
+				var scale_y = segment_height / tex_size.x
+				sprite.scale = Vector2(scale_x, scale_y)
+
+	if brick.has_node("CollisionShape2D"):
+		var collision = brick.get_node("CollisionShape2D")
+		if collision.shape is RectangleShape2D:
+			if not collision.shape.is_local_to_scene():
+				collision.shape = collision.shape.duplicate()
+			collision.shape.size = Vector2(segment_width, segment_height)
+
+	brick.brick_color = Color(0.2, 0.8, 0.2)
+	if brick.has_node("Particles"):
+		brick.get_node("Particles").color = brick.brick_color
+	if brick.has_node("Sprite"):
+		brick.get_node("Sprite").modulate = brick.brick_color
+
+func _on_block_brick_broken(score_value: int):
+	"""Handle block brick destruction without affecting level completion"""
+	if game_manager:
+		game_manager.add_score(score_value)
+	SaveManager.increment_stat("total_bricks_broken")
+
+	# Trigger screen shake similar to normal bricks
+	if camera and camera.has_method("shake"):
+		var base_intensity = 2.0 + (score_value / 50.0) * 3.0
+		var combo_multiplier = 1.0
+		if game_manager and game_manager.combo >= 3:
+			combo_multiplier = 1.0 + (game_manager.combo - 2) * 0.15
+		var intensity = min(base_intensity * combo_multiplier, 12.0)
+		camera.shake(intensity, 0.15)
+
+func _on_block_barrier_timeout(barrier: Node):
+	if barrier and barrier.is_inside_tree():
+		barrier.queue_free()
+
+func _update_block_barrier_color(barrier: Node):
+	if not barrier or not barrier.is_inside_tree():
+		return
+
+	var lifetime_timer = barrier.get_node_or_null("BlockLifetimeTimer")
+	if not lifetime_timer:
+		return
+
+	var time_left = lifetime_timer.time_left
+	var new_color = Color(0.2, 0.8, 0.2)
+	if time_left <= BLOCK_COLOR_INTERVAL:
+		new_color = Color(1.0, 0.35, 0.35)
+	elif time_left <= BLOCK_COLOR_INTERVAL * 2.0:
+		new_color = Color(1.0, 0.8, 0.2)
+
+	for child in barrier.get_children():
+		if not (child is Node):
+			continue
+		if not child.is_in_group("block_brick"):
+			continue
+		if child.has_method("set"):
+			child.brick_color = new_color
+		if child.has_node("Sprite"):
+			child.get_node("Sprite").modulate = new_color
+		if child.has_node("Particles"):
+			child.get_node("Particles").color = new_color
+
+func _get_paddle_height() -> float:
+	if not paddle:
+		return 130.0
+	var height = paddle.get("current_height")
+	if height != null:
+		return float(height)
+	if paddle.has_node("CollisionShape2D"):
+		var collision = paddle.get_node("CollisionShape2D")
+		if collision.shape is RectangleShape2D:
+			return collision.shape.size.y
+	return 130.0
+
+func _get_paddle_width() -> float:
+	if not paddle:
+		return 24.0
+	if paddle.has_node("CollisionShape2D"):
+		var collision = paddle.get_node("CollisionShape2D")
+		if collision.shape is RectangleShape2D:
+			return collision.shape.size.x
+	return 24.0
 
 func _hit_all_bricks():
 	"""Hit all bricks (breaks normals, strongs via double hit)"""
@@ -433,7 +581,7 @@ func _on_power_up_collected(type):
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.DOUBLE_SCORE, null)
 		11:  # MYSTERY
 			# Apply a random power-up effect (excluding mystery itself)
-			var random_types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14]
+			var random_types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15]
 			var random_type = random_types[randi() % random_types.size()]
 			print("Mystery power-up! Applying random effect: ", random_type)
 			_on_power_up_collected(random_type)
@@ -443,6 +591,10 @@ func _on_power_up_collected(type):
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.AIR_BALL, null)
 		14:  # MAGNET
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.MAGNET, null)
+		15:  # BLOCK
+			var duration = PowerUpManager.EFFECT_DURATIONS.get(PowerUpManager.PowerUpType.BLOCK, 12.0)
+			_spawn_block_barrier(duration)
+			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BLOCK, null)
 
 func spawn_additional_balls_with_retry(retries_remaining: int = 3):
 	"""Try to spawn additional balls, retrying if ball is in a bad position"""

@@ -251,6 +251,12 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 | BOMB_BALL | Ball destroys nearby bricks | 12s |
 | AIR_BALL | Teleport to level center X on paddle hit | 12s |
 | MAGNET | Paddle gravity pull on ball | 12s |
+| BLOCK | Spawn temporary block barrier near paddle | 12s |
+
+**Block Barrier Behavior**:
+- Spawns 4 vertical rectangle bricks in front of paddle, centered on paddle Y at pickup
+- Bricks score like normal bricks but do not affect level completion
+- Special ball effects (bomb/brick-through) do not apply to block bricks
 
 **Power-Up Manager** (Autoload):
 - Tracks active timed effects and remaining time

@@ -269,6 +269,9 @@ func create_powerup_indicator(type) -> Control:
 		14:  # MAGNET
 			name_label.text = "MAGNET"
 			name_label.modulate = Color(0.3, 0.8, 0.3)  # Green
+		15:  # BLOCK
+			name_label.text = "BLOCK"
+			name_label.modulate = Color(0.3, 0.8, 0.3)  # Green
 
 	name_label.add_theme_font_size_override("font_size", 14)
 	hbox.add_child(name_label)

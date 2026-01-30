@@ -19,7 +19,8 @@ enum PowerUpType {
 	MYSTERY,
 	BOMB_BALL,
 	AIR_BALL,
-	MAGNET
+	MAGNET,
+	BLOCK
 }
 
 # Active effects with their remaining time
@@ -42,7 +43,8 @@ const EFFECT_DURATIONS = {
 	PowerUpType.MYSTERY: 0.0,  # Instant (doesn't expire, applies random effect)
 	PowerUpType.BOMB_BALL: 12.0,
 	PowerUpType.AIR_BALL: 12.0,
-	PowerUpType.MAGNET: 12.0
+	PowerUpType.MAGNET: 12.0,
+	PowerUpType.BLOCK: 12.0
 }
 
 # Signals

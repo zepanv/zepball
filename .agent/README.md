@@ -15,13 +15,13 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/core-mechanics.md` - Paddle, ball, and collision system design ✅ IMPLEMENTED
   - `Tasks/Completed/tile-system.md` - Brick/tile system plan ✅ IMPLEMENTED
   - `Tasks/Completed/level-system.md` - Level data, loader, and progression plan ✅ IMPLEMENTED
-- `Tasks/Completed/power-ups.md` - Power-up system design and implementation plan ✅ IMPLEMENTED
+  - `Tasks/Completed/power-ups.md` - Power-up system design and implementation plan ✅ IMPLEMENTED
+  - `Tasks/Completed/power-up-expansion.md` - Additional power-ups beyond the current 16 ✅ IMPLEMENTED
   - `Tasks/Completed/ui-system.md` - UI, menus, and HUD plans ✅ IMPLEMENTED
   - `Tasks/Completed/save-system.md` - Save data, high scores, and persistence plan ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
   - `Tasks/Backlog/audio-system.md` - Audio system plan (SFX, music) 📅 NOT YET IMPLEMENTED
   - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay)
-  - `Tasks/Backlog/power-up-expansion.md` - Additional power-ups beyond the current 15
   - `Tasks/Backlog/tile-advanced-elements.md` - Force zones, special bricks, and advanced tile behaviors
   - `Tasks/Backlog/ui-gaps.md` - Launch indicator + level complete breakdown
 
@@ -33,7 +33,7 @@ Best practices and workflows for development.
 
 ### Core Features ✅ COMPLETE
 - **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 10 brick types (including bomb bricks), collision detection, score tracking
-- **Power-Ups**: 15 types with visual timers and effects (Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet)
+- **Power-Ups**: 16 types with visual timers and effects (Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block)
 - **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks (75px radius)
 - **Difficulty**: 3 modes (Easy/Normal/Hard) with speed and score multipliers
 - **Levels**: 10 unique levels with varied brick mixes (bomb bricks appear in multiple levels)
@@ -109,7 +109,7 @@ These are always accessible and control key game systems:
 ### ✅ Phase 1-5: Core Game (COMPLETE)
 - Phase 1: Core Mechanics (Paddle, Ball, Bricks, Collision)
 - Phase 2: Visual Polish (Particles, Camera Shake, Backgrounds)
-- Phase 3: Power-Ups (15 types with timers)
+- Phase 3: Power-Ups (16 types with timers)
 - Phase 4: UI System & Game Flow (Complete menu system)
 - Phase 5: Level System & Content (10 levels with progression)
 
@@ -139,7 +139,7 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 - ✅ **Set Data**: `data/level_sets.json` defines set(s)
 - ✅ **Set Scoring**: Perfect set bonus (3x) and set high scores
 - ✅ **Bomb Bricks**: Explosive bricks and bomb ball power-up (75px radius)
-- ✅ **Expanded Power-Ups**: 15 types total, with HUD timers
+- ✅ **Expanded Power-Ups**: 16 types total, with HUD timers
 
 ### 2026-01-30 - Playtime Tracking + Game Over Fix
 - ✅ **Playtime Tracking**: `total_playtime` now accumulates during READY/PLAYING and flushes every 5s

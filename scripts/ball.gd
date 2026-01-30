@@ -31,6 +31,7 @@ var air_ball_enabled: bool = false  # Does ball jump over bricks to center
 var magnet_enabled: bool = false  # Does paddle attract ball
 var paddle_offset: Vector2 = Vector2(-30, 0)  # Offset from paddle when attached/grabbed
 var grab_immunity_timer: float = 0.0  # Prevents immediate re-grab after launch
+var block_pass_timer: float = 0.0  # Allow pass-through behind block right after launch
 
 # Stuck detection
 var stuck_check_timer: float = 0.0
@@ -38,6 +39,7 @@ var last_position: Vector2 = Vector2.ZERO
 var stuck_threshold: float = 2.0  # seconds
 var movement_threshold: float = 30.0  # pixels
 var ball_radius: float = BASE_RADIUS
+var last_physics_delta: float = 0.0
 
 # Signals
 signal ball_lost
@@ -73,6 +75,7 @@ func _ready():
 		$Visual.scale = BASE_VISUAL_SCALE
 
 func _physics_process(delta):
+	last_physics_delta = delta
 	# Stop ball movement if level is complete or game over
 	if game_manager and (game_manager.game_state == game_manager.GameState.LEVEL_COMPLETE or game_manager.game_state == game_manager.GameState.GAME_OVER):
 		velocity = Vector2.ZERO
@@ -81,6 +84,8 @@ func _physics_process(delta):
 	# Decrement grab immunity timer
 	if grab_immunity_timer > 0.0:
 		grab_immunity_timer -= delta
+	if block_pass_timer > 0.0:
+		block_pass_timer -= delta
 
 	if is_attached_to_paddle:
 		# Ball follows paddle until launched, maintaining the attachment offset
@@ -204,6 +209,7 @@ func launch_ball():
 
 	# Set grab immunity to prevent immediate re-grab after launch
 	grab_immunity_timer = 0.2  # 200ms immunity
+	block_pass_timer = 0.35  # Allow passing block barrier on launch
 
 	# Add small random position offset to prevent stacked balls from colliding
 	# This helps when multiple balls are grabbed at the same spot
@@ -324,8 +330,14 @@ func handle_collision(collision: KinematicCollision2D):
 		var old_velocity = velocity  # Store for particle direction
 		var hit_brick_position = collider.global_position  # Store for bomb effect
 
-		# Check if brick through is enabled
-		if brick_through_enabled or PowerUpManager.is_brick_through_active():
+		var is_block_brick = collider.is_in_group("block_brick")
+		if is_block_brick and (velocity.x < 0.0 or grab_immunity_timer > 0.0 or block_pass_timer > 0.0):
+			# Allow held/just-launched balls to pass block bricks when moving left
+			position += velocity * last_physics_delta
+			return
+
+		# Check if brick through is enabled (block bricks always behave normally)
+		if not is_block_brick and (brick_through_enabled or PowerUpManager.is_brick_through_active()):
 			# Don't bounce, just pass through and notify brick
 			brick_hit.emit(collider)
 			if collider.has_method("hit"):
@@ -339,8 +351,8 @@ func handle_collision(collision: KinematicCollision2D):
 				collider.hit(old_velocity.normalized())
 			print("Ball hit brick")
 
-		# Check if bomb ball is active - destroy surrounding bricks
-		if bomb_ball_enabled or PowerUpManager.is_bomb_ball_active():
+		# Check if bomb ball is active - destroy surrounding bricks (skip block bricks)
+		if not is_block_brick and (bomb_ball_enabled or PowerUpManager.is_bomb_ball_active()):
 			destroy_surrounding_bricks(hit_brick_position)
 
 	else:
@@ -507,6 +519,8 @@ func destroy_surrounding_bricks(impact_position: Vector2):
 
 	for brick in all_bricks:
 		if not is_instance_valid(brick):
+			continue
+		if brick.is_in_group("block_brick"):
 			continue
 
 		# Check distance from impact point
