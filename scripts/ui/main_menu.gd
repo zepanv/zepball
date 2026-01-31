@@ -7,6 +7,7 @@ extends Control
 @onready var easy_button = $VBoxContainer/DifficultyButtons/EasyButton
 @onready var normal_button = $VBoxContainer/DifficultyButtons/NormalButton
 @onready var hard_button = $VBoxContainer/DifficultyButtons/HardButton
+@onready var return_button = $VBoxContainer/ReturnButton
 
 func _ready():
 	"""Initialize main menu"""
@@ -24,6 +25,8 @@ func _ready():
 
 	# Connect difficulty change signal
 	DifficultyManager.difficulty_changed.connect(_on_difficulty_changed)
+
+	_update_return_button()
 
 func apply_saved_difficulty(difficulty_name: String):
 	"""Apply the saved difficulty setting"""
@@ -52,6 +55,11 @@ func _on_play_button_pressed():
 	"""Handle Play button - go to set select"""
 	print("Play button pressed")
 	MenuController.show_set_select()
+
+func _on_return_button_pressed():
+	"""Return to the last in-progress level"""
+	print("Return to Last Level pressed")
+	MenuController.resume_last_level()
 
 func _on_easy_button_pressed():
 	"""Set difficulty to Easy"""
@@ -89,3 +97,9 @@ func _on_quit_button_pressed():
 func _on_difficulty_changed(_new_difficulty):
 	"""Handle difficulty change signal"""
 	update_difficulty_display()
+
+func _update_return_button():
+	"""Show return button if a level is in progress"""
+	var last_played = SaveManager.get_last_played()
+	var in_progress = last_played.get("in_progress", false)
+	return_button.visible = in_progress

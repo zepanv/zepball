@@ -327,7 +327,7 @@ git commit -m "feat: Implement paddle vertical movement
 ```
 
 ### Commit Message Format (Required)
-All commits must follow the format used in commit `7d91afb`. Use:
+All commits must follow the format, the agent should be the co-author:
 
 ```
 <type>: <short summary>
@@ -352,7 +352,7 @@ Code Improvements:
 Documentation:
 - Doc updates
 
-Co-Authored-By: <Name> <email>   # Sign your work!
+Co-Authored-By: 
 ```
 
 Notes:

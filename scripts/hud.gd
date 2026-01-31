@@ -18,6 +18,12 @@ var level_intro: Control = null
 var debug_overlay: PanelContainer = null
 var debug_visible: bool = false
 var combo_flash: ColorRect = null
+var combo_flash_enabled: bool = true
+var short_level_intro: bool = false
+var skip_level_intro: bool = false
+var show_fps: bool = false
+var settings_overlay: Control = null
+var level_select_confirm: ConfirmationDialog = null
 
 func _ready():
 	# Allow UI to process even when game is paused
@@ -37,6 +43,13 @@ func _ready():
 	pause_menu.z_index = 100  # Ensure pause menu is always on top
 	add_child(pause_menu)
 
+	# Confirmation dialog for leaving to level select
+	level_select_confirm = ConfirmationDialog.new()
+	level_select_confirm.title = "Return to Level Select"
+	level_select_confirm.dialog_text = "Return to level select and abandon this run?"
+	level_select_confirm.confirmed.connect(_on_confirm_level_select)
+	add_child(level_select_confirm)
+
 	# Create level intro display
 	level_intro = create_level_intro()
 	level_intro.visible = false
@@ -53,6 +66,25 @@ func _ready():
 	combo_flash.color = Color(1, 1, 1, 0)  # White, fully transparent initially
 	combo_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(combo_flash)
+
+	# Load HUD-related settings
+	combo_flash_enabled = SaveManager.get_combo_flash_enabled()
+	short_level_intro = SaveManager.get_short_level_intro()
+	skip_level_intro = SaveManager.get_skip_level_intro()
+	show_fps = SaveManager.get_show_fps()
+	debug_visible = show_fps
+	if debug_overlay:
+		debug_overlay.visible = debug_visible
+
+func apply_settings_from_save() -> void:
+	"""Refresh HUD settings while paused"""
+	combo_flash_enabled = SaveManager.get_combo_flash_enabled()
+	short_level_intro = SaveManager.get_short_level_intro()
+	skip_level_intro = SaveManager.get_skip_level_intro()
+	show_fps = SaveManager.get_show_fps()
+	debug_visible = show_fps
+	if debug_overlay:
+		debug_overlay.visible = debug_visible
 
 	# Create difficulty indicator (positioned below score/lives to avoid overlap)
 	difficulty_label = Label.new()
@@ -159,6 +191,8 @@ func _on_combo_changed(new_combo: int):
 		combo_label.scale = Vector2(1.2, 1.2)
 		var tween = create_tween()
 		tween.tween_property(combo_label, "scale", Vector2(1.0, 1.0), 0.2)
+		if combo_flash_enabled:
+			_play_combo_flash()
 	else:
 		combo_label.visible = false
 
@@ -287,13 +321,19 @@ func create_powerup_indicator(type) -> Control:
 func _process(_delta):
 	"""Update power-up timer displays and debug overlay"""
 	# Toggle debug overlay with backtick key (`) - Mac friendly
-	if Input.is_physical_key_pressed(KEY_QUOTELEFT) and not Input.is_key_pressed(KEY_SHIFT):
-		if not get_meta("debug_key_handled", false):
-			debug_visible = !debug_visible
-			if debug_overlay:
-				debug_overlay.visible = debug_visible
-			set_meta("debug_key_handled", true)
+	if show_fps:
+		if Input.is_physical_key_pressed(KEY_QUOTELEFT) and not Input.is_key_pressed(KEY_SHIFT):
+			if not get_meta("debug_key_handled", false):
+				debug_visible = !debug_visible
+				if debug_overlay:
+					debug_overlay.visible = debug_visible
+				set_meta("debug_key_handled", true)
+		else:
+			set_meta("debug_key_handled", false)
 	else:
+		if debug_overlay and debug_overlay.visible:
+			debug_overlay.visible = false
+		debug_visible = false
 		set_meta("debug_key_handled", false)
 
 	# Update power-up timers
@@ -309,8 +349,25 @@ func _process(_delta):
 					timer_label.text = " %.1fs" % time_remaining
 
 	# Update debug overlay
-	if debug_visible and debug_overlay:
+	if show_fps and debug_visible and debug_overlay:
 		update_debug_overlay()
+
+	# Ensure pause menu is visible when paused and no settings overlay is open
+	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if game_manager:
+		if game_manager.game_state == game_manager.GameState.PAUSED:
+			if pause_menu and settings_overlay == null and pause_menu.visible == false:
+				pause_menu.visible = true
+		elif pause_menu and pause_menu.visible:
+			pause_menu.visible = false
+
+func _play_combo_flash():
+	"""Flash the screen subtly on combo gains"""
+	if not combo_flash:
+		return
+	combo_flash.color = Color(1, 1, 1, 0.08)
+	var tween = create_tween()
+	tween.tween_property(combo_flash, "color", Color(1, 1, 1, 0.0), 0.25)
 
 func create_pause_menu() -> Control:
 	"""Create the enhanced pause menu panel"""
@@ -328,8 +385,8 @@ func create_pause_menu() -> Control:
 	# Center panel
 	var panel = PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.position = Vector2(-200, -250)
-	panel.custom_minimum_size = Vector2(400, 500)
+	panel.position = Vector2(-200, -320)
+	panel.custom_minimum_size = Vector2(400, 560)
 	menu.add_child(panel)
 
 	# VBox for menu contents
@@ -397,6 +454,24 @@ func create_pause_menu() -> Control:
 	restart_btn.set("theme_override_colors/font_color", Color(0, 0.9, 1, 1))
 	restart_btn.pressed.connect(_on_pause_restart_pressed)
 	vbox.add_child(restart_btn)
+
+	# Settings button
+	var settings_btn = Button.new()
+	settings_btn.text = "SETTINGS"
+	settings_btn.custom_minimum_size = Vector2(0, 50)
+	settings_btn.set("theme_override_font_sizes/font_size", 28)
+	settings_btn.set("theme_override_colors/font_color", Color(0.9, 0.9, 0.9, 1))
+	settings_btn.pressed.connect(_on_pause_settings_pressed)
+	vbox.add_child(settings_btn)
+
+	# Level select button
+	var level_select_btn = Button.new()
+	level_select_btn.text = "LEVEL SELECT"
+	level_select_btn.custom_minimum_size = Vector2(0, 50)
+	level_select_btn.set("theme_override_font_sizes/font_size", 26)
+	level_select_btn.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+	level_select_btn.pressed.connect(_on_pause_level_select_pressed)
+	vbox.add_child(level_select_btn)
 
 	# Main Menu button
 	var menu_btn = Button.new()
@@ -473,6 +548,42 @@ func _on_pause_main_menu_pressed():
 	# Go to main menu
 	MenuController.show_main_menu()
 
+func _on_pause_level_select_pressed():
+	"""Prompt to return to level select from pause"""
+	if settings_overlay:
+		return
+	if level_select_confirm:
+		level_select_confirm.popup_centered()
+
+func _on_confirm_level_select():
+	"""Return to level select after confirmation"""
+	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	if game_manager:
+		game_manager.set_state(game_manager.GameState.PLAYING)
+	MenuController.show_level_select()
+
+func _on_pause_settings_pressed():
+	"""Open settings overlay while staying paused"""
+	if settings_overlay:
+		return
+	var settings_scene = preload("res://scenes/ui/settings.tscn")
+	settings_overlay = settings_scene.instantiate()
+	settings_overlay.set_meta("opened_from_pause", true)
+	settings_overlay.z_index = 200
+	if settings_overlay.has_signal("closed_from_pause"):
+		settings_overlay.closed_from_pause.connect(_on_settings_closed_from_pause)
+	add_child(settings_overlay)
+	if pause_menu:
+		pause_menu.visible = false
+
+func _on_settings_closed_from_pause():
+	"""Return to pause menu after closing settings"""
+	if settings_overlay:
+		settings_overlay.queue_free()
+		settings_overlay = null
+	if pause_menu:
+		pause_menu.visible = true
+
 func create_level_intro() -> Control:
 	"""Create the level intro display panel"""
 	var intro = Control.new()
@@ -537,6 +648,8 @@ func show_level_intro(level_id: int, level_name: String, level_description: Stri
 	"""Show level intro with fade in/out animation"""
 	if not level_intro:
 		return
+	if skip_level_intro:
+		return
 
 	# Update text
 	var level_num_label = level_intro.find_child("LevelNum", true, false)
@@ -556,16 +669,17 @@ func show_level_intro(level_id: int, level_name: String, level_description: Stri
 	level_intro.visible = true
 
 	var tween = create_tween()
+	var hold_duration = 1.0 if short_level_intro else 2.5
 	tween.tween_property(level_intro, "modulate:a", 1.0, 0.5)  # Fade in
-	tween.tween_interval(2.5)  # Hold for 2.5 seconds
+	tween.tween_interval(hold_duration)  # Hold duration
 	tween.tween_property(level_intro, "modulate:a", 0.0, 0.5)  # Fade out
 	tween.tween_callback(func(): level_intro.visible = false)  # Hide when done
 
 func create_debug_overlay() -> PanelContainer:
 	"""Create the FPS/Debug overlay"""
 	var panel = PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	panel.position = Vector2(10, 80)  # Below difficulty indicator
+	panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	panel.position = Vector2(10, -170)  # Bottom-left corner
 	panel.custom_minimum_size = Vector2(250, 150)
 	panel.modulate.a = 0.8  # Semi-transparent
 

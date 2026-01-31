@@ -100,6 +100,12 @@ var save_data = {
 		"sets_completed": []  # Array of completed set IDs
 	},
 	"set_high_scores": {},  # Dictionary: set_id (String) -> cumulative_score (int)
+	"last_played": {
+		"level_id": 0,
+		"set_id": -1,
+		"mode": "individual",
+		"in_progress": false
+	},
 	"statistics": {
 		"total_bricks_broken": 0,
 		"total_power_ups_collected": 0,
@@ -122,7 +128,11 @@ var save_data = {
 		"screen_shake_intensity": "Medium",  # Off, Low, Medium, High
 		"particle_effects_enabled": true,
 		"ball_trail_enabled": true,
-		"paddle_sensitivity": 1.0  # Range: 0.5 to 2.0
+		"paddle_sensitivity": 1.0,  # Range: 0.5 to 2.0
+		"combo_flash_enabled": true,
+		"short_level_intro": false,
+		"skip_level_intro": false,
+		"show_fps": false
 	}
 }
 
@@ -208,6 +218,17 @@ func load_save() -> void:
 		save_data["set_high_scores"] = {}
 		save_to_disk()
 
+	# Migrate old saves that don't have last played metadata
+	if not save_data.has("last_played"):
+		print("Adding last played metadata to save data...")
+		save_data["last_played"] = {
+			"level_id": 0,
+			"set_id": -1,
+			"mode": "individual",
+			"in_progress": false
+		}
+		save_to_disk()
+
 	# Migrate old saves that don't have new statistics
 	var stats_updated = false
 	if not save_data["statistics"].has("total_individual_levels_completed"):
@@ -241,6 +262,18 @@ func load_save() -> void:
 		settings_updated = true
 	if not save_data["settings"].has("music_track_id"):
 		save_data["settings"]["music_track_id"] = ""
+		settings_updated = true
+	if not save_data["settings"].has("combo_flash_enabled"):
+		save_data["settings"]["combo_flash_enabled"] = true
+		settings_updated = true
+	if not save_data["settings"].has("short_level_intro"):
+		save_data["settings"]["short_level_intro"] = false
+		settings_updated = true
+	if not save_data["settings"].has("skip_level_intro"):
+		save_data["settings"]["skip_level_intro"] = false
+		settings_updated = true
+	if not save_data["settings"].has("show_fps"):
+		save_data["settings"]["show_fps"] = false
 		settings_updated = true
 
 	if settings_updated:
@@ -281,6 +314,12 @@ func create_default_save() -> void:
 			"sets_completed": []
 		},
 		"set_high_scores": {},
+		"last_played": {
+			"level_id": 0,
+			"set_id": -1,
+			"mode": "individual",
+			"in_progress": false
+		},
 		"statistics": {
 			"total_bricks_broken": 0,
 			"total_power_ups_collected": 0,
@@ -303,7 +342,11 @@ func create_default_save() -> void:
 			"screen_shake_intensity": "Medium",
 			"particle_effects_enabled": true,
 			"ball_trail_enabled": true,
-			"paddle_sensitivity": 1.0
+			"paddle_sensitivity": 1.0,
+			"combo_flash_enabled": true,
+			"short_level_intro": false,
+			"skip_level_intro": false,
+			"show_fps": false
 		}
 	}
 	print("Default save data created")
@@ -418,6 +461,27 @@ func reset_save_data() -> void:
 func get_save_file_location() -> String:
 	"""Get the absolute path to the save file for debugging"""
 	return ProjectSettings.globalize_path(SAVE_FILE_PATH)
+
+# ============================================================================
+# LAST PLAYED TRACKING
+# ============================================================================
+
+func set_last_played(level_id: int, mode: String, set_id: int = -1, in_progress: bool = true) -> void:
+	"""Store the most recent level for quick resume"""
+	save_data["last_played"]["level_id"] = level_id
+	save_data["last_played"]["mode"] = mode
+	save_data["last_played"]["set_id"] = set_id
+	save_data["last_played"]["in_progress"] = in_progress
+	save_to_disk()
+
+func set_last_played_in_progress(in_progress: bool) -> void:
+	"""Update in-progress state for the last played entry"""
+	save_data["last_played"]["in_progress"] = in_progress
+	save_to_disk()
+
+func get_last_played() -> Dictionary:
+	"""Return last played metadata"""
+	return save_data["last_played"].duplicate()
 
 # ============================================================================
 # STATISTICS TRACKING
@@ -551,6 +615,42 @@ func save_ball_trail(enabled: bool) -> void:
 func get_ball_trail() -> bool:
 	"""Get ball trail preference"""
 	return save_data["settings"].get("ball_trail_enabled", true)
+
+func save_combo_flash_enabled(enabled: bool) -> void:
+	"""Save combo flash preference"""
+	save_data["settings"]["combo_flash_enabled"] = enabled
+	save_to_disk()
+
+func get_combo_flash_enabled() -> bool:
+	"""Get combo flash preference"""
+	return save_data["settings"].get("combo_flash_enabled", true)
+
+func save_short_level_intro(enabled: bool) -> void:
+	"""Save short level intro preference"""
+	save_data["settings"]["short_level_intro"] = enabled
+	save_to_disk()
+
+func get_short_level_intro() -> bool:
+	"""Get short level intro preference"""
+	return save_data["settings"].get("short_level_intro", false)
+
+func save_skip_level_intro(enabled: bool) -> void:
+	"""Save skip level intro preference"""
+	save_data["settings"]["skip_level_intro"] = enabled
+	save_to_disk()
+
+func get_skip_level_intro() -> bool:
+	"""Get skip level intro preference"""
+	return save_data["settings"].get("skip_level_intro", false)
+
+func save_show_fps(enabled: bool) -> void:
+	"""Save FPS display preference"""
+	save_data["settings"]["show_fps"] = enabled
+	save_to_disk()
+
+func get_show_fps() -> bool:
+	"""Get FPS display preference"""
+	return save_data["settings"].get("show_fps", false)
 
 func save_paddle_sensitivity(sensitivity: float) -> void:
 	"""Save paddle sensitivity preference"""

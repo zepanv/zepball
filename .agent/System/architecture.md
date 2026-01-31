@@ -333,14 +333,20 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
    - Screen shake intensity (Off/Low/Medium/High)
    - Particle effects toggle
    - Ball trail toggle
+   - Combo flash toggle
+   - Short level intro toggle
+   - Skip level intro toggle
+   - Show FPS toggle
    - Paddle sensitivity slider (0.5x - 2.0x)
    - Music volume slider (-40dB to 0dB)
    - SFX volume slider (-40dB to 0dB)
+   - Music mode (Off / Loop One / Loop All / Shuffle) + loop-one track selection
    - Clear Save Data button (confirmation dialog)
+   - Accessible from Pause Menu as an overlay (clear save disabled during gameplay)
    - All settings persist via SaveManager
 
 **MenuController Functions**:
-- `show_main_menu()` / `show_set_select()` / `show_level_select()` / `show_stats()` / `show_settings()`
+- `show_main_menu()` / `show_set_select()` / `show_level_select()` / `show_stats()` / `show_settings()` / `resume_last_level()`
 - `start_level(level_id)` - Loads gameplay scene with specified level
 - `start_set(set_id)` - Starts set mode and first level
 - `show_game_over(final_score)` - Shows game over screen, saves high score
@@ -375,6 +381,12 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
   "set_high_scores": {
     "1": 12000
   },
+  "last_played": {
+    "level_id": 6,
+    "set_id": -1,
+    "mode": "individual",
+    "in_progress": false
+  },
   "statistics": {
     "total_bricks_broken": 1523,
     "total_power_ups_collected": 245,
@@ -392,9 +404,15 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
     "difficulty": "Normal",
     "music_volume_db": 0.0,
     "sfx_volume_db": 0.0,
+    "music_playback_mode": "loop_all",
+    "music_track_id": "",
     "screen_shake_intensity": "Medium",
     "particle_effects_enabled": true,
     "ball_trail_enabled": true,
+    "combo_flash_enabled": true,
+    "short_level_intro": false,
+    "skip_level_intro": false,
+    "show_fps": false,
     "paddle_sensitivity": 1.0
   }
 }
@@ -481,7 +499,7 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - **Combo Counter**: "COMBO x12!" (center, visible when combo >= 3)
 - **Power-Up Timers**: Active effects with countdown (top-right)
 - **Launch Aim Indicator**: Right-mouse hold locks paddle and shows a launch arrow for the main ball’s first shot per life
-- **Pause Menu**: Enhanced pause screen with level info, resume, restart, main menu
+- **Pause Menu**: Enhanced pause screen with level info, resume, restart, settings, level select, main menu
 - **Level Intro**: Fade in/out display of level name and description
 - **Debug Overlay**: FPS, ball count, velocity, speed, combo (backtick ` key)
 
@@ -686,6 +704,7 @@ All settings auto-save and load:
 ### 6. Settings Apply Without Restart
 **Limitation**: Gameplay settings are read on scene `_ready()` (ball, paddle, camera).
 **Workaround**: Return to main menu and reload gameplay to apply changes.
+**Pause Overlay**: When opened from pause, settings apply live for paddle sensitivity, ball trail, combo flash, level intro toggles, and FPS display.
 **Exception**: Audio settings apply immediately via AudioServer/AudioManager.
 
 ## Known Issues and Gaps

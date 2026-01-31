@@ -45,6 +45,10 @@ func _ready():
 	if has_node("Visual"):
 		base_visual_scale = $Visual.scale
 
+func set_sensitivity_multiplier(value: float) -> void:
+	"""Update paddle sensitivity during gameplay"""
+	sensitivity_multiplier = clampf(value, 0.5, 2.0)
+
 func _physics_process(delta):
 	if aim_locked:
 		previous_y = position.y

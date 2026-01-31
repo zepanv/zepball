@@ -11,8 +11,12 @@ extends Control
 @onready var shake_high_button = $Panel/VBoxContainer/ScreenShakeSection/ShakeButtons/HighButton
 
 # Toggle controls
-@onready var particles_check = $Panel/VBoxContainer/EffectsSection/ParticlesCheck
-@onready var trail_check = $Panel/VBoxContainer/EffectsSection/TrailCheck
+@onready var particles_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ParticlesCheck
+@onready var trail_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/TrailCheck
+@onready var combo_flash_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ComboFlashCheck
+@onready var short_intro_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ShortIntroCheck
+@onready var skip_intro_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/SkipIntroCheck
+@onready var show_fps_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ShowFpsCheck
 
 # Sensitivity slider
 @onready var sensitivity_slider = $Panel/VBoxContainer/ControlsSection/SensitivitySlider
@@ -33,9 +37,21 @@ extends Control
 @onready var confirm_dialog = $ConfirmDialog
 
 var is_loading_settings: bool = false
+var opened_from_pause: bool = false
+
+signal closed_from_pause
 
 func _ready():
 	"""Initialize settings menu with current values"""
+	if has_meta("opened_from_pause"):
+		opened_from_pause = bool(get_meta("opened_from_pause"))
+	if opened_from_pause:
+		process_mode = Node.PROCESS_MODE_ALWAYS
+		back_button.text = "Back to Pause"
+		clear_save_button.disabled = true
+		clear_save_button.text = "CLEAR SAVE DATA (MAIN MENU)"
+		clear_save_button.modulate = Color(0.6, 0.6, 0.6)
+
 	# Connect buttons and sliders
 	back_button.pressed.connect(_on_back_pressed)
 
@@ -48,6 +64,10 @@ func _ready():
 	# Effect toggles
 	particles_check.toggled.connect(_on_particles_toggled)
 	trail_check.toggled.connect(_on_trail_toggled)
+	combo_flash_check.toggled.connect(_on_combo_flash_toggled)
+	short_intro_check.toggled.connect(_on_short_intro_toggled)
+	skip_intro_check.toggled.connect(_on_skip_intro_toggled)
+	show_fps_check.toggled.connect(_on_show_fps_toggled)
 
 	# Sensitivity slider
 	sensitivity_slider.value_changed.connect(_on_sensitivity_changed)
@@ -76,9 +96,30 @@ func _load_current_settings():
 
 	# Particle effects
 	particles_check.button_pressed = SaveManager.get_particle_effects()
+	_update_checkbox_visual(particles_check, particles_check.button_pressed)
 
 	# Ball trail
 	trail_check.button_pressed = SaveManager.get_ball_trail()
+	_update_checkbox_visual(trail_check, trail_check.button_pressed)
+
+	# Combo flash
+	combo_flash_check.button_pressed = SaveManager.get_combo_flash_enabled()
+	_update_checkbox_visual(combo_flash_check, combo_flash_check.button_pressed)
+
+	# Level intro options
+	var short_intro_enabled = SaveManager.get_short_level_intro()
+	var skip_intro_enabled = SaveManager.get_skip_level_intro()
+	if short_intro_enabled and skip_intro_enabled:
+		short_intro_enabled = false
+		SaveManager.save_short_level_intro(false)
+	short_intro_check.button_pressed = short_intro_enabled
+	skip_intro_check.button_pressed = skip_intro_enabled
+	_update_checkbox_visual(short_intro_check, short_intro_check.button_pressed)
+	_update_checkbox_visual(skip_intro_check, skip_intro_check.button_pressed)
+
+	# FPS toggle
+	show_fps_check.button_pressed = SaveManager.get_show_fps()
+	_update_checkbox_visual(show_fps_check, show_fps_check.button_pressed)
 
 	# Paddle sensitivity
 	var sensitivity = SaveManager.get_paddle_sensitivity()
@@ -117,17 +158,99 @@ func _update_shake_buttons(intensity: String):
 func _on_particles_toggled(enabled: bool):
 	"""Handle particle effects toggle"""
 	SaveManager.save_particle_effects(enabled)
+	_update_checkbox_visual(particles_check, enabled)
+	_apply_live_settings()
 	print("Particle effects: ", "On" if enabled else "Off")
 
 func _on_trail_toggled(enabled: bool):
 	"""Handle ball trail toggle"""
 	SaveManager.save_ball_trail(enabled)
+	_update_checkbox_visual(trail_check, enabled)
+	_apply_live_settings()
 	print("Ball trail: ", "On" if enabled else "Off")
+
+func _on_combo_flash_toggled(enabled: bool):
+	"""Handle combo flash toggle"""
+	SaveManager.save_combo_flash_enabled(enabled)
+	_update_checkbox_visual(combo_flash_check, enabled)
+	_apply_live_settings()
+	print("Combo flash: ", "On" if enabled else "Off")
+
+func _on_short_intro_toggled(enabled: bool):
+	"""Handle short level intro toggle"""
+	if is_loading_settings:
+		return
+	if enabled and skip_intro_check.button_pressed:
+		skip_intro_check.set_pressed_no_signal(false)
+		SaveManager.save_skip_level_intro(false)
+		_update_checkbox_visual(skip_intro_check, false)
+	SaveManager.save_short_level_intro(enabled)
+	_update_checkbox_visual(short_intro_check, enabled)
+	_apply_live_settings()
+	print("Short level intro: ", "On" if enabled else "Off")
+
+func _on_skip_intro_toggled(enabled: bool):
+	"""Handle skip level intro toggle"""
+	if is_loading_settings:
+		return
+	if enabled and short_intro_check.button_pressed:
+		short_intro_check.set_pressed_no_signal(false)
+		SaveManager.save_short_level_intro(false)
+		_update_checkbox_visual(short_intro_check, false)
+	SaveManager.save_skip_level_intro(enabled)
+	_update_checkbox_visual(skip_intro_check, enabled)
+	_apply_live_settings()
+	print("Skip level intro: ", "On" if enabled else "Off")
+
+func _on_show_fps_toggled(enabled: bool):
+	"""Handle FPS display toggle"""
+	SaveManager.save_show_fps(enabled)
+	_update_checkbox_visual(show_fps_check, enabled)
+	_apply_live_settings()
+	print("Show FPS: ", "On" if enabled else "Off")
+
+func _update_checkbox_visual(checkbox: CheckBox, enabled: bool) -> void:
+	"""Make unchecked boxes easier to see"""
+	if not checkbox:
+		return
+	if enabled:
+		checkbox.modulate = Color(0.8, 1.0, 0.85)
+	else:
+		checkbox.modulate = Color(0.95, 0.95, 0.95)
+
+func _apply_live_settings() -> void:
+	"""Apply settings immediately when opened from pause"""
+	if not opened_from_pause:
+		return
+
+	# Paddle sensitivity
+	var paddle = get_tree().get_first_node_in_group("paddle")
+	if paddle:
+		if paddle.has_method("set_sensitivity_multiplier"):
+			paddle.set_sensitivity_multiplier(SaveManager.get_paddle_sensitivity())
+		elif "sensitivity_multiplier" in paddle:
+			paddle.sensitivity_multiplier = SaveManager.get_paddle_sensitivity()
+
+	# Ball trail
+	var trail_enabled = SaveManager.get_ball_trail()
+	var balls = get_tree().get_nodes_in_group("ball")
+	for ball in balls:
+		if ball and ball.has_node("Trail"):
+			var is_attached = false
+			if "is_attached_to_paddle" in ball:
+				is_attached = ball.is_attached_to_paddle
+			ball.get_node("Trail").emitting = trail_enabled and not is_attached
+
+	# HUD toggles (FPS, combo flash, level intro)
+	var hud = get_parent()
+	if hud and hud.has_method("apply_settings_from_save"):
+		hud.apply_settings_from_save()
 
 func _on_sensitivity_changed(value: float):
 	"""Handle paddle sensitivity slider"""
 	SaveManager.save_paddle_sensitivity(value)
 	_update_sensitivity_label(value)
+	_apply_live_settings()
 
 func _update_sensitivity_label(value: float):
 	"""Update sensitivity display label"""
@@ -238,4 +361,8 @@ func _on_clear_save_confirmed():
 
 func _on_back_pressed():
 	"""Return to main menu"""
-	MenuController.show_main_menu()
+	if opened_from_pause:
+		closed_from_pause.emit()
+		queue_free()
+	else:
+		MenuController.show_main_menu()

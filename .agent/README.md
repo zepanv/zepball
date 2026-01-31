@@ -55,10 +55,14 @@ Best practices and workflows for development.
 - **Tracking**: `total_playtime` increments during READY/PLAYING (flushed every 5s), and `total_games_played` increments per level start
 
 ### Settings System ✅ COMPLETE
-- **Gameplay Settings (9)**:
+- **Gameplay Settings (13)**:
   - Screen shake intensity (Off/Low/Medium/High)
   - Particle effects toggle
   - Ball trail toggle
+  - Combo flash toggle
+  - Short level intro toggle
+  - Skip level intro toggle
+  - Show FPS toggle
   - Paddle sensitivity (0.5x - 2.0x)
   - Music volume (-40dB to 0dB)
   - SFX volume (-40dB to 0dB)
@@ -66,7 +70,7 @@ Best practices and workflows for development.
   - Music loop-one track selection
   - Difficulty (Easy/Normal/Hard) saved from Main Menu
 - **All settings persist** via SaveManager with automatic migration
-- **Audio settings apply immediately**; other gameplay settings apply on next scene load
+- **Audio settings apply immediately**; gameplay settings apply on next scene load unless changed via pause overlay (live apply)
 
 ### Score Multipliers ✅ COMPLETE
 - **Difficulty Multiplier**: 0.8x (Easy), 1.0x (Normal), 1.5x (Hard)
@@ -79,11 +83,12 @@ Best practices and workflows for development.
 - **Real-time HUD display** showing active bonuses with color coding
 
 ### UI Features ✅ COMPLETE
-- **Enhanced Pause Menu**: Level info, Resume, Restart, Main Menu buttons
+- **Enhanced Pause Menu**: Level info, Resume, Restart, Settings, Level Select, Main Menu buttons
 - **Level Intro**: Fade in/out animation with level name and description
-- **Debug Overlay**: FPS, ball stats, combo (toggle with backtick ` key)
+- **Debug Overlay**: FPS, ball stats, combo (toggle with backtick ` key when enabled)
 - **HUD Elements**: Score, lives, difficulty label, combo counter (with elastic bounce at milestones), multiplier display, power-up timers
 - **Launch Aim Indicator**: Right-mouse hold locks paddle and aims first shot per life
+- **Quick Actions**: Play Again button on level complete, Return to Last Level on main menu
 
 ## Tech Stack
 - **Engine**: Godot 4.6
@@ -140,7 +145,14 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ## Recent Update History
 
-### 2026-01-31 (Latest) - Audio System Core + Aim Indicator
+### 2026-01-31 (Latest) - QoL Settings + Quick Actions
+- ✅ **Settings QoL**: Visual Effects checkboxes (combo flash, short/skip intro, show FPS) + 3-column layout
+- ✅ **Pause Settings**: Settings overlay from pause with live apply for key gameplay options
+- ✅ **Quick Actions**: Play Again on level complete, Return to Last Level on main menu
+- ✅ **Pause Menu**: Added Level Select with confirmation
+- ✅ **Level Select**: 3-column layout + set context button moved up
+
+### 2026-01-31 - Audio System Core + Aim Indicator
 - ✅ **AudioManager** autoload with music playlist + crossfade support
 - ✅ **Music Modes**: Off / Loop One / Loop All / Shuffle (Settings UI)
 - ✅ **SFX Wiring**: Paddle hit, brick hit, wall hit
@@ -247,6 +259,7 @@ Gameplay settings are loaded on scene `_ready()` (ball, paddle, camera). To appl
 2. Return to gameplay
 
 Audio settings (volume + music mode/track) apply immediately via AudioServer/AudioManager.
+Pause overlay settings apply live for paddle sensitivity, ball trail, combo flash, level intro toggles, and FPS display.
 
 ### Known Issues
 - Set unlocking is stubbed; `highest_unlocked_set` is always 1 and all sets are effectively unlocked.

@@ -18,22 +18,20 @@ func _ready():
 	# Populate levels
 	populate_levels()
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_on_back_button_pressed()
+
 func add_set_context_ui():
 	"""Add set header and Play Set button when viewing a set"""
 	var set_id = MenuController.current_set_id
 	var set_title = SetLoader.get_set_name(set_id)
 	var set_description = SetLoader.get_set_description(set_id)
 
-	# Create header label
-	set_header_label = Label.new()
-	set_header_label.text = "SET: " + set_title.to_upper()
-	set_header_label.set("theme_override_font_sizes/font_size", 32)
-	set_header_label.set("theme_override_colors/font_color", Color(0, 0.9, 1, 1))
-	set_header_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
-	# Insert at beginning of VBox
-	vbox_container.add_child(set_header_label)
-	vbox_container.move_child(set_header_label, 0)
+	# Update title to include set name
+	var title_label = vbox_container.get_node_or_null("TitleLabel")
+	if title_label:
+		title_label.text = "SELECT LEVEL — " + set_title.to_upper()
 
 	# Create description label
 	var desc_label = Label.new()
@@ -42,7 +40,7 @@ func add_set_context_ui():
 	desc_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
 	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox_container.add_child(desc_label)
-	vbox_container.move_child(desc_label, 1)
+	vbox_container.move_child(desc_label, 2)
 
 	# Create Play Set button
 	play_set_button = Button.new()
@@ -58,16 +56,13 @@ func add_set_context_ui():
 	button_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	button_hbox.add_child(play_set_button)
 
-	# Insert before levels grid
-	var grid_index = levels_grid.get_index()
+	# Insert near top, and pull levels up under it
 	vbox_container.add_child(button_hbox)
-	vbox_container.move_child(button_hbox, grid_index)
-
-	# Add spacer
-	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(0, 20)
-	vbox_container.add_child(spacer)
-	vbox_container.move_child(spacer, 2)
+	vbox_container.move_child(button_hbox, 3)
+	var spacer1 = vbox_container.get_node_or_null("Spacer1")
+	if spacer1:
+		spacer1.custom_minimum_size = Vector2(0, 8)
+	vbox_container.move_child(levels_grid, 4)
 
 func _on_play_set_button_pressed():
 	"""Start playing the current set"""

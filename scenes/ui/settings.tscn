@@ -103,15 +103,38 @@ layout_mode = 2
 text = "Visual Effects"
 theme_override_font_sizes/font_size = 18
 
-[node name="ParticlesCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection"]
+[node name="EffectsGrid" type="GridContainer" parent="Panel/VBoxContainer/EffectsSection"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 20
+theme_override_constants/v_separation = 6
+
+[node name="ParticlesCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
 layout_mode = 2
 button_pressed = true
 text = "Particle Effects"
 
-[node name="TrailCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection"]
+[node name="TrailCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
 layout_mode = 2
 button_pressed = true
 text = "Ball Trail"
+
+[node name="ComboFlashCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
+layout_mode = 2
+button_pressed = true
+text = "Combo Flash"
+
+[node name="ShortIntroCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
+layout_mode = 2
+text = "Short Level Intro"
+
+[node name="SkipIntroCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
+layout_mode = 2
+text = "Skip Level Intro"
+
+[node name="ShowFpsCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
+layout_mode = 2
+text = "Show FPS"
 
 [node name="HSeparator3" type="HSeparator" parent="Panel/VBoxContainer"]
 layout_mode = 2

@@ -123,6 +123,8 @@ func remove_effect(type: PowerUpType):
 
 	var effect_data = active_effects[type]
 	var target = effect_data.target_node
+	if target and not is_instance_valid(target):
+		target = null
 
 	# Reset based on type
 	match type:
@@ -184,13 +186,20 @@ func remove_effect(type: PowerUpType):
 	print("Power-up expired: ", PowerUpType.keys()[type])
 
 func _get_paddle_target() -> Node:
-	if active_effects.has(PowerUpType.EXPAND):
-		return active_effects[PowerUpType.EXPAND].target_node
-	if active_effects.has(PowerUpType.CONTRACT):
-		return active_effects[PowerUpType.CONTRACT].target_node
-	return get_tree().get_first_node_in_group("paddle")
+	var expand_target = _get_effect_target(PowerUpType.EXPAND)
+	if expand_target:
+		return expand_target
+	var contract_target = _get_effect_target(PowerUpType.CONTRACT)
+	if contract_target:
+		return contract_target
+	var fallback = get_tree().get_first_node_in_group("paddle")
+	if is_instance_valid(fallback):
+		return fallback
+	return null
 
 func _update_paddle_size(target_node: Node):
+	if target_node and not is_instance_valid(target_node):
+		target_node = null
 	if not target_node:
 		target_node = _get_paddle_target()
 	if not target_node:
@@ -227,6 +236,8 @@ func _get_ball_target() -> Node:
 	return null
 
 func _update_ball_size(target_node: Node):
+	if target_node and not is_instance_valid(target_node):
+		target_node = null
 	if not target_node:
 		target_node = _get_ball_target()
 	if not target_node:

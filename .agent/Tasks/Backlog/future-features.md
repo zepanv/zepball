@@ -65,19 +65,20 @@ These are features that have been designed but not yet implemented. All features
 - **Description**: Add advanced options beyond the current settings screen
 - **Features**:
   - **Gameplay**:
-    - Combo flash intensity
-    - Level intro duration
-    - Skip level intro setting
+    - Combo flash intensity ✅ (toggle)
+    - Level intro duration ✅ (short intro toggle)
+    - Skip level intro setting ✅
   - **Controls**:
     - Key rebinding
   - **Display**:
-    - Show FPS toggle
+    - Show FPS toggle ✅
   - **UX**:
-    - Apply settings without reloading gameplay scene
+    - Apply settings without reloading gameplay scene ✅ (pause overlay live apply)
 - **Implementation**:
   - Extend settings UI and SaveManager schema
   - Apply new settings in HUD and gameplay scripts
   - Add keybind editor and input map persistence
+  - ✅ Visual Effects section now includes checkboxes for combo flash, short/skip level intro, and show FPS (2026-01-31)
 
 ### Enhanced Level Select
 - **Description**: Better level browsing experience
@@ -96,15 +97,15 @@ These are features that have been designed but not yet implemented. All features
 ### Quick Actions
 - **Description**: Convenience features
 - **Features**:
-  - "Play Again" button on level complete (restart same level)
-  - "Next Level" as default button (auto-select)
-  - Level complete auto-advance option (3 second countdown)
-  - "Return to Last Level" on main menu (if mid-game)
-  - ESC from gameplay returns to level select (with confirmation)
+  - "Play Again" button on level complete (restart same level) ✅
+  - "Next Level" as default button (auto-select) ✅
+  - "Return to Last Level" on main menu (if mid-game) ✅
+  - Return to level select from pause (with confirmation) ✅
 - **Implementation**:
   - Add quick action buttons to UI scenes
   - Store last played level in SaveManager
   - Add confirmation dialogs
+  - ✅ Implemented (no auto-advance) on 2026-01-31
 
 ### Skip Options
 - **Description**: Let players skip animations
@@ -117,6 +118,7 @@ These are features that have been designed but not yet implemented. All features
   - Add skip detection to level intro
   - Setting toggle in settings menu
   - Keyboard shortcuts for quick actions
+  - ❌ Not needed (2026-01-31)
 
 ---
 

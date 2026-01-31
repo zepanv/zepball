@@ -17,6 +17,7 @@ extends Control
 @onready var time_label = $VBoxContainer/HBoxContainer/BreakdownContainer/TimeLabel
 @onready var set_total_label = $VBoxContainer/HBoxContainer/BreakdownContainer/SetTotalLabel
 @onready var unlocked_label = $VBoxContainer/HBoxContainer/ButtonsContainer/UnlockedLabel
+@onready var play_again_button = $VBoxContainer/HBoxContainer/ButtonsContainer/PlayAgainButton
 @onready var next_level_button = $VBoxContainer/HBoxContainer/ButtonsContainer/NextLevelButton
 
 func _ready():
@@ -94,10 +95,19 @@ func _ready():
 			next_level_button.disabled = true
 			next_level_button.text = "NO MORE LEVELS"
 
+	# Default focus on next level button (when available)
+	if not next_level_button.disabled:
+		next_level_button.grab_focus()
+
 func _on_next_level_button_pressed():
 	"""Continue to next level"""
 	print("Next Level button pressed")
 	MenuController.continue_to_next_level()
+
+func _on_play_again_button_pressed():
+	"""Restart the current level"""
+	print("Play Again button pressed")
+	MenuController.restart_current_level()
 
 func _on_level_select_button_pressed():
 	"""Return to level select"""

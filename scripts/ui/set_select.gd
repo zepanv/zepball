@@ -10,6 +10,10 @@ func _ready():
 	# Populate sets
 	populate_sets()
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_on_back_button_pressed()
+
 func populate_sets():
 	"""Create set cards dynamically based on available sets"""
 	# Clear existing children

@@ -22,6 +22,7 @@ var current_level_id: int = 1
 var current_score: int = 0
 var is_in_gameplay: bool = false
 var was_perfect_clear: bool = false
+var settings_opened_from_pause: bool = false
 
 # Set mode state
 var current_play_mode: PlayMode = PlayMode.INDIVIDUAL
@@ -100,9 +101,10 @@ func show_stats() -> void:
 	get_tree().change_scene_to_file(STATS_SCENE)
 	scene_changed.emit(STATS_SCENE)
 
-func show_settings() -> void:
+func show_settings(from_pause: bool = false) -> void:
 	"""Load and show the settings screen"""
 	is_in_gameplay = false
+	settings_opened_from_pause = from_pause
 
 	# Difficulty should remain unlocked in menus
 	DifficultyManager.unlock_difficulty()
@@ -121,6 +123,8 @@ func start_level(level_id: int) -> void:
 
 	current_level_id = level_id
 	is_in_gameplay = true
+	var mode_name = "set" if current_play_mode == PlayMode.SET else "individual"
+	SaveManager.set_last_played(level_id, mode_name, current_set_id, true)
 
 	# Track gameplay sessions (counts each level start)
 	SaveManager.increment_stat("total_games_played")
@@ -189,6 +193,7 @@ func show_game_over(final_score: int) -> void:
 	"""Show game over screen with final score"""
 	current_score = final_score
 	is_in_gameplay = false
+	SaveManager.set_last_played_in_progress(false)
 
 	# Unlock difficulty when leaving gameplay
 	DifficultyManager.unlock_difficulty()
@@ -203,6 +208,7 @@ func show_level_complete(final_score: int) -> void:
 	"""Show level complete screen, unlock next level, and save progress"""
 	current_score = final_score
 	is_in_gameplay = false
+	SaveManager.set_last_played_in_progress(false)
 
 	# Unlock difficulty when leaving gameplay
 	DifficultyManager.unlock_difficulty()
@@ -299,8 +305,39 @@ func show_set_complete(final_score: int) -> void:
 	SaveManager.check_achievements()
 
 	is_in_gameplay = false
+	SaveManager.set_last_played_in_progress(false)
 	get_tree().change_scene_to_file(SET_COMPLETE_SCENE)
 	scene_changed.emit(SET_COMPLETE_SCENE)
+
+func resume_last_level() -> void:
+	"""Resume the last played level if it was left in progress"""
+	var last_played = SaveManager.get_last_played()
+	if not last_played.get("in_progress", false):
+		return
+	var level_id = int(last_played.get("level_id", 0))
+	if level_id <= 0:
+		return
+	var mode = str(last_played.get("mode", "individual"))
+	var set_id = int(last_played.get("set_id", -1))
+
+	if mode == "set" and set_id != -1:
+		current_play_mode = PlayMode.SET
+		current_set_id = set_id
+		set_level_ids = SetLoader.get_set_level_ids(set_id)
+		var index = set_level_ids.find(level_id)
+		set_current_index = index if index != -1 else 0
+		set_saved_score = 0
+		set_saved_lives = 3
+		set_saved_combo = 0
+		set_saved_no_miss = 0
+		set_saved_perfect = true
+	else:
+		current_play_mode = PlayMode.INDIVIDUAL
+		current_set_id = -1
+		set_current_index = 0
+		set_level_ids = []
+
+	start_level(level_id)
 
 func quit_game() -> void:
 	"""Quit the game application"""
