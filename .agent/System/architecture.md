@@ -480,6 +480,7 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - **Multiplier Display**: Shows active score bonuses (top-left, below difficulty)
 - **Combo Counter**: "COMBO x12!" (center, visible when combo >= 3)
 - **Power-Up Timers**: Active effects with countdown (top-right)
+- **Launch Aim Indicator**: Right-mouse hold locks paddle and shows a launch arrow for the main ball’s first shot per life
 - **Pause Menu**: Enhanced pause screen with level info, resume, restart, main menu
 - **Level Intro**: Fade in/out display of level name and description
 - **Debug Overlay**: FPS, ball count, velocity, speed, combo (backtick ` key)
@@ -595,6 +596,7 @@ Final score × 2
   - Cyan (normal speed)
   - Yellow (speed up)
   - Blue (slow down)
+  - Star texture size shifts: small (normal), medium (fast), large (high spin)
   - Toggleable in settings
 - **Brick Particles**: 40 particles per break
   - Color-matched to brick type

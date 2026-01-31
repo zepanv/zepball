@@ -31,7 +31,6 @@ Add sound effects and background music to improve game feel. Core playback is no
 - [x] Verify Settings UI volume sliders drive AudioManager/buses correctly.
 - [x] Add hotkeys for music volume, track skip, and pause toggle with on-screen toast.
 - [ ] Finish SFX coverage for remaining events:
-  - brick_break
   - power_up_spawn / power_up_collect
   - life_lost
   - level_complete / game_over

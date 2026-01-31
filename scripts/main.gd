@@ -744,8 +744,10 @@ func spawn_additional_balls(source_ball):
 		print("  Velocity Angle (verify): ", rad_to_deg(atan2(new_ball.velocity.y, new_ball.velocity.x)), "°")
 
 		# Enable trail
-		if new_ball.has_node("Trail"):
-			new_ball.get_node("Trail").emitting = true
+		if new_ball.has_method("refresh_trail_state"):
+			new_ball.call_deferred("refresh_trail_state")
+		elif new_ball.has_node("Trail"):
+			new_ball.get_node("Trail").emitting = SaveManager.get_ball_trail()
 
 		# Add to scene
 		play_area.add_child(new_ball)

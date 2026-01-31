@@ -1,6 +1,6 @@
 # UI System
 
-## Status: ✅ IMPLEMENTED (core UI, minor gaps)
+## Status: ✅ IMPLEMENTED
 
 ## Overview
 The UI system manages menus, HUD, and overlays. Scene transitions are handled by MenuController, and gameplay UI reacts to GameManager signals.
@@ -12,7 +12,7 @@ The UI system manages menus, HUD, and overlays. Scene transitions are handled by
 - **Level Complete** (`scenes/ui/level_complete.tscn`): Score breakdown (base + bonuses + time).
 - **Set Complete** (`scenes/ui/set_complete.tscn`): Score breakdown (base + bonuses + set time).
 - **Stats** (`scenes/ui/stats.tscn`).
-- **Settings** (`scenes/ui/settings.tscn`): screen shake, particles, trail, sensitivity, music/SFX volumes.
+- **Settings** (`scenes/ui/settings.tscn`): screen shake, particles, trail, sensitivity, music/SFX volumes, music mode/track.
 
 ## Implemented HUD Elements
 - Score and lives top bar.
@@ -23,17 +23,16 @@ The UI system manages menus, HUD, and overlays. Scene transitions are handled by
 - Pause menu overlay.
 - Level intro fade in/out.
 - Debug overlay (toggle with backtick `).
+- Launch aim indicator (right-click hold for main ball’s first shot per life).
 
 ## Scene Management
 - `scripts/ui/menu_controller.gd` controls transitions and flow.
 - Difficulty locking/unlocking is handled when entering/leaving gameplay.
 
 ## Known Gaps (Tracked in Backlog)
-- Launch direction indicator is currently disabled in `scripts/ball.gd`.
-
-See `Tasks/Backlog/ui-gaps.md`.
+- Level complete breakdown enhancements (see future tasks if needed).
 
 ## Related Docs
 - `Tasks/Backlog/audio-system.md`
-- `Tasks/Backlog/ui-gaps.md`
+- `Tasks/Completed/ui-gaps.md`
 - `System/architecture.md`

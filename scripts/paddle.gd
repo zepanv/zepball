@@ -31,6 +31,7 @@ var current_height: float = 130.0
 
 # Settings
 var sensitivity_multiplier: float = 1.0
+var aim_locked: bool = false
 
 func _ready():
 	print("Paddle ready at position: ", position)
@@ -45,6 +46,12 @@ func _ready():
 		base_visual_scale = $Visual.scale
 
 func _physics_process(delta):
+	if aim_locked:
+		previous_y = position.y
+		velocity = Vector2.ZERO
+		actual_velocity_y = 0.0
+		last_mouse_y = get_viewport().get_mouse_position().y
+		return
 	# Store old position for velocity calculation
 	previous_y = position.y
 
@@ -91,6 +98,9 @@ func _physics_process(delta):
 
 	# Calculate actual velocity (for spin mechanics)
 	actual_velocity_y = (position.y - previous_y) / delta
+
+func set_aim_lock(enabled: bool) -> void:
+	aim_locked = enabled
 
 func get_velocity_for_spin() -> float:
 	"""Returns the paddle's vertical velocity for ball spin calculations"""

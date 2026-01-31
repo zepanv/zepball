@@ -14,6 +14,7 @@ The game is fully playable with extensive features:
 - ✅ Statistics + achievements tracking (12 achievements)
 - ✅ Settings (shake, particles, trail, sensitivity, audio levels, music mode/track)
 - ✅ HUD with combo + multiplier display + power-up timers
+- ✅ Launch aim indicator (right-click hold for main ball’s first shot)
 
 Audio playback is implemented (music + initial SFX).
 
@@ -35,6 +36,7 @@ Audio playback is implemented (music + initial SFX).
 - **Escape**: Pause/unpause game
 - **R**: Restart current level
 - **Backtick (`)**: Toggle debug overlay
+- **Right Click (hold)**: Aim mode for first shot per life (paddle locks)
 - **- / =**: Music volume down/up
 - **[ / ]**: Previous/next music track
 - **\\**: Toggle music pause/play

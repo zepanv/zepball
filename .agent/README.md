@@ -23,13 +23,13 @@ PRDs and implementation plans for features (both implemented and future).
 - `Tasks/Backlog/audio-system.md` - Audio system plan (SFX, music) 🚧 IN PROGRESS
   - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay)
   - `Tasks/Backlog/tile-advanced-elements.md` - Force zones, special bricks, and advanced tile behaviors
-  - `Tasks/Backlog/ui-gaps.md` - Launch indicator + level complete breakdown
+- `Tasks/Completed/ui-gaps.md` - Launch indicator (aim mode) ✅ IMPLEMENTED
 
 ### SOP/
 Best practices and workflows for development.
 - **`SOP/godot-workflow.md`** - Working with Godot scenes, nodes, signals, and **CRITICAL: Save System Compatibility** section for handling save data migrations.
 
-## Current Game State (2026-01-30)
+## Current Game State (2026-01-31)
 
 ### Core Features ✅ COMPLETE
 - **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 10 brick types (including bomb bricks), collision detection, score tracking
@@ -83,6 +83,7 @@ Best practices and workflows for development.
 - **Level Intro**: Fade in/out animation with level name and description
 - **Debug Overlay**: FPS, ball stats, combo (toggle with backtick ` key)
 - **HUD Elements**: Score, lives, difficulty label, combo counter (with elastic bounce at milestones), multiplier display, power-up timers
+- **Launch Aim Indicator**: Right-mouse hold locks paddle and aims first shot per life
 
 ## Tech Stack
 - **Engine**: Godot 4.6
@@ -139,12 +140,13 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ## Recent Update History
 
-### 2026-01-31 (Latest) - Audio System Core
+### 2026-01-31 (Latest) - Audio System Core + Aim Indicator
 - ✅ **AudioManager** autoload with music playlist + crossfade support
 - ✅ **Music Modes**: Off / Loop One / Loop All / Shuffle (Settings UI)
 - ✅ **SFX Wiring**: Paddle hit, brick hit, wall hit
 - ✅ **Audio Assets**: Moved to `assets/audio/` (music + sfx)
 - ✅ **Audio Hotkeys**: Volume -, = ; track prev/next [ ] ; pause toggle \
+- ✅ **Aim Mode**: Right-click hold to aim the main ball’s first shot per life
 
 ### 2026-01-30 - Set Mode & Bomb Bricks
 - ✅ **Set Mode**: Set Select + Set Complete screens, set-level flow
@@ -271,7 +273,7 @@ Audio settings (volume + music mode/track) apply immediately via AudioServer/Aud
 
 ---
 
-**Last Updated**: 2026-01-30
+**Last Updated**: 2026-01-31
 **Total Levels**: 10
 **Total Sets**: 1
 **Total Achievements**: 12

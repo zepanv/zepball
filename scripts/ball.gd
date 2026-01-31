@@ -14,9 +14,25 @@ const INITIAL_ANGLE = -45.0     # Launch angle (degrees, toward left)
 const MAGNET_PULL = 800.0       # Paddle gravity strength for Magnet power-up
 const TOP_WALL_Y = 20.0
 const BOTTOM_WALL_Y = 700.0
+const HIGH_SPIN_THRESHOLD = 250.0
+const HIGH_SPIN_TRAIL_DURATION = 0.35
+const FAST_SPEED_MULTIPLIER = 1.15
+const AIM_MIN_ANGLE = 120.0
+const AIM_MAX_ANGLE = 240.0
+const AIM_LENGTH = 140.0
+const AIM_HEAD_LENGTH = 18.0
+const AIM_HEAD_ANGLE = 25.0
+
+const TRAIL_SMALL = preload("res://assets/graphics/particles/particleSmallStar.png")
+const TRAIL_MEDIUM = preload("res://assets/graphics/particles/particleStar.png")
+const TRAIL_LARGE = preload("res://assets/graphics/particles/particleCartoonStar.png")
+const TRAIL_COLOR_NORMAL = Color(0.3, 0.6, 0.95, 0.7)
+const TRAIL_COLOR_FAST = Color(1.0, 0.8, 0.2, 0.7)
+const TRAIL_COLOR_SLOW = Color(0.2, 0.6, 1.0, 0.7)
 
 # Dynamic speed (can be modified by power-ups)
 var current_speed: float = BASE_current_speed
+var base_speed: float = BASE_current_speed
 
 # State
 var is_attached_to_paddle = true
@@ -40,6 +56,13 @@ var stuck_threshold: float = 2.0  # seconds
 var movement_threshold: float = 30.0  # pixels
 var ball_radius: float = BASE_RADIUS
 var last_physics_delta: float = 0.0
+var spin_trail_timer: float = 0.0
+var aim_available: bool = false
+var aim_active: bool = false
+var aim_direction: Vector2 = Vector2(-1, 0)
+var aim_indicator_root: Node2D = null
+var aim_shaft: Line2D = null
+var aim_head: Line2D = null
 
 # Signals
 signal ball_lost
@@ -51,7 +74,8 @@ func _ready():
 	add_to_group("ball")
 
 	# Apply difficulty multiplier to base speed
-	current_speed = BASE_current_speed * DifficultyManager.get_speed_multiplier()
+	base_speed = BASE_current_speed * DifficultyManager.get_speed_multiplier()
+	current_speed = base_speed
 
 	# Find paddle in parent scene
 	paddle_reference = get_tree().get_first_node_in_group("paddle")
@@ -64,6 +88,12 @@ func _ready():
 	# Apply ball trail setting
 	if has_node("Trail"):
 		$Trail.emitting = false  # Starts disabled until launched
+		$Trail.texture = TRAIL_SMALL
+		$Trail.color = TRAIL_COLOR_NORMAL
+
+	aim_available = is_main_ball
+	_create_aim_indicator()
+	set_process_unhandled_input(true)
 
 	# Direction indicator disabled for now
 	# create_direction_indicator()
@@ -86,14 +116,15 @@ func _physics_process(delta):
 		grab_immunity_timer -= delta
 	if block_pass_timer > 0.0:
 		block_pass_timer -= delta
+	if spin_trail_timer > 0.0:
+		spin_trail_timer -= delta
 
 	if is_attached_to_paddle:
 		# Ball follows paddle until launched, maintaining the attachment offset
 		if paddle_reference:
 			position = paddle_reference.position + paddle_offset
-
-		# Direction indicator disabled
-		# update_direction_indicator()
+		if aim_active:
+			_update_aim_direction()
 
 		# Launch on input
 		# Allow launch in READY state, or anytime ball is attached during PLAYING (includes grabbed balls)
@@ -201,11 +232,19 @@ func _physics_process(delta):
 			var rotation_speed = current_speed / 16.0  # Ball radius for natural rolling
 			visual.rotation += rotation_speed * delta
 
+		_update_trail_appearance()
+
 func launch_ball():
 	"""Launch ball from paddle at initial angle
 	If paddle is moving, impart spin. Otherwise, shoot straight left.
 	"""
 	is_attached_to_paddle = false
+	var launched_with_aim = false
+	if aim_active:
+		var aim_dir = aim_direction.normalized()
+		_set_aim_mode(false)
+		velocity = aim_dir * current_speed
+		launched_with_aim = true
 
 	# Set grab immunity to prevent immediate re-grab after launch
 	grab_immunity_timer = 0.2  # 200ms immunity
@@ -219,29 +258,30 @@ func launch_ball():
 	if direction_indicator:
 		direction_indicator.visible = false
 
-	# Check if paddle is moving
-	var paddle_velocity_y = 0.0
-	if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
-		paddle_velocity_y = paddle_reference.get_velocity_for_spin()
+	if not launched_with_aim:
+		# Check if paddle is moving
+		var paddle_velocity_y = 0.0
+		if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
+			paddle_velocity_y = paddle_reference.get_velocity_for_spin()
 
-	# Add small random variation to prevent stacked balls from colliding
-	# This helps when multiple grabbed balls are launched simultaneously
-	var angle_variation = randf_range(-5.0, 5.0)  # ±5 degrees
+		# Add small random variation to prevent stacked balls from colliding
+		# This helps when multiple grabbed balls are launched simultaneously
+		var angle_variation = randf_range(-5.0, 5.0)  # ±5 degrees
 
-	# If paddle is moving significantly, add vertical component
-	if abs(paddle_velocity_y) > 50:  # Minimum movement threshold
-		# Launch with spin based on paddle movement
-		var angle_rad = deg_to_rad(INITIAL_ANGLE + angle_variation)
-		velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
-		# Add paddle spin influence
-		velocity.y += paddle_velocity_y * SPIN_FACTOR
-		velocity = velocity.normalized() * current_speed
-		print("Ball launched with spin! Velocity: ", velocity)
-	else:
-		# Launch straight left with slight angle variation
-		var angle_rad = deg_to_rad(180.0 + angle_variation)  # 180° = straight left
-		velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
-		print("Ball launched straight! Velocity: ", velocity)
+		# If paddle is moving significantly, add vertical component
+		if abs(paddle_velocity_y) > 50:  # Minimum movement threshold
+			# Launch with spin based on paddle movement
+			var angle_rad = deg_to_rad(INITIAL_ANGLE + angle_variation)
+			velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
+			# Add paddle spin influence
+			velocity.y += paddle_velocity_y * SPIN_FACTOR
+			velocity = velocity.normalized() * current_speed
+			print("Ball launched with spin! Velocity: ", velocity)
+		else:
+			# Launch straight left with slight angle variation
+			var angle_rad = deg_to_rad(180.0 + angle_variation)  # 180° = straight left
+			velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
+			print("Ball launched straight! Velocity: ", velocity)
 
 	# Enable trail effect (if enabled in settings)
 	if has_node("Trail") and SaveManager.get_ball_trail():
@@ -252,6 +292,10 @@ func launch_ball():
 		game_manager = get_tree().get_first_node_in_group("game_manager")
 	if game_manager:
 		game_manager.start_playing()
+
+	aim_available = false
+	if launched_with_aim:
+		print("Ball launched with aim! Velocity: ", velocity)
 
 func handle_collision(collision: KinematicCollision2D):
 	"""Handle ball collision with walls, paddle, or bricks"""
@@ -303,6 +347,8 @@ func handle_collision(collision: KinematicCollision2D):
 			if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
 				var paddle_velocity = paddle_reference.get_velocity_for_spin()
 				velocity.y += paddle_velocity * SPIN_FACTOR
+				if abs(paddle_velocity) >= HIGH_SPIN_THRESHOLD:
+					spin_trail_timer = HIGH_SPIN_TRAIL_DURATION
 
 			# Prevent pure vertical motion
 			if abs(velocity.x) < current_speed * (1.0 - MAX_VERTICAL_ANGLE):
@@ -366,6 +412,9 @@ func reset_ball():
 	"""Reset ball to paddle after losing a life"""
 	is_attached_to_paddle = true
 	velocity = Vector2.ZERO
+	aim_available = is_main_ball
+	_set_aim_mode(false)
+	aim_direction = Vector2.LEFT
 
 	# Disable trail effect
 	if has_node("Trail"):
@@ -386,8 +435,7 @@ func apply_speed_up_effect():
 		velocity = velocity.normalized() * current_speed
 
 	# Change trail color to yellow/orange for fast speed (if trail enabled)
-	if has_node("Trail") and SaveManager.get_ball_trail():
-		$Trail.color = Color(1.0, 0.8, 0.2, 0.7)  # Yellow-orange
+	_update_trail_appearance()
 
 	print("Ball speed increased to 650!")
 
@@ -399,21 +447,130 @@ func apply_slow_down_effect():
 		velocity = velocity.normalized() * current_speed
 
 	# Change trail color to blue for slow speed (if trail enabled)
-	if has_node("Trail") and SaveManager.get_ball_trail():
-		$Trail.color = Color(0.2, 0.6, 1.0, 0.7)  # Blue
+	_update_trail_appearance()
 
 	print("Ball speed decreased to 350!")
 
 func reset_ball_speed():
 	"""Reset ball speed to normal (with difficulty multiplier applied)"""
-	current_speed = BASE_current_speed * DifficultyManager.get_speed_multiplier()
+	base_speed = BASE_current_speed * DifficultyManager.get_speed_multiplier()
+	current_speed = base_speed
 	# Update velocity magnitude immediately if ball is moving
 	if not is_attached_to_paddle:
 		velocity = velocity.normalized() * current_speed
 
 	# Reset trail color to default (if trail enabled)
-	if has_node("Trail") and SaveManager.get_ball_trail():
-		$Trail.color = Color(1.0, 1.0, 1.0, 0.5)  # Default white
+	_update_trail_appearance()
+
+func _update_trail_appearance() -> void:
+	if not has_node("Trail"):
+		return
+	if not SaveManager.get_ball_trail():
+		return
+	var trail = $Trail
+	var new_texture = TRAIL_SMALL
+	if spin_trail_timer > 0.0:
+		new_texture = TRAIL_LARGE
+	elif current_speed >= base_speed * FAST_SPEED_MULTIPLIER:
+		new_texture = TRAIL_MEDIUM
+	if trail.texture != new_texture:
+		trail.texture = new_texture
+	var new_color = _get_trail_color()
+	if trail.color != new_color:
+		trail.color = new_color
+
+func _get_trail_color() -> Color:
+	if has_node("Visual"):
+		var visual_color = $Visual.modulate
+		if visual_color != Color(1.0, 1.0, 1.0, 1.0):
+			return visual_color
+	if current_speed >= base_speed * FAST_SPEED_MULTIPLIER:
+		return TRAIL_COLOR_FAST
+	if current_speed <= base_speed * 0.85:
+		return TRAIL_COLOR_SLOW
+	return TRAIL_COLOR_NORMAL
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not is_main_ball:
+		return
+	if event.is_action_pressed("ui_cancel") and aim_active:
+		_set_aim_mode(false)
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		if event.pressed:
+			if _can_use_aim():
+				_set_aim_mode(true)
+		else:
+			if aim_active:
+				_set_aim_mode(false)
+				aim_direction = Vector2.LEFT
+
+func _can_use_aim() -> bool:
+	if not aim_available:
+		return false
+	if not is_attached_to_paddle:
+		return false
+	if game_manager == null:
+		return false
+	return game_manager.game_state == game_manager.GameState.READY
+
+func _set_aim_mode(enabled: bool) -> void:
+	if aim_active == enabled:
+		return
+	aim_active = enabled
+	if paddle_reference and paddle_reference.has_method("set_aim_lock"):
+		paddle_reference.set_aim_lock(enabled)
+	if aim_indicator_root:
+		aim_indicator_root.visible = enabled
+	if enabled:
+		_update_aim_direction()
+
+func _create_aim_indicator() -> void:
+	if aim_indicator_root != null:
+		return
+	aim_indicator_root = Node2D.new()
+	aim_indicator_root.name = "AimIndicator"
+	add_child(aim_indicator_root)
+	aim_indicator_root.visible = false
+
+	aim_shaft = Line2D.new()
+	aim_shaft.width = 4.0
+	aim_shaft.default_color = Color(0.9, 0.9, 1.0, 0.9)
+	aim_shaft.points = [Vector2.ZERO, Vector2.LEFT * AIM_LENGTH]
+	aim_indicator_root.add_child(aim_shaft)
+
+	aim_head = Line2D.new()
+	aim_head.width = 4.0
+	aim_head.default_color = Color(0.9, 0.9, 1.0, 0.9)
+	aim_head.points = [Vector2.LEFT * AIM_LENGTH, Vector2.LEFT * (AIM_LENGTH - AIM_HEAD_LENGTH), Vector2.LEFT * AIM_LENGTH]
+	aim_indicator_root.add_child(aim_head)
+
+func _update_aim_direction() -> void:
+	if aim_indicator_root == null:
+		return
+	if paddle_reference:
+		aim_indicator_root.global_position = global_position
+	var mouse_pos = get_viewport().get_mouse_position()
+	var global_dir = (mouse_pos - global_position)
+	global_dir.x = -abs(global_dir.x) - 6.0
+	if global_dir.length() < 1.0:
+		global_dir = Vector2.LEFT
+	var angle = rad_to_deg(atan2(global_dir.y, global_dir.x))
+	if angle < 0:
+		angle += 360.0
+	angle = clamp(angle, AIM_MIN_ANGLE, AIM_MAX_ANGLE)
+	var angle_rad = deg_to_rad(angle)
+	aim_direction = Vector2(cos(angle_rad), sin(angle_rad)).normalized()
+
+	var end_point = aim_direction * AIM_LENGTH
+	if aim_shaft:
+		aim_shaft.set_point_position(0, Vector2.ZERO)
+		aim_shaft.set_point_position(1, end_point)
+	if aim_head:
+		var back_dir = -aim_direction
+		var head_left = end_point + back_dir.rotated(deg_to_rad(AIM_HEAD_ANGLE)) * AIM_HEAD_LENGTH
+		var head_right = end_point + back_dir.rotated(deg_to_rad(-AIM_HEAD_ANGLE)) * AIM_HEAD_LENGTH
+		aim_head.points = [head_left, end_point, head_right]
 
 func enable_grab():
 	"""Enable grab mode - ball can stick to paddle"""
@@ -443,6 +600,7 @@ func enable_bomb_ball():
 	# Add orange/red glow to ball visual
 	if has_node("Visual"):
 		$Visual.modulate = Color(1.0, 0.4, 0.1, 1.0)  # Orange-red tint
+	_update_trail_appearance()
 	print("Bomb ball enabled on ball")
 
 func reset_bomb_ball():
@@ -451,6 +609,7 @@ func reset_bomb_ball():
 	# Reset ball visual to normal
 	if has_node("Visual"):
 		$Visual.modulate = Color(1.0, 1.0, 1.0, 1.0)  # White (normal)
+	_update_trail_appearance()
 	print("Bomb ball disabled on ball")
 
 func enable_air_ball():
@@ -536,9 +695,7 @@ func destroy_surrounding_bricks(impact_position: Vector2):
 	if destroyed_count > 0:
 		print("Bomb ball destroyed ", destroyed_count, " surrounding bricks!")
 
-	# Reset trail color to normal cyan/blue (if trail enabled)
-	if has_node("Trail") and SaveManager.get_ball_trail():
-		$Trail.color = Color(0.3, 0.6, 0.95, 0.7)  # Cyan-blue
+	_update_trail_appearance()
 
 	print("Ball speed reset to ", current_speed)
 
@@ -575,6 +732,13 @@ func _set_ball_radius(new_radius: float):
 	if has_node("Visual"):
 		var scale_factor = new_radius / BASE_RADIUS
 		$Visual.scale = BASE_VISUAL_SCALE * scale_factor
+	_update_trail_appearance()
+
+func refresh_trail_state() -> void:
+	if not has_node("Trail"):
+		return
+	$Trail.emitting = SaveManager.get_ball_trail() and not is_attached_to_paddle
+	_update_trail_appearance()
 
 func enable_collision_immunity(_duration: float = 0.5):
 	"""No longer needed - ball-to-ball collisions disabled at physics layer"""
