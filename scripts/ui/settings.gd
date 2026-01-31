@@ -21,6 +21,7 @@ extends Control
 # Sensitivity slider
 @onready var sensitivity_slider = $Panel/VBoxContainer/ControlsSection/SensitivitySlider
 @onready var sensitivity_label = $Panel/VBoxContainer/ControlsSection/SensitivityLabel
+@onready var keybindings_button = $Panel/VBoxContainer/ControlsSection/KeybindingsButton
 
 # Audio sliders
 @onready var music_slider = $Panel/VBoxContainer/AudioSection/MusicSlider
@@ -73,6 +74,7 @@ func _ready():
 
 	# Sensitivity slider
 	sensitivity_slider.value_changed.connect(_on_sensitivity_changed)
+	keybindings_button.pressed.connect(_on_keybindings_pressed)
 
 	# Audio sliders
 	music_slider.value_changed.connect(_on_music_volume_changed)
@@ -90,6 +92,16 @@ func _ready():
 
 	# Load and apply current settings
 	_load_current_settings()
+
+func _unhandled_input(event: InputEvent) -> void:
+	"""Handle Esc to go back from settings"""
+	if has_node("KeybindingsMenu"):
+		return
+	if event.is_action_pressed("ui_cancel"):
+		_on_back_pressed()
+		var viewport = get_viewport()
+		if viewport:
+			viewport.set_input_as_handled()
 
 func _load_current_settings():
 	"""Load settings from SaveManager and update UI"""
@@ -255,6 +267,15 @@ func _on_sensitivity_changed(value: float):
 	SaveManager.save_paddle_sensitivity(value)
 	_update_sensitivity_label(value)
 	_apply_live_settings()
+
+func _on_keybindings_pressed() -> void:
+	"""Open keybindings menu overlay"""
+	if has_node("KeybindingsMenu"):
+		return
+	var menu_scene = preload("res://scenes/ui/keybindings.tscn")
+	var menu = menu_scene.instantiate()
+	menu.z_index = 300
+	add_child(menu)
 
 func _update_sensitivity_label(value: float):
 	"""Update sensitivity display label"""

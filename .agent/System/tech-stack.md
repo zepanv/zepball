@@ -19,11 +19,18 @@
 - `launch_ball`: Space, Left Mouse Button.
 - `restart_game`: R key.
 - `ui_cancel`: Escape.
+- `audio_volume_down`: - key.
+- `audio_volume_up`: = key.
+- `audio_prev_track`: [ key.
+- `audio_next_track`: ] key.
+- `audio_toggle_pause`: \ key.
+- Keybindings (except `ui_cancel`) can be remapped and persist in save data.
 
 ## Autoloads
 - `PowerUpManager`: `res://scripts/power_up_manager.gd`.
 - `DifficultyManager`: `res://scripts/difficulty_manager.gd`.
 - `SaveManager`: `res://scripts/save_manager.gd`.
+- `AudioManager`: `res://scripts/audio_manager.gd`.
 - `LevelLoader`: `res://scripts/level_loader.gd`.
 - `SetLoader`: `res://scripts/set_loader.gd`.
 - `MenuController`: `res://scripts/ui/menu_controller.gd`.
@@ -35,8 +42,8 @@
 - **Set data**: JSON (`data/level_sets.json`).
 
 ## Audio Status
-- **Audio playback system**: Not implemented (no AudioManager, no assets).
-- **Audio buses**: Settings UI expects "Music" and "SFX" buses to exist.
+- **Audio playback system**: Implemented via `AudioManager` (music playlists + SFX).
+- **Audio buses**: "Music" and "SFX" are created at runtime if missing.
 - **Settings**: Music/SFX volume sliders persist via SaveManager and apply via AudioServer.
 
 ## Related Docs

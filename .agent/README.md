@@ -24,6 +24,9 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/ui-system.md` - UI, menus, and HUD plans ✅ IMPLEMENTED
   - `Tasks/Completed/save-system.md` - Save data, high scores, and persistence plan ✅ IMPLEMENTED
   - `Tasks/Completed/audio-system.md` - Audio system plan (SFX, music) ✅ IMPLEMENTED
+  - `Tasks/Completed/keybinding-menu.md` - Keybinding menu and input map persistence ✅ IMPLEMENTED
+  - `Tasks/Completed/settings-enhancements.md` - Settings QoL expansions ✅ IMPLEMENTED
+  - `Tasks/Completed/quick-actions.md` - Menu/gameplay convenience actions ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
   - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay, advanced tile elements)
 - `Tasks/Completed/ui-gaps.md` - Launch indicator (aim mode) ✅ IMPLEMENTED
@@ -149,6 +152,14 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 - Advanced Gameplay: Ball speed zones, brick chains, paddle abilities
 
 ## Recent Update History
+
+### 2026-01-31 - Documentation Refresh
+- ✅ **System Docs**: Updated architecture + tech stack (keybindings, audio, debug notes)
+- ✅ **Tasks**: Added completed docs for Settings Enhancements and Quick Actions
+
+### 2026-01-31 - Keybinding Menu + Debug Cleanup
+- ✅ **Keybindings**: Added keybinding menu in Settings with input map persistence
+- ✅ **Debug Keys**: Removed debug hotkeys except C (debug/editor only)
 
 ### 2026-01-31 (Latest) - Prism Showcase Polish + Physics Fixes
 - ✅ **Level Layouts**: Prism Showcase levels re-centered vertically for better balance

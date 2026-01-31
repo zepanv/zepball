@@ -19,8 +19,24 @@ const DEFAULT_SETTINGS = {
 	"combo_flash_enabled": false,
 	"short_level_intro": false,
 	"skip_level_intro": false,
-	"show_fps": false
+	"show_fps": false,
+	"keybindings": {}
 }
+
+# Keybinding configuration
+const REBIND_ACTIONS = [
+	"move_up",
+	"move_down",
+	"launch_ball",
+	"restart_game",
+	"audio_volume_down",
+	"audio_volume_up",
+	"audio_prev_track",
+	"audio_next_track",
+	"audio_toggle_pause"
+]
+
+var default_keybindings: Dictionary = {}
 
 # Achievement definitions
 const ACHIEVEMENTS = {
@@ -145,7 +161,9 @@ signal achievement_unlocked(achievement_id: String, achievement_name: String)
 
 func _ready():
 	"""Load save data on startup"""
+	default_keybindings = _capture_keybindings(REBIND_ACTIONS)
 	load_save()
+	_apply_saved_keybindings()
 
 func load_save() -> void:
 	"""Load save data from disk, or create default if none exists"""
@@ -275,6 +293,9 @@ func load_save() -> void:
 		settings_updated = true
 	if not save_data["settings"].has("show_fps"):
 		save_data["settings"]["show_fps"] = false
+		settings_updated = true
+	if not save_data["settings"].has("keybindings"):
+		save_data["settings"]["keybindings"] = {}
 		settings_updated = true
 
 	if settings_updated:
@@ -492,12 +513,115 @@ func reset_progress_data() -> void:
 func reset_settings_to_default() -> void:
 	"""Reset settings to defaults without touching progression data"""
 	save_data["settings"] = DEFAULT_SETTINGS.duplicate(true)
+	_restore_default_keybindings()
 	save_to_disk()
 	print("Settings have been reset to defaults")
 
 func get_save_file_location() -> String:
 	"""Get the absolute path to the save file for debugging"""
 	return ProjectSettings.globalize_path(SAVE_FILE_PATH)
+
+# ============================================================================
+# KEYBINDINGS
+# ============================================================================
+
+func get_rebind_actions() -> Array:
+	return REBIND_ACTIONS.duplicate()
+
+func capture_keybindings(actions: Array = REBIND_ACTIONS) -> Dictionary:
+	return _capture_keybindings(actions)
+
+func save_keybindings(keybindings: Dictionary) -> void:
+	save_data["settings"]["keybindings"] = keybindings.duplicate(true)
+	save_to_disk()
+
+func get_keybindings() -> Dictionary:
+	var saved = save_data["settings"].get("keybindings", {})
+	if saved.is_empty():
+		return _capture_keybindings(REBIND_ACTIONS)
+	return saved
+
+func apply_keybindings(keybindings: Dictionary) -> void:
+	_apply_keybindings(keybindings)
+
+func reset_keybindings_to_default() -> void:
+	_restore_default_keybindings()
+	save_data["settings"]["keybindings"] = default_keybindings.duplicate(true)
+	save_to_disk()
+
+func _capture_keybindings(actions: Array) -> Dictionary:
+	var bindings := {}
+	for action in actions:
+		if not InputMap.has_action(action):
+			continue
+		var events = InputMap.action_get_events(action)
+		var serialized_events: Array = []
+		for event in events:
+			var serialized = _serialize_input_event(event)
+			if serialized.size() > 0:
+				serialized_events.append(serialized)
+		bindings[action] = serialized_events
+	return bindings
+
+func _apply_saved_keybindings() -> void:
+	var saved = save_data["settings"].get("keybindings", {})
+	if saved.is_empty():
+		return
+	_apply_keybindings(saved)
+
+func _apply_keybindings(keybindings: Dictionary) -> void:
+	for action in keybindings.keys():
+		if not InputMap.has_action(action):
+			continue
+		InputMap.action_erase_events(action)
+		for event_data in keybindings[action]:
+			var event = _deserialize_input_event(event_data)
+			if event:
+				InputMap.action_add_event(action, event)
+
+func _restore_default_keybindings() -> void:
+	if default_keybindings.is_empty():
+		return
+	_apply_keybindings(default_keybindings)
+
+func _serialize_input_event(event: InputEvent) -> Dictionary:
+	if event is InputEventKey:
+		return {
+			"type": "key",
+			"keycode": event.keycode,
+			"physical_keycode": event.physical_keycode,
+			"shift": event.shift_pressed,
+			"alt": event.alt_pressed,
+			"ctrl": event.ctrl_pressed,
+			"meta": event.meta_pressed
+		}
+	if event is InputEventMouseButton:
+		return {
+			"type": "mouse_button",
+			"button_index": event.button_index
+		}
+	return {}
+
+func _deserialize_input_event(data: Dictionary) -> InputEvent:
+	if not data.has("type"):
+		return null
+	if data["type"] == "key":
+		var event := InputEventKey.new()
+		event.keycode = int(data.get("keycode", 0)) as Key
+		event.physical_keycode = int(data.get("physical_keycode", 0)) as Key
+		event.shift_pressed = bool(data.get("shift", false))
+		event.alt_pressed = bool(data.get("alt", false))
+		event.ctrl_pressed = bool(data.get("ctrl", false))
+		event.meta_pressed = bool(data.get("meta", false))
+		event.pressed = false
+		event.echo = false
+		return event
+	if data["type"] == "mouse_button":
+		var event := InputEventMouseButton.new()
+		event.button_index = int(data.get("button_index", 0)) as MouseButton
+		event.pressed = false
+		return event
+	return null
 
 # ============================================================================
 # LAST PLAYED TRACKING

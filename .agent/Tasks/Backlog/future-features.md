@@ -63,19 +63,7 @@ These are features that have been designed but not yet implemented (or are only 
 
 ### Settings Enhancements
 - **Description**: Add advanced options beyond the current settings screen
-- **Features**:
-  - **Gameplay**:
-    - Combo flash toggle ✅ (implemented)
-    - Level intro duration toggle ✅ (short intro)
-    - Skip level intro setting ✅
-  - **Controls**:
-    - Key rebinding ❌
-  - **Display**:
-    - Show FPS toggle ✅
-  - **UX**:
-    - Apply settings without reloading gameplay scene ✅ (pause overlay live apply for HUD, trail, sensitivity, intro toggles)
-- **Implementation**:
-  - Add keybind editor and input map persistence (pending)
+- **Status**: ✅ Completed (see `Tasks/Completed/settings-enhancements.md`)
 
 ### Enhanced Level Select
 - **Description**: Better level browsing experience
@@ -93,13 +81,7 @@ These are features that have been designed but not yet implemented (or are only 
 
 ### Quick Actions
 - **Description**: Convenience features
-- **Features**:
-  - "Play Again" button on level complete (restart same level) ✅
-  - "Next Level" as default button (auto-select/focus) ✅
-  - "Return to Last Level" on main menu (if mid-game) ✅
-  - Return to level select from pause (with confirmation) ✅
-- **Implementation**:
-  - ✅ Implemented in UI + SaveManager (2026-01-31)
+- **Status**: ✅ Completed (see `Tasks/Completed/quick-actions.md`)
 
 ### Skip Options
 - **Description**: Let players skip animations

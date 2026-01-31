@@ -4,63 +4,40 @@ A breakout-style game with a unique vertical paddle positioned on the right side
 
 ## Current Status: 2026-01-31 (Fully Playable)
 
-The game is fully playable with extensive features:
+Highlights:
 
 - ✅ Main menu, level select, settings, stats, game over, level complete
 - ✅ 20 JSON-driven levels with vertically centered layouts and strategic bomb brick placement
 - ✅ Difficulty modes (Easy/Normal/Hard) with multipliers
-- ✅ **16 Power-ups**: Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block
-- ✅ **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks
-- ✅ **Advanced Bricks**: Diamond + pentagon shapes (glossy variants are 2-hit)
 - ✅ Statistics + achievements tracking (12 achievements)
-- ✅ Settings (shake, particles, trail, sensitivity, audio levels, music mode/track)
-- ✅ HUD with combo + multiplier display + power-up timers
-- ✅ Launch aim indicator (right-click hold for main ball’s first shot)
+- ✅ Audio playback (music + expanded SFX coverage)
 
-Audio playback is implemented (music + expanded SFX coverage).
-
-## Quick Start
-
-### Requirements
-- **Godot 4.6** (or later)
-
-### Running the Game
-1. Open Godot Engine
-2. Click "Import" and select `zepball/project.godot`
-3. Press **F5** to run
-
-### Controls
+## Controls
 - **W / Up Arrow**: Move paddle up
 - **S / Down Arrow**: Move paddle down
 - **Mouse**: Paddle follows mouse Y position
 - **Space / Left Click**: Launch ball
 - **Escape**: Pause/unpause game
 - **R**: Restart current level
-- **Backtick (`)**: Toggle debug overlay
 - **Right Click (hold)**: Aim mode for first shot per life (paddle locks)
 - **- / =**: Music volume down/up
 - **[ / ]**: Previous/next music track
 - **\\**: Toggle music pause/play
+- **Keybindings**: Rebindable in Settings (except Escape)
 
 ### Debug Controls (Debug Build Only)
-- **E/N/H**: Set difficulty to Easy/Normal/Hard
 - **C**: Clear all bricks
-- **1**: Spawn bomb ball power-up (test explosive effects)
-- **2**: Spawn air ball power-up
-- **3**: Spawn magnet power-up
-- **4**: Spawn block power-up
 
 ## Game Features
 
 ### Core Mechanics
 - Paddle spin affects ball trajectory
-- **14 brick types** including special bomb bricks that explode
+- **14 brick types** (including bomb bricks that explode)
 - Combo and no-miss streak multipliers
 - Perfect clear bonus on level completion
 - Ball escape logic prevents wedging in corners
 
 ### Progression
-- 20 enhanced levels with better vertical coverage
 - Strategic bomb brick placement for tactical gameplay
 - Unlocks next level on completion
 - High scores per level
@@ -86,41 +63,10 @@ Audio playback is implemented (music + expanded SFX coverage).
 - Music/SFX volume (applies immediately)
 - Music playback mode (Off / Loop One / Loop All / Shuffle)
 - Music track selection (Loop One)
+- Keybindings menu (rebind core input actions; Escape not rebindable)
+- Reset Keybindings button restores defaults
 - Reset Settings button restores defaults only
 - Clear Save Data resets progress/scores without changing settings
-
-## Project Structure
-
-```
-zepball/
-├── .agent/              # Project documentation
-│   ├── README.md       # Documentation index
-│   ├── System/         # Architecture and tech decisions
-│   ├── SOP/            # Development procedures
-│   └── Tasks/          # Completed + backlog feature docs
-├── scenes/
-│   ├── main/           # Gameplay scene
-│   ├── gameplay/       # Paddle, ball, brick, power-up scenes
-│   └── ui/             # Menus and screens
-├── scripts/            # GDScript files
-├── levels/             # Level JSON files (20 levels)
-├── assets/             # Audio + graphics
-└── project.godot       # Godot project configuration
-```
-
-## Documentation
-
-All technical documentation is in the `.agent/` folder:
-
-- **[.agent/README.md](.agent/README.md)** - Documentation index
-- **[.agent/System/architecture.md](.agent/System/architecture.md)** - Scene hierarchy and design patterns
-- **[.agent/System/tech-stack.md](.agent/System/tech-stack.md)** - Technology decisions and conventions
-- **[.agent/SOP/godot-workflow.md](.agent/SOP/godot-workflow.md)** - Development workflows and best practices
-
-## Known Gaps / Backlog
-
-- **UI gaps (launch indicator)**: `.agent/Tasks/Backlog/ui-gaps.md`
-- **Future features**: `.agent/Tasks/Backlog/future-features.md` (includes advanced tile elements)
 
 ## Asset Credits
 - Graphics: Kenney Vleugels (kenney.nl)

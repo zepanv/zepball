@@ -342,6 +342,7 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
    - Skip level intro toggle
    - Show FPS toggle
    - Paddle sensitivity slider (0.5x - 2.0x)
+   - Keybindings menu (rebind core input actions)
    - Music volume slider (-40dB to 0dB)
    - SFX volume slider (-40dB to 0dB)
    - Music mode (Off / Loop One / Loop All / Shuffle) + loop-one track selection
@@ -537,6 +538,9 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - `audio_prev_track`: [ key - Previous track
 - `audio_next_track`: ] key - Next track
 - `audio_toggle_pause`: \ key - Toggle music pause/play
+- Debug: `C` (editor/debug builds only) - hit all bricks
+- Keybindings can be remapped via Settings → Keybindings and persist in save data
+- Pause/Back (`ui_cancel` / Esc) is not rebindable; Esc cancels a pending rebind or returns to the previous menu
 
 ## Complete Gameplay Flow
 
@@ -667,6 +671,11 @@ All settings auto-save and load:
 7. Particle effects (On/Off)
 8. Ball trail (On/Off)
 9. Paddle sensitivity (0.5x - 2.0x)
+10. Combo flash (On/Off)
+11. Short level intro (On/Off)
+12. Skip level intro (On/Off)
+13. Show FPS (On/Off)
+14. Keybindings (input map overrides)
 
 ## Complex or Risky Areas
 

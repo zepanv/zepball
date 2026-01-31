@@ -334,33 +334,8 @@ func _input(event):
 		MenuController.restart_current_level()
 
 	if event is InputEventKey and event.pressed and not event.echo:
-		# DEBUG ONLY: Difficulty selection (remove once main menu exists)
-		# TODO: Move difficulty selection to main menu
-		if OS.is_debug_build():
-			if event.keycode == KEY_E:
-				DifficultyManager.unlock_difficulty()
-				DifficultyManager.set_difficulty(DifficultyManager.Difficulty.EASY)
-			elif event.keycode == KEY_N:
-				DifficultyManager.unlock_difficulty()
-				DifficultyManager.set_difficulty(DifficultyManager.Difficulty.NORMAL)
-			elif event.keycode == KEY_H:
-				DifficultyManager.unlock_difficulty()
-				DifficultyManager.set_difficulty(DifficultyManager.Difficulty.HARD)
-
-		if event.keycode == KEY_C:
+		if OS.is_debug_build() and event.keycode == KEY_C:
 			_hit_all_bricks()
-		elif event.keycode == KEY_1:
-			# Debug: Spawn a bomb ball power-up for testing
-			_spawn_debug_powerup("BOMB_BALL", 12)
-		elif event.keycode == KEY_2:
-			# Debug: Spawn an air ball power-up for testing
-			_spawn_debug_powerup("AIR_BALL", 13)
-		elif event.keycode == KEY_3:
-			# Debug: Spawn a magnet power-up for testing
-			_spawn_debug_powerup("MAGNET", 14)
-		elif event.keycode == KEY_4:
-			# Debug: Spawn a block power-up for testing
-			_spawn_debug_powerup("BLOCK", 15)
 
 func _spawn_debug_powerup(label: String, powerup_type: int):
 	print("\n### DEBUG: Spawning ", label, " power-up ###")
