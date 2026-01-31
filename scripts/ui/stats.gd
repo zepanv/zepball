@@ -5,17 +5,17 @@ extends Control
 @onready var back_button = $BackButton
 
 # Statistics labels
-@onready var bricks_label = $Panel/VBoxContainer/StatsSection/BricksLabel
-@onready var powerups_label = $Panel/VBoxContainer/StatsSection/PowerUpsLabel
-@onready var levels_label = $Panel/VBoxContainer/StatsSection/LevelsLabel
-@onready var combo_label = $Panel/VBoxContainer/StatsSection/ComboLabel
-@onready var score_label = $Panel/VBoxContainer/StatsSection/ScoreLabel
-@onready var games_label = $Panel/VBoxContainer/StatsSection/GamesLabel
-@onready var perfect_label = $Panel/VBoxContainer/StatsSection/PerfectLabel
-@onready var playtime_label = $Panel/VBoxContainer/StatsSection/PlaytimeLabel
+@onready var bricks_label = $Panel/VBoxContainer/ContentRow/StatsSection/BricksLabel
+@onready var powerups_label = $Panel/VBoxContainer/ContentRow/StatsSection/PowerUpsLabel
+@onready var levels_label = $Panel/VBoxContainer/ContentRow/StatsSection/LevelsLabel
+@onready var combo_label = $Panel/VBoxContainer/ContentRow/StatsSection/ComboLabel
+@onready var score_label = $Panel/VBoxContainer/ContentRow/StatsSection/ScoreLabel
+@onready var games_label = $Panel/VBoxContainer/ContentRow/StatsSection/GamesLabel
+@onready var perfect_label = $Panel/VBoxContainer/ContentRow/StatsSection/PerfectLabel
+@onready var playtime_label = $Panel/VBoxContainer/ContentRow/StatsSection/PlaytimeLabel
 
 # Achievements container
-@onready var achievements_container = $Panel/VBoxContainer/AchievementsSection/ScrollContainer/AchievementsContainer
+@onready var achievements_container = $Panel/VBoxContainer/ContentRow/AchievementsSection/ScrollContainer/AchievementsContainer
 
 func _ready():
 	back_button.pressed.connect(_on_back_pressed)

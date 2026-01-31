@@ -1,0 +1,19 @@
+{
+  "level_id": 11,
+  "name": "Advanced Brick Test",
+  "description": "Sparse layout for diamond and pentagon bricks",
+  "grid": {
+    "rows": 6,
+    "cols": 6,
+    "start_x": 220,
+    "start_y": 140,
+    "brick_size": 48,
+    "spacing": 3
+  },
+  "bricks": [
+    {"row": 1, "col": 1, "type": "DIAMOND"},
+    {"row": 1, "col": 4, "type": "DIAMOND_GLOSSY"},
+    {"row": 3, "col": 2, "type": "POLYGON"},
+    {"row": 3, "col": 5, "type": "POLYGON_GLOSSY"}
+  ]
+}

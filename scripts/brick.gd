@@ -14,12 +14,65 @@ enum BrickType {
 	GREEN,      # Nature brick, 15 points (row 2, col 0)
 	PURPLE,     # Magic brick, 25 points (row 2, col 1)
 	ORANGE,     # Energy brick, 20 points (row 2, col 2)
-	BOMB        # Explodes and destroys surrounding bricks, 30 points
+	BOMB,       # Explodes and destroys surrounding bricks, 30 points
+	DIAMOND,        # 1-hit diamond brick (random color)
+	DIAMOND_GLOSSY, # 2-hit diamond brick (random color)
+	POLYGON,        # 1-hit pentagon brick (random color)
+	POLYGON_GLOSSY  # 2-hit pentagon brick (random color)
 }
 
 # Configuration
 @export var brick_type: BrickType = BrickType.NORMAL
 @export var brick_color: Color = Color(0.059, 0.773, 0.627)  # Teal (fallback for ColorRect mode)
+
+const TARGET_BRICK_SIZE = 48.0
+
+const DIAMOND_VARIANTS = [
+	{"texture": "res://assets/graphics/bricks/element_blue_diamond.png", "color": Color(0.2, 0.4, 1.0)},
+	{"texture": "res://assets/graphics/bricks/element_green_diamond.png", "color": Color(0.2, 0.8, 0.2)},
+	{"texture": "res://assets/graphics/bricks/element_grey_diamond.png", "color": Color(0.5, 0.5, 0.5)},
+	{"texture": "res://assets/graphics/bricks/element_purple_diamond.png", "color": Color(0.6, 0.2, 0.8)},
+	{"texture": "res://assets/graphics/bricks/element_red_diamond.png", "color": Color(1.0, 0.2, 0.2)},
+	{"texture": "res://assets/graphics/bricks/element_yellow_diamond.png", "color": Color(1.0, 0.843, 0.0)}
+]
+const DIAMOND_GLOSSY_VARIANTS = [
+	{"texture": "res://assets/graphics/bricks/element_blue_diamond_glossy.png", "color": Color(0.2, 0.4, 1.0)},
+	{"texture": "res://assets/graphics/bricks/element_green_diamond_glossy.png", "color": Color(0.2, 0.8, 0.2)},
+	{"texture": "res://assets/graphics/bricks/element_grey_diamond_glossy.png", "color": Color(0.5, 0.5, 0.5)},
+	{"texture": "res://assets/graphics/bricks/element_purple_diamond_glossy.png", "color": Color(0.6, 0.2, 0.8)},
+	{"texture": "res://assets/graphics/bricks/element_red_diamond_glossy.png", "color": Color(1.0, 0.2, 0.2)},
+	{"texture": "res://assets/graphics/bricks/element_yellow_diamond_glossy.png", "color": Color(1.0, 0.843, 0.0)}
+]
+const POLYGON_VARIANTS = [
+	{"texture": "res://assets/graphics/bricks/element_blue_polygon.png", "color": Color(0.2, 0.4, 1.0)},
+	{"texture": "res://assets/graphics/bricks/element_green_polygon.png", "color": Color(0.2, 0.8, 0.2)},
+	{"texture": "res://assets/graphics/bricks/element_grey_polygon.png", "color": Color(0.5, 0.5, 0.5)},
+	{"texture": "res://assets/graphics/bricks/element_purple_polygon.png", "color": Color(0.6, 0.2, 0.8)},
+	{"texture": "res://assets/graphics/bricks/element_red_polygon.png", "color": Color(1.0, 0.2, 0.2)},
+	{"texture": "res://assets/graphics/bricks/element_yellow_polygon.png", "color": Color(1.0, 0.843, 0.0)}
+]
+const POLYGON_GLOSSY_VARIANTS = [
+	{"texture": "res://assets/graphics/bricks/element_blue_polygon_glossy.png", "color": Color(0.2, 0.4, 1.0)},
+	{"texture": "res://assets/graphics/bricks/element_green_polygon_glossy.png", "color": Color(0.2, 0.8, 0.2)},
+	{"texture": "res://assets/graphics/bricks/element_grey_polygon_glossy.png", "color": Color(0.5, 0.5, 0.5)},
+	{"texture": "res://assets/graphics/bricks/element_purple_polygon_glossy.png", "color": Color(0.6, 0.2, 0.8)},
+	{"texture": "res://assets/graphics/bricks/element_red_polygon_glossy.png", "color": Color(1.0, 0.2, 0.2)},
+	{"texture": "res://assets/graphics/bricks/element_yellow_polygon_glossy.png", "color": Color(1.0, 0.843, 0.0)}
+]
+
+var DIAMOND_POINTS := PackedVector2Array([
+	Vector2(0, -24),
+	Vector2(24, 0),
+	Vector2(0, 24),
+	Vector2(-24, 0)
+])
+var PENTAGON_POINTS := PackedVector2Array([
+	Vector2(0, -23),
+	Vector2(22, -8),
+	Vector2(18, 20),
+	Vector2(-18, 20),
+	Vector2(-22, -8)
+])
 
 # State
 var hits_remaining: int = 1
@@ -76,6 +129,22 @@ func _ready():
 			hits_remaining = 1
 			score_value = 30
 			brick_color = Color(1.0, 0.3, 0.0)  # Orange-red
+		BrickType.DIAMOND:
+			hits_remaining = 1
+			score_value = 15
+			brick_color = Color(0.2, 0.4, 1.0)
+		BrickType.DIAMOND_GLOSSY:
+			hits_remaining = 2
+			score_value = 20
+			brick_color = Color(0.2, 0.4, 1.0)
+		BrickType.POLYGON:
+			hits_remaining = 1
+			score_value = 15
+			brick_color = Color(0.2, 0.4, 1.0)
+		BrickType.POLYGON_GLOSSY:
+			hits_remaining = 2
+			score_value = 20
+			brick_color = Color(0.2, 0.4, 1.0)
 
 	# Set up sprite if using Sprite2D
 	if has_node("Sprite"):
@@ -87,6 +156,8 @@ func _ready():
 	# Apply color to particles
 	if has_node("Particles"):
 		$Particles.color = brick_color
+
+	_update_collision_shape()
 
 	print("Brick ready: type=", BrickType.keys()[brick_type], " hits=", hits_remaining)
 
@@ -121,6 +192,22 @@ func setup_sprite():
 			texture_path = "res://assets/graphics/bricks/element_yellow_square.png"
 		BrickType.BOMB:
 			texture_path = "res://assets/graphics/bricks/special_bomb.png"
+		BrickType.DIAMOND:
+			var variant = _pick_variant(DIAMOND_VARIANTS)
+			texture_path = variant["texture"]
+			brick_color = variant["color"]
+		BrickType.DIAMOND_GLOSSY:
+			var variant = _pick_variant(DIAMOND_GLOSSY_VARIANTS)
+			texture_path = variant["texture"]
+			brick_color = variant["color"]
+		BrickType.POLYGON:
+			var variant = _pick_variant(POLYGON_VARIANTS)
+			texture_path = variant["texture"]
+			brick_color = variant["color"]
+		BrickType.POLYGON_GLOSSY:
+			var variant = _pick_variant(POLYGON_GLOSSY_VARIANTS)
+			texture_path = variant["texture"]
+			brick_color = variant["color"]
 
 	# Load texture
 	var texture = load(texture_path)
@@ -136,7 +223,45 @@ func setup_sprite():
 	if brick_type == BrickType.BOMB:
 		sprite.scale = Vector2(0.267, 0.267)
 	else:
-		sprite.scale = Vector2(1.5, 1.5)
+		var tex_size = sprite.texture.get_size()
+		if tex_size.x == 32.0 and tex_size.y == 32.0:
+			sprite.scale = Vector2(1.5, 1.5)
+		else:
+			var uniform_scale = TARGET_BRICK_SIZE / tex_size.x
+			sprite.scale = Vector2(uniform_scale, uniform_scale)
+
+func _pick_variant(variants: Array) -> Dictionary:
+	if variants.is_empty():
+		return {"texture": "", "color": brick_color}
+	return variants[randi() % variants.size()]
+
+func _update_collision_shape() -> void:
+	if not has_node("CollisionPolygon2D"):
+		return
+	var polygon_node = $CollisionPolygon2D
+	var shape_node = $CollisionShape2D if has_node("CollisionShape2D") else null
+	var shape_kind = _get_brick_shape()
+	if shape_kind == "diamond":
+		polygon_node.polygon = DIAMOND_POINTS
+		polygon_node.disabled = false
+		if shape_node:
+			shape_node.disabled = true
+	elif shape_kind == "polygon":
+		polygon_node.polygon = PENTAGON_POINTS
+		polygon_node.disabled = false
+		if shape_node:
+			shape_node.disabled = true
+	else:
+		polygon_node.disabled = true
+		if shape_node:
+			shape_node.disabled = false
+
+func _get_brick_shape() -> String:
+	if brick_type == BrickType.DIAMOND or brick_type == BrickType.DIAMOND_GLOSSY:
+		return "diamond"
+	if brick_type == BrickType.POLYGON or brick_type == BrickType.POLYGON_GLOSSY:
+		return "polygon"
+	return "square"
 
 func hit(impact_direction: Vector2 = Vector2.ZERO):
 	"""Called when ball collides with brick
@@ -178,6 +303,8 @@ func break_brick(impact_direction: Vector2 = Vector2.ZERO):
 	# Disable collisions immediately so the ball can't hit again
 	if has_node("CollisionShape2D"):
 		$CollisionShape2D.set_deferred("disabled", true)
+	if has_node("CollisionPolygon2D"):
+		$CollisionPolygon2D.set_deferred("disabled", true)
 	set_deferred("collision_layer", 0)
 	set_deferred("collision_mask", 0)
 

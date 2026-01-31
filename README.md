@@ -7,10 +7,11 @@ A breakout-style game with a unique vertical paddle positioned on the right side
 The game is fully playable with extensive features:
 
 - ✅ Main menu, level select, settings, stats, game over, level complete
-- ✅ 10 JSON-driven levels with enhanced vertical coverage and strategic bomb brick placement
+- ✅ 11 JSON-driven levels with enhanced vertical coverage and strategic bomb brick placement
 - ✅ Difficulty modes (Easy/Normal/Hard) with multipliers
 - ✅ **16 Power-ups**: Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block
 - ✅ **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks
+- ✅ **Advanced Bricks**: Diamond + pentagon shapes (glossy variants are 2-hit)
 - ✅ Statistics + achievements tracking (12 achievements)
 - ✅ Settings (shake, particles, trail, sensitivity, audio levels, music mode/track)
 - ✅ HUD with combo + multiplier display + power-up timers
@@ -53,13 +54,13 @@ Audio playback is implemented (music + expanded SFX coverage).
 
 ### Core Mechanics
 - Paddle spin affects ball trajectory
-- **10 brick types** including special bomb bricks that explode
+- **14 brick types** including special bomb bricks that explode
 - Combo and no-miss streak multipliers
 - Perfect clear bonus on level completion
 - Ball escape logic prevents wedging in corners
 
 ### Progression
-- 10 enhanced levels with better vertical coverage
+- 11 enhanced levels with better vertical coverage
 - Strategic bomb brick placement for tactical gameplay
 - Unlocks next level on completion
 - High scores per level
@@ -102,7 +103,7 @@ zepball/
 │   ├── gameplay/       # Paddle, ball, brick, power-up scenes
 │   └── ui/             # Menus and screens
 ├── scripts/            # GDScript files
-├── levels/             # Level JSON files (10 levels)
+├── levels/             # Level JSON files (11 levels)
 ├── assets/             # Audio + graphics
 └── project.godot       # Godot project configuration
 ```
@@ -118,9 +119,8 @@ All technical documentation is in the `.agent/` folder:
 
 ## Known Gaps / Backlog
 
-- **Advanced tile mechanics**: `.agent/Tasks/Backlog/tile-advanced-elements.md`
 - **UI gaps (launch indicator)**: `.agent/Tasks/Backlog/ui-gaps.md`
-- **Future features**: `.agent/Tasks/Backlog/future-features.md`
+- **Future features**: `.agent/Tasks/Backlog/future-features.md` (includes advanced tile elements)
 
 ## Asset Credits
 - Graphics: Kenney Vleugels (kenney.nl)

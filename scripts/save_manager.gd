@@ -340,6 +340,10 @@ func create_default_save() -> void:
 
 func is_level_unlocked(level_id: int) -> bool:
 	"""Check if a level is unlocked"""
+	if MenuController.current_set_id != -1:
+		var set_level_ids = SetLoader.get_set_level_ids(MenuController.current_set_id)
+		if set_level_ids.size() > 0 and level_id == set_level_ids[0]:
+			return true
 	return level_id <= save_data["progression"]["highest_unlocked_level"]
 
 func is_level_completed(level_id: int) -> bool:
@@ -729,7 +733,7 @@ func mark_set_completed(set_id: int) -> void:
 
 func is_set_unlocked(set_id: int) -> bool:
 	"""Check if a set is unlocked (all sets unlocked for now)"""
-	return set_id <= save_data["set_progression"]["highest_unlocked_set"] or set_id == 1
+	return true
 
 func is_set_completed(set_id: int) -> bool:
 	"""Check if a set has been completed"""

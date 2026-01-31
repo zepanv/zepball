@@ -35,17 +35,32 @@ This folder contains level data files in JSON format. Each level defines the bri
 
 ## Brick Types
 
-- **NORMAL**: 1 hit to break, 10 points (teal color)
-- **STRONG**: 2 hits to break, 20 points (pink color)
-- **UNBREAKABLE**: Cannot be destroyed (gray color)
+- **NORMAL**: 1 hit to break, 10 points (green square)
+- **STRONG**: 2 hits to break, 20 points (red glossy square)
+- **UNBREAKABLE**: Cannot be destroyed (gray square)
+- **GOLD**: 1 hit to break, 50 points (yellow glossy square)
+- **RED / BLUE / GREEN**: 1 hit to break, 15 points (colored squares)
+- **PURPLE**: 2 hits to break, 25 points (purple square)
+- **ORANGE**: 1 hit to break, 20 points (yellow square)
+- **BOMB**: 1 hit to break, 30 points (explodes nearby bricks)
+- **DIAMOND**: 1 hit to break, 15 points (random color diamond)
+- **DIAMOND_GLOSSY**: 2 hits to break, 20 points (random color diamond)
+- **POLYGON**: 1 hit to break, 15 points (random color pentagon)
+- **POLYGON_GLOSSY**: 2 hits to break, 20 points (random color pentagon)
 
 ## Current Levels
 
-1. **First Contact** - Simple 4x6 grid, all normal bricks
-2. **The Wall** - 5x8 grid with strong top row
-3. **Checkered Challenge** - Checkerboard pattern with gaps
-4. **Diamond Formation** - Diamond shape with strong outer layer
-5. **The Fortress** - Large fortress with strong defenses
+1. **level_01** - First Contact
+2. **level_02** - The Wall
+3. **level_03** - Checkered Challenge
+4. **level_04** - Diamond Formation
+5. **level_05** - The Fortress
+6. **level_06** - Diamond Formation
+7. **level_07** - Fortress
+8. **level_08** - Pyramid of Power
+9. **level_09** - Corridors
+10. **level_10** - The Gauntlet
+11. **level_11** - Advanced Brick Test (diamond/pentagon sparse layout)
 
 ## Usage
 

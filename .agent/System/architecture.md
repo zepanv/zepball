@@ -1,7 +1,7 @@
 # Zep Ball - System Architecture
 
 ## Overview
-Zep Ball is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 10 levels, a set-play mode, difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
+Zep Ball is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 11 levels, a set-play mode, difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
 
 ## Project Structure
 ```
@@ -48,7 +48,7 @@ zepball/
 │       ├── stats.gd           # Statistics display
 │       └── settings.gd        # Settings screen logic
 ├── levels/                    # Level definitions (JSON)
-│   ├── level_01.json through level_10.json
+│   ├── level_01.json through level_11.json
 ├── data/
 │   └── level_sets.json        # Set definitions (JSON)
 ├── assets/
@@ -227,6 +227,10 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 | PURPLE | 2 | 25 | Purple square | 2 hits |
 | ORANGE | 1 | 20 | Yellow square | Mid-value |
 | BOMB | 1 | 30 | Special bomb sprite | Explodes nearby bricks |
+| DIAMOND | 1 | 15 | Random color diamond | Angled edges |
+| DIAMOND_GLOSSY | 2 | 20 | Random color diamond | Angled edges |
+| POLYGON | 1 | 15 | Random color pentagon | Angled edges |
+| POLYGON_GLOSSY | 2 | 20 | Random color pentagon | Angled edges |
 
 **On Break**:
 1. Emits `brick_broken(score_value)` signal

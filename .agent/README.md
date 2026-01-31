@@ -25,8 +25,7 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/save-system.md` - Save data, high scores, and persistence plan ✅ IMPLEMENTED
   - `Tasks/Completed/audio-system.md` - Audio system plan (SFX, music) ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
-  - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay)
-  - `Tasks/Backlog/tile-advanced-elements.md` - Force zones, special bricks, and advanced tile behaviors
+  - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay, advanced tile elements)
 - `Tasks/Completed/ui-gaps.md` - Launch indicator (aim mode) ✅ IMPLEMENTED
 
 ### SOP/
@@ -36,17 +35,19 @@ Best practices and workflows for development.
 ## Current Game State (2026-01-31)
 
 ### Core Features ✅ COMPLETE
-- **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 10 brick types (including bomb bricks), collision detection, score tracking
+- **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 14 brick types (including bomb/diamond/pentagon), collision detection, score tracking
 - **Power-Ups**: 16 types with visual timers and effects (Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block)
 - **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks (75px radius)
 - **Difficulty**: 3 modes (Easy/Normal/Hard) with speed and score multipliers
-- **Levels**: 10 unique levels with varied brick mixes (bomb bricks appear in multiple levels)
+- **Levels**: 11 levels with varied brick mixes (bomb bricks appear in multiple levels)
 - **Menu System**: Complete flow (Main Menu, Set Select, Level Select, Game Over, Level Complete, Set Complete, Stats, Settings)
 - **Progression**: Level unlocking and high scores saved per level
 
 ### Set Mode ✅ COMPLETE
 - **Set Data**: `data/level_sets.json` defines available sets
-- **Current Set**: 1 set, **Classic Challenge** (levels 1–10)
+- **Current Sets**: 2 sets
+  - **Classic Challenge** (levels 1–10)
+  - **Test** (level 11)
 - **Set Select**: Play set or view its levels
 - **Set Progression**: Score/lives/combo/streak carry across set levels
 - **Set Completion Bonus**: 3x score if all lives intact and no continues
@@ -149,7 +150,12 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ## Recent Update History
 
-### 2026-01-31 (Latest) - QoL Settings + Quick Actions
+### 2026-01-31 (Latest) - Advanced Bricks + Test Set
+- ✅ **Advanced Bricks**: Diamond + pentagon bricks with angled collision normals and glossy 2-hit variants
+- ✅ **Brick Assets**: Diamond/pentagon textures wired with random color selection
+- ✅ **Test Set**: Added a single-level "Test" set for sparse brick validation
+
+### 2026-01-31 - QoL Settings + Quick Actions
 - ✅ **Settings QoL**: Visual Effects checkboxes (combo flash, short/skip intro, show FPS) + 3-column layout
 - ✅ **Pause Settings**: Settings overlay from pause with live apply for key gameplay options
 - ✅ **Quick Actions**: Play Again on level complete, Return to Last Level on main menu
@@ -300,7 +306,7 @@ Pause overlay settings apply live for paddle sensitivity, ball trail, combo flas
 ---
 
 **Last Updated**: 2026-01-31
-**Total Levels**: 10
-**Total Sets**: 1
+**Total Levels**: 11
+**Total Sets**: 2
 **Total Achievements**: 12
 **Documentation Status**: ✅ Up-to-date with current codebase

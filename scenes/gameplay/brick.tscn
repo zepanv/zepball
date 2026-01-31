@@ -11,6 +11,9 @@ script = ExtResource("1_brick_script")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_brick")
 
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="."]
+disabled = true
+
 [node name="Sprite" type="Sprite2D" parent="."]
 
 [node name="Particles" type="CPUParticles2D" parent="."]

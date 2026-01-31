@@ -1,8 +1,8 @@
 # Future Features - Pending Implementation
 
-## Status: 📋 BACKLOG
+## Status: 📋 BACKLOG (Verified Against Code)
 
-These are features that have been designed but not yet implemented. All features below can be implemented without requiring new assets.
+These are features that have been designed but not yet implemented (or are only partially implemented). Notes below reflect what is actually in code as of 2026-01-31.
 
 ---
 
@@ -65,20 +65,17 @@ These are features that have been designed but not yet implemented. All features
 - **Description**: Add advanced options beyond the current settings screen
 - **Features**:
   - **Gameplay**:
-    - Combo flash intensity ✅ (toggle)
-    - Level intro duration ✅ (short intro toggle)
+    - Combo flash toggle ✅ (implemented)
+    - Level intro duration toggle ✅ (short intro)
     - Skip level intro setting ✅
   - **Controls**:
-    - Key rebinding
+    - Key rebinding ❌
   - **Display**:
     - Show FPS toggle ✅
   - **UX**:
-    - Apply settings without reloading gameplay scene ✅ (pause overlay live apply)
+    - Apply settings without reloading gameplay scene ✅ (pause overlay live apply for HUD, trail, sensitivity, intro toggles)
 - **Implementation**:
-  - Extend settings UI and SaveManager schema
-  - Apply new settings in HUD and gameplay scripts
-  - Add keybind editor and input map persistence
-  - ✅ Visual Effects section now includes checkboxes for combo flash, short/skip level intro, and show FPS (2026-01-31)
+  - Add keybind editor and input map persistence (pending)
 
 ### Enhanced Level Select
 - **Description**: Better level browsing experience
@@ -98,27 +95,23 @@ These are features that have been designed but not yet implemented. All features
 - **Description**: Convenience features
 - **Features**:
   - "Play Again" button on level complete (restart same level) ✅
-  - "Next Level" as default button (auto-select) ✅
+  - "Next Level" as default button (auto-select/focus) ✅
   - "Return to Last Level" on main menu (if mid-game) ✅
   - Return to level select from pause (with confirmation) ✅
 - **Implementation**:
-  - Add quick action buttons to UI scenes
-  - Store last played level in SaveManager
-  - Add confirmation dialogs
-  - ✅ Implemented (no auto-advance) on 2026-01-31
+  - ✅ Implemented in UI + SaveManager (2026-01-31)
 
 ### Skip Options
 - **Description**: Let players skip animations
 - **Features**:
-  - Skip level intro (Space/Click to skip)
-  - Disable level intros entirely (setting)
-  - Fast forward level complete screen
-  - Quick restart (skip menus)
+  - Skip level intro (Space/Click to skip) ❌
+  - Disable level intros entirely (setting) ✅
+  - Fast forward level complete screen ❌
+  - Quick restart (skip menus) ❌
 - **Implementation**:
-  - Add skip detection to level intro
-  - Setting toggle in settings menu
-  - Keyboard shortcuts for quick actions
-  - ❌ Not needed (2026-01-31)
+  - Input-based skip for intro (pending)
+  - Fast-forward/skip on level complete screen (pending)
+  - Keyboard shortcuts for quick actions (pending)
 
 ---
 
@@ -165,19 +158,18 @@ These are features that have been designed but not yet implemented. All features
 ## Implementation Priority
 
 **High Priority:**
-1. Settings Enhancements (most requested QoL upgrades)
-2. Enhanced Level Select (better UX)
-3. Time Attack Mode (easiest mode to add)
+1. Enhanced Level Select (better UX)
+2. Time Attack Mode (easiest mode to add)
 
 **Medium Priority:**
-4. Quick Actions (small improvements, big impact)
-5. Survival Mode (good for replayability)
-6. Skip Options (easy wins)
+3. Survival Mode (good for replayability)
+4. Skip Options (easy wins)
+5. Advanced Tile Elements (force zones + data-driven placement)
 
 **Low Priority:**
-7. Advanced abilities (complex, can wait)
-8. Brick Chains (nice to have)
-9. Hardcore modes (for skilled players only)
+6. Advanced abilities (complex, can wait)
+7. Brick Chains (nice to have)
+8. Hardcore modes (for skilled players only)
 
 ---
 
@@ -189,4 +181,16 @@ These are features that have been designed but not yet implemented. All features
 
 ---
 
-Last Updated: 2026-01-29
+Last Updated: 2026-01-31
+### Advanced Tile Elements (from tile-advanced backlog)
+- **Description**: Special brick/zone mechanics beyond standard bricks
+- **Features**:
+  - Force Arrow / Force Field zones that redirect or repel the ball
+  - Penetrating Spin interaction (ball passes through bricks when spin threshold is met)
+  - Data-driven placement for special tiles in level JSON
+  - Level authoring workflow for special tiles (tooling TBD)
+- **Implementation**:
+  - Add new scene(s) for force zones
+  - Extend level JSON schema and `scripts/level_loader.gd`
+  - Update `scripts/ball.gd` to apply force zones and penetrating spin logic
+  - Update `scripts/brick.gd` to support special behaviors

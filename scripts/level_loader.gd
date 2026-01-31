@@ -20,7 +20,11 @@ var brick_type_map = {
 	"GREEN": 6,      # BrickType.GREEN
 	"PURPLE": 7,     # BrickType.PURPLE
 	"ORANGE": 8,     # BrickType.ORANGE
-	"BOMB": 9        # BrickType.BOMB
+	"BOMB": 9,        # BrickType.BOMB
+	"DIAMOND": 10,        # BrickType.DIAMOND
+	"DIAMOND_GLOSSY": 11, # BrickType.DIAMOND_GLOSSY
+	"POLYGON": 12,        # BrickType.POLYGON
+	"POLYGON_GLOSSY": 13  # BrickType.POLYGON_GLOSSY
 }
 
 func _ready():

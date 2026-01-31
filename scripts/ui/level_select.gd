@@ -74,9 +74,15 @@ func populate_levels():
 	for child in levels_grid.get_children():
 		child.queue_free()
 
-	var total_levels = LevelLoader.get_total_level_count()
+	var level_ids: Array = []
+	if MenuController.current_set_id != -1:
+		level_ids = SetLoader.get_set_level_ids(MenuController.current_set_id)
+	else:
+		var total_levels = LevelLoader.get_total_level_count()
+		for level_id in range(1, total_levels + 1):
+			level_ids.append(level_id)
 
-	for level_id in range(1, total_levels + 1):
+	for level_id in level_ids:
 		create_level_button(level_id)
 
 func create_level_button(level_id: int):

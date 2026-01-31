@@ -57,65 +57,69 @@ theme_override_font_sizes/font_size = 24
 [node name="HSeparator" type="HSeparator" parent="Panel/VBoxContainer"]
 layout_mode = 2
 
-[node name="StatsSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+[node name="ContentRow" type="HBoxContainer" parent="Panel/VBoxContainer"]
 layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 30
+
+[node name="StatsSection" type="VBoxContainer" parent="Panel/VBoxContainer/ContentRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 5
 
-[node name="StatsTitle" type="Label" parent="Panel/VBoxContainer/StatsSection"]
+[node name="StatsTitle" type="Label" parent="Panel/VBoxContainer/ContentRow/StatsSection"]
 layout_mode = 2
 text = "Your Statistics"
 theme_override_font_sizes/font_size = 18
 
-[node name="BricksLabel" type="Label" parent="Panel/VBoxContainer/StatsSection"]
+[node name="BricksLabel" type="Label" parent="Panel/VBoxContainer/ContentRow/StatsSection"]
 layout_mode = 2
 text = "Bricks Broken: 0"
 
-[node name="PowerUpsLabel" type="Label" parent="Panel/VBoxContainer/StatsSection"]
+[node name="PowerUpsLabel" type="Label" parent="Panel/VBoxContainer/ContentRow/StatsSection"]
 layout_mode = 2
 text = "Power-ups Collected: 0"
 
-[node name="LevelsLabel" type="Label" parent="Panel/VBoxContainer/StatsSection"]
+[node name="LevelsLabel" type="Label" parent="Panel/VBoxContainer/ContentRow/StatsSection"]
 layout_mode = 2
 text = "Levels Completed: 0"
 
-[node name="ComboLabel" type="Label" parent="Panel/VBoxContainer/StatsSection"]
+[node name="ComboLabel" type="Label" parent="Panel/VBoxContainer/ContentRow/StatsSection"]
 layout_mode = 2
 text = "Highest Combo: 0x"
 
-[node name="ScoreLabel" type="Label" parent="Panel/VBoxContainer/StatsSection"]
+[node name="ScoreLabel" type="Label" parent="Panel/VBoxContainer/ContentRow/StatsSection"]
 layout_mode = 2
 text = "Highest Score: 0"
 
-[node name="GamesLabel" type="Label" parent="Panel/VBoxContainer/StatsSection"]
+[node name="GamesLabel" type="Label" parent="Panel/VBoxContainer/ContentRow/StatsSection"]
 layout_mode = 2
 text = "Games Played: 0"
 
-[node name="PerfectLabel" type="Label" parent="Panel/VBoxContainer/StatsSection"]
+[node name="PerfectLabel" type="Label" parent="Panel/VBoxContainer/ContentRow/StatsSection"]
 layout_mode = 2
 text = "Perfect Clears: 0"
 
-[node name="PlaytimeLabel" type="Label" parent="Panel/VBoxContainer/StatsSection"]
+[node name="PlaytimeLabel" type="Label" parent="Panel/VBoxContainer/ContentRow/StatsSection"]
 layout_mode = 2
 text = "Total Playtime: 0h 0m"
 
-[node name="HSeparator2" type="HSeparator" parent="Panel/VBoxContainer"]
-layout_mode = 2
-
-[node name="AchievementsSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+[node name="AchievementsSection" type="VBoxContainer" parent="Panel/VBoxContainer/ContentRow"]
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_horizontal = 3
 theme_override_constants/separation = 5
 
-[node name="AchievementsTitle" type="Label" parent="Panel/VBoxContainer/AchievementsSection"]
+[node name="AchievementsTitle" type="Label" parent="Panel/VBoxContainer/ContentRow/AchievementsSection"]
 layout_mode = 2
 text = "Achievements"
 theme_override_font_sizes/font_size = 18
 
-[node name="ScrollContainer" type="ScrollContainer" parent="Panel/VBoxContainer/AchievementsSection"]
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel/VBoxContainer/ContentRow/AchievementsSection"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="AchievementsContainer" type="VBoxContainer" parent="Panel/VBoxContainer/AchievementsSection/ScrollContainer"]
+[node name="AchievementsContainer" type="VBoxContainer" parent="Panel/VBoxContainer/ContentRow/AchievementsSection/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 10
