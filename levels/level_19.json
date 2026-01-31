@@ -1,0 +1,115 @@
+{
+  "level_id": 19,
+  "name": "Prism V",
+  "description": "A falling V with old-brick ballast.",
+  "grid": {
+    "rows": 8,
+    "cols": 10,
+    "start_x": 100,
+    "start_y": 140,
+    "brick_size": 48,
+    "spacing": 3
+  },
+  "bricks": [
+    {
+      "row": 0,
+      "col": 0,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 0,
+      "col": 9,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 1,
+      "col": 8,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 2,
+      "col": 7,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 3,
+      "col": 6,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 4,
+      "col": 5,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 5,
+      "col": 3,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 5,
+      "col": 4,
+      "type": "GOLD"
+    },
+    {
+      "row": 5,
+      "col": 5,
+      "type": "GOLD"
+    },
+    {
+      "row": 5,
+      "col": 6,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 6,
+      "col": 2,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 6,
+      "col": 5,
+      "type": "STRONG"
+    },
+    {
+      "row": 6,
+      "col": 7,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 7,
+      "col": 1,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 7,
+      "col": 4,
+      "type": "UNBREAKABLE"
+    },
+    {
+      "row": 7,
+      "col": 7,
+      "type": "POLYGON_GLOSSY"
+    }
+  ]
+}

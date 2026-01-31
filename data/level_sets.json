@@ -9,9 +9,9 @@
 		},
 		{
 			"set_id": 2,
-			"name": "Test",
-			"description": "Sparse level for advanced brick testing",
-			"level_ids": [11],
+			"name": "Prism Showcase",
+			"description": "Ten creative levels highlighting the new diamond and pentagon bricks",
+			"level_ids": [11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
 			"unlock_condition": "default"
 		}
 	]

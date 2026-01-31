@@ -60,7 +60,16 @@ This folder contains level data files in JSON format. Each level defines the bri
 8. **level_08** - Pyramid of Power
 9. **level_09** - Corridors
 10. **level_10** - The Gauntlet
-11. **level_11** - Advanced Brick Test (diamond/pentagon sparse layout)
+11. **level_11** - Facet Bloom
+12. **level_12** - Crown Circuit
+13. **level_13** - Stellar Kite
+14. **level_14** - Gilded Steps
+15. **level_15** - Prism Lattice
+16. **level_16** - Orbitals
+17. **level_17** - Shard Lanes
+18. **level_18** - Crystal Gate
+19. **level_19** - Prism V
+20. **level_20** - Aurora Array
 
 ## Usage
 

@@ -5,7 +5,7 @@ extends Node
 
 const SAVE_FILE_PATH = "user://save_data.json"
 const SAVE_VERSION = 1
-const TOTAL_LEVELS = 10  # Update this when adding more levels
+const TOTAL_LEVELS = 20  # Update this when adding more levels
 const DEFAULT_SETTINGS = {
 	"difficulty": "Normal",  # Easy, Normal, Hard
 	"music_volume_db": 0.0,
@@ -731,7 +731,7 @@ func mark_set_completed(set_id: int) -> void:
 		save_to_disk()
 		print("Set ", set_id, " marked as completed")
 
-func is_set_unlocked(set_id: int) -> bool:
+func is_set_unlocked(_set_id: int) -> bool:
 	"""Check if a set is unlocked (all sets unlocked for now)"""
 	return true
 

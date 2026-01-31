@@ -22,6 +22,7 @@ const AIM_MAX_ANGLE = 240.0
 const AIM_LENGTH = 140.0
 const AIM_HEAD_LENGTH = 18.0
 const AIM_HEAD_ANGLE = 25.0
+const BRICK_TYPE_UNBREAKABLE = 2
 
 const TRAIL_SMALL = preload("res://assets/graphics/particles/particleSmallStar.png")
 const TRAIL_MEDIUM = preload("res://assets/graphics/particles/particleStar.png")
@@ -65,6 +66,9 @@ var aim_shaft: Line2D = null
 var aim_head: Line2D = null
 var virtual_mouse_pos: Vector2 = Vector2.ZERO
 var was_mouse_captured: bool = false
+var last_collision_normal: Vector2 = Vector2.ZERO
+var last_collision_collider = null
+var last_collision_age: float = 0.0
 
 # Signals
 signal ball_lost
@@ -143,6 +147,8 @@ func _physics_process(delta):
 		if Input.is_action_just_pressed("launch_ball") and can_launch:
 			launch_ball()
 	else:
+		if last_collision_collider != null:
+			last_collision_age += delta
 		# Ball is in motion
 		# Apply magnet pull toward paddle (curve trajectory, keep speed)
 		if magnet_enabled or PowerUpManager.is_magnet_active():
@@ -286,6 +292,10 @@ func launch_ball():
 			velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
 			print("Ball launched straight! Velocity: ", velocity)
 
+	# Apply air-ball jump on release from grab
+	if air_ball_enabled or PowerUpManager.is_air_ball_active():
+		_jump_to_level_center_x(position.y)
+
 	# Enable trail effect (if enabled in settings)
 	if has_node("Trail") and SaveManager.get_ball_trail():
 		$Trail.emitting = true
@@ -379,6 +389,9 @@ func handle_collision(collision: KinematicCollision2D):
 		# Brick collision: reflect + notify brick
 		var old_velocity = velocity  # Store for particle direction
 		var hit_brick_position = collider.global_position  # Store for bomb effect
+		var is_unbreakable = false
+		if "brick_type" in collider:
+			is_unbreakable = collider.brick_type == BRICK_TYPE_UNBREAKABLE
 
 		var is_block_brick = collider.is_in_group("block_brick")
 		if is_block_brick and (velocity.x < 0.0 or grab_immunity_timer > 0.0 or block_pass_timer > 0.0):
@@ -396,6 +409,10 @@ func handle_collision(collision: KinematicCollision2D):
 		else:
 			# Normal bounce behavior
 			velocity = velocity.bounce(normal)
+			if is_unbreakable:
+				# Add a small random deflection to avoid edge hugging
+				velocity = velocity.rotated(deg_to_rad(randf_range(-12.0, 12.0)))
+				position += normal * (ball_radius * 0.6)
 			brick_hit.emit(collider)
 			if collider.has_method("hit"):
 				collider.hit(old_velocity.normalized())
@@ -410,6 +427,11 @@ func handle_collision(collision: KinematicCollision2D):
 		# Wall collision: simple reflection
 		AudioManager.play_sfx("hit_wall")
 		velocity = velocity.bounce(normal)
+
+	if collider != null:
+		last_collision_normal = normal
+		last_collision_collider = collider
+		last_collision_age = 0.0
 
 func reset_ball():
 	"""Reset ball to paddle after losing a life"""
@@ -785,12 +807,22 @@ func check_if_stuck(delta: float):
 			# Ball is stuck! Give it a boost to escape
 			print("WARNING: Ball appears stuck at ", position, " - applying escape boost")
 
-			# Random escape direction (prefer left and down/up to avoid paddle)
-			var escape_angle = randf_range(135.0, 225.0)  # Left hemisphere
-			var angle_rad = deg_to_rad(escape_angle)
-			velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
+			var used_collision_escape = false
+			if last_collision_collider != null and is_instance_valid(last_collision_collider):
+				if last_collision_collider.is_in_group("brick") and "brick_type" in last_collision_collider:
+					if last_collision_collider.brick_type == BRICK_TYPE_UNBREAKABLE and last_collision_age <= 0.75:
+						# Push away from the unbreakable face and add a deflection
+						var escape_normal = last_collision_normal if last_collision_normal != Vector2.ZERO else Vector2.LEFT
+						position += escape_normal * (ball_radius * 1.2)
+						velocity = velocity.bounce(escape_normal).rotated(deg_to_rad(randf_range(-18.0, 18.0)))
+						used_collision_escape = true
 
-			print("  Escape velocity applied: ", velocity, " (angle: ", escape_angle, "°)")
+			if not used_collision_escape:
+				# Random escape direction (prefer left and down/up to avoid paddle)
+				var escape_angle = randf_range(135.0, 225.0)  # Left hemisphere
+				var angle_rad = deg_to_rad(escape_angle)
+				velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
+				print("  Escape velocity applied: ", velocity, " (angle: ", escape_angle, "°)")
 
 			# Reset timer
 			stuck_check_timer = 0.0

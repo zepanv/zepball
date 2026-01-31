@@ -242,19 +242,19 @@ func _update_collision_shape() -> void:
 	var shape_node = $CollisionShape2D if has_node("CollisionShape2D") else null
 	var shape_kind = _get_brick_shape()
 	if shape_kind == "diamond":
-		polygon_node.polygon = DIAMOND_POINTS
-		polygon_node.disabled = false
+		polygon_node.set_deferred("polygon", DIAMOND_POINTS)
+		polygon_node.set_deferred("disabled", false)
 		if shape_node:
-			shape_node.disabled = true
+			shape_node.set_deferred("disabled", true)
 	elif shape_kind == "polygon":
-		polygon_node.polygon = PENTAGON_POINTS
-		polygon_node.disabled = false
+		polygon_node.set_deferred("polygon", PENTAGON_POINTS)
+		polygon_node.set_deferred("disabled", false)
 		if shape_node:
-			shape_node.disabled = true
+			shape_node.set_deferred("disabled", true)
 	else:
-		polygon_node.disabled = true
+		polygon_node.set_deferred("disabled", true)
 		if shape_node:
-			shape_node.disabled = false
+			shape_node.set_deferred("disabled", false)
 
 func _get_brick_shape() -> String:
 	if brick_type == BrickType.DIAMOND or brick_type == BrickType.DIAMOND_GLOSSY:

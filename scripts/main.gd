@@ -388,7 +388,7 @@ func _spawn_block_barrier(duration: float):
 	var segment_count = BLOCK_SEGMENT_COUNT
 	var step = segment_height + BRICK_SPACING
 	var start_y = paddle.position.y - ((segment_count - 1) * step) / 2.0
-	var base_x = paddle.position.x - (paddle_width / 2.0) - (segment_width / 2.0) - BLOCK_OFFSET_X
+	var base_x = paddle.position.x + (paddle_width / 2.0) + (segment_width / 2.0) + BLOCK_OFFSET_X
 
 	var block_texture = load("res://assets/graphics/bricks/element_green_rectangle.png")
 
@@ -437,9 +437,11 @@ func _configure_block_brick(brick: Node, texture: Texture2D, segment_width: floa
 	if brick.has_node("CollisionShape2D"):
 		var collision = brick.get_node("CollisionShape2D")
 		if collision.shape is RectangleShape2D:
-			if not collision.shape.is_local_to_scene():
-				collision.shape = collision.shape.duplicate()
-			collision.shape.size = Vector2(segment_width, segment_height)
+			var new_shape = collision.shape
+			if not new_shape.is_local_to_scene():
+				new_shape = new_shape.duplicate()
+			new_shape.size = Vector2(segment_width, segment_height)
+			collision.set_deferred("shape", new_shape)
 
 	brick.brick_color = Color(0.2, 0.8, 0.2)
 	if brick.has_node("Particles"):
@@ -593,7 +595,7 @@ func _on_power_up_collected(type):
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.MAGNET, null)
 		15:  # BLOCK
 			var duration = PowerUpManager.EFFECT_DURATIONS.get(PowerUpManager.PowerUpType.BLOCK, 12.0)
-			_spawn_block_barrier(duration)
+			call_deferred("_spawn_block_barrier", duration)
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BLOCK, null)
 
 func spawn_additional_balls_with_retry(retries_remaining: int = 3):

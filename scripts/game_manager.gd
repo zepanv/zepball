@@ -264,7 +264,7 @@ func start_playing():
 
 func check_perfect_clear() -> bool:
 	"""Check if player achieved a perfect clear (all lives intact)"""
-	return is_perfect_clear and lives == 3
+	return is_perfect_clear
 
 func get_score_breakdown() -> Dictionary:
 	"""Return a copy of the current level's score breakdown"""

@@ -39,7 +39,7 @@ Best practices and workflows for development.
 - **Power-Ups**: 16 types with visual timers and effects (Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block)
 - **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks (75px radius)
 - **Difficulty**: 3 modes (Easy/Normal/Hard) with speed and score multipliers
-- **Levels**: 11 levels with varied brick mixes (bomb bricks appear in multiple levels)
+- **Levels**: 20 levels with varied brick mixes (bomb bricks appear in multiple levels)
 - **Menu System**: Complete flow (Main Menu, Set Select, Level Select, Game Over, Level Complete, Set Complete, Stats, Settings)
 - **Progression**: Level unlocking and high scores saved per level
 
@@ -47,7 +47,7 @@ Best practices and workflows for development.
 - **Set Data**: `data/level_sets.json` defines available sets
 - **Current Sets**: 2 sets
   - **Classic Challenge** (levels 1–10)
-  - **Test** (level 11)
+  - **Prism Showcase** (levels 11–20)
 - **Set Select**: Play set or view its levels
 - **Set Progression**: Score/lives/combo/streak carry across set levels
 - **Set Completion Bonus**: 3x score if all lives intact and no continues
@@ -150,10 +150,17 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ## Recent Update History
 
-### 2026-01-31 (Latest) - Advanced Bricks + Test Set
+### 2026-01-31 (Latest) - Prism Showcase Polish + Physics Fixes
+- ✅ **Level Layouts**: Prism Showcase levels re-centered vertically for better balance
+- ✅ **Perfect Clear**: Extra lives no longer disqualify perfect clears
+- ✅ **Air Ball + Grab**: Air ball jump now triggers on grab release
+- ✅ **Block Barrier**: Spawn deferred to avoid physics flush errors; barrier placed behind paddle
+- ✅ **Brick Collisions**: Deferred collision polygon toggles to avoid query flush errors
+
+### 2026-01-31 - Advanced Bricks + Prism Showcase
 - ✅ **Advanced Bricks**: Diamond + pentagon bricks with angled collision normals and glossy 2-hit variants
 - ✅ **Brick Assets**: Diamond/pentagon textures wired with random color selection
-- ✅ **Test Set**: Added a single-level "Test" set for sparse brick validation
+- ✅ **Prism Showcase**: Added 10 creative levels highlighting new brick shapes
 
 ### 2026-01-31 - QoL Settings + Quick Actions
 - ✅ **Settings QoL**: Visual Effects checkboxes (combo flash, short/skip intro, show FPS) + 3-column layout
@@ -306,7 +313,7 @@ Pause overlay settings apply live for paddle sensitivity, ball trail, combo flas
 ---
 
 **Last Updated**: 2026-01-31
-**Total Levels**: 11
+**Total Levels**: 20
 **Total Sets**: 2
 **Total Achievements**: 12
 **Documentation Status**: ✅ Up-to-date with current codebase

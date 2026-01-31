@@ -1,0 +1,215 @@
+{
+  "level_id": 15,
+  "name": "Prism Lattice",
+  "description": "Interlocked diamonds with classic fillers.",
+  "grid": {
+    "rows": 8,
+    "cols": 10,
+    "start_x": 100,
+    "start_y": 140,
+    "brick_size": 48,
+    "spacing": 3
+  },
+  "bricks": [
+    {
+      "row": 0,
+      "col": 0,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 0,
+      "col": 2,
+      "type": "POLYGON"
+    },
+    {
+      "row": 0,
+      "col": 4,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 0,
+      "col": 6,
+      "type": "POLYGON"
+    },
+    {
+      "row": 0,
+      "col": 8,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "type": "RED"
+    },
+    {
+      "row": 1,
+      "col": 5,
+      "type": "BLUE"
+    },
+    {
+      "row": 1,
+      "col": 7,
+      "type": "GOLD"
+    },
+    {
+      "row": 1,
+      "col": 9,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 2,
+      "col": 0,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 2,
+      "col": 2,
+      "type": "POLYGON"
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 2,
+      "col": 6,
+      "type": "POLYGON"
+    },
+    {
+      "row": 2,
+      "col": 8,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "type": "STRONG"
+    },
+    {
+      "row": 3,
+      "col": 5,
+      "type": "UNBREAKABLE"
+    },
+    {
+      "row": 3,
+      "col": 7,
+      "type": "STRONG"
+    },
+    {
+      "row": 3,
+      "col": 9,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 4,
+      "col": 2,
+      "type": "POLYGON"
+    },
+    {
+      "row": 4,
+      "col": 4,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 4,
+      "col": 6,
+      "type": "POLYGON"
+    },
+    {
+      "row": 4,
+      "col": 8,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 5,
+      "col": 1,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 5,
+      "col": 3,
+      "type": "GOLD"
+    },
+    {
+      "row": 5,
+      "col": 5,
+      "type": "BLUE"
+    },
+    {
+      "row": 5,
+      "col": 7,
+      "type": "RED"
+    },
+    {
+      "row": 5,
+      "col": 9,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 6,
+      "col": 0,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 6,
+      "col": 2,
+      "type": "POLYGON"
+    },
+    {
+      "row": 6,
+      "col": 4,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 6,
+      "col": 6,
+      "type": "POLYGON"
+    },
+    {
+      "row": 6,
+      "col": 8,
+      "type": "DIAMOND"
+    },
+    {
+      "row": 7,
+      "col": 1,
+      "type": "POLYGON_GLOSSY"
+    },
+    {
+      "row": 7,
+      "col": 3,
+      "type": "STRONG"
+    },
+    {
+      "row": 7,
+      "col": 5,
+      "type": "ORANGE"
+    },
+    {
+      "row": 7,
+      "col": 7,
+      "type": "STRONG"
+    },
+    {
+      "row": 7,
+      "col": 9,
+      "type": "POLYGON_GLOSSY"
+    }
+  ]
+}

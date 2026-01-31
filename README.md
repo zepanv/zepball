@@ -7,7 +7,7 @@ A breakout-style game with a unique vertical paddle positioned on the right side
 The game is fully playable with extensive features:
 
 - ✅ Main menu, level select, settings, stats, game over, level complete
-- ✅ 11 JSON-driven levels with enhanced vertical coverage and strategic bomb brick placement
+- ✅ 20 JSON-driven levels with enhanced vertical coverage and strategic bomb brick placement
 - ✅ Difficulty modes (Easy/Normal/Hard) with multipliers
 - ✅ **16 Power-ups**: Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block
 - ✅ **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks
@@ -60,7 +60,7 @@ Audio playback is implemented (music + expanded SFX coverage).
 - Ball escape logic prevents wedging in corners
 
 ### Progression
-- 11 enhanced levels with better vertical coverage
+- 20 enhanced levels with better vertical coverage
 - Strategic bomb brick placement for tactical gameplay
 - Unlocks next level on completion
 - High scores per level
@@ -103,7 +103,7 @@ zepball/
 │   ├── gameplay/       # Paddle, ball, brick, power-up scenes
 │   └── ui/             # Menus and screens
 ├── scripts/            # GDScript files
-├── levels/             # Level JSON files (11 levels)
+├── levels/             # Level JSON files (20 levels)
 ├── assets/             # Audio + graphics
 └── project.godot       # Godot project configuration
 ```
