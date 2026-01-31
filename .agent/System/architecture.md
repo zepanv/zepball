@@ -52,6 +52,9 @@ zepball/
 ├── data/
 │   └── level_sets.json        # Set definitions (JSON)
 ├── assets/
+│   ├── audio/
+│   │   ├── music/             # Background music tracks (mp3)
+│   │   └── sfx/               # SFX clips (mp3)
 │   └── graphics/
 │       ├── backgrounds/       # 7 background images
 │       ├── bricks/            # Brick sprite textures
@@ -64,9 +67,10 @@ These nodes are always loaded and accessible throughout the game:
 1. **PowerUpManager** - `scripts/power_up_manager.gd` - Manages timed power-up effects
 2. **DifficultyManager** - `scripts/difficulty_manager.gd` - Difficulty settings and multipliers
 3. **SaveManager** - `scripts/save_manager.gd` - Save data, high scores, statistics, achievements
-4. **LevelLoader** - `scripts/level_loader.gd` - Loads levels from JSON files
-5. **SetLoader** - `scripts/set_loader.gd` - Loads level sets from JSON
-6. **MenuController** - `scripts/ui/menu_controller.gd` - Scene transitions and game flow
+4. **AudioManager** - `scripts/audio_manager.gd` - Music/SFX playback and audio bus setup
+5. **LevelLoader** - `scripts/level_loader.gd` - Loads levels from JSON files
+6. **SetLoader** - `scripts/set_loader.gd` - Loads level sets from JSON
+7. **MenuController** - `scripts/ui/menu_controller.gd` - Scene transitions and game flow
 
 ## Runtime Scene Graph (Gameplay - main.tscn)
 ```
@@ -505,6 +509,11 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - `launch_ball`: Space, Left Mouse Button - Launch ball from paddle
 - `restart_game`: R key - Restart current level
 - `ui_cancel`: Escape - Toggle pause during gameplay
+- `audio_volume_down`: - key - Lower music volume
+- `audio_volume_up`: + key - Raise music volume
+- `audio_prev_track`: [ key - Previous track
+- `audio_next_track`: ] key - Next track
+- `audio_toggle_pause`: \ key - Toggle music pause/play
 
 ## Complete Gameplay Flow
 
@@ -594,10 +603,13 @@ Final score × 2
 - **Backgrounds**: 7 random images with 0.85 alpha dimming
 - **Power-Up Icons**: Individual PNGs with colored glow (green = good, red = bad)
 
-### Audio System (Not Yet Implemented)
-- Music/SFX volume controls exist in settings
-- AudioServer is called on settings change, expecting "Music" and "SFX" buses
-- No AudioManager or assets are present yet
+### Audio System
+- **AudioManager** autoload provides music playlist playback and SFX helpers
+- **Buses**: Master → Music/SFX (created at runtime if missing)
+- **Music Modes**: Off, Loop One (selected track), Loop All, Shuffle
+- **Crossfades** between tracks when in Loop All / Shuffle
+- **Settings**: Music/SFX volume sliders apply immediately via AudioServer; music mode + loop-one track selection in Settings menu
+- **Hotkeys**: Volume +/- , previous/next track, and pause toggle show a toast confirmation
 
 ## Data Persistence
 
@@ -625,10 +637,12 @@ All settings auto-save and load:
 1. Difficulty (Easy/Normal/Hard)
 2. Music volume (dB)
 3. SFX volume (dB)
-4. Screen shake intensity (Off/Low/Medium/High)
-5. Particle effects (On/Off)
-6. Ball trail (On/Off)
-7. Paddle sensitivity (0.5x - 2.0x)
+4. Music playback mode (Off / Loop One / Loop All / Shuffle)
+5. Music loop-one track selection
+6. Screen shake intensity (Off/Low/Medium/High)
+7. Particle effects (On/Off)
+8. Ball trail (On/Off)
+9. Paddle sensitivity (0.5x - 2.0x)
 
 ## Complex or Risky Areas
 
@@ -670,7 +684,7 @@ All settings auto-save and load:
 ### 6. Settings Apply Without Restart
 **Limitation**: Gameplay settings are read on scene `_ready()` (ball, paddle, camera).
 **Workaround**: Return to main menu and reload gameplay to apply changes.
-**Exception**: Audio sliders apply immediately via AudioServer.
+**Exception**: Audio settings apply immediately via AudioServer/AudioManager.
 
 ## Known Issues and Gaps
 - Set unlocking is stubbed; `highest_unlocked_set` is always 1 and all sets are effectively unlocked.
@@ -685,7 +699,7 @@ All settings auto-save and load:
 
 ---
 
-**Last Updated**: 2026-01-30
+**Last Updated**: 2026-01-31
 **Godot Version**: 4.6
 **Total Levels**: 10
 **Total Sets**: 1

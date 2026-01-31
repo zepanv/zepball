@@ -117,6 +117,8 @@ var save_data = {
 		"difficulty": "Normal",  # Easy, Normal, Hard
 		"music_volume_db": 0.0,
 		"sfx_volume_db": 0.0,
+		"music_playback_mode": "loop_all",
+		"music_track_id": "",
 		"screen_shake_intensity": "Medium",  # Off, Low, Medium, High
 		"particle_effects_enabled": true,
 		"ball_trail_enabled": true,
@@ -234,6 +236,12 @@ func load_save() -> void:
 	if not save_data["settings"].has("paddle_sensitivity"):
 		save_data["settings"]["paddle_sensitivity"] = 1.0
 		settings_updated = true
+	if not save_data["settings"].has("music_playback_mode"):
+		save_data["settings"]["music_playback_mode"] = "loop_all"
+		settings_updated = true
+	if not save_data["settings"].has("music_track_id"):
+		save_data["settings"]["music_track_id"] = ""
+		settings_updated = true
 
 	if settings_updated:
 		print("Adding new settings to save data...")
@@ -290,6 +298,8 @@ func create_default_save() -> void:
 			"difficulty": "Normal",
 			"music_volume_db": 0.0,
 			"sfx_volume_db": 0.0,
+			"music_playback_mode": "loop_all",
+			"music_track_id": "",
 			"screen_shake_intensity": "Medium",
 			"particle_effects_enabled": true,
 			"ball_trail_enabled": true,
@@ -377,6 +387,27 @@ func get_music_volume() -> float:
 func get_sfx_volume() -> float:
 	"""Get saved SFX volume"""
 	return save_data["settings"]["sfx_volume_db"]
+
+func save_music_playback_mode(mode: String) -> void:
+	"""Save music playback mode"""
+	if mode not in ["off", "loop_one", "loop_all", "shuffle"]:
+		push_warning("Invalid music playback mode: " + mode)
+		return
+	save_data["settings"]["music_playback_mode"] = mode
+	save_to_disk()
+
+func get_music_playback_mode() -> String:
+	"""Get saved music playback mode"""
+	return save_data["settings"].get("music_playback_mode", "loop_all")
+
+func save_music_track_id(track_id: String) -> void:
+	"""Save selected music track for loop-one mode"""
+	save_data["settings"]["music_track_id"] = track_id
+	save_to_disk()
+
+func get_music_track_id() -> String:
+	"""Get selected music track"""
+	return save_data["settings"].get("music_track_id", "")
 
 func reset_save_data() -> void:
 	"""Reset all save data to defaults (for testing or player request)"""

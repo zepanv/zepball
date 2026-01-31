@@ -20,7 +20,7 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/ui-system.md` - UI, menus, and HUD plans ✅ IMPLEMENTED
   - `Tasks/Completed/save-system.md` - Save data, high scores, and persistence plan ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
-  - `Tasks/Backlog/audio-system.md` - Audio system plan (SFX, music) 📅 NOT YET IMPLEMENTED
+- `Tasks/Backlog/audio-system.md` - Audio system plan (SFX, music) 🚧 IN PROGRESS
   - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay)
   - `Tasks/Backlog/tile-advanced-elements.md` - Force zones, special bricks, and advanced tile behaviors
   - `Tasks/Backlog/ui-gaps.md` - Launch indicator + level complete breakdown
@@ -55,16 +55,18 @@ Best practices and workflows for development.
 - **Tracking**: `total_playtime` increments during READY/PLAYING (flushed every 5s), and `total_games_played` increments per level start
 
 ### Settings System ✅ COMPLETE
-- **Gameplay Settings (7)**:
+- **Gameplay Settings (9)**:
   - Screen shake intensity (Off/Low/Medium/High)
   - Particle effects toggle
   - Ball trail toggle
   - Paddle sensitivity (0.5x - 2.0x)
   - Music volume (-40dB to 0dB)
   - SFX volume (-40dB to 0dB)
+  - Music playback mode (Off / Loop One / Loop All / Shuffle)
+  - Music loop-one track selection
   - Difficulty (Easy/Normal/Hard) saved from Main Menu
 - **All settings persist** via SaveManager with automatic migration
-- **Audio sliders apply immediately**; other gameplay settings apply on next scene load
+- **Audio settings apply immediately**; other gameplay settings apply on next scene load
 
 ### Score Multipliers ✅ COMPLETE
 - **Difficulty Multiplier**: 0.8x (Easy), 1.0x (Normal), 1.5x (Hard)
@@ -87,16 +89,17 @@ Best practices and workflows for development.
 - **Language**: GDScript
 - **Run Main Scene**: `res://scenes/ui/main_menu.tscn`
 - **Gameplay Scene**: `res://scenes/main/main.tscn`
-- **Autoloads**: PowerUpManager, DifficultyManager, SaveManager, LevelLoader, SetLoader, MenuController
+- **Autoloads**: PowerUpManager, DifficultyManager, SaveManager, AudioManager, LevelLoader, SetLoader, MenuController
 
 ## Autoload Singletons (Global Systems)
 These are always accessible and control key game systems:
 1. **PowerUpManager** - Timed power-up effects
 2. **DifficultyManager** - Difficulty modes with multipliers
 3. **SaveManager** - Save data, statistics, achievements, settings
-4. **LevelLoader** - Level JSON loading
-5. **SetLoader** - Set JSON loading
-6. **MenuController** - Scene transitions and game flow
+4. **AudioManager** - Music/SFX playback and audio bus setup
+5. **LevelLoader** - Level JSON loading
+6. **SetLoader** - Set JSON loading
+7. **MenuController** - Scene transitions and game flow
 
 ## Quick Start for New Developers
 1. **Read** `System/architecture.md` - Complete system overview with all features documented
@@ -117,14 +120,16 @@ These are always accessible and control key game systems:
 - Save system with JSON persistence
 - Statistics tracking (10 stats)
 - Achievement system (12 achievements)
-- Settings system (7 UI controls + difficulty persistence)
+- Settings system (9 UI controls + difficulty persistence)
 - Score multipliers (Difficulty, Combo, Streak, Double Score, Perfect Clear)
 - Set mode with cumulative scoring and set high scores
 
-### 📅 Phase 7: Audio System (FUTURE)
-- Music tracks
-- Sound effects (brick break, power-up, paddle hit, etc.)
-- Audio buses and assets not yet implemented
+### 🚧 Phase 7: Audio System (IN PROGRESS)
+- AudioManager autoload (music playback + SFX helpers)
+- Music modes: Off, Loop One, Loop All, Shuffle
+- Crossfades between tracks (Loop All / Shuffle)
+- Settings UI for music mode + loop-one track selection
+- Initial SFX: paddle hit, brick hit, wall hit
 
 ### 📅 Phase 8: Advanced Features (FUTURE)
 See `Tasks/Backlog/future-features.md` for detailed plans:
@@ -134,7 +139,14 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ## Recent Update History
 
-### 2026-01-30 (Latest) - Set Mode & Bomb Bricks
+### 2026-01-31 (Latest) - Audio System Core
+- ✅ **AudioManager** autoload with music playlist + crossfade support
+- ✅ **Music Modes**: Off / Loop One / Loop All / Shuffle (Settings UI)
+- ✅ **SFX Wiring**: Paddle hit, brick hit, wall hit
+- ✅ **Audio Assets**: Moved to `assets/audio/` (music + sfx)
+- ✅ **Audio Hotkeys**: Volume -, = ; track prev/next [ ] ; pause toggle \
+
+### 2026-01-30 - Set Mode & Bomb Bricks
 - ✅ **Set Mode**: Set Select + Set Complete screens, set-level flow
 - ✅ **Set Data**: `data/level_sets.json` defines set(s)
 - ✅ **Set Scoring**: Perfect set bonus (3x) and set high scores
@@ -200,12 +212,14 @@ zepball/
 │   └── ui/                    # Menu screens (8 screens)
 ├── scripts/                   # All game logic (GDScript)
 │   ├── main.gd                # Main gameplay controller
-│   ├── [autoload singletons]  # 6 global systems
+│   ├── [autoload singletons]  # 7 global systems
 │   ├── [gameplay scripts]     # Ball, paddle, brick, power-up, camera shake, hud
 │   └── ui/                    # Menu screen scripts
 ├── levels/                    # 10 level JSON files
 ├── data/                      # Set data JSON
-└── assets/graphics/           # Sprites, backgrounds, power-ups
+├── assets/
+│   ├── audio/                 # Music + SFX
+│   └── graphics/              # Sprites, backgrounds, power-ups
 ```
 
 ## Important Notes for Developers
@@ -230,7 +244,7 @@ Gameplay settings are loaded on scene `_ready()` (ball, paddle, camera). To appl
 1. Exit to main menu
 2. Return to gameplay
 
-Audio volume changes apply immediately via AudioServer.
+Audio settings (volume + music mode/track) apply immediately via AudioServer/AudioManager.
 
 ### Known Issues
 - Set unlocking is stubbed; `highest_unlocked_set` is always 1 and all sets are effectively unlocked.

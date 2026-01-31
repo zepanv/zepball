@@ -112,6 +112,12 @@ func reset_paddle_height():
 
 func set_paddle_height(new_height: float):
 	"""Change paddle height with animation"""
+	if Engine.is_in_physics_frame():
+		call_deferred("_apply_paddle_height", new_height)
+		return
+	_apply_paddle_height(new_height)
+
+func _apply_paddle_height(new_height: float) -> void:
 	current_height = new_height
 
 	# Update collision shape FIRST (before calculating bounds)

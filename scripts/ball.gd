@@ -324,6 +324,7 @@ func handle_collision(collision: KinematicCollision2D):
 				return
 
 			print("Ball hit paddle, velocity: ", velocity)
+		AudioManager.play_sfx("hit_paddle")
 
 	elif collider.is_in_group("brick"):
 		# Brick collision: reflect + notify brick
@@ -350,6 +351,7 @@ func handle_collision(collision: KinematicCollision2D):
 			if collider.has_method("hit"):
 				collider.hit(old_velocity.normalized())
 			print("Ball hit brick")
+		AudioManager.play_sfx("hit_brick")
 
 		# Check if bomb ball is active - destroy surrounding bricks (skip block bricks)
 		if not is_block_brick and (bomb_ball_enabled or PowerUpManager.is_bomb_ball_active()):
@@ -357,6 +359,7 @@ func handle_collision(collision: KinematicCollision2D):
 
 	else:
 		# Wall collision: simple reflection
+		AudioManager.play_sfx("hit_wall")
 		velocity = velocity.bounce(normal)
 
 func reset_ball():
@@ -483,7 +486,6 @@ func _get_level_center_x() -> float:
 			var brick_size = grid.get("brick_size", 48)
 			var spacing = grid.get("spacing", 3)
 			var start_x = grid.get("start_x", 150)
-			var start_y = grid.get("start_y", 150)
 			var bricks = level_data.get("bricks", [])
 			if bricks.size() > 0:
 				var min_row = bricks[0].get("row", 0)

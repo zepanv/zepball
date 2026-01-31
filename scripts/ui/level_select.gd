@@ -21,12 +21,12 @@ func _ready():
 func add_set_context_ui():
 	"""Add set header and Play Set button when viewing a set"""
 	var set_id = MenuController.current_set_id
-	var set_name = SetLoader.get_set_name(set_id)
+	var set_title = SetLoader.get_set_name(set_id)
 	var set_description = SetLoader.get_set_description(set_id)
 
 	# Create header label
 	set_header_label = Label.new()
-	set_header_label.text = "SET: " + set_name.to_upper()
+	set_header_label.text = "SET: " + set_title.to_upper()
 	set_header_label.set("theme_override_font_sizes/font_size", 32)
 	set_header_label.set("theme_override_colors/font_color", Color(0, 0.9, 1, 1))
 	set_header_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

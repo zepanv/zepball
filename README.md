@@ -2,7 +2,7 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Status: 2026-01-30 20:00 EST (Fully Playable)
+## Current Status: 2026-01-31 (Fully Playable)
 
 The game is fully playable with extensive features:
 
@@ -12,10 +12,10 @@ The game is fully playable with extensive features:
 - ✅ **16 Power-ups**: Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block
 - ✅ **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks
 - ✅ Statistics + achievements tracking (12 achievements)
-- ✅ Settings (shake, particles, trail, sensitivity, audio levels)
+- ✅ Settings (shake, particles, trail, sensitivity, audio levels, music mode/track)
 - ✅ HUD with combo + multiplier display + power-up timers
 
-Audio playback and assets are not implemented yet.
+Audio playback is implemented (music + initial SFX).
 
 ## Quick Start
 
@@ -35,6 +35,9 @@ Audio playback and assets are not implemented yet.
 - **Escape**: Pause/unpause game
 - **R**: Restart current level
 - **Backtick (`)**: Toggle debug overlay
+- **- / =**: Music volume down/up
+- **[ / ]**: Previous/next music track
+- **\\**: Toggle music pause/play
 
 ### Debug Controls (Debug Build Only)
 - **E/N/H**: Set difficulty to Easy/Normal/Hard
@@ -76,7 +79,9 @@ Audio playback and assets are not implemented yet.
 - Particle effects toggle
 - Ball trail toggle
 - Paddle sensitivity
-- Music/SFX volume (UI + save, audio not yet wired)
+- Music/SFX volume (applies immediately)
+- Music playback mode (Off / Loop One / Loop All / Shuffle)
+- Music track selection (Loop One)
 
 ## Project Structure
 
@@ -93,7 +98,7 @@ zepball/
 │   └── ui/             # Menus and screens
 ├── scripts/            # GDScript files
 ├── levels/             # Level JSON files (10 levels)
-├── assets/             # Graphics
+├── assets/             # Audio + graphics
 └── project.godot       # Godot project configuration
 ```
 
@@ -108,7 +113,7 @@ All technical documentation is in the `.agent/` folder:
 
 ## Known Gaps / Backlog
 
-- **Audio system**: `.agent/Tasks/Backlog/audio-system.md`
+- **Audio system**: `.agent/Tasks/Backlog/audio-system.md` (remaining SFX coverage)
 - **Advanced tile mechanics**: `.agent/Tasks/Backlog/tile-advanced-elements.md`
 - **UI gaps (launch indicator)**: `.agent/Tasks/Backlog/ui-gaps.md`
 - **Future features**: `.agent/Tasks/Backlog/future-features.md`
@@ -117,6 +122,8 @@ All technical documentation is in the `.agent/` folder:
 - Graphics: Kenney Vleugels (kenney.nl)
 - Backgrounds: AI-generated space/abstract backgrounds
 - Audio: TBD (Freesound.org, Incompetech)
+- Music: Suno
+- SFX: ElevenLabs
 
 ## License
 
@@ -124,6 +131,6 @@ TBD - Personal project, not yet open source
 
 ---
 
-**Last Updated**: 2026-01-30 20:00 EST
+**Last Updated**: 2026-01-31
 
 **Ready to play with explosive action!** 🎮💥

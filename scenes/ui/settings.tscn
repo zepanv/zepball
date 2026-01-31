@@ -170,6 +170,20 @@ max_value = 0.0
 step = 1.0
 value = 0.0
 
+[node name="MusicModeLabel" type="Label" parent="Panel/VBoxContainer/AudioSection"]
+layout_mode = 2
+text = "Music Mode"
+
+[node name="MusicModeOption" type="OptionButton" parent="Panel/VBoxContainer/AudioSection"]
+layout_mode = 2
+
+[node name="MusicTrackLabel" type="Label" parent="Panel/VBoxContainer/AudioSection"]
+layout_mode = 2
+text = "Loop Track"
+
+[node name="MusicTrackOption" type="OptionButton" parent="Panel/VBoxContainer/AudioSection"]
+layout_mode = 2
+
 [node name="HSeparator5" type="HSeparator" parent="Panel/VBoxContainer"]
 layout_mode = 2
 

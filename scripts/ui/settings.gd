@@ -23,10 +23,16 @@ extends Control
 @onready var sfx_slider = $Panel/VBoxContainer/AudioSection/SFXSlider
 @onready var music_label = $Panel/VBoxContainer/AudioSection/MusicLabel
 @onready var sfx_label = $Panel/VBoxContainer/AudioSection/SFXLabel
+@onready var music_mode_label = $Panel/VBoxContainer/AudioSection/MusicModeLabel
+@onready var music_mode_option = $Panel/VBoxContainer/AudioSection/MusicModeOption
+@onready var music_track_label = $Panel/VBoxContainer/AudioSection/MusicTrackLabel
+@onready var music_track_option = $Panel/VBoxContainer/AudioSection/MusicTrackOption
 
 # Clear save button
 @onready var clear_save_button = $Panel/VBoxContainer/DataSection/ClearSaveButton
 @onready var confirm_dialog = $ConfirmDialog
+
+var is_loading_settings: bool = false
 
 func _ready():
 	"""Initialize settings menu with current values"""
@@ -49,6 +55,10 @@ func _ready():
 	# Audio sliders
 	music_slider.value_changed.connect(_on_music_volume_changed)
 	sfx_slider.value_changed.connect(_on_sfx_volume_changed)
+	music_mode_option.item_selected.connect(_on_music_mode_selected)
+	music_track_option.item_selected.connect(_on_music_track_selected)
+	if AudioManager.music_volume_changed.is_connected(_on_music_volume_external_changed) == false:
+		AudioManager.music_volume_changed.connect(_on_music_volume_external_changed)
 
 	# Clear save button
 	clear_save_button.pressed.connect(_on_clear_save_pressed)
@@ -59,6 +69,7 @@ func _ready():
 
 func _load_current_settings():
 	"""Load settings from SaveManager and update UI"""
+	is_loading_settings = true
 	# Screen shake intensity
 	var shake_intensity = SaveManager.get_screen_shake_intensity()
 	_update_shake_buttons(shake_intensity)
@@ -81,6 +92,14 @@ func _load_current_settings():
 	sfx_slider.value = sfx_volume
 	_update_music_label(music_volume)
 	_update_sfx_label(sfx_volume)
+
+	# Music mode + track
+	_populate_music_mode_options()
+	_populate_music_track_options()
+	_set_music_mode_selection(SaveManager.get_music_playback_mode())
+	_set_music_track_selection(SaveManager.get_music_track_id())
+	_update_music_track_visibility()
+	is_loading_settings = false
 
 func _set_screen_shake(intensity: String):
 	"""Set screen shake intensity"""
@@ -120,6 +139,7 @@ func _on_music_volume_changed(value: float):
 	_update_music_label(value)
 	# Apply immediately
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), value)
+	AudioManager.music_volume_changed.emit(value)
 
 func _on_sfx_volume_changed(value: float):
 	"""Handle SFX volume slider"""
@@ -127,6 +147,72 @@ func _on_sfx_volume_changed(value: float):
 	_update_sfx_label(value)
 	# Apply immediately
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), value)
+
+func _on_music_volume_external_changed(value: float) -> void:
+	if is_loading_settings:
+		return
+	music_slider.set_value_no_signal(value)
+	_update_music_label(value)
+
+func _populate_music_mode_options():
+	music_mode_option.clear()
+	for mode in AudioManager.get_music_mode_options():
+		music_mode_option.add_item(AudioManager.get_music_mode_label(mode))
+		var index = music_mode_option.get_item_count() - 1
+		music_mode_option.set_item_metadata(index, mode)
+
+func _populate_music_track_options():
+	music_track_option.clear()
+	for track_id in AudioManager.get_music_track_ids():
+		music_track_option.add_item(track_id)
+		var index = music_track_option.get_item_count() - 1
+		music_track_option.set_item_metadata(index, track_id)
+
+func _set_music_mode_selection(mode: String) -> void:
+	for i in range(music_mode_option.get_item_count()):
+		if music_mode_option.get_item_metadata(i) == mode:
+			music_mode_option.select(i)
+			return
+	if music_mode_option.get_item_count() > 0:
+		music_mode_option.select(0)
+
+func _set_music_track_selection(track_id: String) -> void:
+	if track_id == "":
+		track_id = AudioManager.get_music_track_ids()[0] if AudioManager.get_music_track_ids().size() > 0 else ""
+	for i in range(music_track_option.get_item_count()):
+		if music_track_option.get_item_metadata(i) == track_id:
+			music_track_option.select(i)
+			return
+	if music_track_option.get_item_count() > 0:
+		music_track_option.select(0)
+
+func _update_music_track_visibility() -> void:
+	var selected_mode = _get_selected_music_mode()
+	var show_track = selected_mode == AudioManager.MUSIC_MODE_LOOP_ONE and music_track_option.get_item_count() > 0
+	music_track_label.visible = show_track
+	music_track_option.visible = show_track
+
+func _on_music_mode_selected(index: int) -> void:
+	if is_loading_settings:
+		return
+	var mode = music_mode_option.get_item_metadata(index)
+	SaveManager.save_music_playback_mode(mode)
+	AudioManager.set_music_mode(mode)
+	_update_music_track_visibility()
+
+func _on_music_track_selected(index: int) -> void:
+	if is_loading_settings:
+		return
+	var track_id = music_track_option.get_item_metadata(index)
+	SaveManager.save_music_track_id(track_id)
+	AudioManager.set_music_track(track_id)
+
+func _get_selected_music_mode() -> String:
+	var index = music_mode_option.get_selected()
+	if index == -1:
+		return SaveManager.get_music_playback_mode()
+	var metadata = music_mode_option.get_item_metadata(index)
+	return metadata if metadata != null else SaveManager.get_music_playback_mode()
 
 func _update_music_label(value: float):
 	"""Update music volume display label"""

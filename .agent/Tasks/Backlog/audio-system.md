@@ -1,13 +1,13 @@
 # Audio System Implementation Plan
 
-## Status: ⏳ NOT STARTED
+## Status: 🚧 IN PROGRESS
 
 ## Overview
-Add sound effects and background music to improve game feel. Audio playback and assets are not implemented; settings already include Music/SFX volume sliders and SaveManager fields.
+Add sound effects and background music to improve game feel. Core playback is now in place; remaining SFX coverage still needed.
 
 ## Goals
 - Provide immediate feedback for gameplay actions (hits, breaks, power-ups).
-- Add background music for ambience.
+- Add background music for ambience.  Multiple tracks, ability to loop single track or play all in order or shuffle.
 - Provide volume controls (SFX/Music) in UI (already present in Settings; needs real audio wiring).
 
 ## Proposed Architecture
@@ -23,26 +23,19 @@ Add sound effects and background music to improve game feel. Audio playback and 
 - `assets/audio/music/` (looping tracks)
 
 ## Tasks
-- [ ] **Sound event placeholder system** (prep for audio):
-  - [ ] Create `SoundManager` stub that prints event names.
-  - [ ] Wire all gameplay events to sound placeholders.
-  - [ ] Events: paddle_hit, brick_hit, brick_break, power_up_spawn, power_up_collect, life_lost, level_complete, game_over, combo_milestone.
-  - [ ] Ready for drop-in audio implementation later.
-- [ ] Create audio buses (SFX, Music) in Godot project settings.
-- [ ] Implement `AudioManager` autoload with helpers:
-  - `play_sfx(name)`
-  - `play_music(name, loop=true)`
-  - `set_sfx_volume(db)` / `set_music_volume(db)`
-- [ ] Replace placeholder system with actual audio playback.
-- [ ] Add audio assets:
-  - Paddle hit
-  - Brick hit / break
-  - Power-up spawn / collect
-  - Life lost
-  - Level complete / game over
-  - Combo milestone sounds
-- [ ] Add background music track and loop configuration.
-- [ ] Verify Settings UI volume sliders drive AudioManager/buses correctly (`Tasks/Completed/ui-system.md` already implements sliders).
+- [x] Implement `AudioManager` autoload with helpers and crossfade music playback.
+- [x] Create audio buses (SFX, Music) at runtime if missing.
+- [x] Wire SFX for paddle hit, brick hit, wall hit.
+- [x] Add background music playlist with loop-all, loop-one, shuffle, off modes.
+- [x] Add Settings UI for music playback mode and loop-one track selection.
+- [x] Verify Settings UI volume sliders drive AudioManager/buses correctly.
+- [x] Add hotkeys for music volume, track skip, and pause toggle with on-screen toast.
+- [ ] Finish SFX coverage for remaining events:
+  - brick_break
+  - power_up_spawn / power_up_collect
+  - life_lost
+  - level_complete / game_over
+  - combo_milestone
 
 ## Related Docs
 - `Tasks/Completed/ui-system.md`
