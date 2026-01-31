@@ -7,7 +7,7 @@ A breakout-style game with a unique vertical paddle positioned on the right side
 The game is fully playable with extensive features:
 
 - ✅ Main menu, level select, settings, stats, game over, level complete
-- ✅ 20 JSON-driven levels with enhanced vertical coverage and strategic bomb brick placement
+- ✅ 20 JSON-driven levels with vertically centered layouts and strategic bomb brick placement
 - ✅ Difficulty modes (Easy/Normal/Hard) with multipliers
 - ✅ **16 Power-ups**: Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block
 - ✅ **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks

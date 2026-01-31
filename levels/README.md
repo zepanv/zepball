@@ -18,7 +18,7 @@ This folder contains level data files in JSON format. Each level defines the bri
     "rows": 5,                      // Number of rows in the grid
     "cols": 8,                      // Number of columns in the grid
     "start_x": 150,                 // X position of top-left brick
-    "start_y": 150,                 // Y position of top-left brick
+    "start_y": 150,                 // Y position of top-left brick (vertically centered)
     "brick_size": 48,               // Size of each brick (pixels)
     "spacing": 3                    // Gap between bricks (pixels)
   },
@@ -31,6 +31,16 @@ This folder contains level data files in JSON format. Each level defines the bri
     // ... more bricks
   ]
 }
+```
+
+## Vertical Centering (Required)
+
+Levels should be vertically centered within the 720px PlayArea based on occupied rows:
+
+```
+used_rows = max_row - min_row + 1
+used_height = used_rows * brick_size + (used_rows - 1) * spacing
+start_y = round((720 - used_height) / 2) - min_row * (brick_size + spacing)
 ```
 
 ## Brick Types
@@ -55,7 +65,7 @@ This folder contains level data files in JSON format. Each level defines the bri
 3. **level_03** - Checkered Challenge
 4. **level_04** - Diamond Formation
 5. **level_05** - The Fortress
-6. **level_06** - Diamond Formation
+6. **level_06** - Sun Gate
 7. **level_07** - Fortress
 8. **level_08** - Pyramid of Power
 9. **level_09** - Corridors

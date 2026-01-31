@@ -567,6 +567,14 @@ Before committing:
 - [ ] No broken references (red icons in scene tree)
 - [ ] Tested current scene (F6)
 - [ ] No errors in Output panel
+- [ ] New levels use vertically centered `start_y` based on rows with bricks (PlayArea height = 720)
+
+**Level Centering Formula (rows with bricks):**
+```
+used_rows = max_row - min_row + 1
+used_height = used_rows * brick_size + (used_rows - 1) * spacing
+start_y = round((720 - used_height) / 2) - min_row * (brick_size + spacing)
+```
 
 ## Getting Help
 
@@ -591,6 +599,6 @@ Before committing:
 
 ---
 
-*Last Updated: 2026-01-30*
+*Last Updated: 2026-01-31*
 *Godot Version: 4.6*
 *See: architecture.md for scene structure details*

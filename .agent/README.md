@@ -152,6 +152,8 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ### 2026-01-31 (Latest) - Prism Showcase Polish + Physics Fixes
 - ✅ **Level Layouts**: Prism Showcase levels re-centered vertically for better balance
+- ✅ **Level Layouts**: All levels re-centered vertically based on PlayArea height (720) and occupied rows
+- ✅ **Level 6 Theme**: Replaced duplicate Diamond Formation with Sun Gate layout
 - ✅ **Perfect Clear**: Extra lives no longer disqualify perfect clears
 - ✅ **Air Ball + Grab**: Air ball jump now triggers on grab release
 - ✅ **Block Barrier**: Spawn deferred to avoid physics flush errors; barrier placed behind paddle

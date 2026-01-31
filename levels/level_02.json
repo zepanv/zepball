@@ -6,7 +6,7 @@
     "rows": 5,
     "cols": 8,
     "start_x": 150,
-    "start_y": 150,
+    "start_y": 234,
     "brick_size": 48,
     "spacing": 3
   },
