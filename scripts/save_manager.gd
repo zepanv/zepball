@@ -6,6 +6,21 @@ extends Node
 const SAVE_FILE_PATH = "user://save_data.json"
 const SAVE_VERSION = 1
 const TOTAL_LEVELS = 10  # Update this when adding more levels
+const DEFAULT_SETTINGS = {
+	"difficulty": "Normal",  # Easy, Normal, Hard
+	"music_volume_db": 0.0,
+	"sfx_volume_db": 0.0,
+	"music_playback_mode": "loop_all",
+	"music_track_id": "",
+	"screen_shake_intensity": "Medium",  # Off, Low, Medium, High
+	"particle_effects_enabled": true,
+	"ball_trail_enabled": true,
+	"paddle_sensitivity": 1.0,  # Range: 0.5 to 2.0
+	"combo_flash_enabled": false,
+	"short_level_intro": false,
+	"skip_level_intro": false,
+	"show_fps": false
+}
 
 # Achievement definitions
 const ACHIEVEMENTS = {
@@ -119,21 +134,7 @@ var save_data = {
 		"perfect_clears": 0
 	},
 	"achievements": [],  # Array of unlocked achievement IDs
-	"settings": {
-		"difficulty": "Normal",  # Easy, Normal, Hard
-		"music_volume_db": 0.0,
-		"sfx_volume_db": 0.0,
-		"music_playback_mode": "loop_all",
-		"music_track_id": "",
-		"screen_shake_intensity": "Medium",  # Off, Low, Medium, High
-		"particle_effects_enabled": true,
-		"ball_trail_enabled": true,
-		"paddle_sensitivity": 1.0,  # Range: 0.5 to 2.0
-		"combo_flash_enabled": true,
-		"short_level_intro": false,
-		"skip_level_intro": false,
-		"show_fps": false
-	}
+	"settings": DEFAULT_SETTINGS.duplicate(true)
 }
 
 # Signals
@@ -264,7 +265,7 @@ func load_save() -> void:
 		save_data["settings"]["music_track_id"] = ""
 		settings_updated = true
 	if not save_data["settings"].has("combo_flash_enabled"):
-		save_data["settings"]["combo_flash_enabled"] = true
+		save_data["settings"]["combo_flash_enabled"] = false
 		settings_updated = true
 	if not save_data["settings"].has("short_level_intro"):
 		save_data["settings"]["short_level_intro"] = false
@@ -333,21 +334,7 @@ func create_default_save() -> void:
 			"perfect_clears": 0
 		},
 		"achievements": [],
-		"settings": {
-			"difficulty": "Normal",
-			"music_volume_db": 0.0,
-			"sfx_volume_db": 0.0,
-			"music_playback_mode": "loop_all",
-			"music_track_id": "",
-			"screen_shake_intensity": "Medium",
-			"particle_effects_enabled": true,
-			"ball_trail_enabled": true,
-			"paddle_sensitivity": 1.0,
-			"combo_flash_enabled": true,
-			"short_level_intro": false,
-			"skip_level_intro": false,
-			"show_fps": false
-		}
+		"settings": DEFAULT_SETTINGS.duplicate(true)
 	}
 	print("Default save data created")
 
@@ -453,10 +440,56 @@ func get_music_track_id() -> String:
 	return save_data["settings"].get("music_track_id", "")
 
 func reset_save_data() -> void:
-	"""Reset all save data to defaults (for testing or player request)"""
-	create_default_save()
+	"""Reset progression/scoring data only; keep settings intact"""
+	reset_progress_data()
+
+func reset_progress_data() -> void:
+	"""Clear progress, scores, stats, and achievements without touching settings"""
+	var settings_copy = save_data.get("settings", DEFAULT_SETTINGS.duplicate(true)).duplicate(true)
+	var player_name = save_data.get("profile", {}).get("player_name", "Player")
+	save_data["version"] = SAVE_VERSION
+	save_data["profile"] = {
+		"player_name": player_name,
+		"total_score": 0
+	}
+	save_data["progression"] = {
+		"highest_unlocked_level": 1,
+		"levels_completed": []
+	}
+	save_data["high_scores"] = {}
+	save_data["set_progression"] = {
+		"highest_unlocked_set": 1,
+		"sets_completed": []
+	}
+	save_data["set_high_scores"] = {}
+	save_data["last_played"] = {
+		"level_id": 0,
+		"set_id": -1,
+		"mode": "individual",
+		"in_progress": false
+	}
+	save_data["statistics"] = {
+		"total_bricks_broken": 0,
+		"total_power_ups_collected": 0,
+		"total_levels_completed": 0,
+		"total_individual_levels_completed": 0,
+		"total_set_runs_completed": 0,
+		"total_playtime": 0.0,
+		"highest_combo": 0,
+		"highest_score": 0,
+		"total_games_played": 0,
+		"perfect_clears": 0
+	}
+	save_data["achievements"] = []
+	save_data["settings"] = settings_copy
 	save_to_disk()
-	print("Save data has been reset")
+	print("Progression data has been reset")
+
+func reset_settings_to_default() -> void:
+	"""Reset settings to defaults without touching progression data"""
+	save_data["settings"] = DEFAULT_SETTINGS.duplicate(true)
+	save_to_disk()
+	print("Settings have been reset to defaults")
 
 func get_save_file_location() -> String:
 	"""Get the absolute path to the save file for debugging"""
@@ -623,7 +656,7 @@ func save_combo_flash_enabled(enabled: bool) -> void:
 
 func get_combo_flash_enabled() -> bool:
 	"""Get combo flash preference"""
-	return save_data["settings"].get("combo_flash_enabled", true)
+	return save_data["settings"].get("combo_flash_enabled", false)
 
 func save_short_level_intro(enabled: bool) -> void:
 	"""Save short level intro preference"""

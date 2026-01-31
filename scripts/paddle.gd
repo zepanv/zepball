@@ -19,6 +19,8 @@ const MOUSE_MOVE_DEADZONE = 0.5
 const MOUSE_FOLLOW_GAIN = 25.0  # Increased from 12.0 for faster mouse response
 const MOUSE_TARGET_DEADZONE = 2.0
 var last_mouse_y: float = 0.0
+var mouse_delta_y: float = 0.0
+var was_mouse_captured: bool = false
 
 # Velocity tracking for spin mechanics
 var previous_y: float = 0.0
@@ -66,6 +68,13 @@ func _physics_process(delta):
 
 	# Get input direction
 	var input_velocity = Vector2.ZERO
+	var mouse_captured = Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED
+
+	if mouse_captured != was_mouse_captured:
+		if not mouse_captured:
+			last_mouse_y = get_viewport().get_mouse_position().y
+		mouse_delta_y = 0.0
+		was_mouse_captured = mouse_captured
 
 	# Keyboard control
 	if use_keyboard_control:
@@ -74,21 +83,28 @@ func _physics_process(delta):
 
 	# Mouse control (direct position setting for instant response)
 	if use_mouse_control:
-		var mouse_y = get_viewport().get_mouse_position().y
-		var mouse_moved = abs(mouse_y - last_mouse_y) > MOUSE_MOVE_DEADZONE
-		last_mouse_y = mouse_y
+		if mouse_captured:
+			if abs(mouse_delta_y) > 0.0:
+				var target_y = clamp(position.y + (mouse_delta_y * sensitivity_multiplier), min_y, max_y)
+				position.y = target_y
+				input_velocity.y = 0.0
+			mouse_delta_y = 0.0
+		else:
+			var mouse_y = get_viewport().get_mouse_position().y
+			var mouse_moved = abs(mouse_y - last_mouse_y) > MOUSE_MOVE_DEADZONE
+			last_mouse_y = mouse_y
 
-		if mouse_moved:
-			# Center paddle on mouse cursor within bounds
-			var target_y = clamp(mouse_y, min_y, max_y)
+			if mouse_moved:
+				# Center paddle on mouse cursor within bounds
+				var target_y = clamp(mouse_y, min_y, max_y)
 
-			# Apply sensitivity: lerp toward target faster/slower based on sensitivity
-			# Higher sensitivity = faster response (less lerp smoothing)
-			var lerp_speed = 0.3 * sensitivity_multiplier  # Base lerp speed scaled by sensitivity
-			position.y = lerp(position.y, target_y, lerp_speed)
+				# Apply sensitivity: lerp toward target faster/slower based on sensitivity
+				# Higher sensitivity = faster response (less lerp smoothing)
+				var lerp_speed = 0.3 * sensitivity_multiplier  # Base lerp speed scaled by sensitivity
+				position.y = lerp(position.y, target_y, lerp_speed)
 
-			# Set velocity to 0 since we're using positioning
-			input_velocity.y = 0.0
+				# Set velocity to 0 since we're using positioning
+				input_velocity.y = 0.0
 
 	# Set velocity
 	velocity = input_velocity
@@ -165,3 +181,6 @@ func _input(event):
 	# Debug: Toggle control modes with keys
 	if event.is_action_pressed("ui_cancel"):
 		pass  # Future: Open pause menu
+	if event is InputEventMouseMotion:
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED and use_mouse_control and not aim_locked:
+			mouse_delta_y += event.relative.y

@@ -4,6 +4,10 @@ This folder contains the canonical documentation for the Zep Ball codebase. All 
 
 ## Documentation Structure
 
+### Project README
+High-level, less technical overview for players and general readers.
+- **`../README.md`** - Main project README; keep updated when appropriate.
+
 ### System/
 Current system state, architecture, and technical foundation.
 - **`System/architecture.md`** - Complete project architecture, autoload systems, core gameplay systems, set mode, scene graph, scoring mechanics, menu flow, and all implemented features. **Read this first for full context.**
@@ -19,8 +23,8 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/power-up-expansion.md` - Additional power-ups beyond the current 16 ✅ IMPLEMENTED
   - `Tasks/Completed/ui-system.md` - UI, menus, and HUD plans ✅ IMPLEMENTED
   - `Tasks/Completed/save-system.md` - Save data, high scores, and persistence plan ✅ IMPLEMENTED
+  - `Tasks/Completed/audio-system.md` - Audio system plan (SFX, music) ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
-- `Tasks/Backlog/audio-system.md` - Audio system plan (SFX, music) 🚧 IN PROGRESS
   - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay)
   - `Tasks/Backlog/tile-advanced-elements.md` - Force zones, special bricks, and advanced tile behaviors
 - `Tasks/Completed/ui-gaps.md` - Launch indicator (aim mode) ✅ IMPLEMENTED
@@ -130,12 +134,12 @@ These are always accessible and control key game systems:
 - Score multipliers (Difficulty, Combo, Streak, Double Score, Perfect Clear)
 - Set mode with cumulative scoring and set high scores
 
-### 🚧 Phase 7: Audio System (IN PROGRESS)
+### ✅ Phase 7: Audio System (COMPLETE)
 - AudioManager autoload (music playback + SFX helpers)
 - Music modes: Off, Loop One, Loop All, Shuffle
 - Crossfades between tracks (Loop All / Shuffle)
 - Settings UI for music mode + loop-one track selection
-- Initial SFX: paddle hit, brick hit, wall hit
+- SFX: paddle hit, brick hit, wall hit, power-up good/bad, life lost, combo milestone, level complete, game over
 
 ### 📅 Phase 8: Advanced Features (FUTURE)
 See `Tasks/Backlog/future-features.md` for detailed plans:
@@ -151,6 +155,15 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 - ✅ **Quick Actions**: Play Again on level complete, Return to Last Level on main menu
 - ✅ **Pause Menu**: Added Level Select with confirmation
 - ✅ **Level Select**: 3-column layout + set context button moved up
+- ✅ **Pause Menu Fix**: Pause can be opened in READY state before the first ball launch
+- ✅ **Pause Menu Layout**: Centered pause menu vertically via CenterContainer
+- ✅ **Mouse Capture**: Mouse is captured during READY/PLAYING and released in menus/overlays
+- ✅ **Mouse Capture Input**: Paddle uses relative mouse motion while cursor is captured
+- ✅ **Settings Defaults**: Visual toggles default off (combo flash/intro/FPS), particles+trail on, shake medium
+- ✅ **Settings Tools**: Added Reset Settings (defaults) and Clear Save Data preserves settings
+- ✅ **Audio SFX Coverage**: Power-up good/bad, life lost, combo milestone, level complete, game over
+- ✅ **Aim Mode Fix**: Aim indicator uses relative mouse motion when cursor is captured
+- ✅ **HUD Init Fix**: Restored combo/multiplier/score overlays initialization
 
 ### 2026-01-31 - Audio System Core + Aim Indicator
 - ✅ **AudioManager** autoload with music playlist + crossfade support

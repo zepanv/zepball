@@ -219,6 +219,14 @@ layout_mode = 2
 text = "Save Data"
 theme_override_font_sizes/font_size = 18
 
+[node name="ResetSettingsButton" type="Button" parent="Panel/VBoxContainer/DataSection"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_colors/font_hover_color = Color(0.95, 0.95, 0.95, 1)
+theme_override_font_sizes/font_size = 20
+text = "RESET SETTINGS"
+
 [node name="ClearSaveButton" type="Button" parent="Panel/VBoxContainer/DataSection"]
 custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
@@ -231,14 +239,26 @@ text = "CLEAR SAVE DATA"
 title = "Clear Save Data"
 initial_position = 2
 size = Vector2i(400, 150)
-dialog_text = "Are you sure you want to clear ALL save data?
+dialog_text = "Clear progress and scoring data?
 This will reset:
 - Level progress
 - High scores
+- Set progress
 - Statistics
-- Settings
+- Achievements
 
-This action cannot be undone!"
+Settings are not affected."
+
+[node name="ResetSettingsConfirmDialog" type="ConfirmationDialog" parent="."]
+title = "Reset Settings"
+initial_position = 2
+size = Vector2i(420, 150)
+dialog_text = "Reset all settings to defaults?
+This will NOT affect:
+- Level progress
+- High scores
+- Statistics
+- Achievements"
 
 [node name="BackButton" type="Button" parent="."]
 layout_mode = 1

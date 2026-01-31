@@ -16,7 +16,7 @@ The game is fully playable with extensive features:
 - ✅ HUD with combo + multiplier display + power-up timers
 - ✅ Launch aim indicator (right-click hold for main ball’s first shot)
 
-Audio playback is implemented (music + initial SFX).
+Audio playback is implemented (music + expanded SFX coverage).
 
 ## Quick Start
 
@@ -80,10 +80,13 @@ Audio playback is implemented (music + initial SFX).
 - Screen shake intensity
 - Particle effects toggle
 - Ball trail toggle
+- Visual toggles (combo flash, short/skip intro, FPS) default Off
 - Paddle sensitivity
 - Music/SFX volume (applies immediately)
 - Music playback mode (Off / Loop One / Loop All / Shuffle)
 - Music track selection (Loop One)
+- Reset Settings button restores defaults only
+- Clear Save Data resets progress/scores without changing settings
 
 ## Project Structure
 
@@ -115,7 +118,6 @@ All technical documentation is in the `.agent/` folder:
 
 ## Known Gaps / Backlog
 
-- **Audio system**: `.agent/Tasks/Backlog/audio-system.md` (remaining SFX coverage)
 - **Advanced tile mechanics**: `.agent/Tasks/Backlog/tile-advanced-elements.md`
 - **UI gaps (launch indicator)**: `.agent/Tasks/Backlog/ui-gaps.md`
 - **Future features**: `.agent/Tasks/Backlog/future-features.md`

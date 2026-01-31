@@ -32,9 +32,11 @@ extends Control
 @onready var music_track_label = $Panel/VBoxContainer/AudioSection/MusicTrackLabel
 @onready var music_track_option = $Panel/VBoxContainer/AudioSection/MusicTrackOption
 
-# Clear save button
+# Clear/reset buttons
+@onready var reset_settings_button = $Panel/VBoxContainer/DataSection/ResetSettingsButton
 @onready var clear_save_button = $Panel/VBoxContainer/DataSection/ClearSaveButton
 @onready var confirm_dialog = $ConfirmDialog
+@onready var reset_confirm_dialog = $ResetSettingsConfirmDialog
 
 var is_loading_settings: bool = false
 var opened_from_pause: bool = false
@@ -80,9 +82,11 @@ func _ready():
 	if AudioManager.music_volume_changed.is_connected(_on_music_volume_external_changed) == false:
 		AudioManager.music_volume_changed.connect(_on_music_volume_external_changed)
 
-	# Clear save button
+	# Clear/reset buttons
+	reset_settings_button.pressed.connect(_on_reset_settings_pressed)
 	clear_save_button.pressed.connect(_on_clear_save_pressed)
 	confirm_dialog.confirmed.connect(_on_clear_save_confirmed)
+	reset_confirm_dialog.confirmed.connect(_on_reset_settings_confirmed)
 
 	# Load and apply current settings
 	_load_current_settings()
@@ -352,12 +356,31 @@ func _on_clear_save_pressed():
 	confirm_dialog.popup_centered()
 
 func _on_clear_save_confirmed():
-	"""Clear all save data and return to main menu"""
+	"""Clear progress/scoring data and return to main menu"""
 	print("Clearing save data...")
 	SaveManager.reset_save_data()
 
 	# Return to main menu to refresh everything
 	MenuController.show_main_menu()
+
+func _on_reset_settings_pressed():
+	"""Show confirmation dialog before resetting settings"""
+	reset_confirm_dialog.popup_centered()
+
+func _on_reset_settings_confirmed():
+	"""Reset settings to defaults without touching progression"""
+	print("Resetting settings to defaults...")
+	SaveManager.reset_settings_to_default()
+	_load_current_settings()
+	# Apply audio defaults immediately
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), SaveManager.get_music_volume())
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), SaveManager.get_sfx_volume())
+	AudioManager.music_volume_changed.emit(SaveManager.get_music_volume())
+	AudioManager.set_music_mode(SaveManager.get_music_playback_mode())
+	var track_id = SaveManager.get_music_track_id()
+	if track_id != "":
+		AudioManager.set_music_track(track_id)
+	_apply_live_settings()
 
 func _on_back_pressed():
 	"""Return to main menu"""

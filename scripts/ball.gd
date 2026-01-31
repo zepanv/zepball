@@ -63,6 +63,8 @@ var aim_direction: Vector2 = Vector2(-1, 0)
 var aim_indicator_root: Node2D = null
 var aim_shaft: Line2D = null
 var aim_head: Line2D = null
+var virtual_mouse_pos: Vector2 = Vector2.ZERO
+var was_mouse_captured: bool = false
 
 # Signals
 signal ball_lost
@@ -93,6 +95,7 @@ func _ready():
 
 	aim_available = is_main_ball
 	_create_aim_indicator()
+	virtual_mouse_pos = get_viewport().get_mouse_position()
 	set_process_unhandled_input(true)
 
 	# Direction indicator disabled for now
@@ -493,6 +496,12 @@ func _get_trail_color() -> Color:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_main_ball:
 		return
+	if event is InputEventMouseMotion:
+		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED and aim_active:
+			virtual_mouse_pos += event.relative
+			var viewport_size = get_viewport().get_visible_rect().size
+			virtual_mouse_pos.x = clampf(virtual_mouse_pos.x, 0.0, viewport_size.x)
+			virtual_mouse_pos.y = clampf(virtual_mouse_pos.y, 0.0, viewport_size.y)
 	if event.is_action_pressed("ui_cancel") and aim_active:
 		_set_aim_mode(false)
 		return
@@ -550,7 +559,14 @@ func _update_aim_direction() -> void:
 		return
 	if paddle_reference:
 		aim_indicator_root.global_position = global_position
-	var mouse_pos = get_viewport().get_mouse_position()
+	var mouse_captured = Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED
+	if mouse_captured != was_mouse_captured:
+		if not mouse_captured:
+			virtual_mouse_pos = get_viewport().get_mouse_position()
+		was_mouse_captured = mouse_captured
+	var mouse_pos = virtual_mouse_pos if mouse_captured else get_viewport().get_mouse_position()
+	if not mouse_captured:
+		virtual_mouse_pos = mouse_pos
 	var global_dir = (mouse_pos - global_position)
 	global_dir.x = -abs(global_dir.x) - 6.0
 	if global_dir.length() < 1.0:

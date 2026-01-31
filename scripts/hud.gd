@@ -76,6 +76,8 @@ func _ready():
 	if debug_overlay:
 		debug_overlay.visible = debug_visible
 
+	_init_dynamic_elements()
+
 func apply_settings_from_save() -> void:
 	"""Refresh HUD settings while paused"""
 	combo_flash_enabled = SaveManager.get_combo_flash_enabled()
@@ -85,81 +87,86 @@ func apply_settings_from_save() -> void:
 	debug_visible = show_fps
 	if debug_overlay:
 		debug_overlay.visible = debug_visible
+	_init_dynamic_elements()
 
-	# Create difficulty indicator (positioned below score/lives to avoid overlap)
-	difficulty_label = Label.new()
-	difficulty_label.text = "DIFFICULTY: " + DifficultyManager.get_difficulty_name()
-	difficulty_label.add_theme_font_size_override("font_size", 14)
-	difficulty_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	difficulty_label.position = Vector2(10, 50)  # Below top bar
-	difficulty_label.size = Vector2(200, 25)
-	difficulty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	add_child(difficulty_label)
+func _init_dynamic_elements() -> void:
+	"""Create and connect dynamic HUD elements once"""
+	if difficulty_label == null:
+		difficulty_label = Label.new()
+		difficulty_label.text = "DIFFICULTY: " + DifficultyManager.get_difficulty_name()
+		difficulty_label.add_theme_font_size_override("font_size", 14)
+		difficulty_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		difficulty_label.position = Vector2(10, 50)  # Below top bar
+		difficulty_label.size = Vector2(200, 25)
+		difficulty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		add_child(difficulty_label)
 
-	# Connect to difficulty changes
-	if DifficultyManager:
+	if DifficultyManager and not DifficultyManager.difficulty_changed.is_connected(_on_difficulty_changed):
 		DifficultyManager.difficulty_changed.connect(_on_difficulty_changed)
 
-	# Create game over overlay
-	game_over_label = Label.new()
-	game_over_label.text = "GAME OVER\n\nPress R to Restart"
-	game_over_label.add_theme_font_size_override("font_size", 64)
-	game_over_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	game_over_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	game_over_label.set_anchors_preset(Control.PRESET_CENTER)
-	game_over_label.position = Vector2(-300, -100)
-	game_over_label.size = Vector2(600, 200)
-	game_over_label.modulate = Color(1.0, 0.3, 0.3)  # Red tint
-	game_over_label.visible = false
-	add_child(game_over_label)
+	if game_over_label == null:
+		game_over_label = Label.new()
+		game_over_label.text = "GAME OVER\n\nPress R to Restart"
+		game_over_label.add_theme_font_size_override("font_size", 64)
+		game_over_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		game_over_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		game_over_label.set_anchors_preset(Control.PRESET_CENTER)
+		game_over_label.position = Vector2(-300, -100)
+		game_over_label.size = Vector2(600, 200)
+		game_over_label.modulate = Color(1.0, 0.3, 0.3)  # Red tint
+		game_over_label.visible = false
+		add_child(game_over_label)
 
-	# Create level complete overlay
-	level_complete_label = Label.new()
-	level_complete_label.text = "LEVEL COMPLETE!\n\nPress R to Continue"
-	level_complete_label.add_theme_font_size_override("font_size", 64)
-	level_complete_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	level_complete_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	level_complete_label.set_anchors_preset(Control.PRESET_CENTER)
-	level_complete_label.position = Vector2(-400, -100)
-	level_complete_label.size = Vector2(800, 200)
-	level_complete_label.modulate = Color(0.3, 1.0, 0.3)  # Green tint
-	level_complete_label.visible = false
-	add_child(level_complete_label)
+	if level_complete_label == null:
+		level_complete_label = Label.new()
+		level_complete_label.text = "LEVEL COMPLETE!\n\nPress R to Continue"
+		level_complete_label.add_theme_font_size_override("font_size", 64)
+		level_complete_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		level_complete_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		level_complete_label.set_anchors_preset(Control.PRESET_CENTER)
+		level_complete_label.position = Vector2(-400, -100)
+		level_complete_label.size = Vector2(800, 200)
+		level_complete_label.modulate = Color(0.3, 1.0, 0.3)  # Green tint
+		level_complete_label.visible = false
+		add_child(level_complete_label)
 
-	# Create combo counter
-	combo_label = Label.new()
-	combo_label.text = ""  # Hidden until combo starts
-	combo_label.add_theme_font_size_override("font_size", 32)
-	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	combo_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	combo_label.set_anchors_preset(Control.PRESET_CENTER)
-	combo_label.position = Vector2(-150, 150)  # Below center
-	combo_label.size = Vector2(300, 50)
-	combo_label.modulate = Color(1.0, 0.8, 0.2)  # Gold color
-	combo_label.visible = false
-	combo_label.z_index = 10  # Below pause menu but above game
-	add_child(combo_label)
+	if combo_label == null:
+		combo_label = Label.new()
+		combo_label.text = ""  # Hidden until combo starts
+		combo_label.add_theme_font_size_override("font_size", 32)
+		combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		combo_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		combo_label.set_anchors_preset(Control.PRESET_CENTER)
+		combo_label.position = Vector2(-150, 150)  # Below center
+		combo_label.size = Vector2(300, 50)
+		combo_label.modulate = Color(1.0, 0.8, 0.2)  # Gold color
+		combo_label.visible = false
+		combo_label.z_index = 10  # Below pause menu but above game
+		add_child(combo_label)
 
-	# Create multiplier display (shows active score multipliers)
-	multiplier_label = Label.new()
-	multiplier_label.text = ""
-	multiplier_label.add_theme_font_size_override("font_size", 16)
-	multiplier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	multiplier_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	multiplier_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	multiplier_label.position = Vector2(10, 75)  # Below difficulty label on left
-	multiplier_label.size = Vector2(240, 100)
-	multiplier_label.modulate = Color(1.0, 1.0, 1.0, 0.9)
-	multiplier_label.visible = false
-	add_child(multiplier_label)
+	if multiplier_label == null:
+		multiplier_label = Label.new()
+		multiplier_label.text = ""
+		multiplier_label.add_theme_font_size_override("font_size", 16)
+		multiplier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		multiplier_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		multiplier_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		multiplier_label.position = Vector2(10, 75)  # Below difficulty label on left
+		multiplier_label.size = Vector2(240, 100)
+		multiplier_label.modulate = Color(1.0, 1.0, 1.0, 0.9)
+		multiplier_label.visible = false
+		add_child(multiplier_label)
 
-	# Connect to game state changes
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
 	if game_manager:
-		game_manager.state_changed.connect(_on_game_state_changed)
-		game_manager.combo_changed.connect(_on_combo_changed)
-		game_manager.combo_milestone.connect(_on_combo_milestone)
-		game_manager.no_miss_streak_changed.connect(_on_streak_changed)
+		if not game_manager.state_changed.is_connected(_on_game_state_changed):
+			game_manager.state_changed.connect(_on_game_state_changed)
+		if not game_manager.combo_changed.is_connected(_on_combo_changed):
+			game_manager.combo_changed.connect(_on_combo_changed)
+		if not game_manager.combo_milestone.is_connected(_on_combo_milestone):
+			game_manager.combo_milestone.connect(_on_combo_milestone)
+		if not game_manager.no_miss_streak_changed.is_connected(_on_streak_changed):
+			game_manager.no_miss_streak_changed.connect(_on_streak_changed)
 
 func _on_game_state_changed(new_state):
 	"""Show/hide overlays based on game state"""
@@ -383,11 +390,13 @@ func create_pause_menu() -> Control:
 	menu.add_child(overlay)
 
 	# Center panel
+	var center_container = CenterContainer.new()
+	center_container.set_anchors_preset(Control.PRESET_FULL_RECT)
+	menu.add_child(center_container)
+
 	var panel = PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.position = Vector2(-200, -320)
 	panel.custom_minimum_size = Vector2(400, 560)
-	menu.add_child(panel)
+	center_container.add_child(panel)
 
 	# VBox for menu contents
 	var vbox = VBoxContainer.new()
@@ -526,7 +535,7 @@ func _on_pause_resume_pressed():
 	"""Resume game from pause menu"""
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
 	if game_manager:
-		game_manager.set_state(game_manager.GameState.PLAYING)
+		game_manager.set_state(game_manager.last_state_before_pause)
 
 func _on_pause_restart_pressed():
 	"""Restart level from pause menu"""

@@ -57,6 +57,7 @@ func _ready():
 func show_main_menu() -> void:
 	"""Load and show the main menu"""
 	is_in_gameplay = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Unlock difficulty for selection
 	DifficultyManager.unlock_difficulty()
@@ -68,6 +69,7 @@ func show_main_menu() -> void:
 func show_level_select() -> void:
 	"""Load and show the level selection screen"""
 	is_in_gameplay = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Difficulty should remain unlocked in menus
 	DifficultyManager.unlock_difficulty()
@@ -78,6 +80,7 @@ func show_level_select() -> void:
 func show_set_select() -> void:
 	"""Load and show the set selection screen"""
 	is_in_gameplay = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Reset set mode state when entering set select
 	current_play_mode = PlayMode.INDIVIDUAL
@@ -94,6 +97,7 @@ func show_set_select() -> void:
 func show_stats() -> void:
 	"""Load and show the stats screen"""
 	is_in_gameplay = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Difficulty should remain unlocked in menus
 	DifficultyManager.unlock_difficulty()
@@ -105,6 +109,7 @@ func show_settings(from_pause: bool = false) -> void:
 	"""Load and show the settings screen"""
 	is_in_gameplay = false
 	settings_opened_from_pause = from_pause
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Difficulty should remain unlocked in menus
 	DifficultyManager.unlock_difficulty()
@@ -193,6 +198,7 @@ func show_game_over(final_score: int) -> void:
 	"""Show game over screen with final score"""
 	current_score = final_score
 	is_in_gameplay = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	SaveManager.set_last_played_in_progress(false)
 
 	# Unlock difficulty when leaving gameplay
@@ -208,6 +214,7 @@ func show_level_complete(final_score: int) -> void:
 	"""Show level complete screen, unlock next level, and save progress"""
 	current_score = final_score
 	is_in_gameplay = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	SaveManager.set_last_played_in_progress(false)
 
 	# Unlock difficulty when leaving gameplay

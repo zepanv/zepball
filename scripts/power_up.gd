@@ -149,9 +149,20 @@ func setup_sprite():
 func _on_body_entered(body):
 	"""Detect collision with paddle"""
 	if body.is_in_group("paddle"):
+		if _is_bad_power_up(power_up_type):
+			AudioManager.play_sfx("power_down")
+		else:
+			AudioManager.play_sfx("power_up")
 		# Emit signal for collection
 		collected.emit(power_up_type)
 		print("PowerUp collected: ", PowerUpType.keys()[power_up_type])
 
 		# Remove power-up
 		queue_free()
+
+func _is_bad_power_up(power_type: PowerUpType) -> bool:
+	match power_type:
+		PowerUpType.CONTRACT, PowerUpType.SPEED_UP, PowerUpType.SMALL_BALL:
+			return true
+		_:
+			return false

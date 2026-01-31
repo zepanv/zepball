@@ -12,6 +12,9 @@ const VOLUME_MIN_DB = -40.0
 const VOLUME_MAX_DB = 0.0
 const TOAST_SHOW_SECONDS = 0.9
 const TOAST_FADE_SECONDS = 0.4
+const SFX_BASE_VOLUME_DB = 0.0
+const SFX_HIT_REDUCED_DB = -6.0  # 50% volume ≈ -6 dB
+const HIT_SFX_BUS = "HitSFX"
 
 const MUSIC_MODE_OFF = "off"
 const MUSIC_MODE_LOOP_ONE = "loop_one"
@@ -96,8 +99,29 @@ func play_sfx(sfx_name: String) -> void:
 	var player = _get_available_sfx_player()
 	if player == null:
 		return
+	player.bus = _get_sfx_bus(sfx_name)
 	player.stream = sfx_streams[sfx_name]
+	player.volume_db = _get_sfx_volume_db(sfx_name)
+	print("SFX:", sfx_name,
+		"| player:", player.get_instance_id(),
+		"| volume_db:", player.volume_db,
+		"| bus:", player.bus,
+		"| sfx_bus_db:", AudioServer.get_bus_volume_db(AudioServer.get_bus_index("SFX")))
 	player.play()
+
+func _get_sfx_volume_db(sfx_name: String) -> float:
+	match sfx_name:
+		"hit_brick", "hit_wall":
+			return SFX_HIT_REDUCED_DB
+		_:
+			return SFX_BASE_VOLUME_DB
+
+func _get_sfx_bus(sfx_name: String) -> String:
+	match sfx_name:
+		"hit_brick", "hit_wall":
+			return HIT_SFX_BUS
+		_:
+			return "SFX"
 
 func set_music_mode(mode: String) -> void:
 	if mode == music_mode:
@@ -158,6 +182,7 @@ func _ensure_audio_buses() -> void:
 		AudioServer.add_bus(0)
 		AudioServer.set_bus_name(0, "Master")
 	_ensure_bus("SFX")
+	_ensure_bus(HIT_SFX_BUS)
 	_ensure_bus("Music")
 
 func _ensure_bus(bus_name: String) -> void:
@@ -167,6 +192,8 @@ func _ensure_bus(bus_name: String) -> void:
 	var bus_index = AudioServer.get_bus_count() - 1
 	AudioServer.set_bus_name(bus_index, bus_name)
 	AudioServer.set_bus_send(bus_index, "Master")
+	if bus_name == HIT_SFX_BUS:
+		AudioServer.set_bus_volume_db(bus_index, SFX_HIT_REDUCED_DB)
 
 func _init_sfx_players() -> void:
 	for i in range(SFX_PLAYER_COUNT):
@@ -189,7 +216,13 @@ func _load_sfx_streams() -> void:
 	sfx_streams = {
 		"hit_brick": load(SFX_DIR + "/hit_brick.mp3"),
 		"hit_paddle": load(SFX_DIR + "/hit_paddle.mp3"),
-		"hit_wall": load(SFX_DIR + "/hit_wall.mp3")
+		"hit_wall": load(SFX_DIR + "/hit_wall.mp3"),
+		"power_up": load(SFX_DIR + "/power_up.mp3"),
+		"power_down": load(SFX_DIR + "/power_down.mp3"),
+		"life_lost": load(SFX_DIR + "/life_lost.mp3"),
+		"level_complete": load(SFX_DIR + "/level_complete.mp3"),
+		"game_over": load(SFX_DIR + "/game_over.mp3"),
+		"combo_milestone": load(SFX_DIR + "/combo_milestone.mp3")
 	}
 
 func _load_music_tracks() -> void:

@@ -15,6 +15,7 @@ enum GameState {
 
 # Current game state
 var game_state: GameState = GameState.READY
+var last_state_before_pause: GameState = GameState.READY
 
 # Player stats
 var score: int = 0
@@ -62,6 +63,7 @@ func _ready():
 	# Set this node to always process, even when paused (so pause toggle works)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_reset_level_breakdown()
+	_apply_mouse_mode_for_state(game_state)
 
 	print("GameManager initialized")
 	print("Starting lives: ", lives)
@@ -69,10 +71,10 @@ func _ready():
 
 func _process(_delta):
 	# Debug: Press Escape to toggle pause (when implemented)
-	if Input.is_action_just_pressed("ui_cancel") and game_state == GameState.PLAYING:
+	if Input.is_action_just_pressed("ui_cancel") and (game_state == GameState.PLAYING or game_state == GameState.READY):
 		set_state(GameState.PAUSED)
 	elif Input.is_action_just_pressed("ui_cancel") and game_state == GameState.PAUSED:
-		set_state(GameState.PLAYING)
+		set_state(last_state_before_pause)
 
 	# Track playtime during active gameplay states (exclude pause/menu)
 	if game_state == GameState.READY or game_state == GameState.PLAYING:
@@ -86,12 +88,22 @@ func _process(_delta):
 ## Set game state and emit signal
 func set_state(new_state: GameState):
 	if game_state != new_state:
+		if new_state == GameState.PAUSED:
+			last_state_before_pause = game_state
 		game_state = new_state
 		state_changed.emit(new_state)
 		print("Game state changed to: ", GameState.keys()[new_state])
 
 		# Use Godot's built-in pause system
 		get_tree().paused = (new_state == GameState.PAUSED)
+		_apply_mouse_mode_for_state(new_state)
+
+func _apply_mouse_mode_for_state(state: GameState) -> void:
+	"""Capture mouse during READY/PLAYING; release for menus/overlays"""
+	if state == GameState.READY or state == GameState.PLAYING:
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	else:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 ## Add points to score (with difficulty, combo, and streak multipliers applied)
 func add_score(points: int):
@@ -166,6 +178,9 @@ func increment_combo():
 	if combo % 5 == 0 and combo >= 5:
 		combo_milestone.emit(combo)
 		print("COMBO MILESTONE: ", combo, "x!")
+	# Play SFX less frequently to avoid spam
+	if combo % 20 == 0 and combo >= 20:
+		AudioManager.play_sfx("combo_milestone")
 
 ## Reset combo counter
 func reset_combo():
@@ -195,6 +210,7 @@ func lose_life():
 	lives -= 1
 	lives_changed.emit(lives)
 	print("Lives remaining: ", lives)
+	AudioManager.play_sfx("life_lost")
 
 	# Mark that perfect clear is no longer possible
 	is_perfect_clear = false
@@ -204,6 +220,7 @@ func lose_life():
 	reset_no_miss_streak()
 
 	if lives <= 0:
+		AudioManager.play_sfx("game_over")
 		set_state(GameState.GAME_OVER)
 		game_over.emit()
 	else:
@@ -218,6 +235,7 @@ func add_life():
 ## Complete current level
 func complete_level():
 	print("Level ", current_level, " complete!")
+	AudioManager.play_sfx("level_complete")
 	set_state(GameState.LEVEL_COMPLETE)
 	level_complete.emit()
 
