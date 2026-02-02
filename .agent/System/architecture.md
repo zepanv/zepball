@@ -257,7 +257,7 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 | DOUBLE_SCORE | Score multiplier ×2 | 15s |
 | MYSTERY | Random effect (excludes itself) | Instant |
 | BOMB_BALL | Ball destroys nearby bricks | 12s |
-| AIR_BALL | Teleport to level center X on paddle hit | 12s |
+| AIR_BALL | Teleport to level center X on paddle hit (avoids unbreakable slots) | 12s |
 | MAGNET | Paddle gravity pull on ball | 12s |
 | BLOCK | Spawn temporary block barrier near paddle | 12s |
 

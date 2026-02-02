@@ -51,6 +51,7 @@ Highlights:
 - **Score**: Double Score (2x multiplier)
 - **Mystery**: Random effect
 - Timed effects with HUD timers and visual indicators (duplicate pickups add full duration)
+- Air Ball avoids unbreakable slots on teleport landings
 - Ball glows orange-red during bomb ball effect
 
 ### Settings

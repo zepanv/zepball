@@ -102,11 +102,6 @@ func play_sfx(sfx_name: String) -> void:
 	player.bus = _get_sfx_bus(sfx_name)
 	player.stream = sfx_streams[sfx_name]
 	player.volume_db = _get_sfx_volume_db(sfx_name)
-	print("SFX:", sfx_name,
-		"| player:", player.get_instance_id(),
-		"| volume_db:", player.volume_db,
-		"| bus:", player.bus,
-		"| sfx_bus_db:", AudioServer.get_bus_volume_db(AudioServer.get_bus_index("SFX")))
 	player.play()
 
 func _get_sfx_volume_db(sfx_name: String) -> float:

@@ -269,6 +269,8 @@ func hit(impact_direction: Vector2 = Vector2.ZERO):
 	"""
 	if is_breaking:
 		return
+	if brick_type == BrickType.UNBREAKABLE:
+		return
 	hits_remaining -= 1
 	print("Brick hit! Hits remaining: ", hits_remaining)
 

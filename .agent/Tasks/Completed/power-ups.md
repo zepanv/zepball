@@ -46,7 +46,7 @@ Power-ups spawn from broken bricks and move horizontally toward the paddle. All 
 - **Double Score**: Multiplies all score gains by 2x while active, shown in HUD multiplier display.
 - **Mystery**: Randomly applies one of the other 15 power-up effects (excluding another Mystery).
 - **Bomb Ball**: When ball hits a brick, immediately adjacent bricks (75-pixel radius) are also destroyed. Ball glows orange-red while active. Useful for clearing tight clusters.
-- **Air Ball**: When ball hits the paddle, it teleports to the level center X while preserving the hit Y and continues with the same velocity.
+- **Air Ball**: When ball hits the paddle, it teleports to the level center X while preserving the hit Y and continues with the same velocity. Landing avoids unbreakable brick slots.
 - **Magnet**: While active, the paddle exerts a gravity-like pull on the ball, curving its path.
 - **Block**: Spawns a temporary wall of rectangle bricks (1 hit each) centered on the paddle's Y at pickup. Bricks score like normal bricks but do not affect level completion. Wall uses 4 segments, shifts green → yellow → red as time runs out, and ignores bomb/brick-through effects.
 - **HUD Indicators**: All timed power-ups show name and countdown timer. Colors: green (beneficial), red (risky), blue (slow), gold (score), yellow (mystery), orange-red (bomb ball).

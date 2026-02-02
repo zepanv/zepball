@@ -176,6 +176,7 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 - ✅ **Bomb Bricks**: Bomb and bomb-ball explosions reliably break nearby bricks (block/unbreakable ignored)
 - ✅ **Physics**: Square-brick bounce uses axis-resolved normals for more consistent reflections
 - ✅ **Version Label**: Main menu uses date-based version string
+- ✅ **Air Ball**: Landing avoids unbreakable brick slots
 
 ### 2026-01-31 - Advanced Bricks + Prism Showcase
 - ✅ **Advanced Bricks**: Diamond + pentagon bricks with angled collision normals and glossy 2-hit variants

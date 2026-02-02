@@ -399,8 +399,8 @@ func handle_collision(collision: KinematicCollision2D):
 			position += velocity * last_physics_delta
 			return
 
-		# Check if brick through is enabled (block bricks always behave normally)
-		if not is_block_brick and (brick_through_enabled or PowerUpManager.is_brick_through_active()):
+		# Check if brick through is enabled (block + unbreakable bricks always behave normally)
+		if not is_block_brick and not is_unbreakable and (brick_through_enabled or PowerUpManager.is_brick_through_active()):
 			# Don't bounce, just pass through and notify brick
 			brick_hit.emit(collider)
 			if collider.has_method("hit"):
@@ -686,6 +686,7 @@ func reset_magnet():
 func _jump_to_level_center_x(hit_y: float):
 	var center_x = _get_level_center_x()
 	position = Vector2(center_x, hit_y) + velocity.normalized() * 2.0
+	_resolve_air_ball_landing(center_x, hit_y)
 
 func _get_level_center_x() -> float:
 	if game_manager:
@@ -720,6 +721,59 @@ func _get_level_center_x() -> float:
 	if viewport:
 		return viewport.get_visible_rect().size.x * 0.5
 	return 640.0
+
+func _get_level_step_x() -> float:
+	if game_manager:
+		var level_id = game_manager.current_level
+		var level_data = LevelLoader.load_level_data(level_id)
+		if not level_data.is_empty():
+			var grid = level_data.get("grid", {})
+			var brick_size = grid.get("brick_size", 48)
+			var spacing = grid.get("spacing", 3)
+			return float(brick_size + spacing)
+	return ball_radius * 2.0 + 6.0
+
+func _resolve_air_ball_landing(center_x: float, hit_y: float) -> void:
+	var world = get_world_2d()
+	if world == null:
+		return
+	var space = world.direct_space_state
+	if space == null:
+		return
+
+	var shape = CircleShape2D.new()
+	shape.radius = ball_radius
+	var query = PhysicsShapeQueryParameters2D.new()
+	query.shape = shape
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	query.collision_mask = collision_mask
+
+	var base_pos = Vector2(center_x, hit_y)
+	query.transform = Transform2D(0, base_pos)
+	if not _is_unbreakable_overlap(space, query):
+		return
+
+	var step = _get_level_step_x()
+	for i in range(1, 8):
+		for dir in [-1, 1]:
+			var test_pos = base_pos + Vector2(step * float(i) * float(dir), 0.0)
+			query.transform = Transform2D(0, test_pos)
+			if not _is_unbreakable_overlap(space, query):
+				position = test_pos + velocity.normalized() * 2.0
+				return
+
+	# Last resort: nudge upward away from the slot.
+	position = base_pos + Vector2(0.0, -ball_radius * 2.0)
+
+func _is_unbreakable_overlap(space: PhysicsDirectSpaceState2D, query: PhysicsShapeQueryParameters2D) -> bool:
+	var results = space.intersect_shape(query, 8)
+	for hit in results:
+		var collider = hit.get("collider")
+		if collider and collider.is_in_group("brick") and "brick_type" in collider:
+			if collider.brick_type == BRICK_TYPE_UNBREAKABLE:
+				return true
+	return false
 
 func destroy_surrounding_bricks(impact_position: Vector2):
 	"""Destroy bricks in a radius around the impact point (bomb ball effect)"""
