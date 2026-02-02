@@ -227,21 +227,78 @@ func _load_sfx_streams() -> void:
 
 func _load_music_tracks() -> void:
 	music_tracks.clear()
-	var dir = DirAccess.open(MUSIC_DIR)
-	if dir == null:
-		push_warning("Music directory not found: " + MUSIC_DIR)
+	var files = _list_music_files()
+	if files.is_empty():
+		push_warning("No music files found under: " + MUSIC_DIR)
 		return
-	var files = dir.get_files()
 	files.sort()
 	for file_name in files:
-		if file_name.ends_with(".mp3") or file_name.ends_with(".ogg") or file_name.ends_with(".wav"):
-			var path = MUSIC_DIR + "/" + file_name
-			var id = file_name.get_basename()
-			music_tracks.append({
-				"id": id,
-				"path": path,
-				"stream": load(path)
-			})
+		var path = ""
+		if file_name.find(".") == -1:
+			for ext in ["mp3", "ogg", "wav"]:
+				var candidate = MUSIC_DIR + "/" + file_name + "." + ext
+				if ResourceLoader.exists(candidate):
+					path = candidate
+					break
+		else:
+			path = MUSIC_DIR + "/" + file_name
+		if path == "":
+			continue
+		var id = path.get_file().get_basename()
+		music_tracks.append({
+			"id": id,
+			"path": path,
+			"stream": load(path)
+		})
+
+func _list_music_files() -> Array:
+	var files: Array = []
+	if ResourceLoader.has_method("list_directory"):
+		var resource_files = ResourceLoader.list_directory(MUSIC_DIR)
+		if resource_files != null and resource_files.size() > 0:
+			files = resource_files
+	if files.is_empty():
+		var dir = DirAccess.open(MUSIC_DIR)
+		if dir == null:
+			push_warning("Music directory not found: " + MUSIC_DIR)
+			return []
+		files = dir.get_files()
+	var best_by_base: Dictionary = {}
+	for file_name in files:
+		if file_name.ends_with(".import"):
+			file_name = file_name.substr(0, file_name.length() - 7)
+		elif file_name.ends_with(".remap"):
+			file_name = file_name.substr(0, file_name.length() - 6)
+		var ext = ""
+		if file_name.ends_with(".mp3"):
+			ext = "mp3"
+		elif file_name.ends_with(".ogg"):
+			ext = "ogg"
+		elif file_name.ends_with(".wav"):
+			ext = "wav"
+		elif file_name.find(".") == -1:
+			ext = ""
+		else:
+			continue
+		var base = file_name if ext == "" else file_name.substr(0, file_name.length() - (ext.length() + 1))
+		if not best_by_base.has(base):
+			best_by_base[base] = ext
+			continue
+		var current_ext = best_by_base[base]
+		if current_ext == "ogg":
+			continue
+		if ext == "ogg":
+			best_by_base[base] = ext
+			continue
+		if current_ext == "mp3" and ext == "wav":
+			continue
+		if current_ext == "" and ext != "":
+			best_by_base[base] = ext
+	var cleaned: Array = []
+	for base in best_by_base.keys():
+		var ext = best_by_base[base]
+		cleaned.append(base if ext == "" else base + "." + ext)
+	return cleaned
 
 func _apply_saved_volumes() -> void:
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), SaveManager.get_music_volume())

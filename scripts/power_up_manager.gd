@@ -69,8 +69,12 @@ func apply_effect(type: PowerUpType, target_node: Node):
 
 	# If effect already active, refresh timer
 	if active_effects.has(type):
-		active_effects[type].time_remaining = duration
-		print("Refreshed power-up: ", PowerUpType.keys()[type])
+		if duration > 0.0:
+			active_effects[type].time_remaining += duration
+			print("Extended power-up: ", PowerUpType.keys()[type], " by ", duration, "s")
+		else:
+			active_effects[type].time_remaining = duration
+			print("Refreshed power-up: ", PowerUpType.keys()[type])
 	else:
 		# Add new effect
 		active_effects[type] = {

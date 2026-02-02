@@ -94,6 +94,7 @@ func _on_quit_button_pressed():
 	print("Quit button pressed")
 	MenuController.quit_game()
 
+
 func _on_difficulty_changed(_new_difficulty):
 	"""Handle difficulty change signal"""
 	update_difficulty_display()

@@ -379,13 +379,20 @@ func explode_surrounding_bricks():
 			continue
 		if brick == self:  # Don't count self
 			continue
+		if brick.is_in_group("block_brick"):
+			continue
+		if "brick_type" in brick and brick.brick_type == BrickType.UNBREAKABLE:
+			continue
 
 		# Check distance from this brick
 		var distance = brick.global_position.distance_to(global_position)
 		if distance <= BOMB_RADIUS:
-			# Hit this brick
-			if brick.has_method("hit"):
-				brick.hit(Vector2(-1, 0))  # Use left direction for consistency
+			# Break this brick
+			if brick.has_method("break_brick"):
+				brick.break_brick(Vector2(-1, 0))  # Use left direction for consistency
+				destroyed_count += 1
+			elif brick.has_method("hit"):
+				brick.hit(Vector2(-1, 0))  # Fallback for safety
 				destroyed_count += 1
 
 	if destroyed_count > 0:

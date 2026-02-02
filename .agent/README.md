@@ -35,7 +35,7 @@ PRDs and implementation plans for features (both implemented and future).
 Best practices and workflows for development.
 - **`SOP/godot-workflow.md`** - Working with Godot scenes, nodes, signals, and **CRITICAL: Save System Compatibility** section for handling save data migrations.
 
-## Current Game State (2026-01-31)
+## Current Game State (2026-02-02)
 
 ### Core Features ✅ COMPLETE
 - **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 14 brick types (including bomb/diamond/pentagon), collision detection, score tracking
@@ -169,6 +169,13 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 - ✅ **Air Ball + Grab**: Air ball jump now triggers on grab release
 - ✅ **Block Barrier**: Spawn deferred to avoid physics flush errors; barrier placed behind paddle
 - ✅ **Brick Collisions**: Deferred collision polygon toggles to avoid query flush errors
+
+### 2026-02-02 - Audio Export Fixes + Power-Up QoL
+- ✅ **Music Exports**: Export-safe music discovery + OGG music assets
+- ✅ **Power-Ups**: Duplicate timed power-ups add full duration
+- ✅ **Bomb Bricks**: Bomb and bomb-ball explosions reliably break nearby bricks (block/unbreakable ignored)
+- ✅ **Physics**: Square-brick bounce uses axis-resolved normals for more consistent reflections
+- ✅ **Version Label**: Main menu uses date-based version string
 
 ### 2026-01-31 - Advanced Bricks + Prism Showcase
 - ✅ **Advanced Bricks**: Diamond + pentagon bricks with angled collision normals and glossy 2-hit variants
@@ -325,7 +332,7 @@ Pause overlay settings apply live for paddle sensitivity, ball trail, combo flas
 
 ---
 
-**Last Updated**: 2026-01-31
+**Last Updated**: 2026-02-02
 **Total Levels**: 20
 **Total Sets**: 2
 **Total Achievements**: 12

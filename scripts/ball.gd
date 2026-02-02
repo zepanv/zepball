@@ -407,12 +407,25 @@ func handle_collision(collision: KinematicCollision2D):
 				collider.hit(old_velocity.normalized())
 			print("Ball passed through brick!")
 		else:
+			var bounce_normal = normal
+			if collider.has_method("_get_brick_shape") and collider._get_brick_shape() == "square":
+				var hit_pos = collision.get_position()
+				var offset = hit_pos - collider.global_position
+				if abs(offset.x) > abs(offset.y):
+					var x_sign = sign(offset.x)
+					if x_sign != 0:
+						bounce_normal = Vector2(x_sign, 0)
+				elif abs(offset.y) > abs(offset.x):
+					var y_sign = sign(offset.y)
+					if y_sign != 0:
+						bounce_normal = Vector2(0, y_sign)
 			# Normal bounce behavior
-			velocity = velocity.bounce(normal)
+			velocity = velocity.bounce(bounce_normal)
+			normal = bounce_normal
 			if is_unbreakable:
 				# Add a small random deflection to avoid edge hugging
 				velocity = velocity.rotated(deg_to_rad(randf_range(-12.0, 12.0)))
-				position += normal * (ball_radius * 0.6)
+				position += bounce_normal * (ball_radius * 0.6)
 			brick_hit.emit(collider)
 			if collider.has_method("hit"):
 				collider.hit(old_velocity.normalized())
@@ -721,13 +734,18 @@ func destroy_surrounding_bricks(impact_position: Vector2):
 			continue
 		if brick.is_in_group("block_brick"):
 			continue
+		if "brick_type" in brick and brick.brick_type == BRICK_TYPE_UNBREAKABLE:
+			continue
 
 		# Check distance from impact point
 		var distance = brick.global_position.distance_to(impact_position)
 		if distance <= BOMB_RADIUS:
-			# Hit this brick with a fake velocity
-			if brick.has_method("hit"):
-				brick.hit(Vector2(-1, 0))  # Use left direction for consistency
+			# Break this brick with a fake velocity
+			if brick.has_method("break_brick"):
+				brick.break_brick(Vector2(-1, 0))  # Use left direction for consistency
+				destroyed_count += 1
+			elif brick.has_method("hit"):
+				brick.hit(Vector2(-1, 0))  # Fallback for safety
 				destroyed_count += 1
 
 	if destroyed_count > 0:

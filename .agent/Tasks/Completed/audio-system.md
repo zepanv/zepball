@@ -20,7 +20,7 @@ Add sound effects and background music to improve game feel. Core playback is no
 ## Proposed Files
 - `scripts/audio_manager.gd` (autoload singleton)
 - `assets/audio/sfx/` (hit, break, power-up, lose-life)
-- `assets/audio/music/` (looping tracks)
+- `assets/audio/music/` (looping tracks, OGG)
 
 ## Tasks
 - [x] Implement `AudioManager` autoload with helpers and crossfade music playback.
@@ -35,6 +35,7 @@ Add sound effects and background music to improve game feel. Core playback is no
   - life_lost
   - level_complete / game_over
   - combo_milestone
+- [x] Export-safe music track discovery (ResourceLoader list + DirAccess fallback).
 
 ## Related Docs
 - `Tasks/Completed/ui-system.md`

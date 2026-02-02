@@ -37,6 +37,7 @@ Power-ups spawn from broken bricks and move horizontally toward the paddle. All 
   - Yellow glow: Mystery
 - **Expand/Contract Conflict**: If both are active, paddle returns to base size until one expires, then the remaining effect applies.
 - **Ball Size Conflict**: If Big Ball + Small Ball are both active, ball returns to base size until one expires.
+- **Duration Stacking**: Collecting the same timed power-up adds its full duration to the remaining timer.
 - **Application Source**: Expand/Contract and Big/Small sizing are managed by `PowerUpManager` to avoid stacking conflicts.
 - **Triple Ball Inheritance**: Extra balls inherit the active size multiplier when spawned (Big=2x, Small=0.5x, both/none=1x).
 - **Ball Speed Effects**: Speed Up changes trail to yellow-orange, Slow Down changes trail to blue. Both reset to white on expiration.

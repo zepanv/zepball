@@ -2,15 +2,14 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Status: 2026-01-31 (Fully Playable)
+## Current Features: 2026-02-02
 
 Highlights:
 
-- ✅ Main menu, level select, settings, stats, game over, level complete
-- ✅ 20 JSON-driven levels with vertically centered layouts and strategic bomb brick placement
-- ✅ Difficulty modes (Easy/Normal/Hard) with multipliers
-- ✅ Statistics + achievements tracking (12 achievements)
-- ✅ Audio playback (music + expanded SFX coverage)
+- 20 levels
+- Difficulty modes (Easy/Normal/Hard) with multipliers
+- Statistics + achievements tracking
+- Audio playback (OGG music + SFX)
 
 ## Controls
 - **W / Up Arrow**: Move paddle up
@@ -51,7 +50,7 @@ Highlights:
 - **Defense**: Block (temporary barrier bricks)
 - **Score**: Double Score (2x multiplier)
 - **Mystery**: Random effect
-- Timed effects with HUD timers and visual indicators
+- Timed effects with HUD timers and visual indicators (duplicate pickups add full duration)
 - Ball glows orange-red during bomb ball effect
 
 ### Settings
@@ -69,18 +68,11 @@ Highlights:
 - Clear Save Data resets progress/scores without changing settings
 
 ## Asset Credits
-- Graphics: Kenney Vleugels (kenney.nl)
-- Backgrounds: AI-generated space/abstract backgrounds
-- Audio: TBD (Freesound.org, Incompetech)
+- Graphics: Kenney Vleugels (kenney.nl) Puzzle Packs + AI-Generated
+- Backgrounds: AI-Generated space/abstract backgrounds
 - Music: Suno
 - SFX: ElevenLabs
 
 ## License
 
 TBD - Personal project, not yet open source
-
----
-
-**Last Updated**: 2026-01-31
-
-**Ready to play with explosive action!** 🎮💥

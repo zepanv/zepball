@@ -215,6 +215,7 @@ func create_test_level():
 
 	print("Created test level with ", rows * cols, " bricks")
 
+
 func connect_brick_signals():
 	"""Connect all brick signals to game manager"""
 	remaining_breakable_bricks = 0

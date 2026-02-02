@@ -236,7 +236,7 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 1. Emits `brick_broken(score_value)` signal
 2. 20% chance to spawn random power-up
 3. Plays particle burst (color-matched to brick) if particles enabled
-4. Bomb bricks destroy nearby bricks within 75px radius
+4. Bomb bricks destroy nearby bricks within 75px radius (breaks normal/strong; block bricks ignored)
 5. Disables collision immediately
 6. Waits 0.6s for particles, then removes from scene
 
@@ -269,6 +269,7 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 **Power-Up Manager** (Autoload):
 - Tracks active timed effects and remaining time
 - Automatically resets paddle/ball when effects expire
+- Duplicate timed power-ups add their full duration to the remaining timer
 - Expand/Contract conflict: base size if both active
 - Big/Small conflict: base size if both active
 - Triple ball spawns inherit active ball size multiplier
@@ -634,8 +635,10 @@ Final score × 2
 ### Audio System
 - **AudioManager** autoload provides music playlist playback and SFX helpers
 - **Buses**: Master → Music/SFX (created at runtime if missing)
+- **Music Assets**: Stored as OGG for export-friendly playback
 - **Music Modes**: Off, Loop One (selected track), Loop All, Shuffle
 - **Crossfades** between tracks when in Loop All / Shuffle
+- **Export-safe music discovery**: uses `ResourceLoader.list_directory()` with a DirAccess fallback to populate the track list in exported builds; prefers `.ogg` when multiple formats exist
 - **Settings**: Music/SFX volume sliders apply immediately via AudioServer; music mode + loop-one track selection in Settings menu
 - **Hotkeys**: Volume +/- , previous/next track, and pause toggle show a toast confirmation
 
