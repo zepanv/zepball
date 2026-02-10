@@ -29,6 +29,8 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/quick-actions.md` - Menu/gameplay convenience actions ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
   - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay, advanced tile elements)
+  - **`Tasks/Backlog/level-overhaul.md`** - Level system overhaul: shareable `.zeppack` pack format, in-game level editor, enhanced level select UX, third content set
+  - **`Tasks/Backlog/optimization-pass.md`** - Full optimization and best practices audit: debug prints, cached references, magic numbers, type annotations, file splits, architecture cleanup
 - `Tasks/Completed/ui-gaps.md` - Launch indicator (aim mode) ✅ IMPLEMENTED
 
 ### SOP/
