@@ -106,9 +106,9 @@ func _ready() -> void:
 		game_manager.level_complete.connect(_on_level_complete)
 		game_manager.game_over.connect(_on_game_over)
 
-	# Load level from MenuController (or level 1 as fallback)
-	var level_id = MenuController.get_current_level_id()
-	load_level(level_id)
+	# Load level from MenuController using pack-native addressing.
+	var level_ref := MenuController.get_current_level_ref()
+	load_level_ref(str(level_ref.get("pack_id", "classic-challenge")), int(level_ref.get("level_index", 0)))
 
 	# Restore state if in set mode (deferred to ensure HUD is ready)
 	if MenuController.current_play_mode == MenuController.PlayMode.SET and MenuController.set_current_index > 0:
@@ -157,20 +157,86 @@ func _configure_background_rect() -> void:
 
 
 func load_level(level_id: int):
-	"""Load a level from JSON using LevelLoader"""
-	var level_result = LevelLoader.instantiate_level(level_id, brick_container)
+	"""Legacy helper for integer level IDs."""
+	var level_ref := PackLoader.get_legacy_level_ref(level_id)
+	if level_ref.is_empty():
+		push_error("Failed to map legacy level %d" % level_id)
+		create_test_level()
+		return
+	load_level_ref(str(level_ref.get("pack_id", "")), int(level_ref.get("level_index", -1)))
+
+func load_level_ref(pack_id: String, level_index: int):
+	"""Load a level from PackLoader using pack-native addressing."""
+	var level_result: Dictionary = {}
+	if MenuController.has_editor_test_data():
+		var test_level_data: Dictionary = MenuController.get_editor_test_level_data()
+		level_result = _instantiate_level_from_data(test_level_data, "__editor_test__", level_index)
+	else:
+		level_result = PackLoader.instantiate_level(pack_id, level_index, brick_container)
 
 	if level_result["success"]:
 		# Update game manager with level info
 		if game_manager:
-			game_manager.current_level = level_id
+			var legacy_level_id: int = PackLoader.get_legacy_level_id(pack_id, level_index)
+			if MenuController.is_editor_test_mode:
+				game_manager.current_level = level_index + 1
+			else:
+				game_manager.current_level = legacy_level_id if legacy_level_id != -1 else 1
+			game_manager.current_pack_id = pack_id
+			game_manager.current_level_index = level_index
+			game_manager.current_level_key = "%s:%d" % [pack_id, level_index]
 
 		# Show level intro
 		if hud and hud.has_method("show_level_intro"):
-			hud.show_level_intro(level_id, level_result["name"], level_result["description"])
+			hud.show_level_intro(game_manager.current_level, level_result["name"], level_result["description"])
 	else:
-		push_error("Failed to load level ", level_id, " - falling back to test level")
+		push_error("Failed to load level %s:%d - falling back to test level" % [pack_id, level_index])
 		create_test_level()
+
+func _instantiate_level_from_data(level_data: Dictionary, pack_id: String, level_index: int) -> Dictionary:
+	"""Instantiate a level directly from provided data (used for editor test mode)."""
+	if level_data.is_empty():
+		return {"success": false, "breakable_count": 0}
+
+	for child in brick_container.get_children():
+		child.queue_free()
+
+	var grid: Dictionary = level_data.get("grid", {})
+	var brick_size: int = int(grid.get("brick_size", BRICK_SIZE))
+	var spacing: int = int(grid.get("spacing", BRICK_SPACING))
+	var start_x: int = int(grid.get("start_x", LEVEL_START_X))
+	var start_y: int = int(grid.get("start_y", LEVEL_START_Y))
+	var bricks_data: Array = level_data.get("bricks", [])
+	var breakable_count: int = 0
+
+	for brick_variant in bricks_data:
+		if not (brick_variant is Dictionary):
+			continue
+		var brick_def: Dictionary = brick_variant
+		var brick_type_string: String = str(brick_def.get("type", "NORMAL"))
+		if not PackLoader.BRICK_TYPE_MAP.has(brick_type_string):
+			continue
+		var brick = BRICK_SCENE.instantiate()
+		var row: int = int(brick_def.get("row", 0))
+		var col: int = int(brick_def.get("col", 0))
+		brick.position = Vector2(
+			start_x + col * (brick_size + spacing),
+			start_y + row * (brick_size + spacing)
+		)
+		brick.brick_type = PackLoader.BRICK_TYPE_MAP[brick_type_string]
+		brick_container.add_child(brick)
+		if brick.brick_type != PackLoader.BRICK_TYPE_MAP["UNBREAKABLE"]:
+			breakable_count += 1
+
+	return {
+		"success": true,
+		"pack_id": pack_id,
+		"level_index": level_index,
+		"name": str(level_data.get("name", "Editor Test")),
+		"description": str(level_data.get("description", "")),
+		"total_bricks": bricks_data.size(),
+		"breakable_count": breakable_count
+	}
 
 func create_test_level():
 	"""Create a grid of square bricks for testing (fallback)"""
@@ -219,7 +285,8 @@ func _on_brick_broken(score_value: int):
 	game_manager.add_score(score_value)
 
 	# Track statistic
-	SaveManager.increment_stat("total_bricks_broken")
+	if not MenuController.is_editor_test_mode:
+		SaveManager.increment_stat("total_bricks_broken")
 
 	# Trigger screen shake (intensity scales with score and combo)
 	_apply_brick_hit_shake(score_value)

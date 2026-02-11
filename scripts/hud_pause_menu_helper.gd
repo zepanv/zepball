@@ -9,6 +9,7 @@ var level_select_confirm: ConfirmationDialog = null
 var pause_level_info_label: Label = null
 var pause_score_info_label: Label = null
 var pause_lives_info_label: Label = null
+var return_editor_btn: Button = null
 
 func create_pause_menu(hud: Control) -> Control:
 	var menu = Control.new()
@@ -104,6 +105,16 @@ func create_pause_menu(hud: Control) -> Control:
 	level_select_btn.pressed.connect(_on_level_select_pressed)
 	vbox.add_child(level_select_btn)
 
+	var editor_btn = Button.new()
+	editor_btn.text = "RETURN TO EDITOR"
+	editor_btn.custom_minimum_size = Vector2(0, 50)
+	editor_btn.set("theme_override_font_sizes/font_size", 26)
+	editor_btn.set("theme_override_colors/font_color", Color(0.9, 0.8, 0.3, 1))
+	editor_btn.pressed.connect(_on_return_to_editor_pressed)
+	editor_btn.visible = false
+	vbox.add_child(editor_btn)
+	return_editor_btn = editor_btn
+
 	var menu_btn = Button.new()
 	menu_btn.text = "MAIN MENU"
 	menu_btn.custom_minimum_size = Vector2(0, 50)
@@ -138,12 +149,18 @@ func update_info(game_manager: Node) -> void:
 	if not game_manager:
 		return
 	if pause_level_info_label:
-		var level_data = LevelLoader.get_level_info(game_manager.current_level)
-		pause_level_info_label.text = "Level " + str(game_manager.current_level) + ": " + level_data.get("name", "Unknown")
+		var pack_id: String = str(game_manager.current_pack_id)
+		var level_index: int = int(game_manager.current_level_index)
+		var level_info: Dictionary = PackLoader.get_level_info(pack_id, level_index)
+		var legacy_level_id: int = PackLoader.get_legacy_level_id(pack_id, level_index)
+		var display_label: String = "Level %d" % (legacy_level_id if legacy_level_id != -1 else level_index + 1)
+		pause_level_info_label.text = "%s: %s" % [display_label, str(level_info.get("name", "Unknown"))]
 	if pause_score_info_label:
 		pause_score_info_label.text = "Score: " + str(game_manager.score)
 	if pause_lives_info_label:
 		pause_lives_info_label.text = "Lives: " + str(game_manager.lives)
+	if return_editor_btn:
+		return_editor_btn.visible = MenuController.is_editor_test_mode
 
 func _on_resume_pressed() -> void:
 	var game_manager = _find_game_manager()
@@ -173,6 +190,12 @@ func _on_confirm_level_select() -> void:
 	if game_manager:
 		game_manager.set_state(game_manager.GameState.PLAYING)
 	MenuController.show_level_select()
+
+func _on_return_to_editor_pressed() -> void:
+	var game_manager = _find_game_manager()
+	if game_manager:
+		game_manager.set_state(game_manager.GameState.PLAYING)
+	MenuController.return_to_editor_from_test()
 
 func _on_settings_pressed(hud: Control) -> void:
 	if settings_overlay:

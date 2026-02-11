@@ -297,10 +297,15 @@ print_debug("Debug info")  # Includes file:line
 ### What to Commit
 - ✅ .tscn files (scene files)
 - ✅ .gd files (scripts)
+- ✅ .uid files (Godot UID companion files) - **always commit these**
 - ✅ .tres files (resources)
 - ✅ Assets (sprites, audio)
 - ✅ project.godot
 - ✅ .godot/global_script_class_cache.cfg (class_name definitions)
+
+UID rule:
+- If Godot creates or updates a `*.uid` file for a script/resource/scene change, include it in the same commit.
+- Do not delete or ignore `.uid` files unless the referenced source file is intentionally removed.
 
 ### What NOT to Commit (.gitignore handles)
 - ❌ .godot/ folder (except class cache)

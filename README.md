@@ -2,14 +2,15 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Features: 2026-02-02
+## Current Features: 2026-02-11
 
 Highlights:
 
-- 20 levels
+- 30 built-in levels across 3 packs
 - Difficulty modes (Easy/Normal/Hard) with multipliers
 - Statistics + achievements tracking
-- Audio playback (OGG music + SFX)
+- In-game level/pack editor with test, save, export, and delete flows
+- Audio playback (music + SFX)
 
 ## Controls
 - **W / Up Arrow**: Move paddle up
@@ -37,9 +38,12 @@ Highlights:
 - Ball escape logic prevents wedging in corners
 
 ### Progression
-- Strategic bomb brick placement for tactical gameplay
-- Unlocks next level on completion
-- High scores per level
+- Built-in packs:
+  - **Classic Challenge** (levels 1-10)
+  - **Prism Showcase** (levels 11-20)
+  - **Nebula Ascend** (levels 21-30)
+- Unlock progression, per-level high scores, per-pack run scores
+- Star ratings per level (0-3 stars)
 
 ### Power-Ups (16 Types)
 - **Paddle**: Expand, Contract
@@ -67,6 +71,17 @@ Highlights:
 - Reset Keybindings button restores defaults
 - Reset Settings button restores defaults only
 - Clear Save Data resets progress/scores without changing settings
+
+### Level Editor + Packs
+- Create and edit custom `.zeppack` files in-game
+- Paint levels with all current brick types
+- Add/remove/duplicate/reorder levels
+- Undo/redo support (`Ctrl/Cmd+Z`, `Ctrl/Cmd+Y`, `Ctrl/Cmd+Shift+Z`)
+- Test current draft level without affecting progression/stats
+- Save packs to `user://packs/`
+- Export timestamped pack files to `user://exports/`
+- Open export folder directly (Finder/Explorer/file manager)
+- Delete saved custom packs with confirmation
 
 ## Asset Credits
 - Graphics: Kenney Vleugels (kenney.nl) Puzzle Packs + AI-Generated

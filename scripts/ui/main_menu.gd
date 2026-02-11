@@ -79,6 +79,10 @@ func _on_stats_button_pressed():
 	"""Handle Stats button - show stats screen"""
 	MenuController.show_stats()
 
+func _on_editor_button_pressed():
+	"""Handle Editor button - open pack editor"""
+	MenuController.show_editor_from_main_menu()
+
 func _on_settings_button_pressed():
 	"""Handle Settings button - show settings screen"""
 	MenuController.show_settings()

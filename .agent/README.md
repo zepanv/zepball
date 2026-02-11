@@ -29,9 +29,9 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/quick-actions.md` - Menu/gameplay convenience actions ✅ IMPLEMENTED
   - `Tasks/Completed/optimization-pass.md` - Performance and architecture optimization audit ✅ IMPLEMENTED
   - `Tasks/Completed/ui-gaps.md` - Launch indicator (aim mode) ✅ IMPLEMENTED
+  - `Tasks/Completed/level-overhaul.md` - Pack-format migration, in-game editor, pack/level UX overhaul, third built-in pack ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
   - **`Tasks/Backlog/future-features.md`** - Planned gameplay features (Time Attack, Survival, skip options, advanced gameplay, advanced tile elements)
-  - **`Tasks/Backlog/level-overhaul.md`** - Level system overhaul: shareable `.zeppack` pack format, in-game level editor, pack select + enhanced level select UX, third content set
 
 ### SOP/
 Best practices and workflows for development.
@@ -44,15 +44,17 @@ Best practices and workflows for development.
 - **Power-Ups**: 16 types with visual timers and effects (Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block)
 - **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks (75px radius)
 - **Difficulty**: 3 modes (Easy/Normal/Hard) with speed and score multipliers
-- **Levels**: 20 levels with varied brick mixes (bomb bricks appear in multiple levels)
+- **Levels**: 30 built-in levels with varied brick mixes (bomb bricks appear across all sets)
 - **Menu System**: Complete flow (Main Menu, Set Select, Level Select, Game Over, Level Complete, Set Complete, Stats, Settings)
 - **Progression**: Level unlocking and high scores saved per level
 
 ### Set Mode ✅ COMPLETE
-- **Set Data**: `data/level_sets.json` defines available sets
-- **Current Sets**: 2 sets
+- **Set Data**: Built-in sets are defined by `.zeppack` metadata in `packs/` (no `level_sets.json` runtime dependency)
+- **Pack Foundation**: Set and level flows are fully pack-native via `PackLoader`
+- **Current Sets**: 3 sets
   - **Classic Challenge** (levels 1–10)
   - **Prism Showcase** (levels 11–20)
+  - **Nebula Ascend** (levels 21–30)
 - **Set Select**: Play set or view its levels
 - **Set Progression**: Score/lives/combo/streak carry across set levels
 - **Set Completion Bonus**: 3x score if all lives intact and no continues
@@ -60,7 +62,7 @@ Best practices and workflows for development.
 
 ### Statistics & Achievements ✅ COMPLETE
 - **10 Tracked Stats**: Bricks broken, power-ups collected, levels completed, individual levels completed, set runs completed, playtime, highest combo, highest score, games played, perfect clears
-- **12 Achievements**: Ranging from "First Blood" (1 brick) to "Champion" (all 10 levels) with progress tracking
+- **12 Achievements**: Ranging from "First Blood" (1 brick) to "Champion" (30 level completions) with progress tracking
 - **Stats Screen**: Full statistics display with achievement list and progress bars
 - **Tracking**: `total_playtime` increments during READY/PLAYING (flushed every 5s), and `total_games_played` increments per level start
 
@@ -105,7 +107,7 @@ Best practices and workflows for development.
 - **Language**: GDScript
 - **Run Main Scene**: `res://scenes/ui/main_menu.tscn`
 - **Gameplay Scene**: `res://scenes/main/main.tscn`
-- **Autoloads**: PowerUpManager, DifficultyManager, SaveManager, AudioManager, LevelLoader, SetLoader, MenuController
+- **Autoloads**: PowerUpManager, DifficultyManager, SaveManager, AudioManager, PackLoader, MenuController
 
 ## Autoload Singletons (Global Systems)
 These are always accessible and control key game systems:
@@ -113,9 +115,8 @@ These are always accessible and control key game systems:
 2. **DifficultyManager** - Difficulty modes with multipliers
 3. **SaveManager** - Save data, statistics, achievements, settings
 4. **AudioManager** - Music/SFX playback and audio bus setup
-5. **LevelLoader** - Level JSON loading
-6. **SetLoader** - Set JSON loading
-7. **MenuController** - Scene transitions and game flow
+5. **PackLoader** - `.zeppack` discovery/loading/instantiation (foundation stage)
+6. **MenuController** - Scene transitions and game flow
 
 ## Quick Start for New Developers
 1. **Read** `System/architecture.md` - Complete system overview with all features documented
@@ -130,7 +131,7 @@ These are always accessible and control key game systems:
 - Phase 2: Visual Polish (Particles, Camera Shake, Backgrounds)
 - Phase 3: Power-Ups (16 types with timers)
 - Phase 4: UI System & Game Flow (Complete menu system)
-- Phase 5: Level System & Content (10 levels with progression)
+- Phase 5: Level System & Content (30 built-in levels with progression)
 
 ### ✅ Phase 6: Progression Systems (COMPLETE)
 - Save system with JSON persistence
@@ -148,13 +149,66 @@ These are always accessible and control key game systems:
 - SFX: paddle hit, brick hit, wall hit, power-up good/bad, life lost, combo milestone, level complete, game over
 
 ### 📅 Phase 8: Advanced Features (FUTURE)
-See `Tasks/Backlog/future-features.md` and `Tasks/Backlog/level-overhaul.md` for detailed plans:
+See `Tasks/Backlog/future-features.md` for detailed plans:
 - Game Modes: Time Attack, Survival, Iron Ball, One Life
 - QoL: Skip options and mode-specific UX polish
-- Level System: Pack format migration, in-game editor, pack select, enhanced level select, third built-in pack
 - Advanced Gameplay: Ball speed zones, brick chains, paddle abilities
 
 ## Recent Update History
+
+### 2026-02-11 (Latest) - Legacy Loader Cleanup Complete
+- ✅ **Legacy Loaders Removed**: Deleted `scripts/level_loader.gd` and `scripts/set_loader.gd`; removed both autoloads from `project.godot`.
+- ✅ **Runtime Calls Migrated**: Gameplay/UI/save flows now use `PackLoader` directly for level and set compatibility lookups.
+- ✅ **Legacy Data Removed**: Deleted `data/level_sets.json` and `levels/level_01.json`-`level_20.json`.
+
+### 2026-02-11 (Latest) - Editor Pack Delete Flow
+- ✅ **Delete Custom Pack Added**: Added `DELETE PACK` action in level editor for saved user packs.
+- ✅ **Safety Confirmation**: Delete now requires explicit confirmation before removing the pack file.
+- ✅ **Post-Delete Navigation**: Successful deletes return directly to Pack Select.
+
+### 2026-02-11 (Latest) - Level Overhaul Stage 5 Complete
+- ✅ **Third Built-In Pack Added**: Added `packs/nebula-ascend.zeppack` with 10 new authored levels.
+- ✅ **Legacy Compatibility Expanded**: Added set/level legacy mapping for set 3 and levels 21-30 in `PackLoader` and `SaveManager`.
+- ✅ **Champion Achievement Updated**: Requirement increased from 10 to 30 level completions.
+
+### 2026-02-11 (Latest) - Level Editor Export UX Polish
+- ✅ **Export Button Added**: Added `EXPORT PACK` action in editor to create shareable `.zeppack` files.
+- ✅ **Export Destination**: Exports now save to `user://exports/` with timestamped filenames.
+- ✅ **Path Feedback**: Editor status now shows full exported file path after successful export.
+- ✅ **Open Folder Shortcut**: Added `OPEN EXPORT FOLDER` button to open the exports directory in Finder/Explorer/file manager.
+
+### 2026-02-11 (Latest) - Editor Test UX Follow-Up
+- ✅ **Pause Return Link**: Added `RETURN TO EDITOR` button to pause menu during editor test runs.
+- ✅ **Saved Pack Reload Shortcut**: Added `OPEN SAVED PACKS (EDIT)` button in editor to jump to Pack Select and reopen saved packs via `EDIT`.
+
+### 2026-02-11 (Latest) - Level Editor Stage 4 Slice 3 (Test Mode)
+- ✅ **Editor Test Run Added**: Added `TEST LEVEL` action in editor to launch gameplay from current in-memory draft without requiring a save.
+- ✅ **Safe Test Flow**: Added dedicated editor-test runtime path in `MenuController` and `main.gd` so test runs do not update progression, high scores, or gameplay statistics.
+- ✅ **Return-to-Editor Loop**: Game Over / Level Complete now route back to editor during test mode and restore the editor draft + selected level.
+
+### 2026-02-11 (Latest) - Level Editor Stage 4 Slice 2
+- ✅ **Level Metadata Editing**: Added per-level name/description fields in editor UI and wired updates into in-memory pack state.
+- ✅ **Level Management Controls**: Added duplicate and move up/down actions for level ordering in editor list.
+- ✅ **Undo/Redo Added**: Implemented snapshot-based undo/redo with buttons and keyboard shortcuts (`Ctrl/Cmd+Z`, `Ctrl/Cmd+Y`, `Ctrl/Cmd+Shift+Z`).
+
+### 2026-02-11 (Latest) - Level Overhaul UI/Flow Fixes
+- ✅ **Level Select Layout Fix**: Expanded layout bounds to prevent title clipping and consolidated filter/sort controls into one toolbar row.
+- ✅ **Level Intro Description Fix**: Bound intro description label correctly so gameplay intro shows the level's actual description text.
+- ✅ **Editor Back Navigation Fix**: Editor now returns to Main Menu when opened from Main Menu, and to Pack Select when opened from pack cards.
+- ✅ **Stats UX + Warning Fixes**: ESC now returns from Stats to Main Menu; unused achievement parameter warning resolved in `stats.gd`.
+
+### 2026-02-11 (Latest) - Level Select/Editor Follow-Up Fixes
+- ✅ **Editor Return Source Fix**: Added separate editor entry points for Main Menu vs Pack Select create flow, so return route is accurate for both.
+- ✅ **Editor Back Label Fix**: Editor back button text now dynamically shows `BACK TO MENU` or `BACK TO PACKS` based on launch source.
+- ✅ **Level Select Title Hardening**: Added explicit top margins/min-height and long-title font fallback/ellipsis behavior to avoid top clipping/overflow.
+
+### 2026-02-11 (Latest) - Level Select Top Spacing Tighten
+- ✅ **Top Stack Tightened**: Reduced title-to-toolbar vertical spacing in `scenes/ui/level_select.tscn` (`VBox` separation, title minimum height, and spacer height) to keep filters tight under the title.
+
+### 2026-02-11 (Latest) - Level Overhaul Stage 4 Slice 1 + Compile Hardening
+- ✅ **PackLoader Strict-Typing Hardening**: Removed Variant-inference `:=` usage in `scripts/pack_loader.gd` to satisfy warning-as-error parse settings.
+- ✅ **Editor Scaffolding Added**: New `scenes/ui/level_editor.tscn` + `scripts/ui/level_editor.gd` for pack metadata editing, level list add/remove/select, grid painting, and user pack save flow.
+- ✅ **Editor Navigation Wired**: Added `MenuController.show_editor()` / `show_editor_for_pack(pack_id)`, Main Menu `EDITOR` button, Pack Select `EDIT` (custom packs), and `CREATE NEW PACK`.
 
 ### 2026-02-11 (Latest) - Optimization Pass Completed
 - ✅ **Achievement Unlock Warning Fix**: Renamed local variable in `save_manager.gd` unlock flow to avoid shadowing `Node.name` (`SHADOWED_VARIABLE_BASE_CLASS`)
@@ -194,6 +248,23 @@ See `Tasks/Backlog/future-features.md` and `Tasks/Backlog/level-overhaul.md` for
 - ✅ **Ball Legacy Cleanup**: Removed unused legacy launch-direction indicator path from `ball.gd` (aim-indicator flow remains canonical)
 - ✅ **Ball Air-Ball Helper Split**: Air-ball landing cache/query helper logic moved from `ball.gd` into `scripts/ball_air_ball_helper.gd`
 - ✅ **Task Tracking**: `Tasks/Completed/optimization-pass.md` finalized and moved out of backlog
+
+### 2026-02-11 - Level Overhaul Stage 1 (Pack Foundation)
+- ✅ **PackLoader Added**: New `scripts/pack_loader.gd` autoload for `.zeppack` discovery/loading/validation and level instantiation
+- ✅ **Built-In Packs Added**: Converted existing content into `packs/classic-challenge.zeppack` and `packs/prism-showcase.zeppack`
+- ✅ **Compatibility Layer**: `LevelLoader`/`SetLoader` now read via PackLoader while preserving current integer level/set flows
+
+### 2026-02-11 - Level Overhaul Stage 2 (Core Migration)
+- ✅ **Menu Runtime Migration**: `MenuController` now runs with `pack_id + level_index` as internal level identity (legacy `level_id` maintained for compatibility/UI)
+- ✅ **Gameplay Load Migration**: `main.gd` now loads levels via `PackLoader.instantiate_level(pack_id, level_index, ...)`
+- ✅ **Save v2 Migration**: `SaveManager` now stores pack-native progression/high scores/last-played references and migrates legacy save data
+- ✅ **GameManager Identity Fields**: Added `current_pack_id`, `current_level_index`, `current_level_key`
+
+### 2026-02-11 - Level Overhaul Stage 3 (Pack/Level Select UX)
+- ✅ **Pack Select Refactor**: `set_select.gd` now renders pack cards from `PackLoader` with official/custom badges, author metadata, progress, stars, and pack high score
+- ✅ **Level Select Refactor**: `level_select.gd` now supports pack browsing, level thumbnails, stars, filter/sort controls, and pack-level start flow
+- ✅ **Star Ratings Added**: `SaveManager` now calculates and stores per-level stars keyed by `pack_id:level_index`
+- ✅ **NEW Label Bugfix**: `NEW` is shown only when unlocked level has no completion and no high score
 
 ### 2026-01-31 - Documentation Refresh
 - ✅ **System Docs**: Updated architecture + tech stack (keybindings, audio, debug notes)
@@ -291,7 +362,7 @@ See `Tasks/Backlog/future-features.md` and `Tasks/Backlog/level-overhaul.md` for
 - ✅ **Complete Menu System**: Main Menu, Set Select, Level Select, Game Over, Level Complete screens
 - ✅ **Level Progression**: Unlock system with high score tracking
 - ✅ **SaveManager**: Persistent save data with JSON format
-- ✅ **LevelLoader**: Dynamic level loading from JSON files
+- ✅ **PackLoader**: Dynamic level loading from `.zeppack` packs
 - ✅ **Combo System**: Consecutive hits with score bonuses
 - ✅ **Difficulty System**: Easy/Normal/Hard with speed/score multipliers
 
@@ -378,7 +449,7 @@ Pause overlay settings apply live for paddle sensitivity, ball trail, combo flas
 ---
 
 **Last Updated**: 2026-02-11
-**Total Levels**: 20
-**Total Sets**: 2
+**Total Levels**: 30
+**Total Sets**: 3
 **Total Achievements**: 12
 **Documentation Status**: ✅ Up-to-date with current codebase

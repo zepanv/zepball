@@ -22,6 +22,10 @@ func _ready():
 	_populate_statistics()
 	_populate_achievements()
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_on_back_pressed()
+
 func _populate_statistics():
 	"""Load and display all statistics from SaveManager"""
 	var stats = SaveManager.get_all_statistics()
@@ -58,7 +62,7 @@ func _populate_achievements():
 
 		_create_achievement_item(achievement_id, achievement, is_unlocked, progress)
 
-func _create_achievement_item(achievement_id: String, achievement: Dictionary, is_unlocked: bool, progress: Dictionary):
+func _create_achievement_item(_achievement_id: String, achievement: Dictionary, is_unlocked: bool, progress: Dictionary):
 	"""Create a UI element for an achievement"""
 	var item = VBoxContainer.new()
 	item.add_theme_constant_override("separation", 4)

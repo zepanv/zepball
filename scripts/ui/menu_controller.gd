@@ -13,22 +13,36 @@ const GAME_OVER_SCENE = "res://scenes/ui/game_over.tscn"
 const LEVEL_COMPLETE_SCENE = "res://scenes/ui/level_complete.tscn"
 const STATS_SCENE = "res://scenes/ui/stats.tscn"
 const SETTINGS_SCENE = "res://scenes/ui/settings.tscn"
+const LEVEL_EDITOR_SCENE = "res://scenes/ui/level_editor.tscn"
 
 # Play mode enum
 enum PlayMode { INDIVIDUAL, SET }
+enum EditorReturnTarget { MAIN_MENU, SET_SELECT }
 
 # Current state
 var current_level_id: int = 1
+var current_pack_id: String = "classic-challenge"
+var current_level_index: int = 0
+var current_browse_pack_id: String = ""
 var current_score: int = 0
 var is_in_gameplay: bool = false
 var was_perfect_clear: bool = false
 var settings_opened_from_pause: bool = false
+var current_editor_pack_id: String = ""
+var editor_return_target: EditorReturnTarget = EditorReturnTarget.SET_SELECT
+var is_editor_test_mode: bool = false
+var editor_test_pack_data: Dictionary = {}
+var editor_test_level_index: int = 0
+var editor_draft_pack_data: Dictionary = {}
+var editor_draft_level_index: int = 0
 
 # Set mode state
 var current_play_mode: PlayMode = PlayMode.INDIVIDUAL
 var current_set_id: int = -1
+var current_set_pack_id: String = ""
 var set_current_index: int = 0
 var set_level_ids: Array = []
+var set_level_refs: Array[Dictionary] = []
 
 # Set mode saved game state (persists between level transitions)
 var set_saved_score: int = 0
@@ -85,8 +99,11 @@ func show_set_select() -> void:
 	# Reset set mode state when entering set select
 	current_play_mode = PlayMode.INDIVIDUAL
 	current_set_id = -1
+	current_set_pack_id = ""
+	current_browse_pack_id = ""
 	set_current_index = 0
 	set_level_ids = []
+	set_level_refs = []
 
 	# Difficulty should remain unlocked in menus
 	DifficultyManager.unlock_difficulty()
@@ -117,19 +134,163 @@ func show_settings(from_pause: bool = false) -> void:
 	get_tree().change_scene_to_file(SETTINGS_SCENE)
 	scene_changed.emit(SETTINGS_SCENE)
 
+func show_editor() -> void:
+	"""Backward-compatible editor entry (defaults to main menu return target)."""
+	show_editor_from_main_menu()
+
+func show_editor_from_main_menu() -> void:
+	"""Open the level editor for creating a new user pack from Main Menu."""
+	is_in_gameplay = false
+	is_editor_test_mode = false
+	current_editor_pack_id = ""
+	editor_return_target = EditorReturnTarget.MAIN_MENU
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	DifficultyManager.unlock_difficulty()
+	get_tree().change_scene_to_file(LEVEL_EDITOR_SCENE)
+	scene_changed.emit(LEVEL_EDITOR_SCENE)
+
+func show_editor_from_set_select() -> void:
+	"""Open the level editor for creating a new user pack from Pack Select."""
+	is_in_gameplay = false
+	is_editor_test_mode = false
+	current_editor_pack_id = ""
+	editor_return_target = EditorReturnTarget.SET_SELECT
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	DifficultyManager.unlock_difficulty()
+	get_tree().change_scene_to_file(LEVEL_EDITOR_SCENE)
+	scene_changed.emit(LEVEL_EDITOR_SCENE)
+
+func show_editor_for_pack(pack_id: String) -> void:
+	"""Open the level editor with an existing pack loaded."""
+	is_in_gameplay = false
+	is_editor_test_mode = false
+	current_editor_pack_id = pack_id
+	editor_return_target = EditorReturnTarget.SET_SELECT
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	DifficultyManager.unlock_difficulty()
+	get_tree().change_scene_to_file(LEVEL_EDITOR_SCENE)
+	scene_changed.emit(LEVEL_EDITOR_SCENE)
+
+func get_editor_pack_id() -> String:
+	return current_editor_pack_id
+
+func should_editor_return_to_main_menu() -> bool:
+	return editor_return_target == EditorReturnTarget.MAIN_MENU
+
+func return_from_editor() -> void:
+	"""Return to the correct menu based on where editor was opened from."""
+	editor_draft_pack_data = {}
+	editor_draft_level_index = 0
+	if editor_return_target == EditorReturnTarget.MAIN_MENU:
+		show_main_menu()
+		return
+	show_set_select()
+
+func start_editor_test(pack_data: Dictionary, level_index: int) -> void:
+	"""Start a one-level editor test run without progression/high-score side effects."""
+	if not (pack_data.get("levels", []) is Array):
+		push_error("Editor test failed: pack has invalid levels")
+		return
+	var levels: Array = pack_data.get("levels", [])
+	if levels.is_empty():
+		push_error("Editor test failed: pack has no levels")
+		return
+	var clamped_level_index: int = clampi(level_index, 0, levels.size() - 1)
+
+	editor_draft_pack_data = pack_data.duplicate(true)
+	editor_draft_level_index = clamped_level_index
+	editor_test_pack_data = pack_data.duplicate(true)
+	editor_test_level_index = clamped_level_index
+	is_editor_test_mode = true
+
+	current_play_mode = PlayMode.INDIVIDUAL
+	current_set_id = -1
+	current_set_pack_id = ""
+	set_current_index = 0
+	set_level_ids = []
+	set_level_refs = []
+	_reset_set_breakdown()
+
+	current_pack_id = "__editor_test__"
+	current_level_index = clamped_level_index
+	current_level_id = clamped_level_index + 1
+	is_in_gameplay = true
+	current_score = 0
+	was_perfect_clear = false
+
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	DifficultyManager.lock_difficulty()
+	get_tree().change_scene_to_file(GAMEPLAY_SCENE)
+	scene_changed.emit(GAMEPLAY_SCENE)
+
+func has_editor_test_data() -> bool:
+	return is_editor_test_mode and not editor_test_pack_data.is_empty()
+
+func get_editor_test_level_data() -> Dictionary:
+	if not has_editor_test_data():
+		return {}
+	var levels: Array = editor_test_pack_data.get("levels", [])
+	if editor_test_level_index < 0 or editor_test_level_index >= levels.size():
+		return {}
+	if not (levels[editor_test_level_index] is Dictionary):
+		return {}
+	return (levels[editor_test_level_index] as Dictionary).duplicate(true)
+
+func get_editor_test_level_name() -> String:
+	var level_data: Dictionary = get_editor_test_level_data()
+	return str(level_data.get("name", "Editor Test"))
+
+func get_editor_test_level_description() -> String:
+	var level_data: Dictionary = get_editor_test_level_data()
+	return str(level_data.get("description", ""))
+
+func get_editor_draft_pack() -> Dictionary:
+	return editor_draft_pack_data.duplicate(true)
+
+func get_editor_draft_level_index() -> int:
+	return editor_draft_level_index
+
+func clear_editor_test_state() -> void:
+	is_editor_test_mode = false
+	editor_test_pack_data = {}
+	editor_test_level_index = 0
+
+func return_to_editor_from_test() -> void:
+	"""Exit editor test flow and return to editor with draft restored."""
+	is_in_gameplay = false
+	clear_editor_test_state()
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	DifficultyManager.unlock_difficulty()
+	get_tree().change_scene_to_file(LEVEL_EDITOR_SCENE)
+	scene_changed.emit(LEVEL_EDITOR_SCENE)
+
 func start_level(level_id: int) -> void:
 	"""Start playing a specific level (individual mode by default)"""
-	if not SaveManager.is_level_unlocked(level_id):
-		return
-
-	if not LevelLoader.level_exists(level_id):
+	var ref: Dictionary = PackLoader.get_legacy_level_ref(level_id)
+	if ref.is_empty():
 		push_error("Level does not exist: ", level_id)
 		return
 
-	current_level_id = level_id
+	start_level_ref(str(ref.get("pack_id", "")), int(ref.get("level_index", -1)))
+
+func start_level_ref(pack_id: String, level_index: int) -> void:
+	"""Start playing a specific level using pack-native addressing."""
+	var level_key := PackLoader.get_level_key(pack_id, level_index)
+	if not SaveManager.is_level_key_unlocked(level_key):
+		return
+
+	var level_data := PackLoader.get_level_data(pack_id, level_index)
+	if level_data.is_empty():
+		push_error("Level does not exist: %s:%d" % [pack_id, level_index])
+		return
+
+	current_pack_id = pack_id
+	current_level_index = level_index
+	var legacy_level_id := PackLoader.get_legacy_level_id(pack_id, level_index)
+	current_level_id = legacy_level_id if legacy_level_id != -1 else 0
 	is_in_gameplay = true
 	var mode_name = "set" if current_play_mode == PlayMode.SET else "individual"
-	SaveManager.set_last_played(level_id, mode_name, current_set_id, true)
+	SaveManager.set_last_played_ref(pack_id, level_index, mode_name, current_set_pack_id, true)
 
 	# Track gameplay sessions (counts each level start)
 	SaveManager.increment_stat("total_games_played")
@@ -147,14 +308,22 @@ func start_level(level_id: int) -> void:
 
 func start_set(set_id: int) -> void:
 	"""Start playing a set from the beginning"""
-	if not SetLoader.set_exists(set_id):
+	if not PackLoader.legacy_set_exists(set_id):
 		push_error("Set does not exist: ", set_id)
 		return
 
 	# Switch to set mode
 	current_play_mode = PlayMode.SET
 	current_set_id = set_id
-	set_level_ids = SetLoader.get_set_level_ids(set_id)
+	current_set_pack_id = PackLoader.get_legacy_set_pack_id(set_id)
+	set_level_ids = PackLoader.get_legacy_set_level_ids(set_id)
+	set_level_refs = []
+	var level_count := PackLoader.get_level_count(current_set_pack_id)
+	for level_index in range(level_count):
+		set_level_refs.append({
+			"pack_id": current_set_pack_id,
+			"level_index": level_index
+		})
 	set_current_index = 0
 
 	# Reset saved state for new set
@@ -166,20 +335,65 @@ func start_set(set_id: int) -> void:
 	_reset_set_breakdown()
 
 	# Start first level in the set
-	if set_level_ids.size() > 0:
-		start_level(set_level_ids[0])
+	if set_level_refs.size() > 0:
+		start_level_ref(current_set_pack_id, 0)
 	else:
 		push_error("Set ", set_id, " has no levels!")
 
-func continue_set_from_level(level_id: int) -> void:
-	"""Resume set mode after game over continue (resets score/lives, continues from current level)"""
-	# Find the index of this level in the set
-	var level_index = set_level_ids.find(level_id)
-	if level_index == -1:
-		push_error("Level ", level_id, " not found in current set")
+func start_pack(pack_id: String) -> void:
+	"""Start playing a pack from the beginning (supports built-in and user packs)."""
+	if not PackLoader.pack_exists(pack_id):
+		push_error("Pack does not exist: %s" % pack_id)
 		return
 
-	set_current_index = level_index
+	current_play_mode = PlayMode.SET
+	current_set_pack_id = pack_id
+	current_set_id = _find_set_id_by_pack_id(pack_id)
+	current_browse_pack_id = pack_id
+	set_level_ids = []
+	set_level_refs = []
+
+	var level_count := PackLoader.get_level_count(pack_id)
+	for level_index in range(level_count):
+		set_level_refs.append({"pack_id": pack_id, "level_index": level_index})
+		var legacy_level_id := PackLoader.get_legacy_level_id(pack_id, level_index)
+		if legacy_level_id != -1:
+			set_level_ids.append(legacy_level_id)
+
+	set_current_index = 0
+	set_saved_score = 0
+	set_saved_lives = 3
+	set_saved_combo = 0
+	set_saved_no_miss = 0
+	set_saved_perfect = true
+	_reset_set_breakdown()
+
+	if set_level_refs.is_empty():
+		push_error("Pack %s has no levels!" % pack_id)
+		return
+	start_level_ref(pack_id, 0)
+
+func continue_set_from_level(level_id: int) -> void:
+	"""Resume set mode after game over continue (resets score/lives, continues from current level)"""
+	var ref: Dictionary = PackLoader.get_legacy_level_ref(level_id)
+	if ref.is_empty():
+		push_error("Level ", level_id, " not found in current set")
+		return
+	continue_set_from_ref(str(ref.get("pack_id", "")), int(ref.get("level_index", -1)))
+
+func continue_set_from_ref(pack_id: String, level_index: int) -> void:
+	"""Resume set mode from pack-native level reference."""
+	var found_index := -1
+	for i in range(set_level_refs.size()):
+		var level_ref: Dictionary = set_level_refs[i]
+		if str(level_ref.get("pack_id", "")) == pack_id and int(level_ref.get("level_index", -1)) == level_index:
+			found_index = i
+			break
+	if found_index == -1:
+		push_error("Level %s:%d not found in current set" % [pack_id, level_index])
+		return
+
+	set_current_index = found_index
 
 	# Mark that we used a continue (prevents perfect set bonus)
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -187,24 +401,29 @@ func continue_set_from_level(level_id: int) -> void:
 		game_manager.had_continue = true
 
 	# Start the level (score and lives will be reset by GameManager)
-	start_level(level_id)
+	start_level_ref(pack_id, level_index)
 
 func restart_current_level() -> void:
 	"""Restart the current level"""
-	start_level(current_level_id)
+	if is_editor_test_mode:
+		start_editor_test(editor_draft_pack_data, editor_draft_level_index)
+		return
+	start_level_ref(current_pack_id, current_level_index)
 
 func show_game_over(final_score: int) -> void:
 	"""Show game over screen with final score"""
 	current_score = final_score
 	is_in_gameplay = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	SaveManager.set_last_played_in_progress(false)
+	if not is_editor_test_mode:
+		SaveManager.set_last_played_in_progress(false)
 
 	# Unlock difficulty when leaving gameplay
 	DifficultyManager.unlock_difficulty()
 
 	# Try to update high score
-	SaveManager.update_high_score(current_level_id, final_score)
+	if not is_editor_test_mode:
+		SaveManager.update_level_key_high_score(get_current_level_key(), final_score)
 
 	get_tree().change_scene_to_file(GAME_OVER_SCENE)
 	scene_changed.emit(GAME_OVER_SCENE)
@@ -214,7 +433,8 @@ func show_level_complete(final_score: int) -> void:
 	current_score = final_score
 	is_in_gameplay = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	SaveManager.set_last_played_in_progress(false)
+	if not is_editor_test_mode:
+		SaveManager.set_last_played_in_progress(false)
 
 	# Unlock difficulty when leaving gameplay
 	DifficultyManager.unlock_difficulty()
@@ -232,6 +452,11 @@ func show_level_complete(final_score: int) -> void:
 	# Capture per-level breakdown before leaving gameplay
 	_capture_level_breakdown(game_manager)
 
+	if is_editor_test_mode:
+		get_tree().change_scene_to_file(LEVEL_COMPLETE_SCENE)
+		scene_changed.emit(LEVEL_COMPLETE_SCENE)
+		return
+
 	# Save game state for set mode (before scene changes)
 	if current_play_mode == PlayMode.SET and game_manager:
 		set_saved_score = current_score
@@ -241,10 +466,12 @@ func show_level_complete(final_score: int) -> void:
 		set_saved_perfect = game_manager.is_perfect_clear
 
 	# Mark level as completed
-	SaveManager.mark_level_completed(current_level_id)
+	SaveManager.mark_level_key_completed(get_current_level_key())
 
 	# Update high score (with perfect clear bonus if applicable)
-	SaveManager.update_high_score(current_level_id, current_score)
+	SaveManager.update_level_key_high_score(get_current_level_key(), current_score)
+	var earned_stars := SaveManager.calculate_level_stars(get_current_level_key(), current_score, was_perfect_clear)
+	SaveManager.update_level_key_stars(get_current_level_key(), earned_stars)
 
 	# Track level completion statistic
 	SaveManager.increment_stat("total_levels_completed")
@@ -257,34 +484,40 @@ func show_level_complete(final_score: int) -> void:
 	SaveManager.check_achievements()
 
 	# Unlock next level (works in both modes)
-	var next_level_id = LevelLoader.get_next_level_id(current_level_id)
-	if next_level_id != -1:
-		SaveManager.unlock_level(next_level_id)
+	var next_level_ref := _get_next_level_ref()
+	if not next_level_ref.is_empty():
+		SaveManager.unlock_level_key(PackLoader.get_level_key(
+			str(next_level_ref.get("pack_id", "")),
+			int(next_level_ref.get("level_index", -1))
+		))
 
 	get_tree().change_scene_to_file(LEVEL_COMPLETE_SCENE)
 	scene_changed.emit(LEVEL_COMPLETE_SCENE)
 
 func continue_to_next_level() -> void:
 	"""Load the next level after completion (handles both individual and set mode)"""
+	if is_editor_test_mode:
+		return_to_editor_from_test()
+		return
 	if current_play_mode == PlayMode.SET:
 		# In set mode, advance to next level in set
 		set_current_index += 1
-		if set_current_index < set_level_ids.size():
+		if set_current_index < set_level_refs.size():
 			# Continue to next level in set
-			start_level(set_level_ids[set_current_index])
+			var next_ref: Dictionary = set_level_refs[set_current_index]
+			start_level_ref(str(next_ref.get("pack_id", "")), int(next_ref.get("level_index", -1)))
 		else:
 			# Completed all levels in set
 			show_set_complete(current_score)
 	else:
-		# In individual mode, use normal next level logic
-		var next_level_id = LevelLoader.get_next_level_id(current_level_id)
-
-		if next_level_id == -1:
+		# In individual mode, advance via legacy ordered pack mapping.
+		var next_level_ref := _get_next_level_ref()
+		if next_level_ref.is_empty():
 			show_level_select()
 			return
 
 		# Start next level
-		start_level(next_level_id)
+		start_level_ref(str(next_level_ref.get("pack_id", "")), int(next_level_ref.get("level_index", -1)))
 
 func show_set_complete(final_score: int) -> void:
 	"""Show set complete screen with cumulative score and bonuses"""
@@ -299,10 +532,10 @@ func show_set_complete(final_score: int) -> void:
 		current_score = final_score
 
 	# Update set high score
-	SaveManager.update_set_high_score(current_set_id, current_score)
+	SaveManager.update_set_pack_high_score(current_set_pack_id, current_score)
 
 	# Mark set as completed
-	SaveManager.mark_set_completed(current_set_id)
+	SaveManager.mark_set_pack_completed(current_set_pack_id)
 
 	# Track set completion statistic
 	SaveManager.increment_stat("total_set_runs_completed")
@@ -320,18 +553,30 @@ func resume_last_level() -> void:
 	var last_played = SaveManager.get_last_played()
 	if not last_played.get("in_progress", false):
 		return
-	var level_id = int(last_played.get("level_id", 0))
-	if level_id <= 0:
+	var pack_id := str(last_played.get("pack_id", ""))
+	var level_index := int(last_played.get("level_index", -1))
+	if pack_id.is_empty() or level_index < 0:
+		var legacy_level_id = int(last_played.get("level_id", 0))
+		var fallback_ref: Dictionary = PackLoader.get_legacy_level_ref(legacy_level_id)
+		if fallback_ref.is_empty():
+			return
+		pack_id = str(fallback_ref.get("pack_id", ""))
+		level_index = int(fallback_ref.get("level_index", -1))
+	if pack_id.is_empty() or level_index < 0:
 		return
 	var mode = str(last_played.get("mode", "individual"))
-	var set_id = int(last_played.get("set_id", -1))
+	var set_pack_id := str(last_played.get("set_pack_id", ""))
 
-	if mode == "set" and set_id != -1:
+	if mode == "set" and not set_pack_id.is_empty():
 		current_play_mode = PlayMode.SET
-		current_set_id = set_id
-		set_level_ids = SetLoader.get_set_level_ids(set_id)
-		var index = set_level_ids.find(level_id)
-		set_current_index = index if index != -1 else 0
+		current_set_pack_id = set_pack_id
+		current_set_id = _find_set_id_by_pack_id(set_pack_id)
+		set_level_ids = PackLoader.get_legacy_set_level_ids(current_set_id) if current_set_id != -1 else []
+		set_level_refs = []
+		var level_count := PackLoader.get_level_count(set_pack_id)
+		for idx in range(level_count):
+			set_level_refs.append({"pack_id": set_pack_id, "level_index": idx})
+		set_current_index = level_index
 		set_saved_score = 0
 		set_saved_lives = 3
 		set_saved_combo = 0
@@ -340,10 +585,12 @@ func resume_last_level() -> void:
 	else:
 		current_play_mode = PlayMode.INDIVIDUAL
 		current_set_id = -1
+		current_set_pack_id = ""
 		set_current_index = 0
 		set_level_ids = []
+		set_level_refs = []
 
-	start_level(level_id)
+	start_level_ref(pack_id, level_index)
 
 func quit_game() -> void:
 	"""Quit the game application"""
@@ -352,6 +599,20 @@ func quit_game() -> void:
 func get_current_level_id() -> int:
 	"""Get the ID of the currently selected/playing level"""
 	return current_level_id
+
+func get_current_level_ref() -> Dictionary:
+	"""Get the current level using pack-native addressing."""
+	return {
+		"pack_id": current_pack_id,
+		"level_index": current_level_index
+	}
+
+func get_current_level_key() -> String:
+	return PackLoader.get_level_key(current_pack_id, current_level_index)
+
+func get_next_level_ref() -> Dictionary:
+	"""Expose next-level lookup for UI screens."""
+	return _get_next_level_ref()
 
 func get_current_score() -> int:
 	"""Get the current/final score"""
@@ -456,6 +717,18 @@ func _reset_set_breakdown() -> void:
 	set_total_time_seconds = 0.0
 	set_score_before_bonus = 0
 	set_perfect_bonus = 0
+
+func _get_next_level_ref() -> Dictionary:
+	var current_legacy_id := PackLoader.get_legacy_level_id(current_pack_id, current_level_index)
+	if current_legacy_id == -1:
+		return {}
+	return PackLoader.get_legacy_level_ref(current_legacy_id + 1)
+
+func _find_set_id_by_pack_id(pack_id: String) -> int:
+	for set_data in PackLoader.get_all_legacy_sets():
+		if str(set_data.get("pack_id", "")) == pack_id:
+			return int(set_data.get("set_id", -1))
+	return -1
 
 func is_gameplay_active() -> bool:
 	"""Check if we're currently in a gameplay scene"""

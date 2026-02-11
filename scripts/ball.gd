@@ -614,31 +614,36 @@ func _get_air_ball_landing_data() -> Dictionary:
 	var helper = _get_air_ball_helper()
 
 	if game_manager:
-		var level_id: int = game_manager.current_level
-		if helper and helper.has_method("is_cached_level") and helper.call("is_cached_level", level_id):
-			return helper.call("get_landing_data", level_id, center_x, step_x)
+		var pack_id: String = str(game_manager.current_pack_id)
+		var level_index: int = int(game_manager.current_level_index)
+		var level_key: String = "%s:%d" % [pack_id, level_index]
+		if helper and helper.has_method("is_cached_level") and helper.call("is_cached_level", level_key):
+			return helper.call("get_landing_data", level_key, center_x, step_x)
 
-		var level_data = LevelLoader.load_level_data(level_id)
+		var level_data: Dictionary = PackLoader.get_level_data(pack_id, level_index)
 		if not level_data.is_empty():
-			var grid = level_data.get("grid", {})
-			var brick_size = grid.get("brick_size", 48)
-			var spacing = grid.get("spacing", 3)
-			var start_x = grid.get("start_x", 150)
+			var grid: Dictionary = level_data.get("grid", {})
+			var brick_size: int = int(grid.get("brick_size", 48))
+			var spacing: int = int(grid.get("spacing", 3))
+			var start_x: int = int(grid.get("start_x", 150))
 			step_x = float(brick_size + spacing)
 
-			var bricks = level_data.get("bricks", [])
+			var bricks: Array = level_data.get("bricks", [])
 			if bricks.size() > 0:
-				var min_col = bricks[0].get("col", 0)
-				var max_col = min_col
+				var first_brick: Variant = bricks[0]
+				var min_col: int = int(first_brick.get("col", 0)) if first_brick is Dictionary else 0
+				var max_col: int = min_col
 				for brick_def in bricks:
-					var col = brick_def.get("col", 0)
+					if not (brick_def is Dictionary):
+						continue
+					var col: int = int(brick_def.get("col", 0))
 					min_col = min(min_col, col)
 					max_col = max(max_col, col)
 				center_x = float(start_x) + ((min_col + max_col) / 2.0) * step_x
 			else:
 				center_x = float(start_x)
 			if helper and helper.has_method("cache_landing_data"):
-				helper.call("cache_landing_data", level_id, center_x, step_x)
+				helper.call("cache_landing_data", level_key, center_x, step_x)
 
 	return {
 		"center_x": center_x,

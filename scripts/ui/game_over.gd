@@ -15,13 +15,13 @@ func _ready():
 	"""Initialize game over screen"""
 	# Get score from MenuController
 	var final_score = MenuController.get_current_score()
-	var level_id = MenuController.get_current_level_id()
+	var level_key = MenuController.get_current_level_key()
 
 	# Display final score
 	score_label.text = "Final Score: " + str(final_score)
 
 	# Check if this was a high score
-	var high_score = SaveManager.get_high_score(level_id)
+	var high_score = SaveManager.get_level_key_high_score(level_key)
 	if high_score > 0:
 		if final_score >= high_score:
 			high_score_label.text = "NEW HIGH SCORE!"
@@ -35,6 +35,12 @@ func _ready():
 	# Add "Continue Set" button if in set mode
 	if MenuController.current_play_mode == MenuController.PlayMode.SET:
 		add_continue_set_button()
+
+	if MenuController.is_editor_test_mode:
+		high_score_label.text = "EDITOR TEST"
+		high_score_label.set("theme_override_colors/font_color", Color(0.75, 0.9, 1.0, 1))
+		retry_button.text = "RETEST LEVEL"
+		menu_button.text = "RETURN TO EDITOR"
 
 func add_continue_set_button():
 	"""Add Continue Set button between Retry and Menu buttons"""
@@ -61,7 +67,8 @@ func _on_retry_button_pressed():
 
 func _on_continue_set_button_pressed():
 	"""Continue set from current level with reset score/lives"""
-	var level_id = MenuController.get_current_level_id()
+	var level_ref = MenuController.get_current_level_ref()
+	var level_id = PackLoader.get_legacy_level_id(str(level_ref.get("pack_id", "")), int(level_ref.get("level_index", 0)))
 
 	# Set had_continue flag
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -69,8 +76,14 @@ func _on_continue_set_button_pressed():
 		game_manager.had_continue = true
 
 	# Continue the set from current level
-	MenuController.continue_set_from_level(level_id)
+	if level_id != -1:
+		MenuController.continue_set_from_level(level_id)
+	else:
+		MenuController.continue_set_from_ref(str(level_ref.get("pack_id", "")), int(level_ref.get("level_index", 0)))
 
 func _on_menu_button_pressed():
 	"""Return to main menu"""
+	if MenuController.is_editor_test_mode:
+		MenuController.return_to_editor_from_test()
+		return
 	MenuController.show_main_menu()

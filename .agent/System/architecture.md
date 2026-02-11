@@ -1,7 +1,7 @@
 # Zep Ball - System Architecture
 
 ## Overview
-Zep Ball is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 20 levels, a set-play mode, difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
+Zep Ball is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 30 built-in levels across 3 sets, a set-play mode, difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
 
 ## Project Structure
 ```
@@ -18,6 +18,7 @@ zepball/
 │       ├── main_menu.tscn     # Start screen + difficulty selection
 │       ├── set_select.tscn    # Set browser (entry for Play)
 │       ├── level_select.tscn  # Level browser (individual or set context)
+│       ├── level_editor.tscn  # In-game pack/level editor (stage 4 WIP)
 │       ├── game_over.tscn     # Game over screen
 │       ├── level_complete.tscn # Level victory screen
 │       ├── set_complete.tscn  # Set completion summary
@@ -38,23 +39,27 @@ zepball/
 │   ├── power_up_manager.gd    # Power-up timer system (autoload)
 │   ├── difficulty_manager.gd  # Difficulty modes (autoload)
 │   ├── save_manager.gd        # Save data and persistence (autoload)
-│   ├── level_loader.gd        # Level loading from JSON (autoload)
-│   ├── set_loader.gd          # Set loading from JSON (autoload)
+│   ├── pack_loader.gd         # .zeppack discovery/loading/instantiation (autoload)
 │   └── ui/
 │       ├── menu_controller.gd # Scene transitions and flow (autoload)
 │       ├── main_menu.gd       # Main menu logic
 │       ├── set_select.gd      # Set select logic
 │       ├── level_select.gd    # Level selection grid
+│       ├── level_editor.gd    # In-game pack/level editor logic
 │       ├── game_over.gd       # Game over screen logic
 │       ├── level_complete.gd  # Level complete screen logic
 │       ├── set_complete.gd    # Set complete screen logic
 │       ├── stats.gd           # Statistics display
 │       ├── settings.gd        # Settings screen logic
 │       └── audio_toast.gd     # Transient toast UI helper for audio hotkeys
-├── levels/                    # Level definitions (JSON)
+├── packs/                     # Built-in pack definitions (.zeppack)
+│   ├── classic-challenge.zeppack
+│   ├── prism-showcase.zeppack
+│   └── nebula-ascend.zeppack
+├── levels/                    # Legacy level definitions (JSON, compatibility during migration)
 │   ├── level_01.json through level_20.json
 ├── data/
-│   └── level_sets.json        # Set definitions (JSON)
+│   └── (no runtime set JSON; set metadata comes from built-in packs)
 ├── assets/
 │   ├── audio/
 │   │   ├── music/             # Background music tracks (mp3)
@@ -72,9 +77,8 @@ These nodes are always loaded and accessible throughout the game:
 2. **DifficultyManager** - `scripts/difficulty_manager.gd` - Difficulty settings and multipliers
 3. **SaveManager** - `scripts/save_manager.gd` - Save data, high scores, statistics, achievements
 4. **AudioManager** - `scripts/audio_manager.gd` - Music/SFX playback and audio bus setup
-5. **LevelLoader** - `scripts/level_loader.gd` - Loads levels from JSON files
-6. **SetLoader** - `scripts/set_loader.gd` - Loads level sets from JSON
-7. **MenuController** - `scripts/ui/menu_controller.gd` - Scene transitions and game flow
+5. **PackLoader** - `scripts/pack_loader.gd` - Loads built-in/user `.zeppack` files and instantiates level bricks
+6. **MenuController** - `scripts/ui/menu_controller.gd` - Scene transitions and game flow
 
 ## Runtime Scene Graph (Gameplay - main.tscn)
 ```
@@ -121,7 +125,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 **Purpose**: Orchestrates gameplay scene, level loading, and game loop.
 
 **Responsibilities**:
-- Loads level data from LevelLoader and instantiates bricks
+- Loads level data from MenuController pack refs and instantiates bricks via PackLoader
 - Connects signals between ball, GameManager, HUD, and bricks
 - Tracks `remaining_breakable_bricks` for level completion detection
 - Handles ball loss logic (life loss only if last ball in play)
@@ -156,6 +160,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - `no_miss_hits` - Streak without losing ball (streak multiplier)
 - `is_perfect_clear` - True if no lives lost this level (2x bonus)
 - `had_continue` - Set mode flag; disables perfect set bonus
+- `current_pack_id` / `current_level_index` / `current_level_key` - Pack-native level identity (legacy `current_level` int retained for compatibility)
 
 **Scoring System**:
 ```gdscript
@@ -292,12 +297,16 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Powers HUD timer display in top-right corner
 - `power_up.gd` movement processing auto-disables when inactive (terminal game state or zero-speed) to avoid idle per-frame physics work
 
-### 7. Set System (`scripts/set_loader.gd` + set UI)
+### 7. Set System (`scripts/pack_loader.gd` + set UI)
 **Purpose**: Curated multi-level runs with cumulative scoring.
 
-**Set Data** (`data/level_sets.json`):
-- `set_id`, `name`, `description`, `level_ids`, `unlock_condition`
-- Current data includes 1 set: **Classic Challenge** (levels 1-10)
+**Set Data** (`packs/*.zeppack`):
+- Set metadata derives from built-in pack files.
+- Current built-in sets:
+  - **Classic Challenge** (levels 1-10)
+  - **Prism Showcase** (levels 11-20)
+  - **Nebula Ascend** (levels 21-30)
+- Runtime pack identity is `pack_id` + `level_index` (legacy integer IDs are compatibility-only via PackLoader helpers)
 
 **Runtime Behavior**:
 - Main Menu → Set Select → Play Set or View Levels
@@ -317,40 +326,51 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - Settings button → Settings screen
    - Quit button
 
-2. **Set Select** (`scenes/ui/set_select.tscn`)
-   - Cards for each set
-   - Play Set → starts set mode
-   - View Levels → opens Level Select scoped to set
+2. **Set Select / Pack Select** (`scenes/ui/set_select.tscn`)
+   - Cards for built-in and user packs (source badge + author + progress + stars + best score)
+   - Play Pack → starts pack mode
+   - View Levels → opens Level Select scoped to selected pack
 
 3. **Level Select** (`scenes/ui/level_select.tscn`)
-   - Grid of levels with unlock status and high scores
-   - In set context, shows set header and “Play This Set” button
+   - Grid of levels with preview thumbnails, stars, unlock/completion/high-score status
+   - Filter: All / Completed / Locked
+   - Sort: By Order / By Score
+   - In pack context, shows pack header and “Play This Pack” button
 
-4. **Game Over** (`scenes/ui/game_over.tscn`)
+4. **Level Editor** (`scenes/ui/level_editor.tscn`) (Stage 4 WIP)
+   - Create/edit user packs (`.zeppack`) in-game
+   - Edit pack metadata and level roster
+   - Paint/erase bricks on a configurable rows/cols grid
+   - Duplicate/reorder levels and undo/redo edits
+   - Run `TEST LEVEL` from in-memory draft and return to editor
+   - Save to `user://packs/` through `PackLoader.save_user_pack()`
+   - Export timestamped `.zeppack` files to `user://exports/`
+
+5. **Game Over** (`scenes/ui/game_over.tscn`)
    - Final score display
    - High score comparison
    - Retry level button
    - Continue Set button (only in set mode)
    - Back to Main Menu button
 
-5. **Level Complete** (`scenes/ui/level_complete.tscn`)
+6. **Level Complete** (`scenes/ui/level_complete.tscn`)
    - Final score display
    - Score breakdown (base + bonuses + time)
    - High score notification if beaten
    - “Perfect Clear” bonus message (2x)
    - Continue Set (set mode) or Next Level (individual mode)
 
-6. **Set Complete** (`scenes/ui/set_complete.tscn`)
+7. **Set Complete** (`scenes/ui/set_complete.tscn`)
    - Cumulative score
    - Score breakdown (base + bonuses + set time)
    - Perfect set bonus message (3x)
    - Set high score display
 
-7. **Statistics** (`scenes/ui/stats.tscn`)
+8. **Statistics** (`scenes/ui/stats.tscn`)
    - Global statistics display
    - Achievement list with progress bars
 
-8. **Settings** (`scenes/ui/settings.tscn`)
+9. **Settings** (`scenes/ui/settings.tscn`)
    - Screen shake intensity (Off/Low/Medium/High)
    - Particle effects toggle
    - Ball trail toggle
@@ -369,6 +389,8 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 
 **MenuController Functions**:
 - `show_main_menu()` / `show_set_select()` / `show_level_select()` / `show_stats()` / `show_settings()` / `resume_last_level()`
+- `show_editor()` / `show_editor_for_pack(pack_id)` for editor entry flow
+- `start_editor_test(pack_data, level_index)` / `return_to_editor_from_test()` for editor gameplay test loop
 - `start_level(level_id)` - Loads gameplay scene with specified level
 - `start_set(set_id)` - Starts set mode and first level
 - `show_game_over(final_score)` - Shows game over screen, saves high score
@@ -448,7 +470,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - `combo_master` - Reach 20x combo
 - `combo_god` - Reach 50x combo
 - `power_collector` - Collect 100 power-ups
-- `champion` - Complete all 10 levels
+- `champion` - Complete 30 levels
 - `perfectionist` - Complete a level without missing the ball (1 perfect clear)
 - `flawless` - Get 10 perfect clears
 - `high_roller` - Score 10,000 points in a single game
@@ -460,40 +482,21 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Preserves existing player progress
 - See `SOP/godot-workflow.md` for save migration best practices
 
-### 10. Level System (`scripts/level_loader.gd` + JSON files)
-**Purpose**: Load and manage level definitions from JSON.
+### 10. Level System (`scripts/pack_loader.gd` + `.zeppack`)
+**Purpose**: Load and manage level definitions from pack files.
 
-**Level Structure** (JSON):
-```json
-{
-  "level_id": 1,
-  "name": "First Contact",
-  "description": "Learn the basics - break all the bricks!",
-  "grid": {
-    "rows": 5,
-    "cols": 8,
-    "brick_size": 48,
-    "spacing": 3,
-    "start_x": 150,
-    "start_y": 150
-  },
-  "bricks": [
-    {"row": 0, "col": 0, "type": "NORMAL"},
-    {"row": 0, "col": 1, "type": "STRONG"},
-    {"row": 0, "col": 2, "type": "BOMB"}
-  ]
-}
-```
+**Pack Format**:
+- Levels are grouped into `.zeppack` files in `res://packs/` and `user://packs/`.
+- Active built-in packs: `classic-challenge`, `prism-showcase`, `nebula-ascend`.
+- Runtime addressing is `pack_id + level_index` (legacy integer IDs are compatibility-only).
 
-**Valid Brick Types**:
-- `NORMAL`, `STRONG`, `UNBREAKABLE`, `GOLD`, `RED`, `BLUE`, `GREEN`, `PURPLE`, `ORANGE`, `BOMB`
-
-**LevelLoader Functions**:
-- `level_exists(level_id)` - Check if level JSON exists
-- `instantiate_level(level_id, brick_container)` - Spawn bricks in scene
-- `get_level_info(level_id)` - Get name, description, metadata
-- `get_next_level_id(current_id)` - Returns -1 if no more levels
-- Uses directory scan to determine total level count
+**PackLoader Functions**:
+- `get_all_packs()` / `get_builtin_packs()` / `get_user_packs()`
+- `get_pack(pack_id)` / `pack_exists(pack_id)`
+- `get_level_count(pack_id)` / `get_level_data(pack_id, level_index)` / `get_level_info(pack_id, level_index)`
+- `instantiate_level(pack_id, level_index, brick_container)`
+- `generate_level_preview(pack_id, level_index)`
+- `save_user_pack(pack_data)` / `delete_user_pack(pack_id)`
 
 ### 11. Difficulty System (`scripts/difficulty_manager.gd`)
 **Purpose**: Game difficulty modes with multipliers.
@@ -742,7 +745,7 @@ All settings auto-save and load:
 
 ## Known Issues and Gaps
 - Set unlocking is stubbed; `highest_unlocked_set` is always 1 and all sets are effectively unlocked.
-- Debug logging is still verbose in multiple scripts.
+- No major known migration blockers; level/set runtime is fully pack-native.
 
 ## Related Docs
 - `System/tech-stack.md` - Engine version, project settings, input configuration
@@ -753,8 +756,8 @@ All settings auto-save and load:
 
 ---
 
-**Last Updated**: 2026-01-31
+**Last Updated**: 2026-02-11
 **Godot Version**: 4.6
-**Total Levels**: 10
-**Total Sets**: 1
+**Total Levels**: 30
+**Total Sets**: 3
 **Total Achievements**: 12

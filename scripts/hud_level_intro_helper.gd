@@ -54,6 +54,7 @@ func create_level_intro() -> Control:
 	level_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	level_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(level_desc)
+	level_intro_desc_label = level_desc
 
 	var spacer2 = Control.new()
 	spacer2.custom_minimum_size = Vector2(0, 40)

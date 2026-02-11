@@ -24,7 +24,12 @@ func _ready():
 	# Get data from MenuController
 	var final_score = MenuController.get_current_score()
 	var set_id = MenuController.current_set_id
-	var set_display_name = SetLoader.get_set_name(set_id)
+	var pack_id = MenuController.current_set_pack_id
+	var set_display_name = ""
+	if set_id != -1:
+		set_display_name = PackLoader.get_legacy_set_name(set_id)
+	else:
+		set_display_name = str(PackLoader.get_pack(pack_id).get("name", "Custom Pack"))
 	var breakdown = MenuController.get_set_breakdown()
 	var set_time = MenuController.get_set_total_time_seconds()
 	var set_bonus = MenuController.get_set_perfect_bonus()
@@ -62,7 +67,7 @@ func _ready():
 	time_label.text = "Set Time: " + _format_time(set_time)
 
 	# Check if this was a set high score
-	var set_high_score = SaveManager.get_set_high_score(set_id)
+	var set_high_score = SaveManager.get_set_pack_high_score(pack_id)
 	if final_score >= set_high_score:
 		set_high_score_label.text = "NEW SET HIGH SCORE!"
 		set_high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1))
@@ -74,16 +79,18 @@ func _ready():
 
 	# Check if there's a next set
 	var next_set_id = set_id + 1
-	if SetLoader.set_exists(next_set_id) and SaveManager.is_set_unlocked(next_set_id):
+	if set_id != -1 and PackLoader.legacy_set_exists(next_set_id) and SaveManager.is_set_unlocked(next_set_id):
 		next_set_button.disabled = false
-		var next_set_name = SetLoader.get_set_name(next_set_id)
+		var next_set_name = PackLoader.get_legacy_set_name(next_set_id)
 		next_set_button.text = "NEXT SET: " + next_set_name.to_upper()
 	else:
 		next_set_button.disabled = true
-		next_set_button.text = "NO MORE SETS"
+		next_set_button.text = "NO MORE PACKS"
 
 func _on_next_set_button_pressed():
 	"""Start the next set"""
+	if MenuController.current_set_id == -1:
+		return
 	var next_set_id = MenuController.current_set_id + 1
 	MenuController.start_set(next_set_id)
 

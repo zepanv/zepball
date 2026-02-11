@@ -48,9 +48,9 @@ const ACHIEVEMENTS = {
 	},
 	"champion": {
 		"name": "Champion",
-		"description": "Complete all 10 levels",
+		"description": "Complete 30 levels",
 		"condition_stat": "total_levels_completed",
-		"condition_value": 10
+		"condition_value": 30
 	},
 	"perfectionist": {
 		"name": "Perfectionist",

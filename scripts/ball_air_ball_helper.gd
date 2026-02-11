@@ -5,25 +5,25 @@ class_name BallAirBallHelper
 
 var air_landing_shape: CircleShape2D = null
 var air_landing_query: PhysicsShapeQueryParameters2D = null
-var cached_level_id: int = -1
+var cached_level_key: String = ""
 var cached_center_x: float = 0.0
 var cached_step_x: float = 0.0
 
-func is_cached_level(level_id: int) -> bool:
-	return level_id == cached_level_id
+func is_cached_level(level_key: String) -> bool:
+	return level_key == cached_level_key
 
 func get_landing_data(
-	level_id: int,
+	level_key: String,
 	fallback_center_x: float,
 	default_step_x: float
 ) -> Dictionary:
-	if level_id == cached_level_id:
+	if level_key == cached_level_key:
 		return {
 			"center_x": cached_center_x,
 			"step_x": cached_step_x
 		}
 
-	cached_level_id = level_id
+	cached_level_key = level_key
 	cached_center_x = fallback_center_x
 	cached_step_x = default_step_x
 	return {
@@ -31,8 +31,8 @@ func get_landing_data(
 		"step_x": cached_step_x
 	}
 
-func cache_landing_data(level_id: int, center_x: float, step_x: float) -> void:
-	cached_level_id = level_id
+func cache_landing_data(level_key: String, center_x: float, step_x: float) -> void:
+	cached_level_key = level_key
 	cached_center_x = center_x
 	cached_step_x = step_x
 

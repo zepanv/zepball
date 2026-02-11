@@ -1,183 +1,303 @@
 extends Control
 
-## Level Select Screen - Displays available levels with unlock status
-## Shows high scores and allows launching unlocked levels
+## Level Select Screen - pack-aware level browser with thumbnails, stars, and filter/sort
 
 @onready var levels_grid = $VBoxContainer/LevelsGrid
 @onready var vbox_container = $VBoxContainer
+@onready var title_label = $VBoxContainer/TitleLabel
 
-var set_header_label: Label = null
-var play_set_button: Button = null
+var filter_mode: String = "all" # all | completed | locked
+var sort_mode: String = "order" # order | score
 
-func _ready():
-	"""Initialize level select screen"""
-	# Check if we're viewing a specific set
-	if MenuController.current_set_id != -1:
-		add_set_context_ui()
+var toolbar_row: HBoxContainer = null
+var header_desc_label: Label = null
+var play_pack_button: Button = null
 
-	# Populate levels
+func _ready() -> void:
+	build_toolbar()
+	if not MenuController.current_browse_pack_id.is_empty():
+		add_pack_context_ui(MenuController.current_browse_pack_id)
 	populate_levels()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_button_pressed()
 
-func add_set_context_ui():
-	"""Add set header and Play Set button when viewing a set"""
-	var set_id = MenuController.current_set_id
-	var set_title = SetLoader.get_set_name(set_id)
-	var set_description = SetLoader.get_set_description(set_id)
+func build_toolbar() -> void:
+	toolbar_row = HBoxContainer.new()
+	toolbar_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	toolbar_row.add_theme_constant_override("separation", 8)
+	vbox_container.add_child(toolbar_row)
+	vbox_container.move_child(toolbar_row, 2)
 
-	# Update title to include set name
-	var title_label = vbox_container.get_node_or_null("TitleLabel")
-	if title_label:
-		title_label.text = "SELECT LEVEL — " + set_title.to_upper()
+	_create_toolbar_label("FILTER")
+	_create_filter_button("ALL", "all")
+	_create_filter_button("COMPLETED", "completed")
+	_create_filter_button("LOCKED", "locked")
 
-	# Create description label
-	var desc_label = Label.new()
-	desc_label.text = set_description
-	desc_label.set("theme_override_font_sizes/font_size", 18)
-	desc_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
-	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox_container.add_child(desc_label)
-	vbox_container.move_child(desc_label, 2)
+	_create_toolbar_label("SORT")
+	_create_sort_button("BY ORDER", "order")
+	_create_sort_button("BY SCORE", "score")
 
-	# Create Play Set button
-	play_set_button = Button.new()
-	play_set_button.text = "PLAY THIS SET"
-	play_set_button.custom_minimum_size = Vector2(300, 55)
-	play_set_button.set("theme_override_colors/font_color", Color(0, 0.9, 1, 1))
-	play_set_button.set("theme_override_colors/font_hover_color", Color(0.9, 0.3, 0.4, 1))
-	play_set_button.set("theme_override_font_sizes/font_size", 28)
-	play_set_button.pressed.connect(_on_play_set_button_pressed)
+func add_pack_context_ui(pack_id: String) -> void:
+	var pack = PackLoader.get_pack(pack_id)
+	if pack.is_empty():
+		return
 
-	# Create HBox to center the button
-	var button_hbox = HBoxContainer.new()
-	button_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	button_hbox.add_child(play_set_button)
+	title_label.text = "SELECT LEVEL - " + str(pack.get("name", "PACK")).to_upper()
+	title_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	if title_label.text.length() > 32:
+		title_label.add_theme_font_size_override("font_size", 38)
+	else:
+		title_label.add_theme_font_size_override("font_size", 44)
 
-	# Insert near top, and pull levels up under it
-	vbox_container.add_child(button_hbox)
-	vbox_container.move_child(button_hbox, 3)
-	var spacer1 = vbox_container.get_node_or_null("Spacer1")
-	if spacer1:
-		spacer1.custom_minimum_size = Vector2(0, 8)
-	vbox_container.move_child(levels_grid, 4)
+	header_desc_label = Label.new()
+	header_desc_label.text = str(pack.get("description", ""))
+	header_desc_label.add_theme_font_size_override("font_size", 17)
+	header_desc_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	header_desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox_container.add_child(header_desc_label)
+	vbox_container.move_child(header_desc_label, 3)
 
-func _on_play_set_button_pressed():
-	"""Start playing the current set"""
-	MenuController.start_set(MenuController.current_set_id)
+	play_pack_button = Button.new()
+	play_pack_button.text = "PLAY THIS PACK"
+	play_pack_button.custom_minimum_size = Vector2(300, 50)
+	play_pack_button.add_theme_font_size_override("font_size", 24)
+	play_pack_button.add_theme_color_override("font_color", Color(0, 0.9, 1, 1))
+	play_pack_button.pressed.connect(_on_play_pack_button_pressed)
 
-func populate_levels():
-	"""Create level buttons dynamically based on available levels"""
-	# Clear existing children
+	var button_row = HBoxContainer.new()
+	button_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	button_row.add_child(play_pack_button)
+	vbox_container.add_child(button_row)
+	vbox_container.move_child(button_row, 4)
+
+func populate_levels() -> void:
 	for child in levels_grid.get_children():
 		child.queue_free()
 
-	var level_ids: Array = []
-	if MenuController.current_set_id != -1:
-		level_ids = SetLoader.get_set_level_ids(MenuController.current_set_id)
-	else:
-		var total_levels = LevelLoader.get_total_level_count()
-		for level_id in range(1, total_levels + 1):
-			level_ids.append(level_id)
+	var entries = _build_level_entries()
+	entries = _apply_filter(entries)
+	_apply_sort(entries)
 
-	for level_id in level_ids:
-		create_level_button(level_id)
+	for entry in entries:
+		create_level_card(entry)
 
-func create_level_button(level_id: int):
-	"""Create a button panel for a single level"""
-	# Check if level is unlocked
-	var is_unlocked = SaveManager.is_level_unlocked(level_id)
-	var is_completed = SaveManager.is_level_completed(level_id)
-	var high_score = SaveManager.get_high_score(level_id)
-	var level_info = LevelLoader.get_level_info(level_id)
+func _build_level_entries() -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	var browse_pack_id := MenuController.current_browse_pack_id
 
-	# Create container panel
-	var panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(350, 120)
+	if not browse_pack_id.is_empty():
+		_append_pack_entries(entries, browse_pack_id)
+		return entries
 
-	# Create VBox for level info
-	var vbox = VBoxContainer.new()
-	vbox.set("theme_override_constants/separation", 5)
-	panel.add_child(vbox)
+	var packs: Array[Dictionary] = PackLoader.get_all_packs()
+	for pack in packs:
+		var pack_id := str(pack.get("pack_id", ""))
+		if pack_id.is_empty():
+			continue
+		_append_pack_entries(entries, pack_id)
+	return entries
 
-	# Level number and name
-	var title_label = Label.new()
-	title_label.text = "LEVEL " + str(level_id) + ": " + level_info.get("name", "Unknown")
-	title_label.set("theme_override_font_sizes/font_size", 24)
+func _append_pack_entries(entries: Array[Dictionary], pack_id: String) -> void:
+	var level_count := PackLoader.get_level_count(pack_id)
+	for level_index in range(level_count):
+		var level_key := PackLoader.get_level_key(pack_id, level_index)
+		var info := PackLoader.get_level_info(pack_id, level_index)
+		var legacy_level_id := PackLoader.get_legacy_level_id(pack_id, level_index)
+		var score := SaveManager.get_level_key_high_score(level_key)
+		var stars := SaveManager.get_level_key_stars(level_key)
+		var is_completed := SaveManager.is_level_key_completed(level_key)
+		var is_unlocked := SaveManager.is_level_key_unlocked(level_key)
+		entries.append({
+			"pack_id": pack_id,
+			"level_index": level_index,
+			"legacy_level_id": legacy_level_id,
+			"level_key": level_key,
+			"name": str(info.get("name", "Unknown")),
+			"description": str(info.get("description", "")),
+			"score": score,
+			"stars": stars,
+			"is_completed": is_completed,
+			"is_unlocked": is_unlocked,
+			"preview": PackLoader.generate_level_preview(pack_id, level_index)
+		})
 
-	if is_unlocked:
-		title_label.set("theme_override_colors/font_color", Color(0, 0.9, 1, 1))
-	else:
-		title_label.set("theme_override_colors/font_color", Color(0.3, 0.3, 0.3, 1))
+func _apply_filter(entries: Array[Dictionary]) -> Array[Dictionary]:
+	if filter_mode == "all":
+		return entries
 
-	vbox.add_child(title_label)
+	var filtered: Array[Dictionary] = []
+	for entry in entries:
+		var unlocked := bool(entry.get("is_unlocked", false))
+		var completed := bool(entry.get("is_completed", false))
+		if filter_mode == "completed" and completed:
+			filtered.append(entry)
+		elif filter_mode == "locked" and not unlocked:
+			filtered.append(entry)
+	return filtered
 
-	# Description
-	var desc_label = Label.new()
-	desc_label.text = level_info.get("description", "")
-	desc_label.set("theme_override_font_sizes/font_size", 16)
-	desc_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
-	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vbox.add_child(desc_label)
+func _apply_sort(entries: Array[Dictionary]) -> void:
+	if sort_mode == "score":
+		entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			var sa := int(a.get("score", 0))
+			var sb := int(b.get("score", 0))
+			if sa == sb:
+				if str(a.get("pack_id", "")) == str(b.get("pack_id", "")):
+					return int(a.get("level_index", 0)) < int(b.get("level_index", 0))
+				return str(a.get("pack_id", "")) < str(b.get("pack_id", ""))
+			return sa > sb
+		)
+		return
 
-	# High score / Lock status
-	var status_label = Label.new()
-	status_label.set("theme_override_font_sizes/font_size", 18)
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if str(a.get("pack_id", "")) == str(b.get("pack_id", "")):
+			return int(a.get("level_index", 0)) < int(b.get("level_index", 0))
+		return str(a.get("pack_id", "")) < str(b.get("pack_id", ""))
+	)
+
+func create_level_card(entry: Dictionary) -> void:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(350, 130)
+
+	var root := HBoxContainer.new()
+	root.add_theme_constant_override("separation", 10)
+	panel.add_child(root)
+
+	var preview := TextureRect.new()
+	preview.custom_minimum_size = Vector2(120, 80)
+	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	preview.texture = entry.get("preview")
+	root.add_child(preview)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.add_child(vbox)
+
+	var title := Label.new()
+	var prefix := ""
+	var legacy_level_id := int(entry.get("legacy_level_id", -1))
+	if legacy_level_id != -1:
+		prefix = "LEVEL %d: " % legacy_level_id
+	title.text = prefix + str(entry.get("name", "Unknown"))
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0, 0.9, 1, 1))
+	vbox.add_child(title)
+
+	var desc := Label.new()
+	desc.text = str(entry.get("description", ""))
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.add_theme_font_size_override("font_size", 14)
+	desc.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	vbox.add_child(desc)
+
+	var meta := HBoxContainer.new()
+	meta.add_theme_constant_override("separation", 8)
+	vbox.add_child(meta)
+
+	var stars_label := Label.new()
+	stars_label.text = _stars_text(int(entry.get("stars", 0)))
+	stars_label.add_theme_font_size_override("font_size", 15)
+	stars_label.add_theme_color_override("font_color", Color(1, 0.9, 0.45, 1))
+	meta.add_child(stars_label)
+
+	var score_label := Label.new()
+	score_label.text = "Best: %d" % int(entry.get("score", 0))
+	score_label.add_theme_font_size_override("font_size", 15)
+	score_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75, 1))
+	meta.add_child(score_label)
+
+	var status_label := Label.new()
+	status_label.add_theme_font_size_override("font_size", 15)
+	var is_unlocked := bool(entry.get("is_unlocked", false))
+	var is_completed := bool(entry.get("is_completed", false))
+	var score := int(entry.get("score", 0))
 
 	if not is_unlocked:
-		status_label.text = "🔒 LOCKED"
-		status_label.set("theme_override_colors/font_color", Color(0.5, 0.5, 0.5, 1))
-	elif is_completed and high_score > 0:
-		status_label.text = "✓ Best: " + str(high_score)
-		status_label.set("theme_override_colors/font_color", Color(0.5, 1, 0.5, 1))
+		status_label.text = "LOCKED"
+		status_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+	elif is_completed or score > 0:
+		status_label.text = "COMPLETED"
+		status_label.add_theme_color_override("font_color", Color(0.55, 1.0, 0.55, 1))
 	else:
+		# NEW only for unlocked levels with no completion/high score.
 		status_label.text = "NEW"
-		status_label.set("theme_override_colors/font_color", Color(1, 1, 0.5, 1))
+		status_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.55, 1))
+	meta.add_child(status_label)
 
-	vbox.add_child(status_label)
-
-	# Make panel clickable if unlocked
 	if is_unlocked:
-		# Convert to button-like behavior
 		panel.mouse_filter = Control.MOUSE_FILTER_STOP
 		panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-
-		# Store level_id in metadata
-		panel.set_meta("level_id", level_id)
-
-		# Connect click signal
+		panel.set_meta("pack_id", str(entry.get("pack_id", "")))
+		panel.set_meta("level_index", int(entry.get("level_index", 0)))
 		panel.gui_input.connect(_on_level_panel_input.bind(panel))
-
-		# Add hover effect
 		panel.mouse_entered.connect(_on_level_hover_start.bind(panel))
 		panel.mouse_exited.connect(_on_level_hover_end.bind(panel))
 	else:
-		panel.modulate = Color(0.5, 0.5, 0.5, 1)
+		panel.modulate = Color(0.55, 0.55, 0.55, 1)
 
 	levels_grid.add_child(panel)
 
-func _on_level_panel_input(event: InputEvent, panel: PanelContainer):
-	"""Handle click on level panel"""
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			var level_id = panel.get_meta("level_id")
-			MenuController.start_level(level_id)
+func _stars_text(stars: int) -> String:
+	var result := ""
+	for i in range(3):
+		if i < stars:
+			result += "*"
+		else:
+			result += "-"
+	return result
 
-func _on_level_hover_start(panel: PanelContainer):
-	"""Highlight panel on hover"""
-	panel.modulate = Color(1.2, 1.2, 1.2, 1)
+func _create_filter_button(label_text: String, value: String) -> void:
+	var button := Button.new()
+	button.text = label_text
+	button.custom_minimum_size = Vector2(118, 34)
+	button.add_theme_font_size_override("font_size", 16)
+	button.pressed.connect(func():
+		filter_mode = value
+		populate_levels()
+	)
+	toolbar_row.add_child(button)
 
-func _on_level_hover_end(panel: PanelContainer):
-	"""Remove highlight on hover end"""
+func _create_toolbar_label(text_value: String) -> void:
+	var label := Label.new()
+	label.text = text_value + ":"
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	toolbar_row.add_child(label)
+
+func _create_sort_button(label_text: String, value: String) -> void:
+	var button := Button.new()
+	button.text = label_text
+	button.custom_minimum_size = Vector2(118, 34)
+	button.add_theme_font_size_override("font_size", 16)
+	button.pressed.connect(func():
+		sort_mode = value
+		populate_levels()
+	)
+	toolbar_row.add_child(button)
+
+func _on_play_pack_button_pressed() -> void:
+	if MenuController.current_browse_pack_id.is_empty():
+		return
+	MenuController.start_pack(MenuController.current_browse_pack_id)
+
+func _on_level_panel_input(event: InputEvent, panel: PanelContainer) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		var pack_id := str(panel.get_meta("pack_id"))
+		var level_index := int(panel.get_meta("level_index"))
+		MenuController.start_level_ref(pack_id, level_index)
+
+func _on_level_hover_start(panel: PanelContainer) -> void:
+	panel.modulate = Color(1.12, 1.12, 1.12, 1)
+
+func _on_level_hover_end(panel: PanelContainer) -> void:
 	panel.modulate = Color.WHITE
 
-func _on_back_button_pressed():
-	"""Return to appropriate screen (set select if from set, otherwise main menu)"""
-	if MenuController.current_set_id != -1:
-		# Coming from set select, go back to set select
+func _on_back_button_pressed() -> void:
+	if not MenuController.current_browse_pack_id.is_empty():
+		MenuController.current_browse_pack_id = ""
 		MenuController.show_set_select()
-	else:
-		# Coming from main menu, go back to main menu
-		MenuController.show_main_menu()
+		return
+	MenuController.show_main_menu()
