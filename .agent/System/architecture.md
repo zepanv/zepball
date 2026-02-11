@@ -102,6 +102,17 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 
 ## Core Systems and Responsibilities
 
+## Event/Command/Query Conventions
+To keep cross-system behavior predictable and avoid inconsistent wiring, use this convention:
+- **Gameplay events** use signals.
+  - Examples: `ball_lost`, `brick_broken`, `score_changed`, `state_changed`.
+- **System commands** use direct method calls.
+  - Examples: `game_manager.start_playing()`, `MenuController.show_level_complete(...)`.
+- **Cross-system runtime queries** use cached references/registries, not ad-hoc full-tree scans in hot paths.
+  - Examples: `PowerUpManager.get_active_balls()`, `main.gd` cached level brick list (`get_cached_level_bricks()`).
+
+This convention is now the default for optimization-pass Section 2.4 and should be followed for new gameplay features and refactors.
+
 ### 1. Main Gameplay Controller (`scripts/main.gd`)
 **Purpose**: Orchestrates gameplay scene, level loading, and game loop.
 
@@ -205,11 +216,8 @@ BackgroundLayer (CanvasLayer, runtime) [created by main.gd]
 - `apply_big_ball_effect()` - 2.0x ball size (12s)
 - `apply_small_ball_effect()` - 0.5x ball size (12s)
 - `reset_ball_size()` - Back to base size
-- `enable_grab()` / `reset_grab_state()`
-- `enable_brick_through()` / `reset_brick_through()`
-- `enable_bomb_ball()` / `reset_bomb_ball()`
-- `enable_air_ball()` / `reset_air_ball()`
-- `enable_magnet()` / `reset_magnet()`
+- Runtime effect-state truth for grab/brick-through/bomb/air/magnet comes from `PowerUpManager` activity checks.
+- `enable_*` / `reset_*` methods remain as compatibility hooks for manager-driven synchronization, with bomb-ball visual state mirrored from manager-active status.
 
 ### 5. Brick System (`scripts/brick.gd` + `scenes/gameplay/brick.tscn`)
 **Purpose**: Breakable obstacles with varied types and scoring.

@@ -26,6 +26,12 @@ enum BrickType {
 @export var brick_color: Color = Color(0.059, 0.773, 0.627)  # Teal (fallback for ColorRect mode)
 
 const TARGET_BRICK_SIZE = 48.0
+const UNBREAKABLE_HITS = 999
+const BOMB_RADIUS = 75.0
+const BOMB_RADIUS_SQ = BOMB_RADIUS * BOMB_RADIUS
+const DEFAULT_POWER_UP_SPAWN_CHANCE = 0.20
+const POWER_UP_SCENE = preload("res://scenes/gameplay/power_up.tscn")
+const POWER_UP_TYPES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 const DIAMOND_VARIANTS = [
 	{"texture": "res://assets/graphics/bricks/element_blue_diamond.png", "color": Color(0.2, 0.4, 1.0)},
@@ -78,15 +84,18 @@ var PENTAGON_POINTS := PackedVector2Array([
 var hits_remaining: int = 1
 var score_value: int = 10
 var is_breaking: bool = false
+var main_controller_ref: Node = null
 
 # Signals
 signal brick_broken(score_value: int)
 signal power_up_spawned(power_up_node: Node)
 
 # Power-up configuration
-@export var power_up_spawn_chance: float = 0.20  # 20% chance to spawn
+@export var power_up_spawn_chance: float = DEFAULT_POWER_UP_SPAWN_CHANCE  # 20% chance to spawn
 
 func _ready():
+	_cache_main_controller_ref()
+
 	# Set up brick based on type
 	match brick_type:
 		BrickType.NORMAL:
@@ -98,7 +107,7 @@ func _ready():
 			score_value = 20
 			brick_color = Color(0.914, 0.275, 0.376)  # Pink/red
 		BrickType.UNBREAKABLE:
-			hits_remaining = 999
+			hits_remaining = UNBREAKABLE_HITS
 			score_value = 0
 			brick_color = Color(0.5, 0.5, 0.5)  # Gray
 		BrickType.GOLD:
@@ -159,8 +168,6 @@ func _ready():
 
 	_update_collision_shape()
 
-	print("Brick ready: type=", BrickType.keys()[brick_type], " hits=", hits_remaining)
-
 func setup_sprite():
 	"""Load PNG texture based on brick type
 	Uses square textures (32x32) for all brick types
@@ -212,7 +219,7 @@ func setup_sprite():
 	# Load texture
 	var texture = load(texture_path)
 	if not texture:
-		print("ERROR: Could not load brick texture: ", texture_path)
+		push_error("Could not load brick texture: %s" % texture_path)
 		return
 
 	sprite.texture = texture
@@ -272,7 +279,6 @@ func hit(impact_direction: Vector2 = Vector2.ZERO):
 	if brick_type == BrickType.UNBREAKABLE:
 		return
 	hits_remaining -= 1
-	print("Brick hit! Hits remaining: ", hits_remaining)
 
 	if hits_remaining <= 0:
 		break_brick(impact_direction)
@@ -290,7 +296,6 @@ func break_brick(impact_direction: Vector2 = Vector2.ZERO):
 	if is_breaking:
 		return
 	is_breaking = true
-	print("Brick broken! Score: +", score_value)
 
 	# Emit signal to game manager
 	brick_broken.emit(score_value)
@@ -349,18 +354,15 @@ func try_spawn_power_up():
 	if randf() > power_up_spawn_chance:
 		return  # No power-up this time
 
-	# Load power-up scene
-	var powerup_scene = load("res://scenes/gameplay/power_up.tscn")
-	if not powerup_scene:
-		print("ERROR: Could not load power-up scene")
+	if not POWER_UP_SCENE:
+		push_error("Could not load power-up scene")
 		return
 
 	# Create power-up instance
-	var powerup = powerup_scene.instantiate()
+	var powerup = POWER_UP_SCENE.instantiate()
 
 	# Randomly select power-up type
-	var types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]  # All power-up types
-	powerup.power_up_type = types[randi() % types.size()]
+	powerup.power_up_type = POWER_UP_TYPES[randi() % POWER_UP_TYPES.size()]
 
 	# Set position to brick position
 	powerup.position = global_position
@@ -370,13 +372,7 @@ func try_spawn_power_up():
 
 func explode_surrounding_bricks():
 	"""Destroy bricks in a radius around this bomb brick"""
-	const BOMB_RADIUS = 75.0  # Same as bomb_ball power-up
-
-	# Find all bricks in the scene
-	var all_bricks = get_tree().get_nodes_in_group("brick")
-	var destroyed_count = 0
-
-	for brick in all_bricks:
+	for brick in _get_cached_level_bricks():
 		if not is_instance_valid(brick):
 			continue
 		if brick == self:  # Don't count self
@@ -386,16 +382,26 @@ func explode_surrounding_bricks():
 		if "brick_type" in brick and brick.brick_type == BrickType.UNBREAKABLE:
 			continue
 
-		# Check distance from this brick
-		var distance = brick.global_position.distance_to(global_position)
-		if distance <= BOMB_RADIUS:
+		# Check distance from this brick using squared values (avoid sqrt in hot path)
+		var dist_sq = brick.global_position.distance_squared_to(global_position)
+		if dist_sq <= BOMB_RADIUS_SQ:
 			# Break this brick
 			if brick.has_method("break_brick"):
 				brick.break_brick(Vector2(-1, 0))  # Use left direction for consistency
-				destroyed_count += 1
 			elif brick.has_method("hit"):
 				brick.hit(Vector2(-1, 0))  # Fallback for safety
-				destroyed_count += 1
 
-	if destroyed_count > 0:
-		print("Bomb brick exploded and destroyed ", destroyed_count, " surrounding bricks!")
+func _get_cached_level_bricks() -> Array[Node]:
+	if main_controller_ref == null or not is_instance_valid(main_controller_ref):
+		_cache_main_controller_ref()
+	if main_controller_ref and main_controller_ref.has_method("get_cached_level_bricks"):
+		return main_controller_ref.get_cached_level_bricks()
+	var container = get_parent()
+	if container:
+		return container.get_children()
+	return []
+
+func _cache_main_controller_ref() -> void:
+	var candidate = get_tree().get_first_node_in_group("main_controller")
+	if candidate and is_instance_valid(candidate):
+		main_controller_ref = candidate

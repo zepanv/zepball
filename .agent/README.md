@@ -37,7 +37,7 @@ PRDs and implementation plans for features (both implemented and future).
 Best practices and workflows for development.
 - **`SOP/godot-workflow.md`** - Working with Godot scenes, nodes, signals, and **CRITICAL: Save System Compatibility** section for handling save data migrations.
 
-## Current Game State (2026-02-02)
+## Current Game State (2026-02-11)
 
 ### Core Features ✅ COMPLETE
 - **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 14 brick types (including bomb/diamond/pentagon), collision detection, score tracking
@@ -155,6 +155,36 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ## Recent Update History
 
+### 2026-02-11 (Latest) - Optimization Pass Started
+- ✅ **Performance Logging Cleanup**: Removed `print()` calls from core gameplay hot paths (`ball`, `main`, `brick`, `game_manager`, `power_up_manager`, `hud`, loaders)
+- ✅ **Project-Wide Logging Cleanup**: Removed remaining runtime `print()` calls from save/difficulty/UI scripts; moved critical cases to warnings/errors
+- ✅ **Cached Lookups**: HUD/game-manager and power-up/game-manager references cached to avoid repeated per-frame group lookups
+- ✅ **Group Query Reduction**: Bomb explosion lookups now prefer local containers over full-scene group scans
+- ✅ **Power-Up Manager Refactor**: Consolidated repeated ball-effect loops via helper methods
+- ✅ **Magic Number Cleanup**: `main.gd` and `paddle.gd` now use named constants for shake tuning, triple-ball safety bounds, mouse lerp, and resize tween timings
+- ✅ **Shake Logic Dedup**: Brick and block-brick hit shake math unified via a shared helper in `main.gd`
+- ✅ **Power-Up Timer Semantics**: `power_up_manager.gd` now tracks timed effects only; instant/non-timed effects are no longer represented as `0.0` duration entries
+- ✅ **Debug Overlay Stability**: `hud.gd` debug ball cache now filters freed references during multiball transitions; FPS value casting avoids narrowing warnings
+- ✅ **Magnet Direction Fix**: Magnet attraction in `ball.gd` now applies only when the ball is moving toward the paddle on the X axis, preventing post-hit pullback
+- ✅ **Air-Ball Query Optimization**: `ball.gd` now reuses landing query objects and computes center/step landing metrics in one level-data load
+- ✅ **Loop Micro-Optimizations**: Reduced per-frame churn in `ball.gd`/`paddle.gd`, gated HUD timer refresh work by active indicators, and made `power_up_manager.gd` timer iteration mutation-safe
+- ✅ **Error-Path Hardening**: Added asset-load validation in `audio_manager.gd`, persistent fallback recovery in `save_manager.gd`, failed-load caching in `level_loader.gd`, and minor HUD/ball cleanup constants
+- ✅ **Typed Core Data**: Added typed active-effect payloads in `power_up_manager.gd` and typed score-breakdown keys/structure in `game_manager.gd`; added defensive paddle shape null guard
+- ✅ **Ball Hot-Path Caching**: `ball.gd` now caches visual/trail/collision refs and reuses cached viewport access in aim/input logic; paddle-reference fallback added on paddle collision
+- ✅ **HUD Allocation Cleanup**: `hud.gd` now tracks power-up indicators directly, reuses debug/multiplier buffers, and adds typed callback/process signatures
+- ✅ **Active Ball Registry**: `power_up_manager.gd` now tracks live balls and provides `get_active_balls()`; HUD/settings now use it instead of global ball-group scans
+- ✅ **Ball Math + Cache Optimizations**: `ball.gd` now uses squared-distance checks in bomb/stuck paths and caches air-ball landing center/step metrics per level
+- ✅ **Manager Loop Optimization**: `power_up_manager.gd` now iterates active effects without per-frame key-array allocation and compacts tracked balls in-place
+- ✅ **Idle Processing Gating**: `hud.gd`, `audio_manager.gd`, and `camera_shake.gd` now disable `_process` when idle; `power_up.gd` game-manager lookup no longer runs every frame
+- ✅ **Scene Load Path Optimization**: `brick.gd` power-up spawning and `main.gd` triple-ball spawning now use preloaded scenes instead of runtime `load()` calls
+- ✅ **Gameplay Loop Micro-Optimizations**: `paddle.gd` caches movement bounds and skips work outside READY/PLAYING; `brick.gd` bomb AoE uses squared-distance checks
+- ✅ **Ball Effect Query Optimization**: `ball.gd` now caches effect-active flags once per physics frame to reduce repeated autoload checks in launch/collision logic
+- ✅ **Explosion + Landing Query Optimization**: `main.gd` now serves a compacted cached level-brick list for shared bomb queries, and `ball.gd` air-ball landing prunes slot checks using cached unbreakable-row candidates
+- ✅ **Section 1.4/2.1 Closeout**: `ball.gd` magnet/out-of-bounds paths reduce per-frame temp work, `paddle.gd` uses conditional bounds clamp, and `brick.gd` power-up spawn default now uses a named constant
+- ✅ **Tier 1 Finalization**: Completed remaining section 1 items by finishing node/group cache cleanup, including cached `main_controller` refs in `ball.gd`/`brick.gd` and earlier group registration in `main.gd`
+- ✅ **Section 2 Finalization**: Completed remaining section 2 items by removing duplicated ball effect-state truth (PowerUpManager is now canonical) and documenting the event/command/query convention in system architecture
+- ✅ **Task Tracking**: `Tasks/Backlog/optimization-pass.md` moved to in-progress with concrete completed items
+
 ### 2026-01-31 - Documentation Refresh
 - ✅ **System Docs**: Updated architecture + tech stack (keybindings, audio, debug notes)
 - ✅ **Tasks**: Added completed docs for Settings Enhancements and Quick Actions
@@ -163,7 +193,7 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 - ✅ **Keybindings**: Added keybinding menu in Settings with input map persistence
 - ✅ **Debug Keys**: Removed debug hotkeys except C (debug/editor only)
 
-### 2026-01-31 (Latest) - Prism Showcase Polish + Physics Fixes
+### 2026-01-31 - Prism Showcase Polish + Physics Fixes
 - ✅ **Level Layouts**: Prism Showcase levels re-centered vertically for better balance
 - ✅ **Level Layouts**: All levels re-centered vertically based on PlayArea height (720) and occupied rows
 - ✅ **Level 6 Theme**: Replaced duplicate Diamond Formation with Sun Gate layout
@@ -312,7 +342,6 @@ Pause overlay settings apply live for paddle sensitivity, ball trail, combo flas
 
 ### Known Issues
 - Set unlocking is stubbed; `highest_unlocked_set` is always 1 and all sets are effectively unlocked.
-- Debug logging is still verbose in multiple scripts.
 
 ### Complex Areas to Review
 1. **Triple Ball Spawn** (`main.gd`) - Retry system with angle validation (120°-240°)
@@ -335,7 +364,7 @@ Pause overlay settings apply live for paddle sensitivity, ball trail, combo flas
 
 ---
 
-**Last Updated**: 2026-02-02
+**Last Updated**: 2026-02-11
 **Total Levels**: 20
 **Total Sets**: 2
 **Total Achievements**: 12

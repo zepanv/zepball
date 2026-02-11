@@ -21,8 +21,6 @@ extends Control
 
 func _ready():
 	"""Initialize set complete screen"""
-	print("Set Complete screen loaded")
-
 	# Get data from MenuController
 	var final_score = MenuController.get_current_score()
 	var set_id = MenuController.current_set_id
@@ -86,18 +84,15 @@ func _ready():
 
 func _on_next_set_button_pressed():
 	"""Start the next set"""
-	print("Next Set button pressed")
 	var next_set_id = MenuController.current_set_id + 1
 	MenuController.start_set(next_set_id)
 
 func _on_set_select_button_pressed():
 	"""Return to set select"""
-	print("Set Select button pressed")
 	MenuController.show_set_select()
 
 func _on_menu_button_pressed():
 	"""Return to main menu"""
-	print("Main Menu button pressed")
 	MenuController.show_main_menu()
 
 func _format_bonus(value: int) -> String:

@@ -11,7 +11,6 @@ var sets_array: Array = []
 
 func _ready():
 	"""Initialize set loader and load sets from JSON"""
-	print("SetLoader ready")
 	load_sets()
 
 func load_sets() -> void:
@@ -43,8 +42,6 @@ func load_sets() -> void:
 		var set_id = int(set_data.get("set_id", -1))  # Convert to int to avoid float issues
 		if set_id != -1:
 			sets_data[set_id] = set_data
-
-	print("Loaded ", sets_array.size(), " level sets")
 
 func get_set_data(set_id: int) -> Dictionary:
 	"""Get set data by ID. Returns empty dict if not found."""

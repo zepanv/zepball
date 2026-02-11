@@ -1,6 +1,130 @@
 # Optimization Pass & Best Practices
 
-## Status: BACKLOG
+## Status: IN PROGRESS
+
+## Progress Update (2026-02-11)
+
+Initial Tier 1 optimization pass has started and landed in core gameplay scripts.
+
+### Completed in this pass
+
+- Removed runtime `print()` logging from hot gameplay paths:
+  - `scripts/ball.gd`
+  - `scripts/main.gd`
+  - `scripts/brick.gd`
+  - `scripts/game_manager.gd`
+  - `scripts/paddle.gd`
+  - `scripts/power_up.gd`
+  - `scripts/power_up_manager.gd`
+  - `scripts/hud.gd`
+  - `scripts/level_loader.gd`
+  - `scripts/set_loader.gd`
+- Removed remaining runtime `print()` logging from non-hot-path systems:
+  - `scripts/difficulty_manager.gd`
+  - `scripts/save_manager.gd`
+  - `scripts/ui/settings.gd`
+  - `scripts/ui/game_over.gd`
+  - `scripts/ui/set_complete.gd`
+  - `scripts/ui/menu_controller.gd`
+  - `scripts/ui/main_menu.gd`
+  - `scripts/ui/level_complete.gd`
+- Replaced critical error/warning logs with `push_error()` / `push_warning()` where needed.
+- Reduced per-instance allocation in power-up visuals:
+  - `power_up.gd`: shared static glow `CanvasItemMaterial` for all power-up instances.
+- Reduced per-frame debug overlay string formatting and label churn:
+  - `hud.gd`: debug labels now update only when FPS/ball-count/velocity/speed/combo values change.
+- Reduced power-up timer UI update frequency:
+  - `hud.gd`: timer labels are refreshed on a short interval (`0.1s`) instead of every frame.
+- Reduced idle processing overhead:
+  - `power_up_manager.gd`: `_process` now disables automatically when no active effects exist.
+  - `ball.gd`: unhandled input processing now runs only on the main ball (`set_is_main_ball` helper used by `main.gd`).
+- Reduced per-frame scene-tree lookups:
+  - `power_up.gd`: caches `game_manager` instead of querying group each physics tick.
+  - `hud.gd`: caches `game_manager`, pause/intro/debug label references, and timer label references.
+  - `hud.gd`: throttles debug ball group query updates (`0.1s`) instead of every frame.
+- Reduced full-tree group scans in collision-heavy paths:
+  - `brick.gd`: bomb explosion now iterates parent container children instead of `get_nodes_in_group("brick")`.
+  - `ball.gd`: bomb-ball explosion prefers local `BrickContainer` children, with group-query fallback.
+  - `main.gd`: active ball queries now use local `PlayArea` children helper instead of global ball group scans.
+- Added shared active-ball registry to reduce cross-system group scans:
+  - `power_up_manager.gd`: tracks live balls via `register_ball`/`unregister_ball` and serves `get_active_balls()`.
+  - `ball.gd`: balls now self-register on `_ready()` and unregister on `_exit_tree()`.
+  - `hud.gd` and `ui/settings.gd`: debug/trail updates now consume `PowerUpManager.get_active_balls()` instead of global `"ball"` group scans.
+- Consolidated repetitive ball effect loops in `power_up_manager.gd` with `_for_each_ball()` helper and added cached fallback paddle/ball references.
+- Addressed a Tier 2 cleanup item:
+  - `ball.gd`: renamed `BASE_current_speed` to `BASE_SPEED` and extracted key boundary/speed literals into named constants.
+- Addressed additional Tier 2 cleanup in gameplay orchestration/control scripts:
+  - `main.gd`: extracted shake and triple-ball safety/timing literals into named constants.
+  - `main.gd`: deduplicated repeated brick-hit shake math into `_apply_brick_hit_shake()`.
+  - `paddle.gd`: extracted paddle resize heights and mouse/tween tuning literals into named constants.
+- Clarified power-up timer semantics in `power_up_manager.gd`:
+  - `EFFECT_DURATIONS` now includes timed effects only (no `0.0` placeholders for instant/non-timed effects).
+  - `active_effects` tracks only timed effects, reducing ambiguous state entries.
+- Hardened debug overlay against multiball cleanup races:
+  - `hud.gd`: `update_debug_overlay()` now filters invalid/freed ball references before property access.
+  - `hud.gd`: FPS display now explicitly rounds/casts to `int` to avoid narrowing-conversion warnings.
+- Magnet behavior correction in `ball.gd`:
+  - Magnet pull now applies only while ball X-velocity is moving toward the paddle, preventing immediate post-hit pullback.
+- Optimized air-ball landing query path in `ball.gd`:
+  - Level landing metrics (center/step) now compute in one level-data load instead of separate loads.
+  - Reused `CircleShape2D` and `PhysicsShapeQueryParameters2D` for landing overlap checks to reduce per-landing allocations.
+- Reduced avoidable per-frame work in core loops:
+  - `ball.gd`: reuses `delta_move` in collision checks and movement path; visual rotation gate now uses `length_squared()`.
+  - `paddle.gd`: switched to scalar `input_velocity_y` flow and reused per-tick viewport reads to reduce temporary `Vector2` churn.
+  - `hud.gd`: power-up timer refresh loop now runs only when indicators are present.
+  - `power_up_manager.gd`: `_process` iterates a stable effect-key snapshot with existence guards before mutation/removal.
+- Hardened loader/runtime error paths:
+  - `audio_manager.gd`: validates SFX/music asset loads and skips missing streams with warnings.
+  - `save_manager.gd`: persists and emits loaded-state when recovering from unreadable/invalid save files.
+  - `level_loader.gd`: caches failed level reads/parses as empty results to avoid repeated file IO/parsing attempts.
+  - `hud.gd`: replaced per-frame `meta` debug-key state with a typed boolean field.
+  - `ball.gd`: extracted slow-trail speed threshold into named constant (`SLOW_SPEED_MULTIPLIER`).
+- Added typed data structures in core systems:
+  - `power_up_manager.gd`: introduced typed `ActiveEffect` payload class and typed `active_effects` dictionary.
+  - `game_manager.gd`: typed score-breakdown dictionary with shared key constants to reduce string-key drift.
+  - `paddle.gd`: added defensive null-shape guard before resize mutation in collision-shape update path.
+- Further hot-path lookup reductions in ball runtime:
+  - `ball.gd`: cached `Trail`/`Visual`/`CollisionShape2D` refs and reused cached viewport for aim/input reads.
+  - `ball.gd`: added paddle-reference recovery from collision object when paddle signal path is hit without a cached reference.
+- HUD per-frame allocation reductions and typing cleanup:
+  - `hud.gd`: replaced power-up timer `get_children()` scans with tracked `powerup_indicators` list.
+  - `hud.gd`: reused preallocated debug-ball and multiplier line buffers to reduce temporary allocations.
+  - `hud.gd`: added explicit type annotations to key handlers/process methods and power-up callbacks.
+- Additional aim-path micro-optimization:
+  - `ball.gd`: aim head line points now update in-place via `set_point_position()` (no per-frame points-array replacement).
+- Additional micro-optimizations in input/aim paths:
+  - `paddle.gd`: cached viewport/visual/collision-shape refs to avoid repeated node lookups per tick.
+  - `ball.gd`: aim head now updates Line2D points in-place (no per-frame array allocation); air-ball fallback uses cached viewport.
+- Additional hot-path math/cache reductions:
+  - `ball.gd`: bomb-radius and stuck checks now use squared-distance comparisons to avoid per-frame/per-brick sqrt calls.
+  - `ball.gd`: air-ball landing center/step metrics are cached per level to avoid repeated per-jump layout scans.
+- Additional manager-loop allocation reductions:
+  - `power_up_manager.gd`: timer updates now iterate the dictionary directly with a reusable `expired_effect_types` buffer.
+  - `power_up_manager.gd`: tracked-ball compaction now removes invalid entries in-place (no temporary array copy).
+- Additional process-state gating for idle systems:
+  - `power_up.gd`: game-manager lookup is now throttled/retried and bound via `state_changed` signal instead of per-frame group scans.
+  - `hud.gd`: `_process` now auto-disables when FPS/debug is off, no power-up timers are active, and game is not paused.
+  - `audio_manager.gd`: `_process` runs only when loop-all/shuffle crossfade monitoring is actually needed.
+  - `camera_shake.gd`: `_process` now runs only during active shake windows.
+- Additional cached-resource and loop-path reductions:
+  - `brick.gd`: power-up scene is now preloaded and power-up type selection reuses a shared constant list.
+  - `main.gd`: triple-ball spawn now reuses a preloaded ball scene instead of loading per activation.
+  - `brick.gd`: bomb-brick AoE checks now use squared-distance comparisons.
+  - `paddle.gd`: movement bounds are cached and reused; non-gameplay states now early-return from `_physics_process`.
+  - `ball.gd`: paddle-reference refresh now runs only when the cached reference is missing/invalid.
+- Additional ball-effect query reductions:
+  - `ball.gd`: grab/brick-through/bomb-ball/air-ball/magnet active states are now cached once per physics frame and reused across launch/collision paths.
+- Additional explosion/query path reductions:
+  - `main.gd`: maintains a compacted cached level-brick list (`get_cached_level_bricks`) for shared gameplay queries.
+  - `ball.gd` and `brick.gd`: bomb explosion scans now consume the cached brick list instead of repeatedly rebuilding child/group lists.
+  - `ball.gd`: air-ball landing now uses cached unbreakable-row candidates to prune search checks, with a single physics confirmation on candidate slots.
+- Additional section-closeout optimizations:
+  - `ball.gd`: magnet pull now uses a scalar math path and out-of-bounds handling uses dedicated handlers to avoid unnecessary per-frame message setup.
+  - `paddle.gd`: final bounds clamp is now conditional instead of unconditional each tick.
+  - `brick.gd`: default power-up spawn chance now uses named constant (`DEFAULT_POWER_UP_SPAWN_CHANCE`).
+- Tier 1 completion cleanup:
+  - `main.gd`: `main_controller` group registration moved to `_enter_tree()` for earlier availability to child scripts.
+  - `ball.gd`/`brick.gd`: cached `main_controller` references now back bomb/landing brick-list access without repeated group lookup churn.
 
 Full audit of the codebase for performance issues, code quality, Godot best practices, and architectural debt. Issues are organized by priority tier with concrete file:line references.
 
@@ -10,68 +134,54 @@ Full audit of the codebase for performance issues, code quality, Godot best prac
 
 ### 1.1 Remove Debug Print Statements
 
-60+ `print()` calls left in production code paths, many in `_process()`/`_physics_process()` hot loops with string concatenation overhead.
+Status: ✅ Completed (2026-02-11)
 
-**Files with print statements:**
-
-| File | Key Lines | Notes |
-|------|-----------|-------|
-| `scripts/ball.gd` | 78, 90-92, 162, 188, 194, 200, 204-232, 288, 293, 311, 332-337, 354-355, 385, 432, 465, 629, 638, 806, 810 | Heaviest offender; string building in physics path |
-| `scripts/paddle.gd` | 39, 46 | Print with string concat in `_ready()` and physics |
-| `scripts/brick.gd` | 162, 275, 293, 401 | On brick hit/break (frequent) |
-| `scripts/power_up.gd` | 58, 158 | On spawn and collection |
-| `scripts/game_manager.gd` | 68-70, 95, 155-167, 180, 188-189, 199, 204, 212, 233 | Score/state changes (frequent) |
-| `scripts/power_up_manager.gd` | 74, 77, 84, 190 | Effect apply/remove |
-| `scripts/main.gd` | 56, 68, 179-182, 216, 233, 237, 257, 271-298, 334 | Level load, brick events |
-| `scripts/audio_manager.gd` | 46, 227-228, 258, 319 | Track changes |
-| `scripts/level_loader.gd` | 31, 42, 91, 159 | Level loading |
-| `scripts/set_loader.gd` | 14, 47 | Set loading |
-
-**Recommendation:** Remove all `print()` calls, or gate behind a debug flag:
-```gdscript
-const DEBUG_LOG := false
-func _log(msg: String) -> void:
-    if DEBUG_LOG:
-        print(msg)
-```
+- `scripts/` now has zero `print()` calls in runtime code.
+- High-signal failures/warnings use `push_error()` and `push_warning()` instead.
 
 ### 1.2 Cache Node References (Stop Per-Frame Tree Lookups)
+
+Status: ✅ Completed (2026-02-11)
 
 Several scripts call `get_tree().get_first_node_in_group()` every frame instead of caching in `_ready()`.
 
 | File:Line | Call | Frequency |
 |-----------|------|-----------|
-| `scripts/power_up.gd:62` | `get_first_node_in_group("game_manager")` | Every `_physics_process()` frame |
-| `scripts/hud.gd:363` | `get_first_node_in_group("game_manager")` | Every `_process()` frame |
-| `scripts/hud.gd:777` | `get_first_node_in_group("ball")` | Every debug overlay update |
-| `scripts/power_up_manager.gd:137-139, 147-148, 199-201, 237-240` | `get_first_node_in_group()` for paddle/ball | Per effect apply/remove |
+| ✅ `scripts/power_up.gd` | game-manager ref is cached/bound via signal with throttled retry instead of per-frame group lookup |
+| ✅ `scripts/hud.gd` | game-manager and debug ball queries are cached/throttled; hot path now uses cached refs/registries |
+| ✅ `scripts/power_up_manager.gd` | paddle/ball targets use cached refs and tracked-ball registry for effect apply/remove paths |
+| ✅ `scripts/ball.gd` + `scripts/brick.gd` | main-controller lookups for cached brick access now use cached references |
 
 **Fix:** Cache in `_ready()` or `@onready`, invalidate only on scene change.
 
 ### 1.3 Cache Group Queries (Avoid O(n) Tree Search on Collision)
 
+Status: ✅ Completed (2026-02-11)
+
 `get_nodes_in_group()` called during collision events, iterating the full scene tree.
 
 | File:Line | Group | Context |
 |-----------|-------|---------|
-| `scripts/ball.gd:783` | `"brick"` | `destroy_surrounding_bricks()` - on every bomb/explosion |
-| `scripts/brick.gd:376` | `"brick"` | `explode_surrounding_bricks()` - on every bomb brick break |
-| `scripts/power_up_manager.gd:94-118` | `"ball"` | Called 5 times per effect (GRAB, BRICK_THROUGH, BOMB_BALL, AIR_BALL, MAGNET) |
-| `scripts/main.gd:266, 591` | `"ball"` | `_on_ball_lost()` and `try_spawn_additional_balls()` |
-| `scripts/hud.gd:754, 777` | `"ball"` | Debug overlay (every frame when visible) |
+| ✅ `scripts/ball.gd` | `"brick"` | Bomb-ball explosion now uses cached level brick list from `main.gd` |
+| ✅ `scripts/brick.gd` | `"brick"` | Bomb-brick explosion now uses cached level brick list from `main.gd` |
+| ✅ `scripts/power_up_manager.gd` | `"ball"` | Effect application uses tracked active-ball registry |
+| ✅ `scripts/main.gd` | `"ball"` | Active-ball queries use local `PlayArea` child scans (no full-tree group scan) |
+| ✅ `scripts/hud.gd` | `"ball"` | Debug overlay uses `PowerUpManager.get_active_balls()` cache path |
 
 **Fix:** Maintain a cached brick list in main.gd (invalidate on brick add/remove). Maintain a cached ball list (invalidate on spawn/destroy). Pass the lists to methods that need them.
 
 ### 1.4 Reduce Per-Frame Allocations
 
+Status: ✅ Completed (2026-02-11)
+
 | File:Line | Issue |
 |-----------|-------|
-| `scripts/hud.gd:354` | `find_child()` every frame to locate timer label (O(n) tree search) |
-| `scripts/hud.gd:348-356` | Iterates `powerup_container.get_children()` every frame |
-| `scripts/hud.gd:770` | `"%.0f"` string formatting every frame in velocity display |
-| `scripts/ball.gd:176-207` | String building for debug messages every frame when out of bounds |
-| `scripts/ball.gd:156-157` | Vector2 creation for magnet pull every frame |
-| `scripts/paddle.gd:88-89` | Vector2 clamp operation every frame for mouse control |
+| ✅ `scripts/hud.gd` | timer label lookups are cached and refreshed on interval, not per-frame `find_child()` |
+| ✅ `scripts/hud.gd` | power-up timer label updates are throttled (0.1s), no longer every frame |
+| ✅ `scripts/hud.gd` | Debug FPS/ball/velocity/speed/combo label text now updates only when values change |
+| ✅ `scripts/ball.gd` | out-of-bounds diagnostics now build strings only on boundary-escape events via dedicated handlers |
+| ✅ `scripts/ball.gd` | magnet pull uses scalar math path to reduce temporary vector churn in per-frame pull updates |
+| ✅ `scripts/paddle.gd` | per-frame clamp is now conditional (applied only when outside bounds) |
 
 **Fix:** Cache child references, pre-allocate frequently used objects, only format strings when values change.
 
@@ -81,28 +191,24 @@ Several scripts call `get_tree().get_first_node_in_group()` every frame instead 
 
 ### 2.1 Extract Magic Numbers to Constants
 
+Status: ✅ Completed (2026-02-11)
+
 **ball.gd:**
-- Line 8: `BASE_current_speed = 500.0` - inconsistent naming (should be `BASE_SPEED`)
-- Lines 179, 184, 190, 196: Boundary values `1300`, `0`, `0`, `720` - some defined as constants, some not
-- Lines 327-328: Escape zone thresholds `40.0`, `660.0` - hardcoded
-- Lines 470, 482: Speed values `650.0`, `350.0` - unnamed
-- Lines 509-512: Speed comparisons against `FAST_SPEED_MULTIPLIER` - mixed constant/literal
+- ✅ Resolved: base speed renamed to `BASE_SPEED`; boundary and speed literals extracted to named constants.
+- ✅ Resolved: trail speed thresholds use named multipliers (`FAST_SPEED_MULTIPLIER`, `SLOW_SPEED_MULTIPLIER`) consistently.
 
 **brick.gd:**
-- Line 101: `999` for unbreakable hit count - should be `UNBREAKABLE_HITS` constant
-- Line 349: `0.20` power-up spawn chance - should be constant or export
+- ✅ Resolved: unbreakable hit count uses `UNBREAKABLE_HITS`.
+- ✅ Resolved: default power-up spawn chance extracted to `DEFAULT_POWER_UP_SPAWN_CHANCE`.
 
 **main.gd:**
-- Line 241: `2.0`, `50.0`, `3.0`, `12.0` in shake intensity formula - all unnamed
-- Line 246: `3`, `2`, `0.15` in combo multiplier calculation - unnamed
-- Lines 679-701: Zones `100`, `150`, `570` for triple ball spawn - unnamed
+- ✅ Resolved: extracted shake intensity/combo tuning literals and triple-ball spawn zone/safety literals into named constants.
 
 **paddle.gd:**
-- Line 103: `0.3` lerp speed - unnamed
-- Line 178: `0.2` tween duration - unnamed
+- ✅ Resolved: extracted lerp/tween tuning and expand/contract height values into named constants.
 
 **power_up_manager.gd:**
-- Lines 31-47: Duration values mixed with `0.0` for permanent effects - no clear distinction
+- ✅ Resolved: timed effects are now the only entries in `EFFECT_DURATIONS`; non-timed effects are no longer represented with `0.0` durations.
 
 ### 2.2 Add Type Annotations
 
@@ -110,39 +216,26 @@ Missing or inconsistent type annotations on variables that should be typed:
 
 | File:Line | Variable | Should Be |
 |-----------|----------|-----------|
-| `scripts/ball.gd:40` | `paddle_reference = null` | `var paddle_reference: Node2D = null` |
-| `scripts/ball.gd:41` | `game_manager = null` | `var game_manager: Node = null` |
-| `scripts/paddle.gd:28` | `game_manager = null` | `var game_manager: Node = null` |
-| `scripts/power_up_manager.gd:27` | `active_effects: Dictionary = {}` | Document expected structure |
-| `scripts/hud.gd:11-26` | Multiple UI references | Should be typed as `Label`, `Control`, etc. |
-| `scripts/game_manager.gd:36-42` | `score_breakdown: Dictionary` | Could use class or typed dict |
+| ✅ `scripts/ball.gd` | `paddle_reference`, `game_manager` | Typed (`Node2D`/`Node`) |
+| ✅ `scripts/paddle.gd` | `game_manager` | Typed (`Node`) |
+| ✅ `scripts/power_up_manager.gd` | `active_effects` payload structure | Typed via `ActiveEffect` class + typed dictionary |
+| ✅ `scripts/hud.gd` | Multiple UI references and key handlers | Typed references + typed function signatures added |
+| ✅ `scripts/game_manager.gd` | `score_breakdown` | Typed dictionary with centralized key constants |
 
 ### 2.3 Consolidate Duplicate Code
 
-**PowerUpManager reset pattern (power_up_manager.gd:143-184):**
-The same pattern repeats 5 times:
-```gdscript
-var balls = get_tree().get_nodes_in_group("ball")
-for ball in balls:
-    if ball.has_method("reset_XXX"):
-        ball.reset_XXX()
-```
-Lines 154-157, 160-163, 170-172, 176-178, 182-184.
+Status: ✅ Completed (2026-02-11)
 
-**Fix:** Create a helper:
-```gdscript
-func _reset_ball_effect(method_name: String) -> void:
-    for ball in get_tree().get_nodes_in_group("ball"):
-        if ball.has_method(method_name):
-            ball.call(method_name)
-```
+**PowerUpManager reset pattern**
+- ✅ Resolved: consolidated repeated ball effect apply/reset loops using `_for_each_ball(method_name: String)`.
 
 **Power-up state duplication:**
-Ball tracks its own flags (`grab_enabled`, `brick_through_enabled`, `bomb_ball_enabled`, `air_ball_enabled`, `magnet_enabled`) in ball.gd:626-684, while PowerUpManager independently tracks the same state in `active_effects` dictionary. If either system fails, they desync.
-
-**Fix:** Single source of truth - either Ball queries PowerUpManager, or PowerUpManager is the only thing that sets Ball flags.
+- ✅ Resolved: ball runtime behavior flags are now sourced from `PowerUpManager` (`is_grab_active`, `is_brick_through_active`, `is_bomb_ball_active`, `is_air_ball_active`, `is_magnet_active`) instead of duplicated per-ball state booleans.
+- ✅ Resolved: `ball.gd` compatibility hooks (`enable_*` / `reset_*`) remain for manager calls but no longer act as parallel effect-state truth; bomb-ball visual state is synchronized from manager-active status.
 
 ### 2.4 Standardize Signal Patterns
+
+Status: ✅ Completed (2026-02-11)
 
 Current inconsistency:
 - ball.gd:74-75 - emits custom signals (`ball_lost`, `brick_hit`)
@@ -150,10 +243,10 @@ Current inconsistency:
 - power_up.gd:56 - uses `body_entered.connect()`
 - Some systems use groups, others use direct references
 
-**Fix:** Document a convention and apply consistently. Suggested pattern:
+**Resolved convention (documented in `.agent/System/architecture.md`):**
 - Gameplay events (ball lost, brick broken, score change) -> signals
 - System commands (start game, pause) -> direct method calls
-- Cross-system queries (get ball count) -> group queries (cached)
+- Cross-system queries (get ball count) -> cached references/registries (group-backed only as fallback)
 
 ---
 
@@ -186,12 +279,24 @@ Remove state duplication between Ball per-instance flags and PowerUpManager.acti
 
 ### 3.4 Disable Processing When Idle
 
+Status: 🟡 Partially Completed (2026-02-11)
+
+Completed:
+- `power_up_manager.gd`: processing toggles on/off based on whether `active_effects` is empty.
+- `ball.gd`: only main ball receives `_unhandled_input` processing; extra balls skip input handling.
+- `power_up.gd`: physics processing disables when game reaches LEVEL_COMPLETE/GAME_OVER.
+- `hud.gd`: `_process` now disables in idle gameplay (not paused, no debug/FPS overlay, no active power-up indicators).
+- `audio_manager.gd`: `_process` now disables unless loop-all/shuffle track-boundary monitoring is needed.
+- `camera_shake.gd`: `_process` now enables only while shake is active.
+
 | File | Issue |
 |------|-------|
 | `scripts/power_up.gd` | `_physics_process()` runs every frame even after power-up stops moving |
-| `scripts/paddle.gd` | Processes input during pause (should check pause state or `set_physics_process(false)`) |
-| `scripts/hud.gd` | `_process()` always enabled, even when not in gameplay |
-| `scripts/ball.gd:103` | `set_process_unhandled_input(true)` for every ball, but only main ball needs aim input |
+| ✅ `scripts/paddle.gd` | `_physics_process()` now early-returns outside READY/PLAYING and skips input/velocity work in non-gameplay states |
+| ✅ `scripts/hud.gd` | `_process()` now toggles via `_refresh_processing_state()` and is disabled during idle gameplay |
+| ✅ `scripts/audio_manager.gd` | `_process()` now runs only while music crossfade timing needs monitoring |
+| ✅ `scripts/camera_shake.gd` | `_process()` now runs only while shake is active |
+| ✅ `scripts/ball.gd` | unhandled input now enabled only for main ball |
 
 **Fix:** Use `set_physics_process(false)` / `set_process(false)` when the node is idle. Re-enable on relevant state changes.
 
@@ -205,19 +310,34 @@ Remove state duplication between Ball per-instance flags and PowerUpManager.acti
 
 ### 4.2 Error Handling Gaps
 
+Status: 🟡 Partially Completed (2026-02-11)
+
+Completed:
+- `audio_manager.gd`: SFX/music stream loads now validate and warn on missing assets.
+- `save_manager.gd`: load-failure fallback now saves default data to disk and emits `save_loaded`.
+- `level_loader.gd`: failed file/open/parse loads now cache empty results to reduce repeated failed IO/parsing.
+
 | File:Line | Issue |
 |-----------|-------|
-| `scripts/ball.gd:345` | Checks `paddle_offset.x > 0` but doesn't validate `paddle_reference` exists |
-| `scripts/paddle.gd:154` | Modifies collision shape without null check |
-| `scripts/audio_manager.gd:209-221` | Loads SFX files but doesn't validate successful load |
-| `scripts/level_loader.gd:63-92` | Returns empty dict on corrupted file with no error propagation |
-| `scripts/save_manager.gd:177-182` | File access errors only printed to console |
+| ✅ `scripts/ball.gd` | Grab offset correction path now guards on valid `paddle_reference` before using `paddle_offset` |
+| ✅ `scripts/paddle.gd` | Collision-shape resize path now guards null/shape type before mutation |
+| ✅ `scripts/audio_manager.gd` | SFX/music loads validate missing streams and skip invalid entries with warnings |
+| ✅ `scripts/level_loader.gd` | Failed level loads are cached as empty results to avoid repeated failed parses |
+| ✅ `scripts/save_manager.gd` | File-open/parse/version recovery now persists default save and emits load signal |
 
 ### 4.3 Shared Materials
 
-`power_up.gd:128-147` creates a new `CanvasItemMaterial` per power-up instance for the glow effect. Since power-ups share the same material settings, a single shared static material would reduce allocations.
+Status: ✅ Completed (2026-02-11)
+
+- `power_up.gd` now uses a shared static glow `CanvasItemMaterial` instead of allocating a new one per power-up instance.
 
 ### 4.4 Physics Query Optimization
+
+Status: 🟡 Partially Completed (2026-02-11)
+
+Completed:
+- `ball.gd` air-ball landing now reuses shape/query objects rather than allocating new query objects every landing.
+- `ball.gd` combines level center/step lookup into a single level-data read per air-ball jump.
 
 `ball.gd:736-776` (`_resolve_air_ball_landing()`) creates `PhysicsShapeQueryParameters2D` and runs `intersect_shape()` up to 16 times per air ball landing to find a safe position. Results are not reused between iterations.
 
@@ -234,4 +354,4 @@ Remove state duplication between Ball per-instance flags and PowerUpManager.acti
 
 ---
 
-Last Updated: 2026-02-10
+Last Updated: 2026-02-11

@@ -13,8 +13,6 @@ var continue_set_button: Button = null
 
 func _ready():
 	"""Initialize game over screen"""
-	print("Game Over screen loaded")
-
 	# Get score from MenuController
 	var final_score = MenuController.get_current_score()
 	var level_id = MenuController.get_current_level_id()
@@ -59,12 +57,10 @@ func add_continue_set_button():
 
 func _on_retry_button_pressed():
 	"""Restart the same level"""
-	print("Retry button pressed")
 	MenuController.restart_current_level()
 
 func _on_continue_set_button_pressed():
 	"""Continue set from current level with reset score/lives"""
-	print("Continue Set button pressed")
 	var level_id = MenuController.get_current_level_id()
 
 	# Set had_continue flag
@@ -77,5 +73,4 @@ func _on_continue_set_button_pressed():
 
 func _on_menu_button_pressed():
 	"""Return to main menu"""
-	print("Menu button pressed")
 	MenuController.show_main_menu()

@@ -11,8 +11,6 @@ extends Control
 
 func _ready():
 	"""Initialize main menu"""
-	print("Main Menu loaded")
-
 	# Unlock difficulty selection
 	DifficultyManager.unlock_difficulty()
 
@@ -53,12 +51,10 @@ func update_difficulty_display():
 
 func _on_play_button_pressed():
 	"""Handle Play button - go to set select"""
-	print("Play button pressed")
 	MenuController.show_set_select()
 
 func _on_return_button_pressed():
 	"""Return to the last in-progress level"""
-	print("Return to Last Level pressed")
 	MenuController.resume_last_level()
 
 func _on_easy_button_pressed():
@@ -81,17 +77,14 @@ func _on_hard_button_pressed():
 
 func _on_stats_button_pressed():
 	"""Handle Stats button - show stats screen"""
-	print("Stats button pressed")
 	MenuController.show_stats()
 
 func _on_settings_button_pressed():
 	"""Handle Settings button - show settings screen"""
-	print("Settings button pressed")
 	MenuController.show_settings()
 
 func _on_quit_button_pressed():
 	"""Handle Quit button - exit game"""
-	print("Quit button pressed")
 	MenuController.quit_game()
 
 

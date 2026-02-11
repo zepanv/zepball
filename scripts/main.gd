@@ -21,6 +21,7 @@ extends Node2D
 
 # Brick scene to instantiate
 const BRICK_SCENE = preload("res://scenes/gameplay/brick.tscn")
+const BALL_SCENE = preload("res://scenes/gameplay/ball.tscn")
 const BASE_RESOLUTION = Vector2i(1280, 720)
 
 # Level layout constants
@@ -33,6 +34,41 @@ const BLOCK_BRICK_HEIGHT = 64
 const BLOCK_OFFSET_X = 16
 const BLOCK_SEGMENT_COUNT = 4
 const BLOCK_COLOR_INTERVAL = 4.0
+const BLOCK_DEFAULT_DURATION = 12.0
+
+# Screen shake tuning
+const SHAKE_BASE_INTENSITY = 2.0
+const SHAKE_SCORE_DIVISOR = 50.0
+const SHAKE_SCORE_SCALE = 3.0
+const SHAKE_COMBO_MIN = 3
+const SHAKE_COMBO_OFFSET = 2
+const SHAKE_COMBO_STEP = 0.15
+const SHAKE_MAX_INTENSITY = 12.0
+const SHAKE_DURATION = 0.15
+
+# Debug/testing positions
+const DEBUG_POWERUP_SPAWN_POSITION = Vector2(1100.0, 360.0)
+
+# Triple-ball spawning safety bounds
+const TRIPLE_BALL_RETRY_DELAY = 0.5
+const TRIPLE_BALL_MIN_X = 50.0
+const TRIPLE_BALL_MAX_X = 1100.0
+const TRIPLE_BALL_MIN_Y = 50.0
+const TRIPLE_BALL_MAX_Y = 670.0
+const TRIPLE_BALL_LEFT_ZONE_X = 100.0
+const TRIPLE_BALL_TOP_ZONE_Y = 150.0
+const TRIPLE_BALL_BOTTOM_ZONE_Y = 570.0
+const TRIPLE_BALL_OFFSET_DISTANCE = 20.0
+const TRIPLE_BALL_SAFE_ANGLE_MIN = 120.0
+const TRIPLE_BALL_SAFE_ANGLE_MAX = 240.0
+const TRIPLE_BALL_DEFAULT_BASE_ANGLE = 180.0
+const TRIPLE_BALL_LEFT_BASE_ANGLE = 105.0
+const TRIPLE_BALL_TOP_BASE_ANGLE = 210.0
+const TRIPLE_BALL_BOTTOM_BASE_ANGLE = 155.0
+const TRIPLE_BALL_LEFT_ZONE_ANGLE_OFFSET = 10.0
+const TRIPLE_BALL_STANDARD_ANGLE_OFFSET = 5.0
+const TRIPLE_BALL_ADDITIONAL_COUNT = 2
+const TRIPLE_BALL_IMMUNITY_DURATION = 0.5
 
 # Boundary constants
 const RIGHT_BOUNDARY = 1300   # Past paddle (ball lost)
@@ -51,10 +87,12 @@ const BACKGROUNDS = [
 
 # Track only breakable bricks so level completion is deterministic
 var remaining_breakable_bricks: int = 0
+var cached_level_bricks: Array[Node] = []
+
+func _enter_tree() -> void:
+	add_to_group("main_controller")
 
 func _ready():
-	print("Main scene ready - connecting signals")
-
 	# Set up background
 	setup_background()
 	var viewport = get_viewport()
@@ -65,7 +103,6 @@ func _ready():
 	# Connect ball signals to game manager
 	if ball:
 		ball.ball_lost.connect(_on_ball_lost)
-		print("Connected ball_lost signal")
 
 	# Connect game manager signals to HUD
 	if game_manager and hud:
@@ -73,7 +110,6 @@ func _ready():
 		game_manager.lives_changed.connect(hud._on_lives_changed)
 		game_manager.level_complete.connect(_on_level_complete)
 		game_manager.game_over.connect(_on_game_over)
-		print("Connected GameManager signals to HUD")
 
 	# Load level from MenuController (or level 1 as fallback)
 	var level_id = MenuController.get_current_level_id()
@@ -116,7 +152,7 @@ func setup_background():
 	var texture = load(selected_bg)
 
 	if not texture:
-		print("Warning: Could not load background: ", selected_bg)
+		push_warning("Could not load background: %s" % selected_bg)
 		return
 
 	# Move background to a CanvasLayer so it renders in screen space
@@ -142,7 +178,6 @@ func setup_background():
 		bg_layer.add_child(texture_rect)
 		background = texture_rect
 
-		print("Background loaded: ", selected_bg)
 	elif background is TextureRect:
 		background.texture = texture
 		background.stretch_mode = TextureRect.STRETCH_SCALE
@@ -153,8 +188,6 @@ func setup_background():
 		old_parent.remove_child(background)
 		add_child(bg_layer)
 		bg_layer.add_child(background)
-
-		print("Background loaded: ", selected_bg)
 
 	_configure_background_rect()
 
@@ -171,16 +204,9 @@ func _configure_background_rect():
 
 func load_level(level_id: int):
 	"""Load a level from JSON using LevelLoader"""
-	print("Loading level ", level_id)
-
 	var level_result = LevelLoader.instantiate_level(level_id, brick_container)
 
 	if level_result["success"]:
-		print("Level loaded: ", level_result["name"])
-		print("  Description: ", level_result["description"])
-		print("  Total bricks: ", level_result["total_bricks"])
-		print("  Breakable bricks: ", level_result["breakable_count"])
-
 		# Update game manager with level info
 		if game_manager:
 			game_manager.current_level = level_id
@@ -213,40 +239,36 @@ func create_test_level():
 
 			brick_container.add_child(brick)
 
-	print("Created test level with ", rows * cols, " bricks")
-
 
 func connect_brick_signals():
 	"""Connect all brick signals to game manager"""
 	remaining_breakable_bricks = 0
+	cached_level_bricks.clear()
 	for brick in brick_container.get_children():
 		if brick.has_signal("brick_broken"):
 			brick.brick_broken.connect(_on_brick_broken)
 		if brick.has_signal("power_up_spawned"):
 			brick.power_up_spawned.connect(_on_power_up_spawned)
+		cached_level_bricks.append(brick)
 		if brick.brick_type != brick.BrickType.UNBREAKABLE:
 			remaining_breakable_bricks += 1
-	print("Breakable bricks: ", remaining_breakable_bricks)
+
+func get_cached_level_bricks() -> Array[Node]:
+	"""Return live level bricks with in-place compaction to avoid full container scans."""
+	for i in range(cached_level_bricks.size() - 1, -1, -1):
+		if not is_instance_valid(cached_level_bricks[i]):
+			cached_level_bricks.remove_at(i)
+	return cached_level_bricks
 
 func _on_brick_broken(score_value: int):
 	"""Handle brick destruction"""
-	print("Main: Brick broken, adding score: ", score_value)
 	game_manager.add_score(score_value)
 
 	# Track statistic
 	SaveManager.increment_stat("total_bricks_broken")
 
-	# Trigger screen shake (intensity scales with score AND combo)
-	if camera and camera.has_method("shake"):
-		var base_intensity = 2.0 + (score_value / 50.0) * 3.0  # 2-5 pixels based on score
-
-		# Scale with combo multiplier (higher combo = more shake)
-		var combo_multiplier = 1.0
-		if game_manager and game_manager.combo >= 3:
-			combo_multiplier = 1.0 + (game_manager.combo - 2) * 0.15  # +15% per combo over 2
-
-		var intensity = min(base_intensity * combo_multiplier, 12.0)  # Cap at 12 pixels
-		camera.shake(intensity, 0.15)
+	# Trigger screen shake (intensity scales with score and combo)
+	_apply_brick_hit_shake(score_value)
 
 	# Decrement breakable brick count and check completion immediately
 	remaining_breakable_bricks = max(remaining_breakable_bricks - 1, 0)
@@ -254,21 +276,17 @@ func _on_brick_broken(score_value: int):
 
 func check_level_complete():
 	"""Check if all bricks have been destroyed"""
-	print("Bricks remaining: ", remaining_breakable_bricks)
-
 	if remaining_breakable_bricks == 0:
-		print("Level complete!")
 		game_manager.complete_level()
 
 func _on_ball_lost(lost_ball):
 	"""Handle ball loss - only lose life if this is the last ball in play"""
 	# Get all balls currently in play (before removing this one)
-	var balls_in_play = get_tree().get_nodes_in_group("ball")
+	var balls_in_play = _get_active_balls()
 
 	# Check if this is the last ball
 	if balls_in_play.size() <= 1:
 		# Last ball lost - lose a life and reset main ball
-		print("Main: Last ball was lost! Losing life.")
 		game_manager.lose_life()
 
 		# Find the actual main ball in the scene
@@ -284,18 +302,18 @@ func _on_ball_lost(lost_ball):
 				main_ball_ref.reset_ball()
 				ball = main_ball_ref  # Update reference
 			else:
-				print("ERROR: Main ball has no reset_ball method")
+				push_error("Main ball has no reset_ball method")
 		# Otherwise try the scene's ball reference
 		elif is_instance_valid(ball) and ball.has_method("reset_ball"):
 			ball.reset_ball()
 		else:
-			print("WARNING: Cannot reset main ball - no valid main ball found")
-			print("  Scene ball reference valid: ", is_instance_valid(ball))
-			print("  Lost ball is main: ", lost_ball.is_main_ball if lost_ball else "null")
+			push_warning("Cannot reset main ball - no valid main ball found")
 			# Try to recover by finding ANY ball in the scene
 			if balls_in_play.size() > 0 and is_instance_valid(balls_in_play[0]):
-				print("  RECOVERY: Using first available ball as main ball")
-				balls_in_play[0].is_main_ball = true
+				if balls_in_play[0].has_method("set_is_main_ball"):
+					balls_in_play[0].set_is_main_ball(true)
+				else:
+					balls_in_play[0].is_main_ball = true
 				ball = balls_in_play[0]
 				if ball.has_method("reset_ball"):
 					ball.reset_ball()
@@ -305,14 +323,11 @@ func _on_ball_lost(lost_ball):
 			lost_ball.queue_free()
 	else:
 		# Still have other balls in play - no life penalty
-		print("Main: Ball lost, but ", balls_in_play.size() - 1, " ball(s) still in play")
 		if is_instance_valid(lost_ball):
 			lost_ball.queue_free()
 
 func _on_level_complete():
 	"""Handle level completion - stop ball and transition to complete screen"""
-	print("Main: Level complete handler triggered")
-
 	# Stop the ball
 	if ball and ball.has_method("reset_ball"):
 		ball.reset_ball()
@@ -322,8 +337,6 @@ func _on_level_complete():
 
 func _on_game_over():
 	"""Handle game over - transition to game over screen"""
-	print("Main: Game over handler triggered")
-
 	# Show game over screen with final score
 	MenuController.show_game_over(game_manager.score)
 
@@ -331,24 +344,21 @@ func _input(event):
 	"""Handle input for restart and debug/testing"""
 	# Restart with input action
 	if Input.is_action_just_pressed("restart_game"):
-		print("Restarting level...")
 		MenuController.restart_current_level()
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		if OS.is_debug_build() and event.keycode == KEY_C:
 			_hit_all_bricks()
 
-func _spawn_debug_powerup(label: String, powerup_type: int):
-	print("\n### DEBUG: Spawning ", label, " power-up ###")
+func _spawn_debug_powerup(_label: String, powerup_type: int):
 	var powerup_scene = load("res://scenes/gameplay/power_up.tscn")
 	if powerup_scene:
 		var powerup = powerup_scene.instantiate()
 		powerup.power_up_type = powerup_type
-		powerup.position = Vector2(1100, 360)  # Near paddle
+		powerup.position = DEBUG_POWERUP_SPAWN_POSITION
 		_on_power_up_spawned(powerup)
-		print(label, " power-up spawned at position: ", powerup.position)
 	else:
-		print("ERROR: Could not load power-up scene")
+		push_error("Could not load power-up scene for debug spawn")
 
 func _spawn_block_barrier(duration: float):
 	if not paddle or not play_area:
@@ -432,13 +442,7 @@ func _on_block_brick_broken(score_value: int):
 	SaveManager.increment_stat("total_bricks_broken")
 
 	# Trigger screen shake similar to normal bricks
-	if camera and camera.has_method("shake"):
-		var base_intensity = 2.0 + (score_value / 50.0) * 3.0
-		var combo_multiplier = 1.0
-		if game_manager and game_manager.combo >= 3:
-			combo_multiplier = 1.0 + (game_manager.combo - 2) * 0.15
-		var intensity = min(base_intensity * combo_multiplier, 12.0)
-		camera.shake(intensity, 0.15)
+	_apply_brick_hit_shake(score_value)
 
 func _on_block_barrier_timeout(barrier: Node):
 	if barrier and barrier.is_inside_tree():
@@ -511,12 +515,8 @@ func _on_power_up_spawned(power_up_node):
 	if power_up_node.has_signal("collected"):
 		power_up_node.collected.connect(_on_power_up_collected)
 
-	print("Power-up spawned and added to scene")
-
 func _on_power_up_collected(type):
 	"""Handle power-up collection"""
-	print("Main: Power-up collected, type: ", type)
-
 	# Track statistic
 	SaveManager.increment_stat("total_power_ups_collected")
 
@@ -561,7 +561,6 @@ func _on_power_up_collected(type):
 			# Apply a random power-up effect (excluding mystery itself)
 			var random_types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15]
 			var random_type = random_types[randi() % random_types.size()]
-			print("Mystery power-up! Applying random effect: ", random_type)
 			_on_power_up_collected(random_type)
 		12:  # BOMB_BALL
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BOMB_BALL, null)
@@ -570,7 +569,7 @@ func _on_power_up_collected(type):
 		14:  # MAGNET
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.MAGNET, null)
 		15:  # BLOCK
-			var duration = PowerUpManager.EFFECT_DURATIONS.get(PowerUpManager.PowerUpType.BLOCK, 12.0)
+			var duration = PowerUpManager.EFFECT_DURATIONS.get(PowerUpManager.PowerUpType.BLOCK, BLOCK_DEFAULT_DURATION)
 			call_deferred("_spawn_block_barrier", duration)
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BLOCK, null)
 
@@ -579,16 +578,15 @@ func spawn_additional_balls_with_retry(retries_remaining: int = 3):
 	var result = try_spawn_additional_balls()
 
 	if not result and retries_remaining > 1:
-		print("Retrying triple ball spawn in 0.5 seconds... (", retries_remaining - 1, " attempts left)")
-		await get_tree().create_timer(0.5).timeout
+		await get_tree().create_timer(TRIPLE_BALL_RETRY_DELAY).timeout
 		spawn_additional_balls_with_retry(retries_remaining - 1)
 	elif not result:
-		print("ERROR: Failed to spawn triple ball after all retries - power-up wasted")
+		push_warning("Failed to spawn triple ball after all retries")
 
 func try_spawn_additional_balls() -> bool:
 	"""Attempt to spawn additional balls - returns true if successful, false if position is bad"""
 	# Find any active ball in play
-	var active_balls = get_tree().get_nodes_in_group("ball")
+	var active_balls = _get_active_balls()
 	var source_ball = null
 
 	# Prefer a ball that's in motion (not attached to paddle)
@@ -606,18 +604,15 @@ func try_spawn_additional_balls() -> bool:
 		source_ball = ball
 
 	if not source_ball:
-		print("ERROR: No ball reference found (no balls in scene)")
+		push_warning("Cannot spawn triple ball: no ball reference found")
 		return false
 
 	# Safety check: Don't spawn if ball is too close to edges
-	if source_ball.position.x > 1100:
-		print("WARNING: Cannot spawn triple ball - source ball too close to paddle (X=", source_ball.position.x, ")")
+	if source_ball.position.x > TRIPLE_BALL_MAX_X:
 		return false
-	if source_ball.position.x < 50:
-		print("WARNING: Cannot spawn triple ball - source ball too close to left wall (X=", source_ball.position.x, ")")
+	if source_ball.position.x < TRIPLE_BALL_MIN_X:
 		return false
-	if source_ball.position.y < 50 or source_ball.position.y > 670:
-		print("WARNING: Cannot spawn triple ball - source ball too close to top/bottom (Y=", source_ball.position.y, ")")
+	if source_ball.position.y < TRIPLE_BALL_MIN_Y or source_ball.position.y > TRIPLE_BALL_MAX_Y:
 		return false
 
 	# Position is good - spawn the balls
@@ -626,100 +621,66 @@ func try_spawn_additional_balls() -> bool:
 
 func spawn_additional_balls(source_ball):
 	"""Spawn 2 additional balls for multi-ball power-up - source_ball position already validated"""
-	print("\n" + "=".repeat(60))
-	print("=== SPAWNING TRIPLE BALL POWER-UP ===")
-	print("=".repeat(60))
-
-	print("\n[SOURCE BALL STATE]")
-	print("  Position: ", source_ball.position, " (X: ", source_ball.position.x, ", Y: ", source_ball.position.y, ")")
-	print("  Velocity: ", source_ball.velocity, " (X: ", source_ball.velocity.x, ", Y: ", source_ball.velocity.y, ")")
-	print("  Speed: ", source_ball.current_speed)
-	print("  Is attached: ", source_ball.is_attached_to_paddle)
-	print("  Velocity angle: ", rad_to_deg(atan2(source_ball.velocity.y, source_ball.velocity.x)), "° (0°=right, 90°=down, 180°=left, 270°=up)")
-
-	# Get ball scene
-	var ball_scene = load("res://scenes/gameplay/ball.tscn")
-	if not ball_scene:
-		print("ERROR: Could not load ball scene")
+	if not BALL_SCENE:
+		push_error("Could not load ball scene")
 		return
 
 	# Enable collision immunity on source ball
 	if source_ball.has_method("enable_collision_immunity"):
-		source_ball.enable_collision_immunity(0.5)
+		source_ball.enable_collision_immunity(TRIPLE_BALL_IMMUNITY_DURATION)
 
 	# Spawn 2 additional balls
-	for i in range(2):
-		print("\n" + "-".repeat(50))
-		print("[SPAWNING BALL #", i + 1, "]")
-		print("-".repeat(50))
-
-		var new_ball = ball_scene.instantiate()
+	for i in range(TRIPLE_BALL_ADDITIONAL_COUNT):
+		var new_ball = BALL_SCENE.instantiate()
 
 		# Mark as extra ball (won't count as life loss)
-		new_ball.is_main_ball = false
+		if new_ball.has_method("set_is_main_ball"):
+			new_ball.set_is_main_ball(false)
+		else:
+			new_ball.is_main_ball = false
 
 		# Position with small offset to prevent physics overlap issues
 		# Offset perpendicular to source ball's velocity direction
-		var offset_distance = 20.0  # pixels apart
-		var perpendicular_offset = Vector2(0, offset_distance * (1 if i == 0 else -1))
+		var perpendicular_offset = Vector2(0, TRIPLE_BALL_OFFSET_DISTANCE * (1 if i == 0 else -1))
 		new_ball.position = source_ball.position + perpendicular_offset
-		print("  Spawn Position: ", new_ball.position, " (X: ", new_ball.position.x, ", Y: ", new_ball.position.y, ")")
-		print("  Position Offset: ", perpendicular_offset, " (from source ball)")
 
 		# Launch with safe angles based on current ball position
 		# Angles: 0° = right, 90° = down, 180° = left, 270° = up
 		# CRITICAL: Use only SAFE angles (120°-240°) to prevent any escapes
 		var angle_offset = 0.0
-		var zone = ""
-		var base_angle = 180.0  # Default: leftward
+		var base_angle = TRIPLE_BALL_DEFAULT_BASE_ANGLE
 
 		# CRITICAL: Check boundaries and adjust angles to prevent escapes
 		# All angles constrained to 120°-240° range (safe zone)
 		# Check left wall (X < 100) - shoot RIGHT-DOWN
-		if source_ball.position.x < 100:
+		if source_ball.position.x < TRIPLE_BALL_LEFT_ZONE_X:
 			# Near left: shoot toward right-down quadrant (90° to 120°)
-			base_angle = 105.0  # Right-down diagonal
-			angle_offset = -10.0 if i == 0 else 10.0
-			zone = "NEAR LEFT (shooting RIGHT+DOWN)"
+			base_angle = TRIPLE_BALL_LEFT_BASE_ANGLE
+			angle_offset = -TRIPLE_BALL_LEFT_ZONE_ANGLE_OFFSET if i == 0 else TRIPLE_BALL_LEFT_ZONE_ANGLE_OFFSET
 		# Check top wall (Y < 150) - shoot DOWN-LEFT
-		elif source_ball.position.y < 150:
+		elif source_ball.position.y < TRIPLE_BALL_TOP_ZONE_Y:
 			# Near top: shoot down-left (200°-220°)
-			base_angle = 210.0  # Down-left
-			angle_offset = -5.0 if i == 0 else 5.0
-			zone = "NEAR TOP (shooting DOWN+LEFT)"
+			base_angle = TRIPLE_BALL_TOP_BASE_ANGLE
+			angle_offset = -TRIPLE_BALL_STANDARD_ANGLE_OFFSET if i == 0 else TRIPLE_BALL_STANDARD_ANGLE_OFFSET
 		# Check bottom wall (Y > 570) - shoot LEFT-UP (but still safe)
-		elif source_ball.position.y > 570:
+		elif source_ball.position.y > TRIPLE_BALL_BOTTOM_ZONE_Y:
 			# Near bottom: shoot left-up but stay in safe range (150°-160°)
-			base_angle = 155.0  # Left-up but safe
-			angle_offset = -5.0 if i == 0 else 5.0
-			zone = "NEAR BOTTOM (shooting LEFT+UP safe)"
+			base_angle = TRIPLE_BALL_BOTTOM_BASE_ANGLE
+			angle_offset = -TRIPLE_BALL_STANDARD_ANGLE_OFFSET if i == 0 else TRIPLE_BALL_STANDARD_ANGLE_OFFSET
 		# Normal position - horizontal spread
 		else:
 			# Center area - horizontal spread (175°-185°)
-			base_angle = 180.0
-			angle_offset = -5.0 if i == 0 else 5.0
-			zone = "CENTER"
+			base_angle = TRIPLE_BALL_DEFAULT_BASE_ANGLE
+			angle_offset = -TRIPLE_BALL_STANDARD_ANGLE_OFFSET if i == 0 else TRIPLE_BALL_STANDARD_ANGLE_OFFSET
 
 		var target_angle = base_angle + angle_offset
 
 		# SAFETY CLAMP: Ensure angle is always in safe range
-		target_angle = clamp(target_angle, 120.0, 240.0)
-		print("  Angle clamped to safe range: ", target_angle, "° (120°-240° safe zone)")
+		target_angle = clamp(target_angle, TRIPLE_BALL_SAFE_ANGLE_MIN, TRIPLE_BALL_SAFE_ANGLE_MAX)
 		var angle_rad = deg_to_rad(target_angle)
-
-		print("  Zone: ", zone, " (X=", source_ball.position.x, ", Y=", source_ball.position.y, ")")
-		print("  Base Angle: ", base_angle, "° (0°=right, 180°=left)")
-		print("  Angle Offset: ", angle_offset, "°")
-		print("  Target Angle: ", target_angle, "°")
 
 		new_ball.velocity = Vector2(cos(angle_rad), sin(angle_rad)) * source_ball.current_speed
 		new_ball.is_attached_to_paddle = false
-
-		print("  Calculated Velocity: ", new_ball.velocity)
-		print("    - X component: ", new_ball.velocity.x, " (negative=left, positive=right)")
-		print("    - Y component: ", new_ball.velocity.y, " (negative=up, positive=down)")
-		print("  Velocity Magnitude: ", new_ball.velocity.length(), " (should be ", source_ball.current_speed, ")")
-		print("  Velocity Angle (verify): ", rad_to_deg(atan2(new_ball.velocity.y, new_ball.velocity.x)), "°")
 
 		# Enable trail
 		if new_ball.has_method("refresh_trail_state"):
@@ -735,14 +696,28 @@ func spawn_additional_balls(source_ball):
 
 		# Enable collision immunity to prevent spawn collision issues
 		if new_ball.has_method("enable_collision_immunity"):
-			new_ball.enable_collision_immunity(0.5)
+			new_ball.enable_collision_immunity(TRIPLE_BALL_IMMUNITY_DURATION)
 
 		# Connect signals
 		new_ball.ball_lost.connect(_on_ball_lost)
 
-		print("  ✓ Ball #", i + 1, " added to scene successfully")
+func _get_active_balls() -> Array:
+	if not play_area:
+		return []
+	var active_balls: Array = []
+	for child in play_area.get_children():
+		if is_instance_valid(child) and child.is_in_group("ball"):
+			active_balls.append(child)
+	return active_balls
 
-	print("\n" + "=".repeat(60))
-	print("=== TRIPLE BALL SPAWN COMPLETE ===")
-	print("Total balls in play: ", get_tree().get_nodes_in_group("ball").size())
-	print("=".repeat(60) + "\n")
+func _apply_brick_hit_shake(score_value: int) -> void:
+	if not camera or not camera.has_method("shake"):
+		return
+
+	var base_intensity = SHAKE_BASE_INTENSITY + (score_value / SHAKE_SCORE_DIVISOR) * SHAKE_SCORE_SCALE
+	var combo_multiplier = 1.0
+	if game_manager and game_manager.combo >= SHAKE_COMBO_MIN:
+		combo_multiplier = 1.0 + (game_manager.combo - SHAKE_COMBO_OFFSET) * SHAKE_COMBO_STEP
+
+	var intensity = min(base_intensity * combo_multiplier, SHAKE_MAX_INTENSITY)
+	camera.shake(intensity, SHAKE_DURATION)

@@ -23,24 +23,32 @@ enum PowerUpType {
 	BLOCK
 }
 
+class ActiveEffect:
+	var time_remaining: float
+	var target_node: Node
+
+	func _init(time_remaining_value: float, target_node_value: Node) -> void:
+		time_remaining = time_remaining_value
+		target_node = target_node_value
+
 # Active effects with their remaining time
-var active_effects: Dictionary = {}
-# Format: {PowerUpType: {time_remaining: float, target_node: Node}}
+var active_effects: Dictionary[int, ActiveEffect] = {}
+var _cached_paddle: Node = null
+var _cached_ball: Node = null
+var tracked_balls: Array[Node] = []
+var expired_effect_types: Array[int] = []
 
 # Effect durations
 const EFFECT_DURATIONS = {
 	PowerUpType.EXPAND: 15.0,
 	PowerUpType.CONTRACT: 10.0,
 	PowerUpType.SPEED_UP: 12.0,
-	PowerUpType.TRIPLE_BALL: 0.0,  # Permanent (doesn't expire)
 	PowerUpType.BIG_BALL: 12.0,
 	PowerUpType.SMALL_BALL: 12.0,
 	PowerUpType.SLOW_DOWN: 12.0,
-	PowerUpType.EXTRA_LIFE: 0.0,  # Instant (doesn't expire)
 	PowerUpType.GRAB: 15.0,
 	PowerUpType.BRICK_THROUGH: 12.0,
 	PowerUpType.DOUBLE_SCORE: 15.0,
-	PowerUpType.MYSTERY: 0.0,  # Instant (doesn't expire, applies random effect)
 	PowerUpType.BOMB_BALL: 12.0,
 	PowerUpType.AIR_BALL: 12.0,
 	PowerUpType.MAGNET: 12.0,
@@ -51,37 +59,41 @@ const EFFECT_DURATIONS = {
 signal effect_applied(type: PowerUpType)
 signal effect_expired(type: PowerUpType)
 
+func _ready() -> void:
+	set_process(false)
+
 func _process(delta):
 	# Update all active effect timers
-	for effect_type in active_effects.keys():
-		var effect_data = active_effects[effect_type]
+	expired_effect_types.clear()
+	for effect_type in active_effects:
+		var effect_data: ActiveEffect = active_effects[effect_type]
 		effect_data.time_remaining -= delta
 
 		# Check if effect expired
-		if effect_data.time_remaining <= 0:
+		if effect_data.time_remaining <= 0.0:
+			expired_effect_types.append(effect_type)
+
+	for effect_type in expired_effect_types:
+		if active_effects.has(effect_type):
 			remove_effect(effect_type)
 
 func apply_effect(type: PowerUpType, target_node: Node):
 	"""Apply a power-up effect with timer"""
 	var duration = EFFECT_DURATIONS.get(type, 0.0)
+	var has_timer = duration > 0.0
 	if target_node and not is_instance_valid(target_node):
 		target_node = null
 
-	# If effect already active, refresh timer
-	if active_effects.has(type):
-		if duration > 0.0:
+	# Track only timed effects in active_effects
+	if has_timer:
+		if active_effects.has(type):
 			active_effects[type].time_remaining += duration
-			print("Extended power-up: ", PowerUpType.keys()[type], " by ", duration, "s")
 		else:
-			active_effects[type].time_remaining = duration
-			print("Refreshed power-up: ", PowerUpType.keys()[type])
-	else:
-		# Add new effect
-		active_effects[type] = {
-			"time_remaining": duration,
-			"target_node": target_node
-		}
-		print("Applied power-up: ", PowerUpType.keys()[type], " for ", duration, "s")
+			active_effects[type] = ActiveEffect.new(duration, target_node)
+	elif active_effects.has(type):
+		active_effects.erase(type)
+
+	_refresh_processing_state()
 
 	effect_applied.emit(type)
 
@@ -90,42 +102,22 @@ func apply_effect(type: PowerUpType, target_node: Node):
 	elif type == PowerUpType.BIG_BALL or type == PowerUpType.SMALL_BALL:
 		_update_ball_size(target_node)
 	elif type == PowerUpType.GRAB:
-		# Enable grab on all balls
-		var balls = get_tree().get_nodes_in_group("ball")
-		for ball in balls:
-			if ball.has_method("enable_grab"):
-				ball.enable_grab()
+		_for_each_ball("enable_grab")
 	elif type == PowerUpType.BRICK_THROUGH:
-		# Enable brick through on all balls
-		var balls = get_tree().get_nodes_in_group("ball")
-		for ball in balls:
-			if ball.has_method("enable_brick_through"):
-				ball.enable_brick_through()
+		_for_each_ball("enable_brick_through")
 	elif type == PowerUpType.BOMB_BALL:
-		# Enable bomb ball on all balls
-		var balls = get_tree().get_nodes_in_group("ball")
-		for ball in balls:
-			if ball.has_method("enable_bomb_ball"):
-				ball.enable_bomb_ball()
+		_for_each_ball("enable_bomb_ball")
 	elif type == PowerUpType.AIR_BALL:
-		# Enable air ball on all balls
-		var balls = get_tree().get_nodes_in_group("ball")
-		for ball in balls:
-			if ball.has_method("enable_air_ball"):
-				ball.enable_air_ball()
+		_for_each_ball("enable_air_ball")
 	elif type == PowerUpType.MAGNET:
-		# Enable magnet on all balls
-		var balls = get_tree().get_nodes_in_group("ball")
-		for ball in balls:
-			if ball.has_method("enable_magnet"):
-				ball.enable_magnet()
+		_for_each_ball("enable_magnet")
 
 func remove_effect(type: PowerUpType):
 	"""Remove an active effect and reset to default"""
 	if not active_effects.has(type):
 		return
 
-	var effect_data = active_effects[type]
+	var effect_data: ActiveEffect = active_effects[type]
 	var target = effect_data.target_node
 	if target and not is_instance_valid(target):
 		target = null
@@ -137,7 +129,7 @@ func remove_effect(type: PowerUpType):
 			var paddle_target = _get_paddle_target()
 			_update_paddle_size(paddle_target)
 			effect_expired.emit(type)
-			print("Power-up expired: ", PowerUpType.keys()[type])
+			_refresh_processing_state()
 			return
 		PowerUpType.SPEED_UP, PowerUpType.SLOW_DOWN:
 			if target and target.has_method("reset_ball_speed"):
@@ -147,57 +139,39 @@ func remove_effect(type: PowerUpType):
 			var ball_target = _get_ball_target()
 			_update_ball_size(ball_target)
 			effect_expired.emit(type)
-			print("Power-up expired: ", PowerUpType.keys()[type])
+			_refresh_processing_state()
 			return
 		PowerUpType.GRAB:
-			# Reset grab state on all balls
-			var balls = get_tree().get_nodes_in_group("ball")
-			for ball in balls:
-				if ball.has_method("reset_grab_state"):
-					ball.reset_grab_state()
+			_for_each_ball("reset_grab_state")
 		PowerUpType.BRICK_THROUGH:
-			# Reset brick through state on all balls
-			var balls = get_tree().get_nodes_in_group("ball")
-			for ball in balls:
-				if ball.has_method("reset_brick_through"):
-					ball.reset_brick_through()
+			_for_each_ball("reset_brick_through")
 		PowerUpType.DOUBLE_SCORE:
 			# Score multiplier is checked via active_effects, no reset needed
 			pass
 		PowerUpType.BOMB_BALL:
-			# Reset bomb ball state on all balls
-			var balls = get_tree().get_nodes_in_group("ball")
-			for ball in balls:
-				if ball.has_method("reset_bomb_ball"):
-					ball.reset_bomb_ball()
+			_for_each_ball("reset_bomb_ball")
 		PowerUpType.AIR_BALL:
-			# Reset air ball state on all balls
-			var balls = get_tree().get_nodes_in_group("ball")
-			for ball in balls:
-				if ball.has_method("reset_air_ball"):
-					ball.reset_air_ball()
+			_for_each_ball("reset_air_ball")
 		PowerUpType.MAGNET:
-			# Reset magnet state on all balls
-			var balls = get_tree().get_nodes_in_group("ball")
-			for ball in balls:
-				if ball.has_method("reset_magnet"):
-					ball.reset_magnet()
+			_for_each_ball("reset_magnet")
 
 	# Remove from active effects
 	active_effects.erase(type)
 
 	effect_expired.emit(type)
-	print("Power-up expired: ", PowerUpType.keys()[type])
+	_refresh_processing_state()
 
 func _get_paddle_target() -> Node:
 	var expand_target = _get_effect_target(PowerUpType.EXPAND)
 	if expand_target:
+		_cached_paddle = expand_target
 		return expand_target
 	var contract_target = _get_effect_target(PowerUpType.CONTRACT)
 	if contract_target:
+		_cached_paddle = contract_target
 		return contract_target
-	var fallback = get_tree().get_first_node_in_group("paddle")
-	if is_instance_valid(fallback):
+	var fallback = _get_cached_paddle()
+	if fallback:
 		return fallback
 	return null
 
@@ -230,12 +204,14 @@ func _update_paddle_size(target_node: Node):
 func _get_ball_target() -> Node:
 	var big_target = _get_effect_target(PowerUpType.BIG_BALL)
 	if big_target:
+		_cached_ball = big_target
 		return big_target
 	var small_target = _get_effect_target(PowerUpType.SMALL_BALL)
 	if small_target:
+		_cached_ball = small_target
 		return small_target
-	var fallback = get_tree().get_first_node_in_group("ball")
-	if is_instance_valid(fallback):
+	var fallback = _get_cached_ball()
+	if fallback:
 		return fallback
 	return null
 
@@ -267,11 +243,70 @@ func _update_ball_size(target_node: Node):
 
 func _get_effect_target(effect_type: int) -> Node:
 	if active_effects.has(effect_type):
-		var target = active_effects[effect_type].target_node
+		var effect_data: ActiveEffect = active_effects[effect_type]
+		var target = effect_data.target_node
 		if is_instance_valid(target):
 			return target
-		active_effects[effect_type].target_node = null
+		effect_data.target_node = null
 	return null
+
+func _for_each_ball(method_name: String) -> void:
+	for ball in get_active_balls():
+		if is_instance_valid(ball) and ball.has_method(method_name):
+			ball.call(method_name)
+
+func _get_cached_paddle() -> Node:
+	if _cached_paddle and is_instance_valid(_cached_paddle):
+		return _cached_paddle
+	var tree = get_tree()
+	if tree == null:
+		return null
+	_cached_paddle = tree.get_first_node_in_group("paddle")
+	if is_instance_valid(_cached_paddle):
+		return _cached_paddle
+	return null
+
+func _get_cached_ball() -> Node:
+	if _cached_ball and is_instance_valid(_cached_ball):
+		return _cached_ball
+	var active_balls = get_active_balls()
+	if active_balls.size() > 0:
+		_cached_ball = active_balls[0]
+	if is_instance_valid(_cached_ball):
+		return _cached_ball
+	return null
+
+func register_ball(ball: Node) -> void:
+	if not ball or not is_instance_valid(ball):
+		return
+	if tracked_balls.has(ball):
+		return
+	tracked_balls.append(ball)
+
+func unregister_ball(ball: Node) -> void:
+	if not ball:
+		return
+	tracked_balls.erase(ball)
+
+func get_active_balls() -> Array[Node]:
+	_compact_tracked_balls()
+	if tracked_balls.is_empty():
+		var tree = get_tree()
+		if tree:
+			for ball in tree.get_nodes_in_group("ball"):
+				if is_instance_valid(ball):
+					tracked_balls.append(ball)
+	return tracked_balls
+
+func _compact_tracked_balls() -> void:
+	if tracked_balls.is_empty():
+		return
+	for i in range(tracked_balls.size() - 1, -1, -1):
+		if not is_instance_valid(tracked_balls[i]):
+			tracked_balls.remove_at(i)
+
+func _refresh_processing_state() -> void:
+	set_process(not active_effects.is_empty())
 
 func get_ball_size_multiplier() -> float:
 	var has_big = active_effects.has(PowerUpType.BIG_BALL)

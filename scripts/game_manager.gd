@@ -33,12 +33,17 @@ var playtime_since_flush: float = 0.0
 var level_time_seconds: float = 0.0
 
 # Score breakdown tracking (per level)
-var score_breakdown: Dictionary = {
-	"base_points": 0,
-	"difficulty_bonus": 0,
-	"combo_bonus": 0,
-	"streak_bonus": 0,
-	"double_bonus": 0
+const SCORE_KEY_BASE = "base_points"
+const SCORE_KEY_DIFFICULTY = "difficulty_bonus"
+const SCORE_KEY_COMBO = "combo_bonus"
+const SCORE_KEY_STREAK = "streak_bonus"
+const SCORE_KEY_DOUBLE = "double_bonus"
+var score_breakdown: Dictionary[String, int] = {
+	SCORE_KEY_BASE: 0,
+	SCORE_KEY_DIFFICULTY: 0,
+	SCORE_KEY_COMBO: 0,
+	SCORE_KEY_STREAK: 0,
+	SCORE_KEY_DOUBLE: 0
 }
 
 # Combo thresholds for bonuses
@@ -65,10 +70,6 @@ func _ready():
 	_reset_level_breakdown()
 	_apply_mouse_mode_for_state(game_state)
 
-	print("GameManager initialized")
-	print("Starting lives: ", lives)
-	print("Starting score: ", score)
-
 func _process(_delta):
 	# Debug: Press Escape to toggle pause (when implemented)
 	if Input.is_action_just_pressed("ui_cancel") and (game_state == GameState.PLAYING or game_state == GameState.READY):
@@ -92,7 +93,6 @@ func set_state(new_state: GameState):
 			last_state_before_pause = game_state
 		game_state = new_state
 		state_changed.emit(new_state)
-		print("Game state changed to: ", GameState.keys()[new_state])
 
 		# Use Godot's built-in pause system
 		get_tree().paused = (new_state == GameState.PAUSED)
@@ -137,11 +137,11 @@ func add_score(points: int):
 		double_bonus = double_points - adjusted_points
 		adjusted_points = double_points
 
-	score_breakdown["base_points"] += base_points
-	score_breakdown["difficulty_bonus"] += difficulty_bonus
-	score_breakdown["combo_bonus"] += combo_bonus
-	score_breakdown["streak_bonus"] += streak_bonus
-	score_breakdown["double_bonus"] += double_bonus
+	score_breakdown[SCORE_KEY_BASE] += base_points
+	score_breakdown[SCORE_KEY_DIFFICULTY] += difficulty_bonus
+	score_breakdown[SCORE_KEY_COMBO] += combo_bonus
+	score_breakdown[SCORE_KEY_STREAK] += streak_bonus
+	score_breakdown[SCORE_KEY_DOUBLE] += double_bonus
 
 	score += adjusted_points
 	score_changed.emit(score)
@@ -152,19 +152,6 @@ func add_score(points: int):
 	# Increment combo and streak
 	increment_combo()
 	increment_no_miss_streak()
-
-	# Build debug message
-	var multipliers = []
-	if combo >= COMBO_BONUS_THRESHOLD:
-		multipliers.append("COMBO x" + str(combo))
-	if no_miss_hits >= STREAK_HITS_PER_BONUS:
-		var streak_tiers = int(floorf(no_miss_hits / float(STREAK_HITS_PER_BONUS)))
-		multipliers.append("STREAK +" + str(streak_tiers * 10) + "%")
-
-	if multipliers.size() > 0:
-		print("Score: ", score, " (+", adjusted_points, ") [", ", ".join(multipliers), "]")
-	else:
-		print("Score: ", score, " (+", adjusted_points, ")")
 
 ## Increment combo counter
 func increment_combo():
@@ -177,7 +164,6 @@ func increment_combo():
 	# Emit milestone signal at every 5th combo (5, 10, 15, 20, etc.)
 	if combo % 5 == 0 and combo >= 5:
 		combo_milestone.emit(combo)
-		print("COMBO MILESTONE: ", combo, "x!")
 	# Play SFX less frequently to avoid spam
 	if combo % 20 == 0 and combo >= 20:
 		AudioManager.play_sfx("combo_milestone")
@@ -185,7 +171,6 @@ func increment_combo():
 ## Reset combo counter
 func reset_combo():
 	if combo > 0:
-		print("Combo broken! (was ", combo, ")")
 		combo = 0
 		combo_changed.emit(combo)
 
@@ -194,14 +179,9 @@ func increment_no_miss_streak():
 	no_miss_hits += 1
 	no_miss_streak_changed.emit(no_miss_hits)
 
-	# Show milestone message every 5 hits
-	if no_miss_hits % 5 == 0 and no_miss_hits >= 5:
-		print("NO-MISS STREAK: ", no_miss_hits, " hits!")
-
 ## Reset no-miss streak counter
 func reset_no_miss_streak():
 	if no_miss_hits > 0:
-		print("No-miss streak broken! (was ", no_miss_hits, ")")
 		no_miss_hits = 0
 		no_miss_streak_changed.emit(no_miss_hits)
 
@@ -209,7 +189,6 @@ func reset_no_miss_streak():
 func lose_life():
 	lives -= 1
 	lives_changed.emit(lives)
-	print("Lives remaining: ", lives)
 	AudioManager.play_sfx("life_lost")
 
 	# Mark that perfect clear is no longer possible
@@ -230,11 +209,9 @@ func add_life():
 	"""Add one life (from Extra Life power-up)"""
 	lives += 1
 	lives_changed.emit(lives)
-	print("Extra life! Lives: ", lives)
 
 ## Complete current level
 func complete_level():
-	print("Level ", current_level, " complete!")
 	AudioManager.play_sfx("level_complete")
 	set_state(GameState.LEVEL_COMPLETE)
 	level_complete.emit()
@@ -253,7 +230,6 @@ func reset_game():
 	lives_changed.emit(lives)
 	combo_changed.emit(combo)
 	no_miss_streak_changed.emit(no_miss_hits)
-	print("Game reset")
 	_reset_level_breakdown()
 
 ## Start playing (ball launched)
@@ -276,11 +252,11 @@ func get_level_time_seconds() -> float:
 
 func _reset_level_breakdown():
 	level_time_seconds = 0.0
-	score_breakdown["base_points"] = 0
-	score_breakdown["difficulty_bonus"] = 0
-	score_breakdown["combo_bonus"] = 0
-	score_breakdown["streak_bonus"] = 0
-	score_breakdown["double_bonus"] = 0
+	score_breakdown[SCORE_KEY_BASE] = 0
+	score_breakdown[SCORE_KEY_DIFFICULTY] = 0
+	score_breakdown[SCORE_KEY_COMBO] = 0
+	score_breakdown[SCORE_KEY_STREAK] = 0
+	score_breakdown[SCORE_KEY_DOUBLE] = 0
 
 func _flush_playtime():
 	"""Persist accumulated playtime to SaveManager"""

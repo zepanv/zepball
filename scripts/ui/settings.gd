@@ -162,7 +162,6 @@ func _set_screen_shake(intensity: String):
 	"""Set screen shake intensity"""
 	SaveManager.save_screen_shake_intensity(intensity)
 	_update_shake_buttons(intensity)
-	print("Screen shake set to: ", intensity)
 
 func _update_shake_buttons(intensity: String):
 	"""Update button highlights based on selected intensity"""
@@ -176,21 +175,18 @@ func _on_particles_toggled(enabled: bool):
 	SaveManager.save_particle_effects(enabled)
 	_update_checkbox_visual(particles_check, enabled)
 	_apply_live_settings()
-	print("Particle effects: ", "On" if enabled else "Off")
 
 func _on_trail_toggled(enabled: bool):
 	"""Handle ball trail toggle"""
 	SaveManager.save_ball_trail(enabled)
 	_update_checkbox_visual(trail_check, enabled)
 	_apply_live_settings()
-	print("Ball trail: ", "On" if enabled else "Off")
 
 func _on_combo_flash_toggled(enabled: bool):
 	"""Handle combo flash toggle"""
 	SaveManager.save_combo_flash_enabled(enabled)
 	_update_checkbox_visual(combo_flash_check, enabled)
 	_apply_live_settings()
-	print("Combo flash: ", "On" if enabled else "Off")
 
 func _on_short_intro_toggled(enabled: bool):
 	"""Handle short level intro toggle"""
@@ -203,7 +199,6 @@ func _on_short_intro_toggled(enabled: bool):
 	SaveManager.save_short_level_intro(enabled)
 	_update_checkbox_visual(short_intro_check, enabled)
 	_apply_live_settings()
-	print("Short level intro: ", "On" if enabled else "Off")
 
 func _on_skip_intro_toggled(enabled: bool):
 	"""Handle skip level intro toggle"""
@@ -216,14 +211,12 @@ func _on_skip_intro_toggled(enabled: bool):
 	SaveManager.save_skip_level_intro(enabled)
 	_update_checkbox_visual(skip_intro_check, enabled)
 	_apply_live_settings()
-	print("Skip level intro: ", "On" if enabled else "Off")
 
 func _on_show_fps_toggled(enabled: bool):
 	"""Handle FPS display toggle"""
 	SaveManager.save_show_fps(enabled)
 	_update_checkbox_visual(show_fps_check, enabled)
 	_apply_live_settings()
-	print("Show FPS: ", "On" if enabled else "Off")
 
 func _update_checkbox_visual(checkbox: CheckBox, enabled: bool) -> void:
 	"""Make unchecked boxes easier to see"""
@@ -249,7 +242,7 @@ func _apply_live_settings() -> void:
 
 	# Ball trail
 	var trail_enabled = SaveManager.get_ball_trail()
-	var balls = get_tree().get_nodes_in_group("ball")
+	var balls = PowerUpManager.get_active_balls()
 	for ball in balls:
 		if ball and ball.has_node("Trail"):
 			var is_attached = false
@@ -378,7 +371,6 @@ func _on_clear_save_pressed():
 
 func _on_clear_save_confirmed():
 	"""Clear progress/scoring data and return to main menu"""
-	print("Clearing save data...")
 	SaveManager.reset_save_data()
 
 	# Return to main menu to refresh everything
@@ -390,7 +382,6 @@ func _on_reset_settings_pressed():
 
 func _on_reset_settings_confirmed():
 	"""Reset settings to defaults without touching progression"""
-	print("Resetting settings to defaults...")
 	SaveManager.reset_settings_to_default()
 	_load_current_settings()
 	# Apply audio defaults immediately

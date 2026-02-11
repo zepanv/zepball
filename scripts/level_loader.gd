@@ -29,7 +29,6 @@ var brick_type_map = {
 
 func _ready():
 	"""Initialize level loader"""
-	print("LevelLoader ready")
 	preload_all_levels()
 
 func preload_all_levels() -> void:
@@ -39,7 +38,6 @@ func preload_all_levels() -> void:
 		var level_data = load_level_data(i)
 		if level_data:
 			level_cache[i] = level_data
-	print("Preloaded ", level_cache.size(), " levels")
 
 func get_total_level_count() -> int:
 	"""Get the total number of levels available"""
@@ -70,11 +68,13 @@ func load_level_data(level_id: int) -> Dictionary:
 
 	if not FileAccess.file_exists(file_path):
 		push_error("Level file not found: " + file_path)
+		level_cache[level_id] = {}
 		return {}
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
 		push_error("Failed to open level file: " + file_path)
+		level_cache[level_id] = {}
 		return {}
 
 	var json_string = file.get_as_text()
@@ -85,10 +85,11 @@ func load_level_data(level_id: int) -> Dictionary:
 
 	if parse_result != OK:
 		push_error("Failed to parse level JSON: " + file_path)
+		level_cache[level_id] = {}
 		return {}
 
 	var level_data = json.data
-	print("Loaded level data for level ", level_id)
+	level_cache[level_id] = level_data
 	return level_data
 
 func get_level_info(level_id: int) -> Dictionary:
@@ -155,8 +156,6 @@ func instantiate_level(level_id: int, brick_container: Node2D) -> Dictionary:
 		# Count breakable bricks (not UNBREAKABLE)
 		if brick.brick_type != 2:  # Not UNBREAKABLE
 			breakable_count += 1
-
-	print("Instantiated level ", level_id, " with ", bricks_data.size(), " bricks (", breakable_count, " breakable)")
 
 	return {
 		"success": true,

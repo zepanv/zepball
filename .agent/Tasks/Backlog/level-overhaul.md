@@ -51,6 +51,7 @@ Replace individual level JSON files and `level_sets.json` with a single-file pac
 - **`source` field** - Either `"builtin"` or `"user"`. The loader enforces this based on where the file was found, not what the file claims.
 - **`level_index`** - 0-based index within the pack. Replaces the global integer `level_id`.
 - **Compound level key** - `"pack_id:level_index"` (e.g., `"classic-challenge:3"`) used throughout the game for level addressing.
+- **Levels per pack** - Variable, support packs with as few as 1 level up to 30?
 
 ### Discovery and Loading
 - **Built-in packs**: `res://packs/` (read-only in exports)
@@ -197,6 +198,14 @@ LevelCard (PanelContainer)
         StatusLabel                -- "NEW" / "LOCKED"
 ```
 
+### Bugfix Requirement: Incorrect `NEW` Label
+- Current issue: previously completed levels can still display `NEW` in Level Select.
+- Required behavior:
+  - `NEW` only shows for unlocked levels with no completion/high-score record.
+  - Completed levels must never show `NEW`; show stars/high-score state instead.
+  - Locked levels continue to show `LOCKED`.
+- Include this in the Level Select refactor acceptance criteria and migration validation.
+
 ### Implementation
 - Add thumbnail utility function to PackLoader (or standalone helper)
 - Rework `scripts/ui/set_select.gd` -> pack select with badges and user pack controls
@@ -307,4 +316,4 @@ LevelCard (PanelContainer)
 
 ---
 
-Last Updated: 2026-02-10
+Last Updated: 2026-02-11

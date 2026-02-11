@@ -168,7 +168,6 @@ func _ready():
 func load_save() -> void:
 	"""Load save data from disk, or create default if none exists"""
 	if not FileAccess.file_exists(SAVE_FILE_PATH):
-		print("No save file found, creating default save data")
 		create_default_save()
 		save_to_disk()
 		save_loaded.emit()
@@ -178,6 +177,8 @@ func load_save() -> void:
 	if file == null:
 		push_error("Failed to open save file: " + str(FileAccess.get_open_error()))
 		create_default_save()
+		save_to_disk()
+		save_loaded.emit()
 		return
 
 	var json_string = file.get_as_text()
@@ -189,21 +190,24 @@ func load_save() -> void:
 	if parse_result != OK:
 		push_error("Failed to parse save file JSON")
 		create_default_save()
+		save_to_disk()
+		save_loaded.emit()
 		return
 
 	var loaded_data = json.data
 
 	# Validate and migrate if needed
 	if not loaded_data.has("version"):
-		print("Old save format detected, migrating...")
+		push_warning("Old save format detected, migrating to default save data")
 		create_default_save()
+		save_to_disk()
+		save_loaded.emit()
 		return
 
 	save_data = loaded_data
 
 	# Migrate old saves that don't have statistics
 	if not save_data.has("statistics"):
-		print("Adding statistics section to save data...")
 		save_data["statistics"] = {
 			"total_bricks_broken": 0,
 			"total_power_ups_collected": 0,
@@ -218,13 +222,11 @@ func load_save() -> void:
 
 	# Migrate old saves that don't have achievements
 	if not save_data.has("achievements"):
-		print("Adding achievements section to save data...")
 		save_data["achievements"] = []
 		save_to_disk()
 
 	# Migrate old saves that don't have set progression
 	if not save_data.has("set_progression"):
-		print("Adding set progression to save data...")
 		save_data["set_progression"] = {
 			"highest_unlocked_set": 1,
 			"sets_completed": []
@@ -233,13 +235,11 @@ func load_save() -> void:
 
 	# Migrate old saves that don't have set high scores
 	if not save_data.has("set_high_scores"):
-		print("Adding set high scores to save data...")
 		save_data["set_high_scores"] = {}
 		save_to_disk()
 
 	# Migrate old saves that don't have last played metadata
 	if not save_data.has("last_played"):
-		print("Adding last played metadata to save data...")
 		save_data["last_played"] = {
 			"level_id": 0,
 			"set_id": -1,
@@ -259,7 +259,6 @@ func load_save() -> void:
 		stats_updated = true
 
 	if stats_updated:
-		print("Adding new statistics to save data...")
 		save_to_disk()
 
 	# Migrate old saves that don't have new settings
@@ -299,11 +298,8 @@ func load_save() -> void:
 		settings_updated = true
 
 	if settings_updated:
-		print("Adding new settings to save data...")
 		save_to_disk()
 
-	print("Save data loaded successfully")
-	print("Highest unlocked level: ", save_data["progression"]["highest_unlocked_level"])
 	save_loaded.emit()
 
 func save_to_disk() -> void:
@@ -316,7 +312,6 @@ func save_to_disk() -> void:
 	var json_string = JSON.stringify(save_data, "\t")
 	file.store_string(json_string)
 	file.close()
-	print("Save data written to disk")
 
 func create_default_save() -> void:
 	"""Reset to default save data"""
@@ -357,7 +352,6 @@ func create_default_save() -> void:
 		"achievements": [],
 		"settings": DEFAULT_SETTINGS.duplicate(true)
 	}
-	print("Default save data created")
 
 func is_level_unlocked(level_id: int) -> bool:
 	"""Check if a level is unlocked"""
@@ -374,13 +368,12 @@ func is_level_completed(level_id: int) -> bool:
 func unlock_level(level_id: int) -> void:
 	"""Unlock a level (if not already unlocked)"""
 	if level_id > TOTAL_LEVELS:
-		print("Cannot unlock level ", level_id, " - only ", TOTAL_LEVELS, " levels exist")
+		push_warning("Cannot unlock level %d - only %d levels exist" % [level_id, TOTAL_LEVELS])
 		return
 
 	var current_highest = save_data["progression"]["highest_unlocked_level"]
 	if level_id > current_highest:
 		save_data["progression"]["highest_unlocked_level"] = level_id
-		print("Level ", level_id, " unlocked!")
 		save_to_disk()
 		level_unlocked.emit(level_id)
 
@@ -389,7 +382,6 @@ func mark_level_completed(level_id: int) -> void:
 	if not level_id in save_data["progression"]["levels_completed"]:
 		save_data["progression"]["levels_completed"].append(level_id)
 		save_to_disk()
-		print("Level ", level_id, " marked as completed")
 
 func get_high_score(level_id: int) -> int:
 	"""Get the high score for a level (returns 0 if no score exists)"""
@@ -406,7 +398,6 @@ func update_high_score(level_id: int, score: int) -> bool:
 	if score > current_high_score:
 		save_data["high_scores"][key] = score
 		save_to_disk()
-		print("New high score for level ", level_id, ": ", score)
 		high_score_updated.emit(level_id, score)
 		return true
 
@@ -508,14 +499,12 @@ func reset_progress_data() -> void:
 	save_data["achievements"] = []
 	save_data["settings"] = settings_copy
 	save_to_disk()
-	print("Progression data has been reset")
 
 func reset_settings_to_default() -> void:
 	"""Reset settings to defaults without touching progression data"""
 	save_data["settings"] = DEFAULT_SETTINGS.duplicate(true)
 	_restore_default_keybindings()
 	save_to_disk()
-	print("Settings have been reset to defaults")
 
 func get_save_file_location() -> String:
 	"""Get the absolute path to the save file for debugging"""
@@ -674,7 +663,6 @@ func update_stat_if_higher(stat_name: String, new_value: float):
 	if new_value > save_data["statistics"][stat_name]:
 		save_data["statistics"][stat_name] = new_value
 		save_to_disk()
-		print("New record for ", stat_name, ": ", new_value)
 
 func get_all_statistics() -> Dictionary:
 	"""Get all statistics as a dictionary"""
@@ -716,7 +704,6 @@ func unlock_achievement(achievement_id: String):
 	# Emit signal
 	var achievement_name = ACHIEVEMENTS[achievement_id]["name"]
 	achievement_unlocked.emit(achievement_id, achievement_name)
-	print("🏆 ACHIEVEMENT UNLOCKED: ", achievement_name)
 
 func is_achievement_unlocked(achievement_id: String) -> bool:
 	"""Check if an achievement is unlocked"""
@@ -843,7 +830,6 @@ func update_set_high_score(set_id: int, score: int) -> bool:
 	if score > current_high_score:
 		save_data["set_high_scores"][key] = score
 		save_to_disk()
-		print("New set high score for set ", set_id, ": ", score)
 		return true
 
 	return false
@@ -853,7 +839,6 @@ func mark_set_completed(set_id: int) -> void:
 	if not set_id in save_data["set_progression"]["sets_completed"]:
 		save_data["set_progression"]["sets_completed"].append(set_id)
 		save_to_disk()
-		print("Set ", set_id, " marked as completed")
 
 func is_set_unlocked(_set_id: int) -> bool:
 	"""Check if a set is unlocked (all sets unlocked for now)"""

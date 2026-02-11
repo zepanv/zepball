@@ -53,6 +53,7 @@ func _ready():
 	_apply_saved_volumes()
 	_load_saved_music_settings()
 	_start_music_if_enabled()
+	_refresh_music_processing_state()
 	set_process_unhandled_input(true)
 
 func _process(_delta: float) -> void:
@@ -96,11 +97,15 @@ func play_sfx(sfx_name: String) -> void:
 	if not sfx_streams.has(sfx_name):
 		push_warning("Unknown SFX: " + sfx_name)
 		return
+	var stream = sfx_streams[sfx_name]
+	if stream == null:
+		push_warning("Missing SFX stream: " + sfx_name)
+		return
 	var player = _get_available_sfx_player()
 	if player == null:
 		return
 	player.bus = _get_sfx_bus(sfx_name)
-	player.stream = sfx_streams[sfx_name]
+	player.stream = stream
 	player.volume_db = _get_sfx_volume_db(sfx_name)
 	player.play()
 
@@ -137,6 +142,7 @@ func set_music_mode(mode: String) -> void:
 			music_track_id = music_tracks[track_index]["id"]
 		_play_track(track_index, true)
 		return
+	_refresh_music_processing_state()
 
 func set_music_track(track_id: String) -> void:
 	if track_id == "":
@@ -219,6 +225,11 @@ func _load_sfx_streams() -> void:
 		"game_over": load(SFX_DIR + "/game_over.mp3"),
 		"combo_milestone": load(SFX_DIR + "/combo_milestone.mp3")
 	}
+	var sfx_keys = sfx_streams.keys()
+	for sfx_name in sfx_keys:
+		if sfx_streams[sfx_name] == null:
+			push_warning("Missing SFX stream asset: " + sfx_name)
+			sfx_streams.erase(sfx_name)
 
 func _load_music_tracks() -> void:
 	music_tracks.clear()
@@ -240,10 +251,14 @@ func _load_music_tracks() -> void:
 		if path == "":
 			continue
 		var id = path.get_file().get_basename()
+		var stream = load(path)
+		if stream == null:
+			push_warning("Missing music stream asset: " + path)
+			continue
 		music_tracks.append({
 			"id": id,
 			"path": path,
-			"stream": load(path)
+			"stream": stream
 		})
 
 func _list_music_files() -> Array:
@@ -307,8 +322,10 @@ func _load_saved_music_settings() -> void:
 
 func _start_music_if_enabled() -> void:
 	if music_mode == MUSIC_MODE_OFF:
+		_refresh_music_processing_state()
 		return
 	if music_tracks.is_empty():
+		_refresh_music_processing_state()
 		return
 	var track_index = _get_start_track_index()
 	_play_track(track_index, false)
@@ -362,6 +379,7 @@ func _play_track(track_index: int, crossfade: bool) -> void:
 			old_player.stop()
 			old_player.volume_db = MUSIC_SILENT_DB
 		is_crossfading = false
+	_refresh_music_processing_state()
 
 func _play_next_track() -> void:
 	if music_mode == MUSIC_MODE_OFF:
@@ -464,6 +482,7 @@ func _finish_crossfade(old_player: AudioStreamPlayer) -> void:
 		old_player.stop()
 		old_player.volume_db = MUSIC_SILENT_DB
 	is_crossfading = false
+	_refresh_music_processing_state()
 
 func _fade_out_and_stop_music() -> void:
 	if music_players.is_empty():
@@ -478,6 +497,7 @@ func _fade_out_and_stop_music() -> void:
 	music_paused = false
 	paused_player_index = -1
 	paused_position = 0.0
+	_refresh_music_processing_state()
 
 func _is_any_music_playing() -> bool:
 	for player in music_players:
@@ -533,6 +553,7 @@ func _toggle_music_pause() -> void:
 	if player.playing:
 		player.stream_paused = true
 	music_paused = true
+	_refresh_music_processing_state()
 	_show_toast("Music Paused")
 
 func _resume_music_from_pause() -> void:
@@ -555,7 +576,13 @@ func _resume_music_from_pause() -> void:
 	if not player.playing:
 		player.play(paused_position)
 	music_paused = false
+	_refresh_music_processing_state()
 	_show_toast("Music Playing")
+
+func _refresh_music_processing_state() -> void:
+	var mode_requires_monitoring = music_mode == MUSIC_MODE_LOOP_ALL or music_mode == MUSIC_MODE_SHUFFLE
+	var should_process = mode_requires_monitoring and not music_paused and not is_crossfading and _is_any_music_playing()
+	set_process(should_process)
 
 func _volume_to_percent(db_value: float) -> int:
 	return int((db_value - VOLUME_MIN_DB) / (VOLUME_MAX_DB - VOLUME_MIN_DB) * 100.0)

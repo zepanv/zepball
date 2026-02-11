@@ -40,23 +40,20 @@ signal difficulty_changed(new_difficulty: Difficulty)
 func set_difficulty(difficulty: Difficulty):
 	"""Set the game difficulty (only allowed when not locked)"""
 	if is_locked:
-		print("Cannot change difficulty during gameplay!")
+		push_warning("Cannot change difficulty during gameplay")
 		return
 
 	if current_difficulty != difficulty:
 		current_difficulty = difficulty
 		difficulty_changed.emit(difficulty)
-		print("Difficulty changed to: ", get_difficulty_name())
 
 func lock_difficulty():
 	"""Lock difficulty changes (called when gameplay starts)"""
 	is_locked = true
-	print("Difficulty locked to: ", get_difficulty_name())
 
 func unlock_difficulty():
 	"""Unlock difficulty changes (called in main menu)"""
 	is_locked = false
-	print("Difficulty unlocked for selection")
 
 func get_speed_multiplier() -> float:
 	"""Get the speed multiplier for current difficulty"""

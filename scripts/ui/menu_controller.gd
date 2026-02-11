@@ -191,7 +191,6 @@ func continue_set_from_level(level_id: int) -> void:
 
 func restart_current_level() -> void:
 	"""Restart the current level"""
-	print("MenuController: Restarting level ", current_level_id)
 	start_level(current_level_id)
 
 func show_game_over(final_score: int) -> void:

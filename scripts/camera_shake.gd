@@ -16,6 +16,7 @@ func _ready():
 
 	# Load screen shake intensity setting
 	_load_intensity_setting()
+	set_process(false)
 
 func _load_intensity_setting():
 	"""Load and apply screen shake intensity from settings"""
@@ -33,27 +34,31 @@ func _load_intensity_setting():
 			intensity_multiplier = 1.0  # Default to Medium
 
 func _process(delta):
-	if shake_timer > 0:
-		shake_timer -= delta
-
-		# Calculate shake offset
-		var shake_x = randf_range(-shake_intensity, shake_intensity)
-		var shake_y = randf_range(-shake_intensity, shake_intensity)
-		offset = original_offset + Vector2(shake_x, shake_y)
-
-		# Gradually reduce intensity
-		shake_intensity = lerp(shake_intensity, 0.0, delta * 5.0)
-	else:
-		# Reset to original offset when shake complete
+	if shake_timer <= 0.0:
 		offset = original_offset
 		shake_intensity = 0.0
+		set_process(false)
+		return
+
+	shake_timer -= delta
+
+	# Calculate shake offset
+	var shake_x = randf_range(-shake_intensity, shake_intensity)
+	var shake_y = randf_range(-shake_intensity, shake_intensity)
+	offset = original_offset + Vector2(shake_x, shake_y)
+
+	# Gradually reduce intensity
+	shake_intensity = lerp(shake_intensity, 0.0, delta * 5.0)
 
 func shake(intensity: float, duration: float):
 	"""Trigger a screen shake effect
 	intensity: How far the camera shakes (pixels)
 	duration: How long the shake lasts (seconds)
 	"""
+	if intensity_multiplier <= 0.0:
+		return
 	# Apply intensity multiplier from settings
 	shake_intensity = intensity * intensity_multiplier
 	shake_duration = duration
 	shake_timer = duration
+	set_process(true)

@@ -26,6 +26,8 @@ enum PowerUpType {
 # Configuration
 @export var power_up_type: PowerUpType = PowerUpType.EXPAND
 @export var move_speed: float = 150.0  # Pixels per second (horizontal)
+const MISS_BOUNDARY_X = 1300.0
+const GAME_MANAGER_RETRY_INTERVAL = 0.25
 
 @export_group("Power-up Textures")
 @export var expand_texture: Texture2D = preload("res://assets/graphics/powerups/expand.png")
@@ -48,27 +50,57 @@ enum PowerUpType {
 # Signals
 signal collected(type: PowerUpType)
 
+var game_manager: Node = null
+var game_manager_retry_timer: float = 0.0
+static var shared_glow_material: CanvasItemMaterial = null
+
 func _ready():
 	# Set up sprite based on type
 	setup_sprite()
 
 	# Connect to paddle collision
 	body_entered.connect(_on_body_entered)
-
-	print("PowerUp spawned: ", PowerUpType.keys()[power_up_type])
+	_cache_game_manager()
 
 func _physics_process(delta):
 	# Stop movement if level is complete or game over
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
-	if game_manager and (game_manager.game_state == game_manager.GameState.LEVEL_COMPLETE or game_manager.game_state == game_manager.GameState.GAME_OVER):
+	if game_manager == null or not is_instance_valid(game_manager):
+		game_manager_retry_timer -= delta
+		if game_manager_retry_timer <= 0.0:
+			game_manager_retry_timer = GAME_MANAGER_RETRY_INTERVAL
+			_cache_game_manager()
+
+	if game_manager and _is_terminal_game_state(game_manager.game_state):
+		set_physics_process(false)
 		return
 
 	# Move horizontally toward right edge
 	position.x += move_speed * delta
 
 	# Destroy if passed right edge (missed by paddle)
-	if position.x > 1300:
+	if position.x > MISS_BOUNDARY_X:
 		queue_free()
+
+func _cache_game_manager() -> void:
+	if game_manager and is_instance_valid(game_manager):
+		return
+	var candidate = get_tree().get_first_node_in_group("game_manager")
+	if candidate == null or not is_instance_valid(candidate):
+		return
+	game_manager = candidate
+	if game_manager.has_signal("state_changed") and not game_manager.state_changed.is_connected(_on_game_state_changed):
+		game_manager.state_changed.connect(_on_game_state_changed)
+	if _is_terminal_game_state(game_manager.game_state):
+		set_physics_process(false)
+
+func _on_game_state_changed(new_state: int) -> void:
+	if _is_terminal_game_state(new_state):
+		set_physics_process(false)
+
+func _is_terminal_game_state(state: int) -> bool:
+	if game_manager == null:
+		return false
+	return state == game_manager.GameState.LEVEL_COMPLETE or state == game_manager.GameState.GAME_OVER
 
 func setup_sprite():
 	"""Configure sprite based on power-up type"""
@@ -113,7 +145,7 @@ func setup_sprite():
 			texture = block_texture
 
 	if not texture:
-		print("ERROR: No powerup texture loaded for type: ", PowerUpType.keys()[power_up_type])
+		push_error("No power-up texture loaded for type: %s" % PowerUpType.keys()[power_up_type])
 		return
 
 	sprite.texture = texture
@@ -142,9 +174,13 @@ func setup_sprite():
 
 		glow.modulate = glow_color
 
-		var glow_material = CanvasItemMaterial.new()
-		glow_material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		glow.material = glow_material
+		glow.material = _get_shared_glow_material()
+
+func _get_shared_glow_material() -> CanvasItemMaterial:
+	if shared_glow_material == null:
+		shared_glow_material = CanvasItemMaterial.new()
+		shared_glow_material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	return shared_glow_material
 
 func _on_body_entered(body):
 	"""Detect collision with paddle"""
@@ -155,7 +191,6 @@ func _on_body_entered(body):
 			AudioManager.play_sfx("power_up")
 		# Emit signal for collection
 		collected.emit(power_up_type)
-		print("PowerUp collected: ", PowerUpType.keys()[power_up_type])
 
 		# Remove power-up
 		queue_free()

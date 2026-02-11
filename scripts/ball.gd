@@ -5,7 +5,7 @@ extends CharacterBody2D
 ## Paddle movement affects ball trajectory (spin)
 
 # Ball physics constants
-const BASE_current_speed = 500.0   # Base speed (pixels/second)
+const BASE_SPEED = 500.0   # Base speed (pixels/second)
 const BASE_RADIUS = 16.0
 const BASE_VISUAL_SCALE = Vector2(0.0185, 0.0185)
 const SPIN_FACTOR = 0.3         # How much paddle velocity affects ball
@@ -23,6 +23,26 @@ const AIM_LENGTH = 140.0
 const AIM_HEAD_LENGTH = 18.0
 const AIM_HEAD_ANGLE = 25.0
 const BRICK_TYPE_UNBREAKABLE = 2
+const RIGHT_BOUNDARY_X = 1300.0
+const LEFT_BOUNDARY_X = 0.0
+const TOP_BOUNDARY_Y = 0.0
+const BOTTOM_BOUNDARY_Y = 720.0
+const TOP_ESCAPE_ZONE_Y = 40.0
+const BOTTOM_ESCAPE_ZONE_Y = 660.0
+const SPEED_UP_VALUE = 650.0
+const SLOW_DOWN_VALUE = 350.0
+const SLOW_SPEED_MULTIPLIER = 0.85
+const AIR_BALL_LANDING_OFFSET = 2.0
+const AIR_BALL_SEARCH_MAX_STEPS = 7
+const AIR_BALL_QUERY_MAX_RESULTS = 8
+const AIR_BALL_FALLBACK_CENTER_X = 640.0
+const AIR_BALL_STEP_FALLBACK_PADDING = 6.0
+const AIR_BALL_UNBREAKABLE_HALF_SIZE = 24.0
+const AIR_BALL_ROW_MARGIN = 2.0
+const BOMB_BALL_RADIUS = 75.0
+const BOUNDARY_LEFT_ERROR_LABEL = "LEFT (ERROR!)"
+const BOUNDARY_TOP_ERROR_LABEL = "TOP (ERROR!)"
+const BOUNDARY_BOTTOM_ERROR_LABEL = "BOTTOM (ERROR!)"
 
 const TRAIL_SMALL = preload("res://assets/graphics/particles/particleSmallStar.png")
 const TRAIL_MEDIUM = preload("res://assets/graphics/particles/particleStar.png")
@@ -32,20 +52,15 @@ const TRAIL_COLOR_FAST = Color(1.0, 0.8, 0.2, 0.7)
 const TRAIL_COLOR_SLOW = Color(0.2, 0.6, 1.0, 0.7)
 
 # Dynamic speed (can be modified by power-ups)
-var current_speed: float = BASE_current_speed
-var base_speed: float = BASE_current_speed
+var current_speed: float = BASE_SPEED
+var base_speed: float = BASE_SPEED
 
 # State
 var is_attached_to_paddle = true
-var paddle_reference = null
-var game_manager = null
+var paddle_reference: Node2D = null
+var game_manager: Node = null
 var is_main_ball: bool = true  # Identifies the original ball in the scene
 var direction_indicator: Line2D = null  # Visual launch direction indicator
-var grab_enabled: bool = false  # Can ball be grabbed by paddle on contact
-var brick_through_enabled: bool = false  # Does ball pass through bricks
-var bomb_ball_enabled: bool = false  # Does ball destroy surrounding bricks
-var air_ball_enabled: bool = false  # Does ball jump over bricks to center
-var magnet_enabled: bool = false  # Does paddle attract ball
 var paddle_offset: Vector2 = Vector2(-30, 0)  # Offset from paddle when attached/grabbed
 var grab_immunity_timer: float = 0.0  # Prevents immediate re-grab after launch
 var block_pass_timer: float = 0.0  # Allow pass-through behind block right after launch
@@ -69,47 +84,66 @@ var was_mouse_captured: bool = false
 var last_collision_normal: Vector2 = Vector2.ZERO
 var last_collision_collider = null
 var last_collision_age: float = 0.0
+var air_landing_shape: CircleShape2D = null
+var air_landing_query: PhysicsShapeQueryParameters2D = null
+var cached_air_ball_level_id: int = -1
+var cached_air_ball_center_x: float = AIR_BALL_FALLBACK_CENTER_X
+var cached_air_ball_step_x: float = BASE_RADIUS * 2.0 + AIR_BALL_STEP_FALLBACK_PADDING
+var main_controller_ref: Node = null
+var bomb_visual_active: bool = false
+var frame_grab_active: bool = false
+var frame_brick_through_active: bool = false
+var frame_bomb_ball_active: bool = false
+var frame_air_ball_active: bool = false
+var frame_magnet_active: bool = false
+@onready var trail_node: CPUParticles2D = get_node_or_null("Trail")
+@onready var visual_node: Sprite2D = get_node_or_null("Visual")
+@onready var collision_shape_node: CollisionShape2D = get_node_or_null("CollisionShape2D")
+@onready var viewport_ref: Viewport = get_viewport()
 
 # Signals
 signal ball_lost
 signal brick_hit(brick)
 
 func _ready():
-	print("Ball initialized")
 	# Add to ball group for collision detection
 	add_to_group("ball")
+	if PowerUpManager and PowerUpManager.has_method("register_ball"):
+		PowerUpManager.register_ball(self)
 
 	# Apply difficulty multiplier to base speed
-	base_speed = BASE_current_speed * DifficultyManager.get_speed_multiplier()
+	base_speed = BASE_SPEED * DifficultyManager.get_speed_multiplier()
 	current_speed = base_speed
+	_cache_main_controller_ref()
 
 	# Find paddle in parent scene
 	paddle_reference = get_tree().get_first_node_in_group("paddle")
 	game_manager = get_tree().get_first_node_in_group("game_manager")
-	if paddle_reference:
-		print("Ball found paddle reference")
-	else:
-		print("Warning: Ball couldn't find paddle!")
+	if not paddle_reference:
+		push_warning("Ball could not find paddle reference")
 
 	# Apply ball trail setting
-	if has_node("Trail"):
-		$Trail.emitting = false  # Starts disabled until launched
-		$Trail.texture = TRAIL_SMALL
-		$Trail.color = TRAIL_COLOR_NORMAL
+	if trail_node:
+		trail_node.emitting = false  # Starts disabled until launched
+		trail_node.texture = TRAIL_SMALL
+		trail_node.color = TRAIL_COLOR_NORMAL
 
 	aim_available = is_main_ball
 	_create_aim_indicator()
-	virtual_mouse_pos = get_viewport().get_mouse_position()
-	set_process_unhandled_input(true)
+	virtual_mouse_pos = viewport_ref.get_mouse_position()
+	set_process_unhandled_input(is_main_ball)
 
 	# Direction indicator disabled for now
 	# create_direction_indicator()
-	if has_node("CollisionShape2D"):
-		var collision = $CollisionShape2D
-		if collision.shape is CircleShape2D:
-			ball_radius = collision.shape.radius
-	if has_node("Visual"):
-		$Visual.scale = BASE_VISUAL_SCALE
+	if collision_shape_node and collision_shape_node.shape is CircleShape2D:
+		ball_radius = collision_shape_node.shape.radius
+	if visual_node:
+		visual_node.scale = BASE_VISUAL_SCALE
+	_refresh_effect_flags()
+
+func _exit_tree() -> void:
+	if PowerUpManager and PowerUpManager.has_method("unregister_ball"):
+		PowerUpManager.unregister_ball(self)
 
 func _physics_process(delta):
 	last_physics_delta = delta
@@ -125,6 +159,9 @@ func _physics_process(delta):
 		block_pass_timer -= delta
 	if spin_trail_timer > 0.0:
 		spin_trail_timer -= delta
+	if paddle_reference == null or not is_instance_valid(paddle_reference):
+		_ensure_paddle_reference()
+	_refresh_effect_flags()
 
 	if is_attached_to_paddle:
 		# Ball follows paddle until launched, maintaining the attachment offset
@@ -151,20 +188,19 @@ func _physics_process(delta):
 			last_collision_age += delta
 		# Ball is in motion
 		# Apply magnet pull toward paddle (curve trajectory, keep speed)
-		if magnet_enabled or PowerUpManager.is_magnet_active():
-			if paddle_reference and velocity.dot(paddle_reference.position - position) > 0.0:
-				var pull_dir = (paddle_reference.position - position).normalized()
-				velocity = (velocity + pull_dir * MAGNET_PULL * delta).normalized() * current_speed
+		if frame_magnet_active:
+			_apply_magnet_pull(delta)
 
 		# First check if we would collide with another ball
-		var test_collision = move_and_collide(velocity * delta, true, true)  # test_only=true, safe_margin=true
+		var delta_move = velocity * delta
+		var test_collision = move_and_collide(delta_move, true, true)  # test_only=true, safe_margin=true
 
 		if test_collision and test_collision.get_collider().is_in_group("ball"):
 			# Would collide with another ball - just move through it without collision
-			position += velocity * delta
+			position += delta_move
 		else:
 			# Normal collision detection for walls, paddle, bricks
-			var collision = move_and_collide(velocity * delta)
+			var collision = move_and_collide(delta_move)
 			if collision:
 				handle_collision(collision)
 
@@ -172,74 +208,16 @@ func _physics_process(delta):
 		check_if_stuck(delta)
 
 		# Check if ball went out of bounds
-		var out_of_bounds = false
-		var boundary_name = ""
-		var is_error_boundary = false
-
-		if position.x > 1300:  # Past right boundary (lost)
-			out_of_bounds = true
-			boundary_name = "RIGHT (past paddle)"
-			ball_lost.emit(self)
-			# Handler in main.gd will determine if this causes life loss
-		elif position.x < 0:  # Past left wall (shouldn't happen!)
-			out_of_bounds = true
-			is_error_boundary = true
-			boundary_name = "LEFT (ERROR!)"
-			print("WARNING: Ball escaped through LEFT boundary!")
-			ball_lost.emit(self)
-		elif position.y < 0:  # Above top wall (shouldn't happen!)
-			out_of_bounds = true
-			is_error_boundary = true
-			boundary_name = "TOP (ERROR!)"
-			print("WARNING: Ball escaped through TOP boundary!")
-			ball_lost.emit(self)
-		elif position.y > 720:  # Below bottom wall (shouldn't happen!)
-			out_of_bounds = true
-			is_error_boundary = true
-			boundary_name = "BOTTOM (ERROR!)"
-			print("WARNING: Ball escaped through BOTTOM boundary!")
-			ball_lost.emit(self)
-
-		if out_of_bounds:
-			print("=== BALL OUT OF BOUNDS ===")
-			print("  Boundary: ", boundary_name)
-			print("  Position: ", position, " (X: ", position.x, ", Y: ", position.y, ")")
-			print("  Velocity: ", velocity, " (X: ", velocity.x, ", Y: ", velocity.y, ")")
-			print("  Speed: ", current_speed)
-			print("  Is main ball: ", is_main_ball)
-
-			# CRITICAL: Remove balls that escape through error boundaries immediately
-			# They should never exist outside the play area
-			if is_error_boundary:
-				print("  ACTION: Removing ball from scene (error boundary)")
-
-				# Main ball should be reset, not removed
-				if is_main_ball:
-					print("  Main ball escaping - resetting to paddle")
-					call_deferred("reset_ball")
-				else:
-					# Extra balls can be safely removed
-					# Stop processing this ball
-					set_physics_process(false)
-					# Make it invisible
-					visible = false
-					# Disable collisions (deferred to avoid physics query errors)
-					set_deferred("collision_layer", 0)
-					set_deferred("collision_mask", 0)
-					# Schedule for removal (deferred to avoid issues during physics)
-					call_deferred("queue_free")
-
-			print("==========================")
+		_handle_out_of_bounds()
 
 		# Maintain constant speed (arcade feel)
 		velocity = velocity.normalized() * current_speed
 
 		# Rotate ball to show movement/spin (only if actually moving)
 		# Rotation based on distance traveled (creates rolling effect)
-		if has_node("Visual") and velocity.length() > 10.0:
-			var visual = $Visual
+		if visual_node and velocity.length_squared() > 100.0:
 			var rotation_speed = current_speed / 16.0  # Ball radius for natural rolling
-			visual.rotation += rotation_speed * delta
+			visual_node.rotation += rotation_speed * delta
 
 		_update_trail_appearance()
 
@@ -285,20 +263,18 @@ func launch_ball():
 			# Add paddle spin influence
 			velocity.y += paddle_velocity_y * SPIN_FACTOR
 			velocity = velocity.normalized() * current_speed
-			print("Ball launched with spin! Velocity: ", velocity)
 		else:
 			# Launch straight left with slight angle variation
 			var angle_rad = deg_to_rad(180.0 + angle_variation)  # 180° = straight left
 			velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
-			print("Ball launched straight! Velocity: ", velocity)
 
 	# Apply air-ball jump on release from grab
-	if air_ball_enabled or PowerUpManager.is_air_ball_active():
+	if frame_air_ball_active:
 		_jump_to_level_center_x(position.y)
 
 	# Enable trail effect (if enabled in settings)
-	if has_node("Trail") and SaveManager.get_ball_trail():
-		$Trail.emitting = true
+	if trail_node and SaveManager.get_ball_trail():
+		trail_node.emitting = true
 
 	# Notify game manager
 	if not game_manager:
@@ -307,8 +283,6 @@ func launch_ball():
 		game_manager.start_playing()
 
 	aim_available = false
-	if launched_with_aim:
-		print("Ball launched with aim! Velocity: ", velocity)
 
 func handle_collision(collision: KinematicCollision2D):
 	"""Handle ball collision with walls, paddle, or bricks"""
@@ -321,23 +295,20 @@ func handle_collision(collision: KinematicCollision2D):
 
 	# Check what we hit
 	if collider.is_in_group("paddle"):
+		if paddle_reference == null and collider is Node2D:
+			paddle_reference = collider as Node2D
 		var hit_y = position.y
 		# Special case: Allow ball to pass through paddle if stuck near walls and moving left
 		# This prevents the ball from getting wedged between paddle and walls
-		const TOP_ESCAPE_ZONE_Y = 40.0  # Near top wall threshold
-		const BOTTOM_ESCAPE_ZONE_Y = 660.0  # Near bottom wall threshold
-
 		if position.y < TOP_ESCAPE_ZONE_Y and velocity.x < 0:
 			# Ball is near top wall and moving left - let it pass through paddle
-			print("Ball escaping through paddle (stuck near top wall)")
 			return
 		elif position.y > BOTTOM_ESCAPE_ZONE_Y and velocity.x < 0:
 			# Ball is near bottom wall and moving left - let it pass through paddle
-			print("Ball escaping through paddle (stuck near bottom wall)")
 			return
 
 		# Check if grab is enabled and ball is not immune to grab
-		if (grab_enabled or PowerUpManager.is_grab_active()) and grab_immunity_timer <= 0.0:
+		if frame_grab_active and grab_immunity_timer <= 0.0:
 			# Attach ball to paddle (grab mode) at the exact contact point
 			is_attached_to_paddle = true
 			velocity = Vector2.ZERO
@@ -350,8 +321,6 @@ func handle_collision(collision: KinematicCollision2D):
 				if paddle_offset.x > 0:
 					# Ball grabbed on back side - move it to front side at same Y position
 					paddle_offset.x = -abs(paddle_offset.x)
-					print("Ball grabbed on back of paddle, moved to front")
-			print("Ball grabbed by paddle at offset: ", paddle_offset)
 		else:
 			# Paddle collision: reflect + add spin
 			velocity = velocity.bounce(normal)
@@ -377,12 +346,9 @@ func handle_collision(collision: KinematicCollision2D):
 				position.y = max_y
 				velocity.y = -abs(velocity.y)
 
-			if air_ball_enabled or PowerUpManager.is_air_ball_active():
+			if frame_air_ball_active:
 				_jump_to_level_center_x(hit_y)
-				print("Ball jumped to level center!")
 				return
-
-			print("Ball hit paddle, velocity: ", velocity)
 		AudioManager.play_sfx("hit_paddle")
 
 	elif collider.is_in_group("brick"):
@@ -400,12 +366,11 @@ func handle_collision(collision: KinematicCollision2D):
 			return
 
 		# Check if brick through is enabled (block + unbreakable bricks always behave normally)
-		if not is_block_brick and not is_unbreakable and (brick_through_enabled or PowerUpManager.is_brick_through_active()):
+		if not is_block_brick and not is_unbreakable and frame_brick_through_active:
 			# Don't bounce, just pass through and notify brick
 			brick_hit.emit(collider)
 			if collider.has_method("hit"):
 				collider.hit(old_velocity.normalized())
-			print("Ball passed through brick!")
 		else:
 			var bounce_normal = normal
 			if collider.has_method("_get_brick_shape") and collider._get_brick_shape() == "square":
@@ -429,11 +394,10 @@ func handle_collision(collision: KinematicCollision2D):
 			brick_hit.emit(collider)
 			if collider.has_method("hit"):
 				collider.hit(old_velocity.normalized())
-			print("Ball hit brick")
 		AudioManager.play_sfx("hit_brick")
 
 		# Check if bomb ball is active - destroy surrounding bricks (skip block bricks)
-		if not is_block_brick and (bomb_ball_enabled or PowerUpManager.is_bomb_ball_active()):
+		if not is_block_brick and frame_bomb_ball_active:
 			destroy_surrounding_bricks(hit_brick_position)
 
 	else:
@@ -455,19 +419,16 @@ func reset_ball():
 	aim_direction = Vector2.LEFT
 
 	# Disable trail effect
-	if has_node("Trail"):
-		$Trail.emitting = false
+	if trail_node:
+		trail_node.emitting = false
 
 	# Show direction indicator again
 	if direction_indicator:
 		direction_indicator.visible = true
 
-	print("Ball reset to paddle")
-
-
 func apply_speed_up_effect():
 	"""Increase ball speed to 650 for 12 seconds"""
-	current_speed = 650.0
+	current_speed = SPEED_UP_VALUE
 	# Update velocity magnitude immediately if ball is moving
 	if not is_attached_to_paddle:
 		velocity = velocity.normalized() * current_speed
@@ -475,11 +436,9 @@ func apply_speed_up_effect():
 	# Change trail color to yellow/orange for fast speed (if trail enabled)
 	_update_trail_appearance()
 
-	print("Ball speed increased to 650!")
-
 func apply_slow_down_effect():
 	"""Decrease ball speed to 350 for 12 seconds"""
-	current_speed = 350.0
+	current_speed = SLOW_DOWN_VALUE
 	# Update velocity magnitude immediately if ball is moving
 	if not is_attached_to_paddle:
 		velocity = velocity.normalized() * current_speed
@@ -487,11 +446,9 @@ func apply_slow_down_effect():
 	# Change trail color to blue for slow speed (if trail enabled)
 	_update_trail_appearance()
 
-	print("Ball speed decreased to 350!")
-
 func reset_ball_speed():
 	"""Reset ball speed to normal (with difficulty multiplier applied)"""
-	base_speed = BASE_current_speed * DifficultyManager.get_speed_multiplier()
+	base_speed = BASE_SPEED * DifficultyManager.get_speed_multiplier()
 	current_speed = base_speed
 	# Update velocity magnitude immediately if ball is moving
 	if not is_attached_to_paddle:
@@ -501,30 +458,29 @@ func reset_ball_speed():
 	_update_trail_appearance()
 
 func _update_trail_appearance() -> void:
-	if not has_node("Trail"):
+	if not trail_node:
 		return
 	if not SaveManager.get_ball_trail():
 		return
-	var trail = $Trail
 	var new_texture = TRAIL_SMALL
 	if spin_trail_timer > 0.0:
 		new_texture = TRAIL_LARGE
 	elif current_speed >= base_speed * FAST_SPEED_MULTIPLIER:
 		new_texture = TRAIL_MEDIUM
-	if trail.texture != new_texture:
-		trail.texture = new_texture
+	if trail_node.texture != new_texture:
+		trail_node.texture = new_texture
 	var new_color = _get_trail_color()
-	if trail.color != new_color:
-		trail.color = new_color
+	if trail_node.color != new_color:
+		trail_node.color = new_color
 
 func _get_trail_color() -> Color:
-	if has_node("Visual"):
-		var visual_color = $Visual.modulate
+	if visual_node:
+		var visual_color = visual_node.modulate
 		if visual_color != Color(1.0, 1.0, 1.0, 1.0):
 			return visual_color
 	if current_speed >= base_speed * FAST_SPEED_MULTIPLIER:
 		return TRAIL_COLOR_FAST
-	if current_speed <= base_speed * 0.85:
+	if current_speed <= base_speed * SLOW_SPEED_MULTIPLIER:
 		return TRAIL_COLOR_SLOW
 	return TRAIL_COLOR_NORMAL
 
@@ -534,7 +490,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED and aim_active:
 			virtual_mouse_pos += event.relative
-			var viewport_size = get_viewport().get_visible_rect().size
+			var viewport_size = viewport_ref.get_visible_rect().size
 			virtual_mouse_pos.x = clampf(virtual_mouse_pos.x, 0.0, viewport_size.x)
 			virtual_mouse_pos.y = clampf(virtual_mouse_pos.y, 0.0, viewport_size.y)
 	if event.is_action_pressed("ui_cancel") and aim_active:
@@ -548,6 +504,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			if aim_active:
 				_set_aim_mode(false)
 				aim_direction = Vector2.LEFT
+
+func set_is_main_ball(value: bool) -> void:
+	is_main_ball = value
+	set_process_unhandled_input(value)
+	if not value:
+		aim_available = false
+		_set_aim_mode(false)
 
 func _can_use_aim() -> bool:
 	if not aim_available:
@@ -597,9 +560,9 @@ func _update_aim_direction() -> void:
 	var mouse_captured = Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED
 	if mouse_captured != was_mouse_captured:
 		if not mouse_captured:
-			virtual_mouse_pos = get_viewport().get_mouse_position()
+			virtual_mouse_pos = viewport_ref.get_mouse_position()
 		was_mouse_captured = mouse_captured
-	var mouse_pos = virtual_mouse_pos if mouse_captured else get_viewport().get_mouse_position()
+	var mouse_pos = virtual_mouse_pos if mouse_captured else viewport_ref.get_mouse_position()
 	if not mouse_captured:
 		virtual_mouse_pos = mouse_pos
 	var global_dir = (mouse_pos - global_position)
@@ -621,119 +584,200 @@ func _update_aim_direction() -> void:
 		var back_dir = -aim_direction
 		var head_left = end_point + back_dir.rotated(deg_to_rad(AIM_HEAD_ANGLE)) * AIM_HEAD_LENGTH
 		var head_right = end_point + back_dir.rotated(deg_to_rad(-AIM_HEAD_ANGLE)) * AIM_HEAD_LENGTH
-		aim_head.points = [head_left, end_point, head_right]
+		aim_head.set_point_position(0, head_left)
+		aim_head.set_point_position(1, end_point)
+		aim_head.set_point_position(2, head_right)
 
 func enable_grab():
-	"""Enable grab mode - ball can stick to paddle"""
-	grab_enabled = true
-	print("Grab enabled on ball")
+	"""Compatibility hook: grab state is sourced from PowerUpManager."""
+	pass
 
 func reset_grab_state():
-	"""Disable grab mode - already-grabbed balls stay held until player releases"""
-	grab_enabled = false
-	# Note: Balls that are currently attached (is_attached_to_paddle = true)
-	# will remain attached and can be manually launched by the player
-	print("Grab disabled on ball (held balls remain until released)")
+	"""Compatibility hook: grab state is sourced from PowerUpManager."""
+	pass
 
 func enable_brick_through():
-	"""Enable brick through - ball passes through bricks"""
-	brick_through_enabled = true
-	print("Brick through enabled on ball")
+	"""Compatibility hook: brick-through state is sourced from PowerUpManager."""
+	pass
 
 func reset_brick_through():
-	"""Disable brick through mode"""
-	brick_through_enabled = false
-	print("Brick through disabled on ball")
+	"""Compatibility hook: brick-through state is sourced from PowerUpManager."""
+	pass
 
 func enable_bomb_ball():
-	"""Enable bomb ball mode - ball destroys surrounding bricks"""
-	bomb_ball_enabled = true
-	# Add orange/red glow to ball visual
-	if has_node("Visual"):
-		$Visual.modulate = Color(1.0, 0.4, 0.1, 1.0)  # Orange-red tint
-	_update_trail_appearance()
-	print("Bomb ball enabled on ball")
+	"""Compatibility hook: keep visual state in sync for active bomb-ball."""
+	_apply_bomb_ball_visual(true)
 
 func reset_bomb_ball():
-	"""Disable bomb ball mode and remove glow"""
-	bomb_ball_enabled = false
-	# Reset ball visual to normal
-	if has_node("Visual"):
-		$Visual.modulate = Color(1.0, 1.0, 1.0, 1.0)  # White (normal)
-	_update_trail_appearance()
-	print("Bomb ball disabled on ball")
+	"""Compatibility hook: keep visual state in sync for inactive bomb-ball."""
+	_apply_bomb_ball_visual(false)
 
 func enable_air_ball():
-	"""Enable air ball mode - ball jumps over bricks to center"""
-	air_ball_enabled = true
-	print("Air ball enabled on ball")
+	"""Compatibility hook: air-ball state is sourced from PowerUpManager."""
+	pass
 
 func reset_air_ball():
-	"""Disable air ball mode"""
-	air_ball_enabled = false
-	print("Air ball disabled on ball")
+	"""Compatibility hook: air-ball state is sourced from PowerUpManager."""
+	pass
 
 func enable_magnet():
-	"""Enable magnet mode - paddle attracts ball"""
-	magnet_enabled = true
-	print("Magnet enabled on ball")
+	"""Compatibility hook: magnet state is sourced from PowerUpManager."""
+	pass
 
 func reset_magnet():
-	"""Disable magnet mode"""
-	magnet_enabled = false
-	print("Magnet disabled on ball")
+	"""Compatibility hook: magnet state is sourced from PowerUpManager."""
+	pass
+
+func _ensure_paddle_reference() -> void:
+	if paddle_reference and is_instance_valid(paddle_reference):
+		return
+	var candidate = get_tree().get_first_node_in_group("paddle")
+	if candidate and is_instance_valid(candidate) and candidate is Node2D:
+		paddle_reference = candidate as Node2D
+	else:
+		paddle_reference = null
+
+func _is_moving_toward_paddle_horizontally() -> bool:
+	if not paddle_reference or not is_instance_valid(paddle_reference):
+		return false
+	var to_paddle_x = paddle_reference.position.x - position.x
+	return to_paddle_x * velocity.x > 0.0
+
+func _apply_magnet_pull(delta: float) -> void:
+	if not _is_moving_toward_paddle_horizontally():
+		return
+	var to_paddle = paddle_reference.position - position
+	var dist_sq = to_paddle.length_squared()
+	if dist_sq <= 0.0001:
+		return
+	var accel = MAGNET_PULL * delta
+	var inv_len = 1.0 / sqrt(dist_sq)
+	var next_vx = velocity.x + (to_paddle.x * inv_len * accel)
+	var next_vy = velocity.y + (to_paddle.y * inv_len * accel)
+	var next_len_sq = (next_vx * next_vx) + (next_vy * next_vy)
+	if next_len_sq <= 0.0001:
+		return
+	var speed_scale = current_speed / sqrt(next_len_sq)
+	velocity.x = next_vx * speed_scale
+	velocity.y = next_vy * speed_scale
+
+func _handle_out_of_bounds() -> void:
+	if position.x > RIGHT_BOUNDARY_X:
+		# Past right boundary (lost) - handler in main.gd decides life penalty.
+		ball_lost.emit(self)
+		return
+	if position.x < LEFT_BOUNDARY_X:
+		_handle_error_boundary_escape(BOUNDARY_LEFT_ERROR_LABEL)
+		return
+	if position.y < TOP_BOUNDARY_Y:
+		_handle_error_boundary_escape(BOUNDARY_TOP_ERROR_LABEL)
+		return
+	if position.y > BOTTOM_BOUNDARY_Y:
+		_handle_error_boundary_escape(BOUNDARY_BOTTOM_ERROR_LABEL)
+
+func _handle_error_boundary_escape(boundary_name: String) -> void:
+	ball_lost.emit(self)
+	push_warning("Ball escaped %s boundary at %s" % [boundary_name, str(position)])
+
+	# Main ball should be reset, not removed
+	if is_main_ball:
+		call_deferred("reset_ball")
+		return
+
+	# Extra balls can be safely removed
+	set_physics_process(false)
+	visible = false
+	set_deferred("collision_layer", 0)
+	set_deferred("collision_mask", 0)
+	call_deferred("queue_free")
+
+func _refresh_effect_flags() -> void:
+	if PowerUpManager:
+		frame_grab_active = PowerUpManager.is_grab_active()
+		frame_brick_through_active = PowerUpManager.is_brick_through_active()
+		frame_bomb_ball_active = PowerUpManager.is_bomb_ball_active()
+		frame_air_ball_active = PowerUpManager.is_air_ball_active()
+		frame_magnet_active = PowerUpManager.is_magnet_active()
+	else:
+		frame_grab_active = false
+		frame_brick_through_active = false
+		frame_bomb_ball_active = false
+		frame_air_ball_active = false
+		frame_magnet_active = false
+
+	if frame_bomb_ball_active != bomb_visual_active:
+		_apply_bomb_ball_visual(frame_bomb_ball_active)
+
+func _apply_bomb_ball_visual(active: bool) -> void:
+	bomb_visual_active = active
+	if visual_node:
+		# Orange-red while bomb-ball is active, white otherwise.
+		visual_node.modulate = Color(1.0, 0.4, 0.1, 1.0) if active else Color(1.0, 1.0, 1.0, 1.0)
+	_update_trail_appearance()
 
 func _jump_to_level_center_x(hit_y: float):
-	var center_x = _get_level_center_x()
-	position = Vector2(center_x, hit_y) + velocity.normalized() * 2.0
-	_resolve_air_ball_landing(center_x, hit_y)
+	var landing_data = _get_air_ball_landing_data()
+	var center_x = landing_data["center_x"]
+	var step_x = landing_data["step_x"]
+	position = Vector2(center_x, hit_y) + velocity.normalized() * AIR_BALL_LANDING_OFFSET
+	_resolve_air_ball_landing(center_x, hit_y, step_x)
 
-func _get_level_center_x() -> float:
+func _get_air_ball_landing_data() -> Dictionary:
+	var center_x = _get_fallback_center_x()
+	var step_x = ball_radius * 2.0 + AIR_BALL_STEP_FALLBACK_PADDING
+
 	if game_manager:
-		var level_id = game_manager.current_level
+		var level_id: int = game_manager.current_level
+		if level_id == cached_air_ball_level_id:
+			return {
+				"center_x": cached_air_ball_center_x,
+				"step_x": cached_air_ball_step_x
+			}
+
 		var level_data = LevelLoader.load_level_data(level_id)
 		if not level_data.is_empty():
 			var grid = level_data.get("grid", {})
 			var brick_size = grid.get("brick_size", 48)
 			var spacing = grid.get("spacing", 3)
 			var start_x = grid.get("start_x", 150)
+			step_x = float(brick_size + spacing)
+
 			var bricks = level_data.get("bricks", [])
 			if bricks.size() > 0:
-				var min_row = bricks[0].get("row", 0)
-				var max_row = min_row
 				var min_col = bricks[0].get("col", 0)
 				var max_col = min_col
 				for brick_def in bricks:
-					var row = brick_def.get("row", 0)
 					var col = brick_def.get("col", 0)
-					min_row = min(min_row, row)
-					max_row = max(max_row, row)
 					min_col = min(min_col, col)
 					max_col = max(max_col, col)
+				center_x = float(start_x) + ((min_col + max_col) / 2.0) * step_x
+			else:
+				center_x = float(start_x)
+			cached_air_ball_level_id = level_id
+			cached_air_ball_center_x = center_x
+			cached_air_ball_step_x = step_x
 
-				var step = float(brick_size + spacing)
-				var center_x = start_x + ((min_col + max_col) / 2.0) * step
-				return center_x
+	return {
+		"center_x": center_x,
+		"step_x": step_x
+	}
 
-			return float(start_x)
+func _get_fallback_center_x() -> float:
+	if viewport_ref:
+		return viewport_ref.get_visible_rect().size.x * 0.5
+	return AIR_BALL_FALLBACK_CENTER_X
 
-	var viewport = get_viewport()
-	if viewport:
-		return viewport.get_visible_rect().size.x * 0.5
-	return 640.0
+func _ensure_air_landing_query() -> void:
+	if air_landing_shape == null:
+		air_landing_shape = CircleShape2D.new()
+	if air_landing_query == null:
+		air_landing_query = PhysicsShapeQueryParameters2D.new()
+		air_landing_query.collide_with_areas = false
+		air_landing_query.collide_with_bodies = true
+		air_landing_query.exclude = [self]
+	air_landing_query.shape = air_landing_shape
 
-func _get_level_step_x() -> float:
-	if game_manager:
-		var level_id = game_manager.current_level
-		var level_data = LevelLoader.load_level_data(level_id)
-		if not level_data.is_empty():
-			var grid = level_data.get("grid", {})
-			var brick_size = grid.get("brick_size", 48)
-			var spacing = grid.get("spacing", 3)
-			return float(brick_size + spacing)
-	return ball_radius * 2.0 + 6.0
-
-func _resolve_air_ball_landing(center_x: float, hit_y: float) -> void:
+func _resolve_air_ball_landing(center_x: float, hit_y: float, step_x: float) -> void:
 	var world = get_world_2d()
 	if world == null:
 		return
@@ -741,33 +785,42 @@ func _resolve_air_ball_landing(center_x: float, hit_y: float) -> void:
 	if space == null:
 		return
 
-	var shape = CircleShape2D.new()
-	shape.radius = ball_radius
-	var query = PhysicsShapeQueryParameters2D.new()
-	query.shape = shape
-	query.collide_with_areas = false
-	query.collide_with_bodies = true
-	query.collision_mask = collision_mask
+	_ensure_air_landing_query()
+	air_landing_shape.radius = ball_radius
+	air_landing_query.collision_mask = collision_mask
 
 	var base_pos = Vector2(center_x, hit_y)
-	query.transform = Transform2D(0, base_pos)
-	if not _is_unbreakable_overlap(space, query):
+	air_landing_query.transform = Transform2D(0, base_pos)
+	if not _is_unbreakable_overlap(space, air_landing_query):
 		return
 
-	var step = _get_level_step_x()
-	for i in range(1, 8):
-		for dir in [-1, 1]:
-			var test_pos = base_pos + Vector2(step * float(i) * float(dir), 0.0)
-			query.transform = Transform2D(0, test_pos)
-			if not _is_unbreakable_overlap(space, query):
-				position = test_pos + velocity.normalized() * 2.0
-				return
+	var unbreakable_row = _get_unbreakable_bricks_near_y(hit_y)
+	if not unbreakable_row.is_empty():
+		for i in range(1, AIR_BALL_SEARCH_MAX_STEPS + 1):
+			for dir in [-1, 1]:
+				var test_pos = base_pos + Vector2(step_x * float(i) * float(dir), 0.0)
+				if _is_unbreakable_slot_blocked(test_pos, unbreakable_row):
+					continue
+				# Confirm with one physics query to preserve current landing behavior.
+				air_landing_query.transform = Transform2D(0, test_pos)
+				if not _is_unbreakable_overlap(space, air_landing_query):
+					position = test_pos + velocity.normalized() * AIR_BALL_LANDING_OFFSET
+					return
+	else:
+		# Fallback when cached row data is unavailable.
+		for i in range(1, AIR_BALL_SEARCH_MAX_STEPS + 1):
+			for dir in [-1, 1]:
+				var test_pos = base_pos + Vector2(step_x * float(i) * float(dir), 0.0)
+				air_landing_query.transform = Transform2D(0, test_pos)
+				if not _is_unbreakable_overlap(space, air_landing_query):
+					position = test_pos + velocity.normalized() * AIR_BALL_LANDING_OFFSET
+					return
 
 	# Last resort: nudge upward away from the slot.
 	position = base_pos + Vector2(0.0, -ball_radius * 2.0)
 
 func _is_unbreakable_overlap(space: PhysicsDirectSpaceState2D, query: PhysicsShapeQueryParameters2D) -> bool:
-	var results = space.intersect_shape(query, 8)
+	var results = space.intersect_shape(query, AIR_BALL_QUERY_MAX_RESULTS)
 	for hit in results:
 		var collider = hit.get("collider")
 		if collider and collider.is_in_group("brick") and "brick_type" in collider:
@@ -775,13 +828,54 @@ func _is_unbreakable_overlap(space: PhysicsDirectSpaceState2D, query: PhysicsSha
 				return true
 	return false
 
+func _get_unbreakable_bricks_near_y(hit_y: float) -> Array[Node]:
+	var row_candidates: Array[Node] = []
+	var vertical_limit = AIR_BALL_UNBREAKABLE_HALF_SIZE + ball_radius + AIR_BALL_ROW_MARGIN
+	for brick in _get_cached_level_bricks():
+		if not is_instance_valid(brick):
+			continue
+		if not ("brick_type" in brick):
+			continue
+		if brick.brick_type != BRICK_TYPE_UNBREAKABLE:
+			continue
+		if abs(brick.global_position.y - hit_y) <= vertical_limit:
+			row_candidates.append(brick)
+	return row_candidates
+
+func _is_unbreakable_slot_blocked(candidate_pos: Vector2, unbreakable_bricks: Array[Node]) -> bool:
+	var horizontal_limit = AIR_BALL_UNBREAKABLE_HALF_SIZE + ball_radius
+	var vertical_limit = AIR_BALL_UNBREAKABLE_HALF_SIZE + ball_radius + AIR_BALL_ROW_MARGIN
+	for brick in unbreakable_bricks:
+		if not is_instance_valid(brick):
+			continue
+		var brick_pos = brick.global_position
+		if abs(candidate_pos.y - brick_pos.y) > vertical_limit:
+			continue
+		if abs(candidate_pos.x - brick_pos.x) <= horizontal_limit:
+			return true
+	return false
+
+func _get_cached_level_bricks() -> Array[Node]:
+	if (main_controller_ref == null or not is_instance_valid(main_controller_ref)):
+		_cache_main_controller_ref()
+	if main_controller_ref and main_controller_ref.has_method("get_cached_level_bricks"):
+		return main_controller_ref.get_cached_level_bricks()
+	# Fallback to current behavior when cached list is unavailable.
+	var brick_parent = get_parent()
+	if brick_parent and brick_parent.has_node("BrickContainer"):
+		return brick_parent.get_node("BrickContainer").get_children()
+	return []
+
+func _cache_main_controller_ref() -> void:
+	var candidate = get_tree().get_first_node_in_group("main_controller")
+	if candidate and is_instance_valid(candidate):
+		main_controller_ref = candidate
+
 func destroy_surrounding_bricks(impact_position: Vector2):
 	"""Destroy bricks in a radius around the impact point (bomb ball effect)"""
-	const BOMB_RADIUS = 75.0  # Pixels - immediately adjacent bricks (left/right/above/below)
+	var bomb_radius_sq = BOMB_BALL_RADIUS * BOMB_BALL_RADIUS
 
-	# Find all bricks in the scene
-	var all_bricks = get_tree().get_nodes_in_group("brick")
-	var destroyed_count = 0
+	var all_bricks = _get_cached_level_bricks()
 
 	for brick in all_bricks:
 		if not is_instance_valid(brick):
@@ -791,23 +885,16 @@ func destroy_surrounding_bricks(impact_position: Vector2):
 		if "brick_type" in brick and brick.brick_type == BRICK_TYPE_UNBREAKABLE:
 			continue
 
-		# Check distance from impact point
-		var distance = brick.global_position.distance_to(impact_position)
-		if distance <= BOMB_RADIUS:
+		# Check distance from impact point using squared values (avoid sqrt in hot path)
+		var dist_sq = brick.global_position.distance_squared_to(impact_position)
+		if dist_sq <= bomb_radius_sq:
 			# Break this brick with a fake velocity
 			if brick.has_method("break_brick"):
 				brick.break_brick(Vector2(-1, 0))  # Use left direction for consistency
-				destroyed_count += 1
 			elif brick.has_method("hit"):
 				brick.hit(Vector2(-1, 0))  # Fallback for safety
-				destroyed_count += 1
-
-	if destroyed_count > 0:
-		print("Bomb ball destroyed ", destroyed_count, " surrounding bricks!")
 
 	_update_trail_appearance()
-
-	print("Ball speed reset to ", current_speed)
 
 func apply_big_ball_effect():
 	"""Double ball size for power-up duration"""
@@ -835,19 +922,17 @@ func set_ball_size_multiplier(multiplier: float):
 
 func _set_ball_radius(new_radius: float):
 	ball_radius = new_radius
-	if has_node("CollisionShape2D"):
-		var collision = $CollisionShape2D
-		if collision.shape is CircleShape2D:
-			collision.shape.radius = new_radius
-	if has_node("Visual"):
+	if collision_shape_node and collision_shape_node.shape is CircleShape2D:
+		collision_shape_node.shape.radius = new_radius
+	if visual_node:
 		var scale_factor = new_radius / BASE_RADIUS
-		$Visual.scale = BASE_VISUAL_SCALE * scale_factor
+		visual_node.scale = BASE_VISUAL_SCALE * scale_factor
 	_update_trail_appearance()
 
 func refresh_trail_state() -> void:
-	if not has_node("Trail"):
+	if not trail_node:
 		return
-	$Trail.emitting = SaveManager.get_ball_trail() and not is_attached_to_paddle
+	trail_node.emitting = SaveManager.get_ball_trail() and not is_attached_to_paddle
 	_update_trail_appearance()
 
 func enable_collision_immunity(_duration: float = 0.5):
@@ -864,20 +949,19 @@ func check_if_stuck(delta: float):
 		last_position = position
 		return
 
-	# Check if ball has moved significantly since last check
-	var distance_moved = position.distance_to(last_position)
-
 	# Use per-frame threshold (ball should move at least speed*delta pixels per frame)
 	# At 500 speed and 60fps, that's ~8.3 pixels per frame minimum
 	var expected_movement = current_speed * delta * 0.5  # 50% of expected (account for bouncing)
+	var distance_moved_sq = position.distance_squared_to(last_position)
+	var expected_movement_sq = expected_movement * expected_movement
 
-	if distance_moved < expected_movement:
+	if distance_moved_sq < expected_movement_sq:
 		# Ball hasn't moved much - increment timer
 		stuck_check_timer += delta
 
 		if stuck_check_timer >= stuck_threshold:
 			# Ball is stuck! Give it a boost to escape
-			print("WARNING: Ball appears stuck at ", position, " - applying escape boost")
+			push_warning("Ball appears stuck at %s - applying escape boost" % str(position))
 
 			var used_collision_escape = false
 			if last_collision_collider != null and is_instance_valid(last_collision_collider):
@@ -894,7 +978,6 @@ func check_if_stuck(delta: float):
 				var escape_angle = randf_range(135.0, 225.0)  # Left hemisphere
 				var angle_rad = deg_to_rad(escape_angle)
 				velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
-				print("  Escape velocity applied: ", velocity, " (angle: ", escape_angle, "°)")
 
 			# Reset timer
 			stuck_check_timer = 0.0

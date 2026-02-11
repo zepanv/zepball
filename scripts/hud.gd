@@ -3,10 +3,10 @@ extends Control
 ## HUD - Heads-Up Display for score, lives, and game info
 ## Updates in response to GameManager signals
 
-@onready var score_label = $TopBar/ScoreLabel
-@onready var lives_label = $TopBar/LivesLabel
-@onready var logo_label = $TopBar/LogoLabel
-@onready var powerup_container = $PowerUpIndicators
+@onready var score_label: Label = $TopBar/ScoreLabel
+@onready var lives_label: Label = $TopBar/LivesLabel
+@onready var logo_label: Label = $TopBar/LogoLabel
+@onready var powerup_container: VBoxContainer = $PowerUpIndicators
 
 var pause_menu: Control = null
 var difficulty_label: Label = null
@@ -24,12 +24,39 @@ var skip_level_intro: bool = false
 var show_fps: bool = false
 var settings_overlay: Control = null
 var level_select_confirm: ConfirmationDialog = null
+var game_manager_ref: Node = null
+var pause_level_info_label: Label = null
+var pause_score_info_label: Label = null
+var pause_lives_info_label: Label = null
+var level_intro_num_label: Label = null
+var level_intro_name_label: Label = null
+var level_intro_desc_label: Label = null
+var debug_fps_label: Label = null
+var debug_ball_count_label: Label = null
+var debug_velocity_label: Label = null
+var debug_speed_label: Label = null
+var debug_combo_label: Label = null
+var powerup_indicators: Array[Control] = []
+const DEBUG_BALL_REFRESH_INTERVAL = 0.1
+const POWERUP_TIMER_REFRESH_INTERVAL = 0.1
+var debug_ball_refresh_time: float = 0.0
+var powerup_timer_refresh_time: float = 0.0
+var debug_balls_cache: Array[Node] = []
+var debug_valid_balls: Array[Node] = []
+var debug_last_fps: int = -1
+var debug_last_ball_count: int = -1
+var debug_last_velocity_x: int = 0
+var debug_last_velocity_y: int = 0
+var debug_last_speed: int = 0
+var debug_last_combo: int = -1
+var debug_last_has_main_ball: bool = false
+var debug_key_handled: bool = false
+var multiplier_lines: PackedStringArray = PackedStringArray()
 
-func _ready():
+func _ready() -> void:
 	# Allow UI to process even when game is paused
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	print("HUD ready")
 	# Initial values will be connected via main.gd signals
 
 	# Connect to PowerUpManager signals
@@ -77,6 +104,7 @@ func _ready():
 		debug_overlay.visible = debug_visible
 
 	_init_dynamic_elements()
+	_refresh_processing_state()
 
 func apply_settings_from_save() -> void:
 	"""Refresh HUD settings while paused"""
@@ -88,6 +116,7 @@ func apply_settings_from_save() -> void:
 	if debug_overlay:
 		debug_overlay.visible = debug_visible
 	_init_dynamic_elements()
+	_refresh_processing_state()
 
 func _init_dynamic_elements() -> void:
 	"""Create and connect dynamic HUD elements once"""
@@ -157,7 +186,7 @@ func _init_dynamic_elements() -> void:
 		multiplier_label.visible = false
 		add_child(multiplier_label)
 
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	var game_manager = _get_game_manager()
 	if game_manager:
 		if not game_manager.state_changed.is_connected(_on_game_state_changed):
 			game_manager.state_changed.connect(_on_game_state_changed)
@@ -168,7 +197,7 @@ func _init_dynamic_elements() -> void:
 		if not game_manager.no_miss_streak_changed.is_connected(_on_streak_changed):
 			game_manager.no_miss_streak_changed.connect(_on_streak_changed)
 
-func _on_game_state_changed(new_state):
+func _on_game_state_changed(new_state: int) -> void:
 	"""Show/hide overlays based on game state"""
 	if pause_menu:
 		pause_menu.visible = (new_state == 3)  # 3 = PAUSED
@@ -178,15 +207,16 @@ func _on_game_state_changed(new_state):
 		game_over_label.visible = (new_state == 5)  # 5 = GAME_OVER
 	if level_complete_label:
 		level_complete_label.visible = (new_state == 4)  # 4 = LEVEL_COMPLETE
+	_refresh_processing_state()
 
-func _on_difficulty_changed(_new_difficulty):
+func _on_difficulty_changed(_new_difficulty: int) -> void:
 	"""Update difficulty display when changed"""
 	if difficulty_label:
 		difficulty_label.text = "DIFFICULTY: " + DifficultyManager.get_difficulty_name()
 	# Update multiplier display when difficulty changes
 	_update_multiplier_display()
 
-func _on_combo_changed(new_combo: int):
+func _on_combo_changed(new_combo: int) -> void:
 	"""Update combo display"""
 	if not combo_label:
 		return
@@ -206,7 +236,7 @@ func _on_combo_changed(new_combo: int):
 	# Update multiplier display when combo changes
 	_update_multiplier_display()
 
-func _on_combo_milestone(combo_value: int):
+func _on_combo_milestone(combo_value: int) -> void:
 	"""Make combo text grow larger at milestones"""
 	if not combo_label:
 		return
@@ -222,15 +252,15 @@ func _on_combo_milestone(combo_value: int):
 	tween.tween_property(combo_label, "scale", Vector2(milestone_scale, milestone_scale), 0.3)
 	tween.tween_property(combo_label, "scale", Vector2(1.0, 1.0), 0.4)
 
-func _on_score_changed(new_score: int):
+func _on_score_changed(new_score: int) -> void:
 	"""Update score display"""
 	score_label.text = "SCORE: " + str(new_score)
 
-func _on_lives_changed(new_lives: int):
+func _on_lives_changed(new_lives: int) -> void:
 	"""Update lives display"""
 	lives_label.text = "LIVES: " + str(new_lives)
 
-func _on_effect_applied(type):
+func _on_effect_applied(type: int) -> void:
 	"""Show power-up indicator when effect is applied"""
 	if not powerup_container:
 		return
@@ -242,18 +272,27 @@ func _on_effect_applied(type):
 	var indicator = create_powerup_indicator(type)
 	if indicator:
 		powerup_container.add_child(indicator)
+		powerup_indicators.append(indicator)
+		_update_powerup_timer_label(indicator, type)
+	_refresh_processing_state()
 
-func _on_effect_expired(type):
+func _on_effect_expired(type: int) -> void:
 	"""Remove power-up indicator when effect expires"""
 	if not powerup_container:
 		return
 
 	# Find and remove indicator for this type
-	for child in powerup_container.get_children():
-		if child.has_meta("powerup_type") and child.get_meta("powerup_type") == type:
+	for i in range(powerup_indicators.size() - 1, -1, -1):
+		var child = powerup_indicators[i]
+		if not child or not is_instance_valid(child):
+			powerup_indicators.remove_at(i)
+			continue
+		if child.has_meta("powerup_type") and int(child.get_meta("powerup_type")) == type:
+			powerup_indicators.remove_at(i)
 			child.queue_free()
+	_refresh_processing_state()
 
-func create_powerup_indicator(type) -> Control:
+func create_powerup_indicator(type: int) -> Control:
 	"""Create a visual indicator for an active power-up"""
 	var indicator = PanelContainer.new()
 	indicator.set_meta("powerup_type", type)
@@ -322,53 +361,64 @@ func create_powerup_indicator(type) -> Control:
 	timer_label.name = "TimerLabel"
 	timer_label.add_theme_font_size_override("font_size", 14)
 	hbox.add_child(timer_label)
+	indicator.set_meta("timer_label", timer_label)
 
 	return indicator
 
-func _process(_delta):
+func _process(delta: float) -> void:
 	"""Update power-up timer displays and debug overlay"""
-	# Toggle debug overlay with backtick key (`) - Mac friendly
-	if show_fps:
-		if Input.is_physical_key_pressed(KEY_QUOTELEFT) and not Input.is_key_pressed(KEY_SHIFT):
-			if not get_meta("debug_key_handled", false):
-				debug_visible = !debug_visible
-				if debug_overlay:
-					debug_overlay.visible = debug_visible
-				set_meta("debug_key_handled", true)
-		else:
-			set_meta("debug_key_handled", false)
-	else:
+	var game_manager = _get_game_manager()
+	var is_paused = game_manager and game_manager.game_state == game_manager.GameState.PAUSED
+
+	if not show_fps:
 		if debug_overlay and debug_overlay.visible:
 			debug_overlay.visible = false
 		debug_visible = false
-		set_meta("debug_key_handled", false)
+		debug_key_handled = false
+		if powerup_indicators.is_empty() and not is_paused:
+			if pause_menu and pause_menu.visible:
+				pause_menu.visible = false
+			_refresh_processing_state()
+			return
+
+	# Toggle debug overlay with backtick key (`) - Mac friendly
+	if show_fps:
+		if Input.is_physical_key_pressed(KEY_QUOTELEFT) and not Input.is_key_pressed(KEY_SHIFT):
+			if not debug_key_handled:
+				debug_visible = !debug_visible
+				if debug_overlay:
+					debug_overlay.visible = debug_visible
+				debug_key_handled = true
+		else:
+			debug_key_handled = false
+	else:
+		debug_key_handled = false
 
 	# Update power-up timers
-	if powerup_container:
-		for child in powerup_container.get_children():
-			if child.has_meta("powerup_type"):
-				var type = child.get_meta("powerup_type")
-				var time_remaining = PowerUpManager.get_time_remaining(type)
-
-				# Update timer label
-				var timer_label = child.find_child("TimerLabel", true, false)
-				if timer_label:
-					timer_label.text = " %.1fs" % time_remaining
+	if powerup_indicators.size() > 0:
+		powerup_timer_refresh_time -= delta
+		if powerup_timer_refresh_time <= 0.0:
+			_update_powerup_timer_labels()
+			powerup_timer_refresh_time = POWERUP_TIMER_REFRESH_INTERVAL
 
 	# Update debug overlay
 	if show_fps and debug_visible and debug_overlay:
-		update_debug_overlay()
+		update_debug_overlay(delta)
 
 	# Ensure pause menu is visible when paused and no settings overlay is open
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
-	if game_manager:
-		if game_manager.game_state == game_manager.GameState.PAUSED:
-			if pause_menu and settings_overlay == null and pause_menu.visible == false:
-				pause_menu.visible = true
-		elif pause_menu and pause_menu.visible:
-			pause_menu.visible = false
+	if is_paused:
+		if pause_menu and settings_overlay == null and pause_menu.visible == false:
+			pause_menu.visible = true
+	elif pause_menu and pause_menu.visible:
+		pause_menu.visible = false
 
-func _play_combo_flash():
+func _refresh_processing_state() -> void:
+	var game_manager = _get_game_manager()
+	var is_paused = game_manager and game_manager.game_state == game_manager.GameState.PAUSED
+	var should_process = show_fps or not powerup_indicators.is_empty() or is_paused
+	set_process(should_process)
+
+func _play_combo_flash() -> void:
 	"""Flash the screen subtly on combo gains"""
 	if not combo_flash:
 		return
@@ -424,6 +474,7 @@ func create_pause_menu() -> Control:
 	level_info.set("theme_override_colors/font_color", Color(0, 0.9, 1, 1))
 	level_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(level_info)
+	pause_level_info_label = level_info
 
 	# Score display
 	var score_info = Label.new()
@@ -432,6 +483,7 @@ func create_pause_menu() -> Control:
 	score_info.set("theme_override_font_sizes/font_size", 24)
 	score_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(score_info)
+	pause_score_info_label = score_info
 
 	# Lives display
 	var lives_info = Label.new()
@@ -440,6 +492,7 @@ func create_pause_menu() -> Control:
 	lives_info.set("theme_override_font_sizes/font_size", 24)
 	lives_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(lives_info)
+	pause_lives_info_label = lives_info
 
 	# Spacer
 	var spacer2 = Control.new()
@@ -511,36 +564,33 @@ func _update_pause_menu_info():
 	if not pause_menu:
 		return
 
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	var game_manager = _get_game_manager()
 	if not game_manager:
 		return
 
 	# Update level
-	var level_info = pause_menu.find_child("LevelInfo", true, false)
-	if level_info:
+	if pause_level_info_label:
 		var level_data = LevelLoader.get_level_info(game_manager.current_level)
-		level_info.text = "Level " + str(game_manager.current_level) + ": " + level_data.get("name", "Unknown")
+		pause_level_info_label.text = "Level " + str(game_manager.current_level) + ": " + level_data.get("name", "Unknown")
 
 	# Update score
-	var score_info = pause_menu.find_child("ScoreInfo", true, false)
-	if score_info:
-		score_info.text = "Score: " + str(game_manager.score)
+	if pause_score_info_label:
+		pause_score_info_label.text = "Score: " + str(game_manager.score)
 
 	# Update lives
-	var lives_info = pause_menu.find_child("LivesInfo", true, false)
-	if lives_info:
-		lives_info.text = "Lives: " + str(game_manager.lives)
+	if pause_lives_info_label:
+		pause_lives_info_label.text = "Lives: " + str(game_manager.lives)
 
 func _on_pause_resume_pressed():
 	"""Resume game from pause menu"""
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	var game_manager = _get_game_manager()
 	if game_manager:
 		game_manager.set_state(game_manager.last_state_before_pause)
 
 func _on_pause_restart_pressed():
 	"""Restart level from pause menu"""
 	# Unpause first
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	var game_manager = _get_game_manager()
 	if game_manager:
 		game_manager.set_state(game_manager.GameState.PLAYING)
 
@@ -550,7 +600,7 @@ func _on_pause_restart_pressed():
 func _on_pause_main_menu_pressed():
 	"""Return to main menu from pause"""
 	# Unpause first
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	var game_manager = _get_game_manager()
 	if game_manager:
 		game_manager.set_state(game_manager.GameState.PLAYING)
 
@@ -566,7 +616,7 @@ func _on_pause_level_select_pressed():
 
 func _on_confirm_level_select():
 	"""Return to level select after confirmation"""
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	var game_manager = _get_game_manager()
 	if game_manager:
 		game_manager.set_state(game_manager.GameState.PLAYING)
 	MenuController.show_level_select()
@@ -625,6 +675,7 @@ func create_level_intro() -> Control:
 	level_num.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
 	level_num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(level_num)
+	level_intro_num_label = level_num
 
 	# Level name
 	var level_name = Label.new()
@@ -634,6 +685,7 @@ func create_level_intro() -> Control:
 	level_name.set("theme_override_colors/font_color", Color(0, 0.9, 1, 1))
 	level_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(level_name)
+	level_intro_name_label = level_name
 
 	# Level description
 	var level_desc = Label.new()
@@ -644,6 +696,7 @@ func create_level_intro() -> Control:
 	level_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	level_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(level_desc)
+	level_intro_desc_label = level_desc
 
 	# Spacer
 	var spacer2 = Control.new()
@@ -661,17 +714,14 @@ func show_level_intro(level_id: int, level_name: String, level_description: Stri
 		return
 
 	# Update text
-	var level_num_label = level_intro.find_child("LevelNum", true, false)
-	if level_num_label:
-		level_num_label.text = "LEVEL " + str(level_id)
+	if level_intro_num_label:
+		level_intro_num_label.text = "LEVEL " + str(level_id)
 
-	var level_name_label = level_intro.find_child("LevelName", true, false)
-	if level_name_label:
-		level_name_label.text = level_name
+	if level_intro_name_label:
+		level_intro_name_label.text = level_name
 
-	var level_desc_label = level_intro.find_child("LevelDesc", true, false)
-	if level_desc_label:
-		level_desc_label.text = level_description
+	if level_intro_desc_label:
+		level_intro_desc_label.text = level_description
 
 	# Fade in/out animation
 	level_intro.modulate.a = 0.0
@@ -709,6 +759,7 @@ func create_debug_overlay() -> PanelContainer:
 	fps_label.text = "FPS: 0"
 	fps_label.set("theme_override_font_sizes/font_size", 14)
 	vbox.add_child(fps_label)
+	debug_fps_label = fps_label
 
 	# Ball count
 	var ball_count_label = Label.new()
@@ -716,6 +767,7 @@ func create_debug_overlay() -> PanelContainer:
 	ball_count_label.text = "Balls: 0"
 	ball_count_label.set("theme_override_font_sizes/font_size", 14)
 	vbox.add_child(ball_count_label)
+	debug_ball_count_label = ball_count_label
 
 	# Ball velocity
 	var velocity_label = Label.new()
@@ -723,6 +775,7 @@ func create_debug_overlay() -> PanelContainer:
 	velocity_label.text = "Velocity: (0, 0)"
 	velocity_label.set("theme_override_font_sizes/font_size", 14)
 	vbox.add_child(velocity_label)
+	debug_velocity_label = velocity_label
 
 	# Ball speed
 	var speed_label = Label.new()
@@ -730,6 +783,7 @@ func create_debug_overlay() -> PanelContainer:
 	speed_label.text = "Speed: 0"
 	speed_label.set("theme_override_font_sizes/font_size", 14)
 	vbox.add_child(speed_label)
+	debug_speed_label = speed_label
 
 	# Combo
 	var combo_label_debug = Label.new()
@@ -737,88 +791,143 @@ func create_debug_overlay() -> PanelContainer:
 	combo_label_debug.text = "Combo: 0"
 	combo_label_debug.set("theme_override_font_sizes/font_size", 14)
 	vbox.add_child(combo_label_debug)
+	debug_combo_label = combo_label_debug
 
 	return panel
 
-func update_debug_overlay():
+func update_debug_overlay(delta: float) -> void:
 	"""Update debug overlay with current game info"""
 	if not debug_overlay:
 		return
 
-	# Update FPS
-	var fps_label = debug_overlay.find_child("FPS", true, false)
-	if fps_label:
-		fps_label.text = "FPS: " + str(Engine.get_frames_per_second())
+	debug_ball_refresh_time -= delta
+	if debug_ball_refresh_time <= 0.0:
+		debug_balls_cache.clear()
+		for ball in PowerUpManager.get_active_balls():
+			debug_balls_cache.append(ball)
+		debug_ball_refresh_time = DEBUG_BALL_REFRESH_INTERVAL
 
-	# Get main ball
-	var balls = get_tree().get_nodes_in_group("ball")
+	# Update FPS
+	var fps: int = int(round(Engine.get_frames_per_second()))
+	if debug_fps_label:
+		if fps != debug_last_fps:
+			debug_fps_label.text = "FPS: " + str(fps)
+			debug_last_fps = fps
+
+	# Filter out freed references from cached list, then find main ball
+	debug_valid_balls.clear()
 	var main_ball = null
-	for ball in balls:
-		if ball.is_main_ball:
+	for ball in debug_balls_cache:
+		if not is_instance_valid(ball):
+			continue
+		debug_valid_balls.append(ball)
+		if main_ball == null and ball.is_main_ball:
 			main_ball = ball
-			break
+	if debug_valid_balls.size() != debug_balls_cache.size():
+		debug_balls_cache.clear()
+		for ball in debug_valid_balls:
+			debug_balls_cache.append(ball)
 
 	# Update ball count
-	var ball_count_label = debug_overlay.find_child("BallCount", true, false)
-	if ball_count_label:
-		ball_count_label.text = "Balls: " + str(balls.size())
+	var ball_count = debug_valid_balls.size()
+	if debug_ball_count_label:
+		if ball_count != debug_last_ball_count:
+			debug_ball_count_label.text = "Balls: " + str(ball_count)
+			debug_last_ball_count = ball_count
 
 	# Update velocity and speed
-	if main_ball:
-		var velocity_label = debug_overlay.find_child("Velocity", true, false)
-		if velocity_label:
-			velocity_label.text = "Velocity: (%.0f, %.0f)" % [main_ball.velocity.x, main_ball.velocity.y]
+	if main_ball and is_instance_valid(main_ball):
+		var velocity_x = int(round(main_ball.velocity.x))
+		var velocity_y = int(round(main_ball.velocity.y))
+		var speed = int(round(main_ball.current_speed))
+		if debug_velocity_label:
+			if not debug_last_has_main_ball or velocity_x != debug_last_velocity_x or velocity_y != debug_last_velocity_y:
+				debug_velocity_label.text = "Velocity: (%d, %d)" % [velocity_x, velocity_y]
+				debug_last_velocity_x = velocity_x
+				debug_last_velocity_y = velocity_y
 
-		var speed_label = debug_overlay.find_child("Speed", true, false)
-		if speed_label:
-			speed_label.text = "Speed: %.0f" % main_ball.current_speed
+		if debug_speed_label:
+			if not debug_last_has_main_ball or speed != debug_last_speed:
+				debug_speed_label.text = "Speed: %d" % speed
+				debug_last_speed = speed
+		debug_last_has_main_ball = true
+	elif debug_last_has_main_ball:
+		if debug_velocity_label:
+			debug_velocity_label.text = "Velocity: (0, 0)"
+		if debug_speed_label:
+			debug_speed_label.text = "Speed: 0"
+		debug_last_velocity_x = 0
+		debug_last_velocity_y = 0
+		debug_last_speed = 0
+		debug_last_has_main_ball = false
 
 	# Update combo
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	var game_manager = _get_game_manager()
 	if game_manager:
-		var combo_label_debug = debug_overlay.find_child("Combo", true, false)
-		if combo_label_debug:
-			combo_label_debug.text = "Combo: " + str(game_manager.combo)
+		if debug_combo_label:
+			var combo = int(game_manager.combo)
+			if combo != debug_last_combo:
+				debug_combo_label.text = "Combo: " + str(combo)
+				debug_last_combo = combo
 
-func _on_streak_changed(_new_streak: int):
+func _update_powerup_timer_labels() -> void:
+	for i in range(powerup_indicators.size() - 1, -1, -1):
+		var child = powerup_indicators[i]
+		if not child or not is_instance_valid(child):
+			powerup_indicators.remove_at(i)
+			continue
+		if child.has_meta("powerup_type"):
+			var type = int(child.get_meta("powerup_type"))
+			_update_powerup_timer_label(child, type)
+
+func _update_powerup_timer_label(indicator: Node, type: int) -> void:
+	if not indicator:
+		return
+	var timer_label: Label = indicator.get_meta("timer_label", null)
+	if not timer_label:
+		return
+	var time_remaining = PowerUpManager.get_time_remaining(type)
+	timer_label.text = " %.1fs" % time_remaining
+
+func _on_streak_changed(_new_streak: int) -> void:
 	"""Update multiplier display when streak changes"""
 	_update_multiplier_display()
 
-func _update_multiplier_display():
+func _update_multiplier_display() -> void:
 	"""Update the multiplier display with all active bonuses"""
 	if not multiplier_label:
 		return
 
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
+	var game_manager = _get_game_manager()
 	if not game_manager:
 		return
 
-	var multipliers = []
+	multiplier_lines.clear()
 
 	# Difficulty multiplier
 	var difficulty_mult = DifficultyManager.get_score_multiplier()
 	var difficulty_name = DifficultyManager.get_difficulty_name()
 	if difficulty_mult != 1.0:
-		multipliers.append(difficulty_name + ": " + str(difficulty_mult) + "x")
+		multiplier_lines.append(difficulty_name + ": " + str(difficulty_mult) + "x")
 
 	# Combo multiplier (only if active)
 	if game_manager.combo >= 3:
 		var combo_mult = 1.0 + (game_manager.combo - 3 + 1) * 0.1
-		multipliers.append("Combo: " + str(snapped(combo_mult, 0.01)) + "x")
+		multiplier_lines.append("Combo: " + str(snapped(combo_mult, 0.01)) + "x")
 
 	# No-miss streak multiplier (only if >= 5 hits)
 	if game_manager.no_miss_hits >= 5:
 		var streak_tiers = floorf(game_manager.no_miss_hits / 5.0)
 		var streak_mult = 1.0 + (streak_tiers * 0.1)
-		multipliers.append("Streak: " + str(snapped(streak_mult, 0.01)) + "x")
+		multiplier_lines.append("Streak: " + str(snapped(streak_mult, 0.01)) + "x")
 
 	# Double score power-up
 	if PowerUpManager.is_double_score_active():
-		multipliers.append("Power-up: 2.0x")
+		multiplier_lines.append("Power-up: 2.0x")
 
 	# Update label
-	if multipliers.size() > 0:
-		multiplier_label.text = "MULTIPLIERS:\n" + "\n".join(multipliers)
+	if multiplier_lines.size() > 0:
+		multiplier_label.text = "MULTIPLIERS:\n" + "\n".join(multiplier_lines)
 		multiplier_label.visible = true
 
 		# Color based on total multiplier value
@@ -840,3 +949,11 @@ func _update_multiplier_display():
 			multiplier_label.modulate = Color(1.0, 1.0, 1.0, 0.9)  # White for base
 	else:
 		multiplier_label.visible = false
+
+func _get_game_manager() -> Node:
+	if game_manager_ref and is_instance_valid(game_manager_ref):
+		return game_manager_ref
+	game_manager_ref = get_tree().get_first_node_in_group("game_manager")
+	if game_manager_ref and is_instance_valid(game_manager_ref):
+		return game_manager_ref
+	return null

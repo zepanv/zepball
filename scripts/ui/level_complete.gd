@@ -22,8 +22,6 @@ extends Control
 
 func _ready():
 	"""Initialize level complete screen"""
-	print("Level Complete screen loaded")
-
 	# Get data from MenuController
 	var final_score = MenuController.get_current_score()
 	var level_id = MenuController.get_current_level_id()
@@ -101,22 +99,18 @@ func _ready():
 
 func _on_next_level_button_pressed():
 	"""Continue to next level"""
-	print("Next Level button pressed")
 	MenuController.continue_to_next_level()
 
 func _on_play_again_button_pressed():
 	"""Restart the current level"""
-	print("Play Again button pressed")
 	MenuController.restart_current_level()
 
 func _on_level_select_button_pressed():
 	"""Return to level select"""
-	print("Level Select button pressed")
 	MenuController.show_level_select()
 
 func _on_menu_button_pressed():
 	"""Return to main menu"""
-	print("Main Menu button pressed")
 	MenuController.show_main_menu()
 
 func _format_bonus(value: int) -> String:
