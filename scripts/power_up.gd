@@ -28,6 +28,7 @@ enum PowerUpType {
 @export var move_speed: float = 150.0  # Pixels per second (horizontal)
 const MISS_BOUNDARY_X = 1300.0
 const GAME_MANAGER_RETRY_INTERVAL = 0.25
+const MIN_ACTIVE_MOVE_SPEED = 0.01
 
 @export_group("Power-up Textures")
 @export var expand_texture: Texture2D = preload("res://assets/graphics/powerups/expand.png")
@@ -52,26 +53,28 @@ signal collected(type: PowerUpType)
 
 var game_manager: Node = null
 var game_manager_retry_timer: float = 0.0
+var is_terminal_state: bool = false
 static var shared_glow_material: CanvasItemMaterial = null
 
-func _ready():
+func _ready() -> void:
 	# Set up sprite based on type
 	setup_sprite()
 
 	# Connect to paddle collision
 	body_entered.connect(_on_body_entered)
 	_cache_game_manager()
+	_refresh_physics_processing_state()
 
-func _physics_process(delta):
-	# Stop movement if level is complete or game over
+func _physics_process(delta: float) -> void:
+	# Keep manager retry checks throttled until a valid reference is found.
 	if game_manager == null or not is_instance_valid(game_manager):
 		game_manager_retry_timer -= delta
 		if game_manager_retry_timer <= 0.0:
 			game_manager_retry_timer = GAME_MANAGER_RETRY_INTERVAL
 			_cache_game_manager()
 
-	if game_manager and _is_terminal_game_state(game_manager.game_state):
-		set_physics_process(false)
+	if not _is_move_active():
+		_refresh_physics_processing_state()
 		return
 
 	# Move horizontally toward right edge
@@ -86,23 +89,30 @@ func _cache_game_manager() -> void:
 		return
 	var candidate = get_tree().get_first_node_in_group("game_manager")
 	if candidate == null or not is_instance_valid(candidate):
+		_refresh_physics_processing_state()
 		return
 	game_manager = candidate
 	if game_manager.has_signal("state_changed") and not game_manager.state_changed.is_connected(_on_game_state_changed):
 		game_manager.state_changed.connect(_on_game_state_changed)
-	if _is_terminal_game_state(game_manager.game_state):
-		set_physics_process(false)
+	_on_game_state_changed(game_manager.game_state)
 
 func _on_game_state_changed(new_state: int) -> void:
-	if _is_terminal_game_state(new_state):
-		set_physics_process(false)
+	is_terminal_state = _is_terminal_game_state(new_state)
+	_refresh_physics_processing_state()
+
+func _refresh_physics_processing_state() -> void:
+	var should_retry_manager = game_manager == null or not is_instance_valid(game_manager)
+	set_physics_process(_is_move_active() or should_retry_manager)
+
+func _is_move_active() -> bool:
+	return not is_terminal_state and absf(move_speed) > MIN_ACTIVE_MOVE_SPEED
 
 func _is_terminal_game_state(state: int) -> bool:
 	if game_manager == null:
 		return false
 	return state == game_manager.GameState.LEVEL_COMPLETE or state == game_manager.GameState.GAME_OVER
 
-func setup_sprite():
+func setup_sprite() -> void:
 	"""Configure sprite based on power-up type"""
 	if not has_node("Sprite"):
 		return
@@ -182,7 +192,7 @@ func _get_shared_glow_material() -> CanvasItemMaterial:
 		shared_glow_material.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	return shared_glow_material
 
-func _on_body_entered(body):
+func _on_body_entered(body: Node) -> void:
 	"""Detect collision with paddle"""
 	if body.is_in_group("paddle"):
 		if _is_bad_power_up(power_up_type):

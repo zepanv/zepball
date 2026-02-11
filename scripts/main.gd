@@ -22,6 +22,8 @@ extends Node2D
 # Brick scene to instantiate
 const BRICK_SCENE = preload("res://scenes/gameplay/brick.tscn")
 const BALL_SCENE = preload("res://scenes/gameplay/ball.tscn")
+const BACKGROUND_MANAGER_SCRIPT: GDScript = preload("res://scripts/main_background_manager.gd")
+const POWER_UP_HANDLER_SCRIPT: GDScript = preload("res://scripts/main_power_up_handler.gd")
 const BASE_RESOLUTION = Vector2i(1280, 720)
 
 # Level layout constants
@@ -74,27 +76,20 @@ const TRIPLE_BALL_IMMUNITY_DURATION = 0.5
 const RIGHT_BOUNDARY = 1300   # Past paddle (ball lost)
 const POWER_UP_MISS_X = 1300  # X position where power-ups despawn
 
-# Available backgrounds
-const BACKGROUNDS = [
-	"res://assets/graphics/backgrounds/bg_minimal_3_1769629212643.jpg",
-	"res://assets/graphics/backgrounds/bg_minimal_4_1769629224923.jpg",
-	"res://assets/graphics/backgrounds/bg_minimal_5_1769629238427.jpg",
-	"res://assets/graphics/backgrounds/bg_refined_1_1769629758259.jpg",
-	"res://assets/graphics/backgrounds/bg_refined_2_1769629770443.jpg",
-	"res://assets/graphics/backgrounds/bg_nebula_dark_1769629799342.jpg",
-	"res://assets/graphics/backgrounds/bg_stars_subtle_1769629782553.jpg"
-]
-
 # Track only breakable bricks so level completion is deterministic
 var remaining_breakable_bricks: int = 0
 var cached_level_bricks: Array[Node] = []
+var background_manager: RefCounted = null
+var power_up_handler: RefCounted = null
 
 func _enter_tree() -> void:
 	add_to_group("main_controller")
 
-func _ready():
+func _ready() -> void:
 	# Set up background
 	setup_background()
+	if power_up_handler == null:
+		power_up_handler = POWER_UP_HANDLER_SCRIPT.new()
 	var viewport = get_viewport()
 	if viewport:
 		viewport.size_changed.connect(_configure_background_rect)
@@ -128,7 +123,7 @@ func _ready():
 	# Connect existing bricks
 	connect_brick_signals()
 
-func _restore_set_state(saved_score: int, saved_lives: int, saved_combo: int, saved_no_miss: int, saved_perfect: bool):
+func _restore_set_state(saved_score: int, saved_lives: int, saved_combo: int, saved_no_miss: int, saved_perfect: bool) -> void:
 	"""Restore game state when continuing a set (called deferred to ensure HUD is ready)"""
 	game_manager.score = saved_score
 	game_manager.lives = saved_lives
@@ -142,64 +137,23 @@ func _restore_set_state(saved_score: int, saved_lives: int, saved_combo: int, sa
 	game_manager.combo_changed.emit(game_manager.combo)
 	game_manager.no_miss_streak_changed.emit(game_manager.no_miss_hits)
 
-func setup_background():
-	"""Load and configure a random background image"""
-	if not background:
+func setup_background() -> void:
+	"""Load and configure a random background image."""
+	if background_manager == null:
+		background_manager = BACKGROUND_MANAGER_SCRIPT.new()
+	if background_manager == null or not background_manager.has_method("setup_background"):
 		return
 
-	# Select a random background
-	var selected_bg = BACKGROUNDS[randi() % BACKGROUNDS.size()]
-	var texture = load(selected_bg)
+	var configured_background = background_manager.call("setup_background", self, background)
+	if configured_background != null:
+		background = configured_background
 
-	if not texture:
-		push_warning("Could not load background: %s" % selected_bg)
-		return
-
-	# Move background to a CanvasLayer so it renders in screen space
-	var bg_layer = CanvasLayer.new()
-	bg_layer.name = "BackgroundLayer"
-	bg_layer.layer = -100
-
-	# Convert ColorRect to TextureRect if needed
-	if background is ColorRect:
-		# Remove ColorRect and create TextureRect
-		var texture_rect = TextureRect.new()
-		texture_rect.name = "Background"
-		texture_rect.texture = texture
-		texture_rect.stretch_mode = TextureRect.STRETCH_SCALE
-		texture_rect.modulate.a = 0.85  # Slight dimming so it doesn't distract
-
-		# Move to CanvasLayer
-		var old_parent = background.get_parent()
-		old_parent.remove_child(background)
-		background.queue_free()
-
-		add_child(bg_layer)
-		bg_layer.add_child(texture_rect)
-		background = texture_rect
-
-	elif background is TextureRect:
-		background.texture = texture
-		background.stretch_mode = TextureRect.STRETCH_SCALE
-		background.modulate.a = 0.85
-
-		# Move to CanvasLayer
-		var old_parent = background.get_parent()
-		old_parent.remove_child(background)
-		add_child(bg_layer)
-		bg_layer.add_child(background)
-
-	_configure_background_rect()
-
-func _configure_background_rect():
+func _configure_background_rect() -> void:
 	"""Make the background fit the viewport."""
-	if not background or not (background is Control):
+	if background_manager == null:
 		return
-	# In screen space (CanvasLayer), use viewport size and anchor to fill screen
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	background.position = Vector2.ZERO
-	# Use set_deferred to avoid anchor warning
-	background.set_deferred("size", get_viewport().get_visible_rect().size)
+	if background_manager.has_method("configure_background_rect"):
+		background_manager.call("configure_background_rect", background, get_viewport())
 
 
 func load_level(level_id: int):
@@ -520,58 +474,10 @@ func _on_power_up_collected(type):
 	# Track statistic
 	SaveManager.increment_stat("total_power_ups_collected")
 
-	# Apply power-up effect based on type
-	match type:
-		0:  # EXPAND
-			var paddle_target = paddle if is_instance_valid(paddle) else null
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.EXPAND, paddle_target)
-		1:  # CONTRACT
-			var paddle_target = paddle if is_instance_valid(paddle) else null
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.CONTRACT, paddle_target)
-		2:  # SPEED_UP
-			var ball_target = ball if is_instance_valid(ball) else null
-			if ball_target and ball_target.has_method("apply_speed_up_effect"):
-				ball_target.apply_speed_up_effect()
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SPEED_UP, ball_target)
-		4:  # BIG_BALL
-			var ball_target = ball if is_instance_valid(ball) else null
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BIG_BALL, ball_target)
-		5:  # SMALL_BALL
-			var ball_target = ball if is_instance_valid(ball) else null
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SMALL_BALL, ball_target)
-		3:  # TRIPLE_BALL
-			# Defer spawning to avoid physics query conflict during collision callback
-			call_deferred("spawn_additional_balls_with_retry", 3)  # Try up to 3 times
-			# TRIPLE_BALL doesn't have a timer, so we don't add it to PowerUpManager
-		6:  # SLOW_DOWN
-			var ball_target = ball if is_instance_valid(ball) else null
-			if ball_target and ball_target.has_method("apply_slow_down_effect"):
-				ball_target.apply_slow_down_effect()
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SLOW_DOWN, ball_target)
-		7:  # EXTRA_LIFE
-			if game_manager:
-				game_manager.add_life()
-		8:  # GRAB
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.GRAB, null)
-		9:  # BRICK_THROUGH
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BRICK_THROUGH, null)
-		10:  # DOUBLE_SCORE
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.DOUBLE_SCORE, null)
-		11:  # MYSTERY
-			# Apply a random power-up effect (excluding mystery itself)
-			var random_types = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15]
-			var random_type = random_types[randi() % random_types.size()]
-			_on_power_up_collected(random_type)
-		12:  # BOMB_BALL
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BOMB_BALL, null)
-		13:  # AIR_BALL
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.AIR_BALL, null)
-		14:  # MAGNET
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.MAGNET, null)
-		15:  # BLOCK
-			var duration = PowerUpManager.EFFECT_DURATIONS.get(PowerUpManager.PowerUpType.BLOCK, BLOCK_DEFAULT_DURATION)
-			call_deferred("_spawn_block_barrier", duration)
-			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.BLOCK, null)
+	if power_up_handler == null:
+		power_up_handler = POWER_UP_HANDLER_SCRIPT.new()
+	if power_up_handler and power_up_handler.has_method("apply_collected_power_up"):
+		power_up_handler.call("apply_collected_power_up", self, int(type))
 
 func spawn_additional_balls_with_retry(retries_remaining: int = 3):
 	"""Try to spawn additional balls, retrying if ball is in a bad position"""

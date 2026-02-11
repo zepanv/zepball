@@ -125,6 +125,20 @@ Initial Tier 1 optimization pass has started and landed in core gameplay scripts
 - Tier 1 completion cleanup:
   - `main.gd`: `main_controller` group registration moved to `_enter_tree()` for earlier availability to child scripts.
   - `ball.gd`/`brick.gd`: cached `main_controller` references now back bomb/landing brick-list access without repeated group lookup churn.
+- Tier 3 architecture cleanup:
+  - `audio_manager.gd`: toast UI creation moved into dedicated `scripts/ui/audio_toast.gd`; AudioManager now delegates toast rendering instead of building UI controls inline.
+- Tier 3 idle-processing closeout:
+  - `power_up.gd`: physics processing is now state-driven and auto-disables when movement is inactive (terminal game state or zero-speed), with throttled manager retry while unresolved.
+- Tier 4 landing-query optimization:
+  - `ball.gd`: air-ball landing now resolves blocked slots primarily from cached unbreakable-row candidates, avoiding repeated per-candidate physics `intersect_shape()` calls on the common path.
+- Tier 3 modularization progress:
+  - `main.gd`: extracted background setup/viewport-fit logic into `scripts/main_background_manager.gd`; main controller now delegates to this helper.
+- Tier 3 modularization continuation:
+  - `main.gd`: extracted collected power-up effect dispatch into `scripts/main_power_up_handler.gd`; main now delegates effect application logic to helper methods.
+- Ball script cleanup:
+  - `ball.gd`: removed unused legacy launch-direction-indicator path (`create_direction_indicator` / `update_direction_indicator`) now that aim-indicator flow is canonical.
+- Tier 3 ball modularization:
+  - `ball.gd`: extracted air-ball landing helpers/cache/query scaffolding into `scripts/ball_air_ball_helper.gd`; ball script now delegates landing data/slot checks.
 
 Full audit of the codebase for performance issues, code quality, Godot best practices, and architectural debt. Issues are organized by priority tier with concrete file:line references.
 
@@ -254,51 +268,54 @@ Current inconsistency:
 
 ### 3.1 Split Oversized Files
 
+Status: 🟡 In Progress (2026-02-11)
+
 | File | Lines | Proposed Split |
 |------|-------|---------------|
-| `scripts/ball.gd` | 972 | Extract: AimIndicator, AirBallLogic, StuckDetection into separate scripts or helper classes |
-| `scripts/save_manager.gd` | 865 | Extract: SettingsManager, AchievementsManager, StatisticsManager. Keep SaveDataManager for persistence core. |
-| `scripts/hud.gd` | 843 | Extract: PauseMenu, DebugOverlay, LevelIntro, ComboDisplay, PowerUpTimers into child scene scripts |
-| `scripts/main.gd` | 749 | Extract: BackgroundManager, PowerUpHandler. Keep Main as orchestrator. |
-| `scripts/audio_manager.gd` | 609 | Extract: ToastUI (lines 568-597) into separate node |
+| 🟡 `scripts/ball.gd` | 977 | Air-ball helper extracted to `scripts/ball_air_ball_helper.gd`; AimIndicator and stuck-detection extraction still pending |
+| `scripts/save_manager.gd` | 849 | Extract: SettingsManager, AchievementsManager, StatisticsManager. Keep SaveDataManager for persistence core. |
+| `scripts/hud.gd` | 959 | Extract: PauseMenu, DebugOverlay, LevelIntro, ComboDisplay, PowerUpTimers into child scene scripts |
+| ✅ `scripts/main.gd` | 629 | Background + power-up-effect dispatch extracted to `scripts/main_background_manager.gd` and `scripts/main_power_up_handler.gd` |
+| ✅ `scripts/audio_manager.gd` | 600 | Toast UI extracted to `scripts/ui/audio_toast.gd` helper node |
 
 ### 3.2 Unify Power-Up State
 
-Remove state duplication between Ball per-instance flags and PowerUpManager.active_effects dictionary.
+Status: ✅ Completed (2026-02-11)
 
-- Ball currently has: `grab_enabled`, `brick_through_enabled`, `bomb_ball_enabled`, `air_ball_enabled`, `magnet_enabled`
-- PowerUpManager has: `active_effects` dict with timers
+- Ball runtime behavior now queries `PowerUpManager` for effect activity (`is_grab_active`, `is_brick_through_active`, `is_bomb_ball_active`, `is_air_ball_active`, `is_magnet_active`) instead of maintaining duplicate state booleans.
+- `enable_*` / `reset_*` methods remain as compatibility hooks for manager-driven apply/reset paths, but no longer act as separate sources of truth.
 
-**Approach:** Ball queries `PowerUpManager.is_effect_active(effect_type)` instead of maintaining its own flags. PowerUpManager remains the single source of truth.
+PowerUpManager is the canonical source of timed effect truth.
 
 ### 3.3 Extract Toast UI from AudioManager
 
-`audio_manager.gd:568-597` (`_init_toast_ui()`) creates a CanvasLayer with Label for track change notifications. This UI concern is mixed into the audio system.
+Status: ✅ Completed (2026-02-11)
 
-**Fix:** Move to a standalone ToastNotification node/autoload, or integrate into HUD.
+- Added `scripts/ui/audio_toast.gd` to own toast UI node creation and fade behavior.
+- `scripts/audio_manager.gd` now instantiates this helper and delegates toast display through `show_toast()`.
+- Result: Audio playback logic and transient UI concerns are now separated.
 
 ### 3.4 Disable Processing When Idle
 
-Status: 🟡 Partially Completed (2026-02-11)
+Status: ✅ Completed (2026-02-11)
 
 Completed:
 - `power_up_manager.gd`: processing toggles on/off based on whether `active_effects` is empty.
 - `ball.gd`: only main ball receives `_unhandled_input` processing; extra balls skip input handling.
 - `power_up.gd`: physics processing disables when game reaches LEVEL_COMPLETE/GAME_OVER.
+- `power_up.gd`: movement processing now also disables automatically when movement is inactive (e.g., zero speed), instead of continuing per-frame updates.
 - `hud.gd`: `_process` now disables in idle gameplay (not paused, no debug/FPS overlay, no active power-up indicators).
 - `audio_manager.gd`: `_process` now disables unless loop-all/shuffle track-boundary monitoring is needed.
 - `camera_shake.gd`: `_process` now enables only while shake is active.
 
 | File | Issue |
 |------|-------|
-| `scripts/power_up.gd` | `_physics_process()` runs every frame even after power-up stops moving |
+| ✅ `scripts/power_up.gd` | `_physics_process()` now toggles off when movement is inactive; state changes and manager retry logic re-enable only when needed |
 | ✅ `scripts/paddle.gd` | `_physics_process()` now early-returns outside READY/PLAYING and skips input/velocity work in non-gameplay states |
 | ✅ `scripts/hud.gd` | `_process()` now toggles via `_refresh_processing_state()` and is disabled during idle gameplay |
 | ✅ `scripts/audio_manager.gd` | `_process()` now runs only while music crossfade timing needs monitoring |
 | ✅ `scripts/camera_shake.gd` | `_process()` now runs only while shake is active |
 | ✅ `scripts/ball.gd` | unhandled input now enabled only for main ball |
-
-**Fix:** Use `set_physics_process(false)` / `set_process(false)` when the node is idle. Re-enable on relevant state changes.
 
 ---
 
@@ -306,11 +323,13 @@ Completed:
 
 ### 4.1 Variable Naming
 
-- `ball.gd:8`: `BASE_current_speed` mixes constant and variable naming conventions. Should be `BASE_SPEED` (constant) or `base_speed` (variable).
+Status: ✅ Completed (2026-02-11)
+
+- `ball.gd` now uses `BASE_SPEED` for the base-speed constant naming convention.
 
 ### 4.2 Error Handling Gaps
 
-Status: 🟡 Partially Completed (2026-02-11)
+Status: ✅ Completed (2026-02-11)
 
 Completed:
 - `audio_manager.gd`: SFX/music stream loads now validate and warn on missing assets.
@@ -333,15 +352,12 @@ Status: ✅ Completed (2026-02-11)
 
 ### 4.4 Physics Query Optimization
 
-Status: 🟡 Partially Completed (2026-02-11)
+Status: ✅ Completed (2026-02-11)
 
 Completed:
 - `ball.gd` air-ball landing now reuses shape/query objects rather than allocating new query objects every landing.
 - `ball.gd` combines level center/step lookup into a single level-data read per air-ball jump.
-
-`ball.gd:736-776` (`_resolve_air_ball_landing()`) creates `PhysicsShapeQueryParameters2D` and runs `intersect_shape()` up to 16 times per air ball landing to find a safe position. Results are not reused between iterations.
-
-**Fix:** Run a single broader query and filter results, or cache the query parameters object.
+- `ball.gd` now uses cached unbreakable-row slot checks for candidate landing positions, with the physics query loop retained only as fallback when row cache data is unavailable.
 
 ---
 

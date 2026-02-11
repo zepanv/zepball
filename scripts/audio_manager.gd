@@ -10,8 +10,6 @@ const SFX_PLAYER_COUNT = 6
 const VOLUME_STEP_DB = 2.0
 const VOLUME_MIN_DB = -40.0
 const VOLUME_MAX_DB = 0.0
-const TOAST_SHOW_SECONDS = 0.9
-const TOAST_FADE_SECONDS = 0.4
 const SFX_BASE_VOLUME_DB = 0.0
 const SFX_HIT_REDUCED_DB = -6.0  # 50% volume ≈ -6 dB
 const HIT_SFX_BUS = "HitSFX"
@@ -20,6 +18,7 @@ const MUSIC_MODE_OFF = "off"
 const MUSIC_MODE_LOOP_ONE = "loop_one"
 const MUSIC_MODE_LOOP_ALL = "loop_all"
 const MUSIC_MODE_SHUFFLE = "shuffle"
+const AUDIO_TOAST_SCRIPT: GDScript = preload("res://scripts/ui/audio_toast.gd")
 
 var music_mode: String = MUSIC_MODE_LOOP_ALL
 var music_track_id: String = ""
@@ -34,10 +33,7 @@ var paused_position: float = 0.0
 var music_players: Array = []
 var sfx_players: Array = []
 var sfx_streams: Dictionary = {}
-var toast_layer: CanvasLayer = null
-var toast_container: PanelContainer = null
-var toast_label: Label = null
-var toast_tween: Tween = null
+var toast_ui: Node = null
 
 # Signals
 signal music_volume_changed(new_volume_db: float)
@@ -593,43 +589,12 @@ func _save_selected_track(track_index: int) -> void:
 	SaveManager.save_music_track_id(music_tracks[track_index]["id"])
 
 func _init_toast_ui() -> void:
-	toast_layer = CanvasLayer.new()
-	toast_layer.layer = 100
-	add_child(toast_layer)
-
-	toast_container = PanelContainer.new()
-	toast_container.modulate = Color(1.0, 1.0, 1.0, 0.0)
-	toast_container.anchor_left = 0.5
-	toast_container.anchor_right = 0.5
-	toast_container.anchor_top = 0.0
-	toast_container.anchor_bottom = 0.0
-	toast_container.offset_left = -220.0
-	toast_container.offset_right = 220.0
-	toast_container.offset_top = 18.0
-	toast_container.offset_bottom = 58.0
-	toast_layer.add_child(toast_container)
-
-	toast_label = Label.new()
-	toast_label.anchor_left = 0.0
-	toast_label.anchor_top = 0.0
-	toast_label.anchor_right = 1.0
-	toast_label.anchor_bottom = 1.0
-	toast_label.offset_left = 8.0
-	toast_label.offset_right = -8.0
-	toast_label.offset_top = 4.0
-	toast_label.offset_bottom = -4.0
-	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	toast_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	toast_container.add_child(toast_label)
+	var toast_instance = AUDIO_TOAST_SCRIPT.new()
+	if toast_instance is Node:
+		toast_ui = toast_instance
+		add_child(toast_ui)
 
 func _show_toast(text: String) -> void:
-	if toast_container == null or toast_label == null:
+	if toast_ui == null or not toast_ui.has_method("show_toast"):
 		return
-	toast_label.text = text
-	toast_container.modulate = Color(1.0, 1.0, 1.0, 1.0)
-	if toast_tween != null and toast_tween.is_running():
-		toast_tween.kill()
-	toast_tween = create_tween()
-	toast_tween.tween_interval(TOAST_SHOW_SECONDS)
-	toast_tween.tween_property(toast_container, "modulate:a", 0.0, TOAST_FADE_SECONDS)
+	toast_ui.call("show_toast", text)

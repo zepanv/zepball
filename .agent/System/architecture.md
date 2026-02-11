@@ -25,8 +25,11 @@ zepball/
 │       └── settings.tscn      # Game settings configuration
 ├── scripts/
 │   ├── main.gd                # Main gameplay controller
+│   ├── main_background_manager.gd # Background setup + viewport-fit helper for main scene
+│   ├── main_power_up_handler.gd # Power-up effect dispatch helper for main scene
 │   ├── game_manager.gd        # Game state and scoring (scene node in main.tscn)
 │   ├── ball.gd                # Ball physics and collision
+│   ├── ball_air_ball_helper.gd # Air-ball landing/cache helper for ball runtime
 │   ├── paddle.gd              # Paddle movement and input
 │   ├── brick.gd               # Brick types and breaking logic
 │   ├── power_up.gd            # Power-up movement and collection
@@ -46,7 +49,8 @@ zepball/
 │       ├── level_complete.gd  # Level complete screen logic
 │       ├── set_complete.gd    # Set complete screen logic
 │       ├── stats.gd           # Statistics display
-│       └── settings.gd        # Settings screen logic
+│       ├── settings.gd        # Settings screen logic
+│       └── audio_toast.gd     # Transient toast UI helper for audio hotkeys
 ├── levels/                    # Level definitions (JSON)
 │   ├── level_01.json through level_20.json
 ├── data/
@@ -124,7 +128,8 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Spawns and manages power-ups with 20% drop chance
 - Manages multi-ball behavior from TRIPLE_BALL power-up
 - Restores set-mode state between levels (score/lives/combo/streak)
-- Loads random background image at startup with dimming
+- Delegates random background selection/CanvasLayer setup to `main_background_manager.gd`
+- Delegates collected power-up effect dispatch to `main_power_up_handler.gd`
 - Triggers camera shake on brick breaks (intensity scales with combo)
 
 **Key Methods**:
@@ -208,6 +213,8 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Stuck detection: Monitors movement over 2 seconds, applies escape boost if needed
 - Trail particles: Cyan (normal), Yellow (speed up), Blue (slow down)
 - Trail toggling based on settings
+- Air-ball landing uses cached unbreakable-row slot checks first, with physics-query fallback only when cached row data is unavailable
+- Air-ball landing cache/query helpers are delegated to `ball_air_ball_helper.gd` to keep core ball runtime logic focused
 
 **Power-Up Effects**:
 - `apply_speed_up_effect()` - 500 → 650 speed (12s)
@@ -283,6 +290,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Triple ball spawns inherit active ball size multiplier
 - Emits `effect_applied(type)` and `effect_expired(type)` signals
 - Powers HUD timer display in top-right corner
+- `power_up.gd` movement processing auto-disables when inactive (terminal game state or zero-speed) to avoid idle per-frame physics work
 
 ### 7. Set System (`scripts/set_loader.gd` + set UI)
 **Purpose**: Curated multi-level runs with cumulative scoring.
@@ -649,6 +657,7 @@ Final score × 2
 - **Export-safe music discovery**: uses `ResourceLoader.list_directory()` with a DirAccess fallback to populate the track list in exported builds; prefers `.ogg` when multiple formats exist
 - **Settings**: Music/SFX volume sliders apply immediately via AudioServer; music mode + loop-one track selection in Settings menu
 - **Hotkeys**: Volume +/- , previous/next track, and pause toggle show a toast confirmation
+- **Toast UI separation**: `AudioManager` delegates toast rendering to `scripts/ui/audio_toast.gd` (CanvasLayer helper) to keep audio logic/UI concerns decoupled
 
 ## Data Persistence
 

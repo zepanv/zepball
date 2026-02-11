@@ -47,6 +47,7 @@ const BOUNDARY_BOTTOM_ERROR_LABEL = "BOTTOM (ERROR!)"
 const TRAIL_SMALL = preload("res://assets/graphics/particles/particleSmallStar.png")
 const TRAIL_MEDIUM = preload("res://assets/graphics/particles/particleStar.png")
 const TRAIL_LARGE = preload("res://assets/graphics/particles/particleCartoonStar.png")
+const AIR_BALL_HELPER_SCRIPT = preload("res://scripts/ball_air_ball_helper.gd")
 const TRAIL_COLOR_NORMAL = Color(0.3, 0.6, 0.95, 0.7)
 const TRAIL_COLOR_FAST = Color(1.0, 0.8, 0.2, 0.7)
 const TRAIL_COLOR_SLOW = Color(0.2, 0.6, 1.0, 0.7)
@@ -60,7 +61,6 @@ var is_attached_to_paddle = true
 var paddle_reference: Node2D = null
 var game_manager: Node = null
 var is_main_ball: bool = true  # Identifies the original ball in the scene
-var direction_indicator: Line2D = null  # Visual launch direction indicator
 var paddle_offset: Vector2 = Vector2(-30, 0)  # Offset from paddle when attached/grabbed
 var grab_immunity_timer: float = 0.0  # Prevents immediate re-grab after launch
 var block_pass_timer: float = 0.0  # Allow pass-through behind block right after launch
@@ -84,11 +84,7 @@ var was_mouse_captured: bool = false
 var last_collision_normal: Vector2 = Vector2.ZERO
 var last_collision_collider = null
 var last_collision_age: float = 0.0
-var air_landing_shape: CircleShape2D = null
-var air_landing_query: PhysicsShapeQueryParameters2D = null
-var cached_air_ball_level_id: int = -1
-var cached_air_ball_center_x: float = AIR_BALL_FALLBACK_CENTER_X
-var cached_air_ball_step_x: float = BASE_RADIUS * 2.0 + AIR_BALL_STEP_FALLBACK_PADDING
+var air_ball_helper: RefCounted = null
 var main_controller_ref: Node = null
 var bomb_visual_active: bool = false
 var frame_grab_active: bool = false
@@ -133,8 +129,6 @@ func _ready():
 	virtual_mouse_pos = viewport_ref.get_mouse_position()
 	set_process_unhandled_input(is_main_ball)
 
-	# Direction indicator disabled for now
-	# create_direction_indicator()
 	if collision_shape_node and collision_shape_node.shape is CircleShape2D:
 		ball_radius = collision_shape_node.shape.radius
 	if visual_node:
@@ -240,10 +234,6 @@ func launch_ball():
 	# Add small random position offset to prevent stacked balls from colliding
 	# This helps when multiple balls are grabbed at the same spot
 	position += Vector2(randf_range(-3.0, 3.0), randf_range(-3.0, 3.0))
-
-	# Hide direction indicator
-	if direction_indicator:
-		direction_indicator.visible = false
 
 	if not launched_with_aim:
 		# Check if paddle is moving
@@ -421,10 +411,6 @@ func reset_ball():
 	# Disable trail effect
 	if trail_node:
 		trail_node.emitting = false
-
-	# Show direction indicator again
-	if direction_indicator:
-		direction_indicator.visible = true
 
 func apply_speed_up_effect():
 	"""Increase ball speed to 650 for 12 seconds"""
@@ -722,17 +708,20 @@ func _jump_to_level_center_x(hit_y: float):
 	position = Vector2(center_x, hit_y) + velocity.normalized() * AIR_BALL_LANDING_OFFSET
 	_resolve_air_ball_landing(center_x, hit_y, step_x)
 
+func _get_air_ball_helper() -> RefCounted:
+	if air_ball_helper == null:
+		air_ball_helper = AIR_BALL_HELPER_SCRIPT.new()
+	return air_ball_helper
+
 func _get_air_ball_landing_data() -> Dictionary:
 	var center_x = _get_fallback_center_x()
 	var step_x = ball_radius * 2.0 + AIR_BALL_STEP_FALLBACK_PADDING
+	var helper = _get_air_ball_helper()
 
 	if game_manager:
 		var level_id: int = game_manager.current_level
-		if level_id == cached_air_ball_level_id:
-			return {
-				"center_x": cached_air_ball_center_x,
-				"step_x": cached_air_ball_step_x
-			}
+		if helper and helper.has_method("is_cached_level") and helper.call("is_cached_level", level_id):
+			return helper.call("get_landing_data", level_id, center_x, step_x)
 
 		var level_data = LevelLoader.load_level_data(level_id)
 		if not level_data.is_empty():
@@ -753,9 +742,8 @@ func _get_air_ball_landing_data() -> Dictionary:
 				center_x = float(start_x) + ((min_col + max_col) / 2.0) * step_x
 			else:
 				center_x = float(start_x)
-			cached_air_ball_level_id = level_id
-			cached_air_ball_center_x = center_x
-			cached_air_ball_step_x = step_x
+			if helper and helper.has_method("cache_landing_data"):
+				helper.call("cache_landing_data", level_id, center_x, step_x)
 
 	return {
 		"center_x": center_x,
@@ -767,17 +755,51 @@ func _get_fallback_center_x() -> float:
 		return viewport_ref.get_visible_rect().size.x * 0.5
 	return AIR_BALL_FALLBACK_CENTER_X
 
-func _ensure_air_landing_query() -> void:
-	if air_landing_shape == null:
-		air_landing_shape = CircleShape2D.new()
-	if air_landing_query == null:
-		air_landing_query = PhysicsShapeQueryParameters2D.new()
-		air_landing_query.collide_with_areas = false
-		air_landing_query.collide_with_bodies = true
-		air_landing_query.exclude = [self]
-	air_landing_query.shape = air_landing_shape
-
 func _resolve_air_ball_landing(center_x: float, hit_y: float, step_x: float) -> void:
+	var base_pos = Vector2(center_x, hit_y)
+	var helper = _get_air_ball_helper()
+	if helper == null:
+		return
+
+	var unbreakable_row = helper.call(
+		"get_unbreakable_bricks_near_y",
+		hit_y,
+		ball_radius,
+		AIR_BALL_UNBREAKABLE_HALF_SIZE,
+		AIR_BALL_ROW_MARGIN,
+		_get_cached_level_bricks(),
+		BRICK_TYPE_UNBREAKABLE
+	)
+	if not unbreakable_row.is_empty():
+		if not helper.call(
+			"is_unbreakable_slot_blocked",
+			base_pos,
+			unbreakable_row,
+			ball_radius,
+			AIR_BALL_UNBREAKABLE_HALF_SIZE,
+			AIR_BALL_ROW_MARGIN
+		):
+			return
+		for i in range(1, AIR_BALL_SEARCH_MAX_STEPS + 1):
+			for dir in [-1, 1]:
+				var test_pos = base_pos + Vector2(step_x * float(i) * float(dir), 0.0)
+				if helper.call(
+					"is_unbreakable_slot_blocked",
+					test_pos,
+					unbreakable_row,
+					ball_radius,
+					AIR_BALL_UNBREAKABLE_HALF_SIZE,
+					AIR_BALL_ROW_MARGIN
+				):
+					continue
+				position = test_pos + velocity.normalized() * AIR_BALL_LANDING_OFFSET
+				return
+
+		# Last resort: nudge upward away from the blocked slot.
+		position = base_pos + Vector2(0.0, -ball_radius * 2.0)
+		return
+
+	# Fallback when cached row data is unavailable.
 	var world = get_world_2d()
 	if world == null:
 		return
@@ -785,75 +807,41 @@ func _resolve_air_ball_landing(center_x: float, hit_y: float, step_x: float) -> 
 	if space == null:
 		return
 
-	_ensure_air_landing_query()
-	air_landing_shape.radius = ball_radius
-	air_landing_query.collision_mask = collision_mask
-
-	var base_pos = Vector2(center_x, hit_y)
-	air_landing_query.transform = Transform2D(0, base_pos)
-	if not _is_unbreakable_overlap(space, air_landing_query):
+	var air_landing_query: PhysicsShapeQueryParameters2D = helper.call(
+		"ensure_landing_query",
+		self,
+		ball_radius,
+		collision_mask
+	)
+	if air_landing_query == null:
 		return
 
-	var unbreakable_row = _get_unbreakable_bricks_near_y(hit_y)
-	if not unbreakable_row.is_empty():
-		for i in range(1, AIR_BALL_SEARCH_MAX_STEPS + 1):
-			for dir in [-1, 1]:
-				var test_pos = base_pos + Vector2(step_x * float(i) * float(dir), 0.0)
-				if _is_unbreakable_slot_blocked(test_pos, unbreakable_row):
-					continue
-				# Confirm with one physics query to preserve current landing behavior.
-				air_landing_query.transform = Transform2D(0, test_pos)
-				if not _is_unbreakable_overlap(space, air_landing_query):
-					position = test_pos + velocity.normalized() * AIR_BALL_LANDING_OFFSET
-					return
-	else:
-		# Fallback when cached row data is unavailable.
-		for i in range(1, AIR_BALL_SEARCH_MAX_STEPS + 1):
-			for dir in [-1, 1]:
-				var test_pos = base_pos + Vector2(step_x * float(i) * float(dir), 0.0)
-				air_landing_query.transform = Transform2D(0, test_pos)
-				if not _is_unbreakable_overlap(space, air_landing_query):
-					position = test_pos + velocity.normalized() * AIR_BALL_LANDING_OFFSET
-					return
+	air_landing_query.transform = Transform2D(0, base_pos)
+	if not helper.call(
+		"is_unbreakable_overlap",
+		space,
+		air_landing_query,
+		AIR_BALL_QUERY_MAX_RESULTS,
+		BRICK_TYPE_UNBREAKABLE
+	):
+		return
 
-	# Last resort: nudge upward away from the slot.
+	for i in range(1, AIR_BALL_SEARCH_MAX_STEPS + 1):
+		for dir in [-1, 1]:
+			var test_pos = base_pos + Vector2(step_x * float(i) * float(dir), 0.0)
+			air_landing_query.transform = Transform2D(0, test_pos)
+			if not helper.call(
+				"is_unbreakable_overlap",
+				space,
+				air_landing_query,
+				AIR_BALL_QUERY_MAX_RESULTS,
+				BRICK_TYPE_UNBREAKABLE
+			):
+				position = test_pos + velocity.normalized() * AIR_BALL_LANDING_OFFSET
+				return
+
+	# Last resort: nudge upward away from the blocked slot.
 	position = base_pos + Vector2(0.0, -ball_radius * 2.0)
-
-func _is_unbreakable_overlap(space: PhysicsDirectSpaceState2D, query: PhysicsShapeQueryParameters2D) -> bool:
-	var results = space.intersect_shape(query, AIR_BALL_QUERY_MAX_RESULTS)
-	for hit in results:
-		var collider = hit.get("collider")
-		if collider and collider.is_in_group("brick") and "brick_type" in collider:
-			if collider.brick_type == BRICK_TYPE_UNBREAKABLE:
-				return true
-	return false
-
-func _get_unbreakable_bricks_near_y(hit_y: float) -> Array[Node]:
-	var row_candidates: Array[Node] = []
-	var vertical_limit = AIR_BALL_UNBREAKABLE_HALF_SIZE + ball_radius + AIR_BALL_ROW_MARGIN
-	for brick in _get_cached_level_bricks():
-		if not is_instance_valid(brick):
-			continue
-		if not ("brick_type" in brick):
-			continue
-		if brick.brick_type != BRICK_TYPE_UNBREAKABLE:
-			continue
-		if abs(brick.global_position.y - hit_y) <= vertical_limit:
-			row_candidates.append(brick)
-	return row_candidates
-
-func _is_unbreakable_slot_blocked(candidate_pos: Vector2, unbreakable_bricks: Array[Node]) -> bool:
-	var horizontal_limit = AIR_BALL_UNBREAKABLE_HALF_SIZE + ball_radius
-	var vertical_limit = AIR_BALL_UNBREAKABLE_HALF_SIZE + ball_radius + AIR_BALL_ROW_MARGIN
-	for brick in unbreakable_bricks:
-		if not is_instance_valid(brick):
-			continue
-		var brick_pos = brick.global_position
-		if abs(candidate_pos.y - brick_pos.y) > vertical_limit:
-			continue
-		if abs(candidate_pos.x - brick_pos.x) <= horizontal_limit:
-			return true
-	return false
 
 func _get_cached_level_bricks() -> Array[Node]:
 	if (main_controller_ref == null or not is_instance_valid(main_controller_ref)):
@@ -987,68 +975,3 @@ func check_if_stuck(delta: float):
 
 	# IMPORTANT: Always update last_position for next frame comparison
 	last_position = position
-
-func create_direction_indicator():
-	"""Create a visual indicator showing launch direction"""
-	# Only create indicator for the main ball, not extra balls from power-ups
-	if not is_main_ball:
-		return
-
-	direction_indicator = Line2D.new()
-	direction_indicator.width = 3.0
-	direction_indicator.default_color = Color(0, 0.9, 1, 0.6)  # Cyan with transparency
-	direction_indicator.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	direction_indicator.end_cap_mode = Line2D.LINE_CAP_ROUND
-
-	# Arrow head points
-	var arrow_length = 80.0
-	var arrow_width = 15.0
-	direction_indicator.add_point(Vector2(0, 0))  # Start at ball center
-	direction_indicator.add_point(Vector2(-arrow_length, 0))  # Main line
-	direction_indicator.add_point(Vector2(-arrow_length + arrow_width, -arrow_width))  # Arrow head top
-	direction_indicator.add_point(Vector2(-arrow_length, 0))  # Back to tip
-	direction_indicator.add_point(Vector2(-arrow_length + arrow_width, arrow_width))  # Arrow head bottom
-
-	add_child(direction_indicator)
-	direction_indicator.visible = true
-
-func update_direction_indicator():
-	"""Update direction indicator based on paddle movement - shows correct spin physics"""
-	if not direction_indicator or not is_attached_to_paddle:
-		return
-
-	# Calculate launch direction with CORRECTED spin physics
-	var paddle_velocity_y = 0.0
-	if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
-		paddle_velocity_y = paddle_reference.get_velocity_for_spin()
-
-	# Calculate preview direction with inverted spin (correct physics)
-	# When paddle moves DOWN (+Y), ball should curve UP (-Y) and vice versa
-	var launch_velocity: Vector2
-	if abs(paddle_velocity_y) > 50:  # Paddle is moving
-		# Launch with spin - INVERTED for correct physics
-		var angle_rad = deg_to_rad(INITIAL_ANGLE)
-		launch_velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
-		# INVERT paddle spin influence for correct physics (down = curve up)
-		launch_velocity.y -= paddle_velocity_y * SPIN_FACTOR  # Note: MINUS instead of PLUS
-		launch_velocity = launch_velocity.normalized() * current_speed
-	else:
-		# Launch straight left (no vertical component)
-		launch_velocity = Vector2(-current_speed, 0)
-
-	# Normalize to get direction
-	var launch_direction = launch_velocity.normalized()
-
-	# Update indicator points
-	var arrow_length = 80.0
-	var arrow_width = 15.0
-	var end_point = launch_direction * arrow_length
-
-	# Perpendicular vector for arrow head
-	var perpendicular = Vector2(-launch_direction.y, launch_direction.x) * arrow_width
-
-	direction_indicator.set_point_position(0, Vector2.ZERO)
-	direction_indicator.set_point_position(1, end_point)
-	direction_indicator.set_point_position(2, end_point + perpendicular * 0.5 - launch_direction * arrow_width)
-	direction_indicator.set_point_position(3, end_point)
-	direction_indicator.set_point_position(4, end_point - perpendicular * 0.5 - launch_direction * arrow_width)

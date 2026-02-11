@@ -183,6 +183,13 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 - ✅ **Section 1.4/2.1 Closeout**: `ball.gd` magnet/out-of-bounds paths reduce per-frame temp work, `paddle.gd` uses conditional bounds clamp, and `brick.gd` power-up spawn default now uses a named constant
 - ✅ **Tier 1 Finalization**: Completed remaining section 1 items by finishing node/group cache cleanup, including cached `main_controller` refs in `ball.gd`/`brick.gd` and earlier group registration in `main.gd`
 - ✅ **Section 2 Finalization**: Completed remaining section 2 items by removing duplicated ball effect-state truth (PowerUpManager is now canonical) and documenting the event/command/query convention in system architecture
+- ✅ **Audio Toast Extraction**: Moved audio hotkey/status toast UI from `audio_manager.gd` into dedicated `scripts/ui/audio_toast.gd` helper and left AudioManager as a playback-focused system
+- ✅ **Power-Up Idle Gating**: `power_up.gd` now toggles physics processing based on active movement/state, avoiding unnecessary idle `_physics_process` work
+- ✅ **Air-Ball Query Reduction**: `ball.gd` now resolves most air-ball landing slots from cached unbreakable-row candidates, using physics shape queries only as fallback
+- ✅ **Main Background Split**: Background setup/viewport-fit responsibilities moved from `main.gd` into new `scripts/main_background_manager.gd` helper
+- ✅ **Main Power-Up Handler Split**: Collected power-up effect dispatch moved from `main.gd` into new `scripts/main_power_up_handler.gd` helper
+- ✅ **Ball Legacy Cleanup**: Removed unused legacy launch-direction indicator path from `ball.gd` (aim-indicator flow remains canonical)
+- ✅ **Ball Air-Ball Helper Split**: Air-ball landing cache/query helper logic moved from `ball.gd` into `scripts/ball_air_ball_helper.gd`
 - ✅ **Task Tracking**: `Tasks/Backlog/optimization-pass.md` moved to in-progress with concrete completed items
 
 ### 2026-01-31 - Documentation Refresh
@@ -305,6 +312,9 @@ zepball/
 │   └── ui/                    # Menu screens (8 screens)
 ├── scripts/                   # All game logic (GDScript)
 │   ├── main.gd                # Main gameplay controller
+│   ├── main_background_manager.gd # Gameplay background helper
+│   ├── main_power_up_handler.gd # Gameplay power-up effect helper
+│   ├── ball_air_ball_helper.gd # Air-ball runtime helper
 │   ├── [autoload singletons]  # 7 global systems
 │   ├── [gameplay scripts]     # Ball, paddle, brick, power-up, camera shake, hud
 │   └── ui/                    # Menu screen scripts
