@@ -17,11 +17,6 @@ const BOTTOM_WALL_Y = 700.0
 const HIGH_SPIN_THRESHOLD = 250.0
 const HIGH_SPIN_TRAIL_DURATION = 0.35
 const FAST_SPEED_MULTIPLIER = 1.15
-const AIM_MIN_ANGLE = 120.0
-const AIM_MAX_ANGLE = 240.0
-const AIM_LENGTH = 140.0
-const AIM_HEAD_LENGTH = 18.0
-const AIM_HEAD_ANGLE = 25.0
 const BRICK_TYPE_UNBREAKABLE = 2
 const RIGHT_BOUNDARY_X = 1300.0
 const LEFT_BOUNDARY_X = 0.0
@@ -48,6 +43,8 @@ const TRAIL_SMALL = preload("res://assets/graphics/particles/particleSmallStar.p
 const TRAIL_MEDIUM = preload("res://assets/graphics/particles/particleStar.png")
 const TRAIL_LARGE = preload("res://assets/graphics/particles/particleCartoonStar.png")
 const AIR_BALL_HELPER_SCRIPT = preload("res://scripts/ball_air_ball_helper.gd")
+const AIM_HELPER_SCRIPT = preload("res://scripts/ball_aim_indicator_helper.gd")
+const STUCK_HELPER_SCRIPT = preload("res://scripts/ball_stuck_detection_helper.gd")
 const TRAIL_COLOR_NORMAL = Color(0.3, 0.6, 0.95, 0.7)
 const TRAIL_COLOR_FAST = Color(1.0, 0.8, 0.2, 0.7)
 const TRAIL_COLOR_SLOW = Color(0.2, 0.6, 1.0, 0.7)
@@ -65,26 +62,12 @@ var paddle_offset: Vector2 = Vector2(-30, 0)  # Offset from paddle when attached
 var grab_immunity_timer: float = 0.0  # Prevents immediate re-grab after launch
 var block_pass_timer: float = 0.0  # Allow pass-through behind block right after launch
 
-# Stuck detection
-var stuck_check_timer: float = 0.0
-var last_position: Vector2 = Vector2.ZERO
-var stuck_threshold: float = 2.0  # seconds
-var movement_threshold: float = 30.0  # pixels
 var ball_radius: float = BASE_RADIUS
 var last_physics_delta: float = 0.0
 var spin_trail_timer: float = 0.0
-var aim_available: bool = false
-var aim_active: bool = false
-var aim_direction: Vector2 = Vector2(-1, 0)
-var aim_indicator_root: Node2D = null
-var aim_shaft: Line2D = null
-var aim_head: Line2D = null
-var virtual_mouse_pos: Vector2 = Vector2.ZERO
-var was_mouse_captured: bool = false
-var last_collision_normal: Vector2 = Vector2.ZERO
-var last_collision_collider = null
-var last_collision_age: float = 0.0
 var air_ball_helper: RefCounted = null
+var aim_helper: RefCounted = null
+var stuck_helper: RefCounted = null
 var main_controller_ref: Node = null
 var bomb_visual_active: bool = false
 var frame_grab_active: bool = false
@@ -124,9 +107,11 @@ func _ready():
 		trail_node.texture = TRAIL_SMALL
 		trail_node.color = TRAIL_COLOR_NORMAL
 
-	aim_available = is_main_ball
-	_create_aim_indicator()
-	virtual_mouse_pos = viewport_ref.get_mouse_position()
+	aim_helper = AIM_HELPER_SCRIPT.new()
+	aim_helper.aim_available = is_main_ball
+	aim_helper.create_indicator(self)
+	aim_helper.virtual_mouse_pos = viewport_ref.get_mouse_position()
+	stuck_helper = STUCK_HELPER_SCRIPT.new()
 	set_process_unhandled_input(is_main_ball)
 
 	if collision_shape_node and collision_shape_node.shape is CircleShape2D:
@@ -161,8 +146,8 @@ func _physics_process(delta):
 		# Ball follows paddle until launched, maintaining the attachment offset
 		if paddle_reference:
 			position = paddle_reference.position + paddle_offset
-		if aim_active:
-			_update_aim_direction()
+		if aim_helper.aim_active:
+			aim_helper.update_direction(self, viewport_ref)
 
 		# Launch on input
 		# Allow launch in READY state, or anytime ball is attached during PLAYING (includes grabbed balls)
@@ -178,8 +163,7 @@ func _physics_process(delta):
 		if Input.is_action_just_pressed("launch_ball") and can_launch:
 			launch_ball()
 	else:
-		if last_collision_collider != null:
-			last_collision_age += delta
+		stuck_helper.tick_collision_age(delta)
 		# Ball is in motion
 		# Apply magnet pull toward paddle (curve trajectory, keep speed)
 		if frame_magnet_active:
@@ -199,7 +183,7 @@ func _physics_process(delta):
 				handle_collision(collision)
 
 		# Check if ball is stuck (not moving much for too long)
-		check_if_stuck(delta)
+		stuck_helper.check(self, delta, current_speed, ball_radius, is_attached_to_paddle)
 
 		# Check if ball went out of bounds
 		_handle_out_of_bounds()
@@ -221,9 +205,9 @@ func launch_ball():
 	"""
 	is_attached_to_paddle = false
 	var launched_with_aim = false
-	if aim_active:
-		var aim_dir = aim_direction.normalized()
-		_set_aim_mode(false)
+	if aim_helper.aim_active:
+		var aim_dir = aim_helper.aim_direction.normalized()
+		aim_helper.set_mode(false, paddle_reference)
 		velocity = aim_dir * current_speed
 		launched_with_aim = true
 
@@ -272,7 +256,7 @@ func launch_ball():
 	if game_manager:
 		game_manager.start_playing()
 
-	aim_available = false
+	aim_helper.aim_available = false
 
 func handle_collision(collision: KinematicCollision2D):
 	"""Handle ball collision with walls, paddle, or bricks"""
@@ -396,17 +380,13 @@ func handle_collision(collision: KinematicCollision2D):
 		velocity = velocity.bounce(normal)
 
 	if collider != null:
-		last_collision_normal = normal
-		last_collision_collider = collider
-		last_collision_age = 0.0
+		stuck_helper.record_collision(normal, collider)
 
 func reset_ball():
 	"""Reset ball to paddle after losing a life"""
 	is_attached_to_paddle = true
 	velocity = Vector2.ZERO
-	aim_available = is_main_ball
-	_set_aim_mode(false)
-	aim_direction = Vector2.LEFT
+	aim_helper.reset(is_main_ball)
 
 	# Disable trail effect
 	if trail_node:
@@ -473,106 +453,15 @@ func _get_trail_color() -> Color:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_main_ball:
 		return
-	if event is InputEventMouseMotion:
-		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED and aim_active:
-			virtual_mouse_pos += event.relative
-			var viewport_size = viewport_ref.get_visible_rect().size
-			virtual_mouse_pos.x = clampf(virtual_mouse_pos.x, 0.0, viewport_size.x)
-			virtual_mouse_pos.y = clampf(virtual_mouse_pos.y, 0.0, viewport_size.y)
-	if event.is_action_pressed("ui_cancel") and aim_active:
-		_set_aim_mode(false)
-		return
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
-		if event.pressed:
-			if _can_use_aim():
-				_set_aim_mode(true)
-		else:
-			if aim_active:
-				_set_aim_mode(false)
-				aim_direction = Vector2.LEFT
+	aim_helper.handle_input(event, self, viewport_ref)
 
 func set_is_main_ball(value: bool) -> void:
 	is_main_ball = value
 	set_process_unhandled_input(value)
 	if not value:
-		aim_available = false
-		_set_aim_mode(false)
+		aim_helper.aim_available = false
+		aim_helper.set_mode(false, paddle_reference)
 
-func _can_use_aim() -> bool:
-	if not aim_available:
-		return false
-	if not is_attached_to_paddle:
-		return false
-	if game_manager == null:
-		return false
-	return game_manager.game_state == game_manager.GameState.READY
-
-func _set_aim_mode(enabled: bool) -> void:
-	if aim_active == enabled:
-		return
-	aim_active = enabled
-	if paddle_reference and paddle_reference.has_method("set_aim_lock"):
-		paddle_reference.set_aim_lock(enabled)
-	if aim_indicator_root:
-		aim_indicator_root.visible = enabled
-	if enabled:
-		_update_aim_direction()
-
-func _create_aim_indicator() -> void:
-	if aim_indicator_root != null:
-		return
-	aim_indicator_root = Node2D.new()
-	aim_indicator_root.name = "AimIndicator"
-	add_child(aim_indicator_root)
-	aim_indicator_root.visible = false
-
-	aim_shaft = Line2D.new()
-	aim_shaft.width = 4.0
-	aim_shaft.default_color = Color(0.9, 0.9, 1.0, 0.9)
-	aim_shaft.points = [Vector2.ZERO, Vector2.LEFT * AIM_LENGTH]
-	aim_indicator_root.add_child(aim_shaft)
-
-	aim_head = Line2D.new()
-	aim_head.width = 4.0
-	aim_head.default_color = Color(0.9, 0.9, 1.0, 0.9)
-	aim_head.points = [Vector2.LEFT * AIM_LENGTH, Vector2.LEFT * (AIM_LENGTH - AIM_HEAD_LENGTH), Vector2.LEFT * AIM_LENGTH]
-	aim_indicator_root.add_child(aim_head)
-
-func _update_aim_direction() -> void:
-	if aim_indicator_root == null:
-		return
-	if paddle_reference:
-		aim_indicator_root.global_position = global_position
-	var mouse_captured = Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED
-	if mouse_captured != was_mouse_captured:
-		if not mouse_captured:
-			virtual_mouse_pos = viewport_ref.get_mouse_position()
-		was_mouse_captured = mouse_captured
-	var mouse_pos = virtual_mouse_pos if mouse_captured else viewport_ref.get_mouse_position()
-	if not mouse_captured:
-		virtual_mouse_pos = mouse_pos
-	var global_dir = (mouse_pos - global_position)
-	global_dir.x = -abs(global_dir.x) - 6.0
-	if global_dir.length() < 1.0:
-		global_dir = Vector2.LEFT
-	var angle = rad_to_deg(atan2(global_dir.y, global_dir.x))
-	if angle < 0:
-		angle += 360.0
-	angle = clamp(angle, AIM_MIN_ANGLE, AIM_MAX_ANGLE)
-	var angle_rad = deg_to_rad(angle)
-	aim_direction = Vector2(cos(angle_rad), sin(angle_rad)).normalized()
-
-	var end_point = aim_direction * AIM_LENGTH
-	if aim_shaft:
-		aim_shaft.set_point_position(0, Vector2.ZERO)
-		aim_shaft.set_point_position(1, end_point)
-	if aim_head:
-		var back_dir = -aim_direction
-		var head_left = end_point + back_dir.rotated(deg_to_rad(AIM_HEAD_ANGLE)) * AIM_HEAD_LENGTH
-		var head_right = end_point + back_dir.rotated(deg_to_rad(-AIM_HEAD_ANGLE)) * AIM_HEAD_LENGTH
-		aim_head.set_point_position(0, head_left)
-		aim_head.set_point_position(1, end_point)
-		aim_head.set_point_position(2, head_right)
 
 func enable_grab():
 	"""Compatibility hook: grab state is sourced from PowerUpManager."""
@@ -929,49 +818,3 @@ func enable_collision_immunity(_duration: float = 0.5):
 	# This function kept for compatibility but does nothing
 	pass
 
-func check_if_stuck(delta: float):
-	"""Detect if ball is stuck and give it a boost to escape"""
-	# Skip check if attached to paddle
-	if is_attached_to_paddle:
-		stuck_check_timer = 0.0
-		last_position = position
-		return
-
-	# Use per-frame threshold (ball should move at least speed*delta pixels per frame)
-	# At 500 speed and 60fps, that's ~8.3 pixels per frame minimum
-	var expected_movement = current_speed * delta * 0.5  # 50% of expected (account for bouncing)
-	var distance_moved_sq = position.distance_squared_to(last_position)
-	var expected_movement_sq = expected_movement * expected_movement
-
-	if distance_moved_sq < expected_movement_sq:
-		# Ball hasn't moved much - increment timer
-		stuck_check_timer += delta
-
-		if stuck_check_timer >= stuck_threshold:
-			# Ball is stuck! Give it a boost to escape
-			push_warning("Ball appears stuck at %s - applying escape boost" % str(position))
-
-			var used_collision_escape = false
-			if last_collision_collider != null and is_instance_valid(last_collision_collider):
-				if last_collision_collider.is_in_group("brick") and "brick_type" in last_collision_collider:
-					if last_collision_collider.brick_type == BRICK_TYPE_UNBREAKABLE and last_collision_age <= 0.75:
-						# Push away from the unbreakable face and add a deflection
-						var escape_normal = last_collision_normal if last_collision_normal != Vector2.ZERO else Vector2.LEFT
-						position += escape_normal * (ball_radius * 1.2)
-						velocity = velocity.bounce(escape_normal).rotated(deg_to_rad(randf_range(-18.0, 18.0)))
-						used_collision_escape = true
-
-			if not used_collision_escape:
-				# Random escape direction (prefer left and down/up to avoid paddle)
-				var escape_angle = randf_range(135.0, 225.0)  # Left hemisphere
-				var angle_rad = deg_to_rad(escape_angle)
-				velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
-
-			# Reset timer
-			stuck_check_timer = 0.0
-	else:
-		# Ball is moving normally - reset timer
-		stuck_check_timer = 0.0
-
-	# IMPORTANT: Always update last_position for next frame comparison
-	last_position = position

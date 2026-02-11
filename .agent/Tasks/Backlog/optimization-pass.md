@@ -1,6 +1,6 @@
 # Optimization Pass & Best Practices
 
-## Status: IN PROGRESS
+## Status: COMPLETED
 
 ## Progress Update (2026-02-11)
 
@@ -139,6 +139,10 @@ Initial Tier 1 optimization pass has started and landed in core gameplay scripts
   - `ball.gd`: removed unused legacy launch-direction-indicator path (`create_direction_indicator` / `update_direction_indicator`) now that aim-indicator flow is canonical.
 - Tier 3 ball modularization:
   - `ball.gd`: extracted air-ball landing helpers/cache/query scaffolding into `scripts/ball_air_ball_helper.gd`; ball script now delegates landing data/slot checks.
+- Tier 3.1 file splits completed:
+  - `ball.gd` (977 → 820): extracted `scripts/ball_aim_indicator_helper.gd` (aim indicator subsystem) and `scripts/ball_stuck_detection_helper.gd` (stuck detection).
+  - `hud.gd` (960 → 354): extracted `scripts/hud_pause_menu_helper.gd`, `scripts/hud_debug_overlay_helper.gd`, `scripts/hud_level_intro_helper.gd`, `scripts/hud_power_up_timers_helper.gd`.
+  - `save_manager.gd` (850 → 483): facade pattern with `scripts/save_settings_helper.gd`, `scripts/save_achievements_helper.gd`, `scripts/save_statistics_helper.gd`.
 
 Full audit of the codebase for performance issues, code quality, Godot best practices, and architectural debt. Issues are organized by priority tier with concrete file:line references.
 
@@ -268,15 +272,130 @@ Current inconsistency:
 
 ### 3.1 Split Oversized Files
 
-Status: 🟡 In Progress (2026-02-11)
+Status: ✅ Completed (2026-02-11)
 
-| File | Lines | Proposed Split |
-|------|-------|---------------|
-| 🟡 `scripts/ball.gd` | 977 | Air-ball helper extracted to `scripts/ball_air_ball_helper.gd`; AimIndicator and stuck-detection extraction still pending |
-| `scripts/save_manager.gd` | 849 | Extract: SettingsManager, AchievementsManager, StatisticsManager. Keep SaveDataManager for persistence core. |
-| `scripts/hud.gd` | 959 | Extract: PauseMenu, DebugOverlay, LevelIntro, ComboDisplay, PowerUpTimers into child scene scripts |
+| File | Lines | Result |
+|------|-------|--------|
+| ✅ `scripts/ball.gd` | 977 → 820 | Air-ball helper + aim indicator + stuck detection extracted to `scripts/ball_air_ball_helper.gd`, `scripts/ball_aim_indicator_helper.gd`, `scripts/ball_stuck_detection_helper.gd` |
+| ✅ `scripts/save_manager.gd` | 850 → 483 | Facade pattern: `scripts/save_settings_helper.gd`, `scripts/save_achievements_helper.gd`, `scripts/save_statistics_helper.gd` |
+| ✅ `scripts/hud.gd` | 960 → 354 | `scripts/hud_pause_menu_helper.gd`, `scripts/hud_debug_overlay_helper.gd`, `scripts/hud_level_intro_helper.gd`, `scripts/hud_power_up_timers_helper.gd` |
 | ✅ `scripts/main.gd` | 629 | Background + power-up-effect dispatch extracted to `scripts/main_background_manager.gd` and `scripts/main_power_up_handler.gd` |
 | ✅ `scripts/audio_manager.gd` | 600 | Toast UI extracted to `scripts/ui/audio_toast.gd` helper node |
+
+#### Extraction Pattern
+
+All helpers follow the established project convention: `extends RefCounted` with `class_name`, preloaded as `const` scripts, instantiated lazily, using direct method calls with the parent/controller passed as a parameter. See `main_power_up_handler.gd` and `main_background_manager.gd` for the canonical pattern.
+
+---
+
+#### 3.1a ball.gd Extractions (Low Risk, ~977 → ~840 lines)
+
+**`scripts/ball_aim_indicator_helper.gd`** (~120 lines, `class_name BallAimIndicatorHelper`)
+
+Extracts the aim indicator subsystem. The helper receives the ball node for tree/viewport operations.
+
+| What | Details |
+|------|---------|
+| Constants | `AIM_MIN_ANGLE`, `AIM_MAX_ANGLE`, `AIM_LENGTH`, `AIM_HEAD_LENGTH`, `AIM_HEAD_ANGLE` |
+| State | `aim_available`, `aim_active`, `aim_direction`, `aim_indicator_root`, `aim_shaft`, `aim_head`, `virtual_mouse_pos`, `was_mouse_captured` |
+| Methods | `create_indicator(ball)`, `update_direction(ball, viewport)`, `set_mode(enabled, paddle)`, `can_use(is_attached, game_manager)`, `handle_input(event, ball, viewport)`, `reset(is_main_ball)` |
+| ball.gd delegates from | `_ready()`, `_unhandled_input()`, `_physics_process()`, `launch_ball()`, `reset_ball()`, `set_is_main_ball()` |
+
+**`scripts/ball_stuck_detection_helper.gd`** (~65 lines, `class_name BallStuckDetectionHelper`)
+
+Extracts stuck detection logic. Self-contained state tracking with the ball node passed for position/velocity reads.
+
+| What | Details |
+|------|---------|
+| State | `stuck_check_timer`, `last_position`, `stuck_threshold`, `last_collision_normal`, `last_collision_collider`, `last_collision_age` |
+| Methods | `check(ball, delta, current_speed, ball_radius, is_attached)`, `record_collision(normal, collider)`, `tick_collision_age(delta)` |
+| ball.gd delegates from | `_physics_process()` (tick + check), `handle_collision()` (record) |
+
+**Verification:** Launch ball normally, with aim (right-click), and in multiball. Let ball get stuck in unbreakable corner and confirm escape after ~2s. Confirm ball_lost signal fires on ball loss.
+
+---
+
+#### 3.1b hud.gd Extractions (Low Risk, ~959 → ~450 lines)
+
+Four subsystems extracted. Combo (~50 lines) and Multiplier (~60 lines) stay inline — too small and too coupled to shared signals to justify separate files.
+
+**`scripts/hud_pause_menu_helper.gd`** (~215 lines, `class_name HudPauseMenuHelper`)
+
+| What | Details |
+|------|---------|
+| State | `pause_menu`, `settings_overlay`, `level_select_confirm`, `pause_level_info_label`, `pause_score_info_label`, `pause_lives_info_label` |
+| Methods | `create(hud)`, `update_info(game_manager)`, `on_resume(game_manager)`, `on_restart(game_manager)`, `on_main_menu(game_manager)`, `on_level_select()`, `on_confirm_level_select(game_manager)`, `on_settings(hud)`, `on_settings_closed()` |
+| hud.gd delegates from | `_ready()`, `_on_game_state_changed()`, `_process()`, `apply_settings_from_save()` |
+
+**`scripts/hud_debug_overlay_helper.gd`** (~135 lines, `class_name HudDebugOverlayHelper`)
+
+| What | Details |
+|------|---------|
+| State | `debug_overlay`, `debug_visible`, 5 debug labels, refresh timer/interval, cached ball arrays, 7 last-value tracking vars, `debug_key_handled` |
+| Methods | `create()`, `update(delta, game_manager)`, `toggle_visibility()`, `is_active()` |
+| hud.gd delegates from | `_ready()`, `_process()` (key toggle + update call), `_refresh_processing_state()`, `apply_settings_from_save()` |
+
+**`scripts/hud_level_intro_helper.gd`** (~90 lines, `class_name HudLevelIntroHelper`)
+
+| What | Details |
+|------|---------|
+| State | `level_intro`, `level_intro_num_label`, `level_intro_name_label`, `level_intro_desc_label`, `short_level_intro`, `skip_level_intro` |
+| Methods | `create()`, `show(hud, level_id, level_name, level_description)`, `apply_settings(short, skip)` |
+| hud.gd delegates from | `_ready()`, `show_level_intro()`, `apply_settings_from_save()` |
+
+**`scripts/hud_power_up_timers_helper.gd`** (~130 lines, `class_name HudPowerUpTimersHelper`)
+
+| What | Details |
+|------|---------|
+| State | `powerup_indicators`, `powerup_timer_refresh_time`, `POWERUP_TIMER_REFRESH_INTERVAL` |
+| Methods | `on_effect_applied(type, container)`, `on_effect_expired(type, container)`, `create_indicator(type)`, `update_timer_labels()`, `has_active_indicators()` |
+| hud.gd delegates from | `_ready()` (signal connections), `_process()` (timer refresh), `_refresh_processing_state()` |
+
+**Verification:** Score/lives display, pause menu buttons (resume, restart, settings, level select, main menu), power-up timer indicators, debug overlay toggle (backtick), FPS display, level intro animation, combo label + screen flash.
+
+---
+
+#### 3.1c save_manager.gd Extractions (Medium Risk, ~849 → ~365 lines)
+
+**Facade pattern:** SaveManager remains the single autoload. All 18 files / 113+ call sites referencing `SaveManager.method()` continue to work unchanged. Sub-managers are internal RefCounted helpers; SaveManager keeps all public methods as thin one-line wrappers that delegate.
+
+Sub-managers receive `save_data` dictionary reference + `save_to_disk` callable on init. Signals remain on SaveManager (helpers return data, SaveManager emits).
+
+**`scripts/save_settings_helper.gd`** (~300 lines, `class_name SaveSettingsHelper`)
+
+| What | Details |
+|------|---------|
+| Constants | `DEFAULT_SETTINGS`, `REBIND_ACTIONS` |
+| State | `default_keybindings` |
+| Methods | ~30 functions: all get/save for audio (volume, playback mode, track), gameplay (difficulty, shake, particles, trail, combo flash, intro, FPS, sensitivity), keybindings (capture, save, apply, reset, serialize/deserialize), `reset_settings_to_default()` |
+| Data | Operates on `save_data["settings"]` |
+
+**`scripts/save_achievements_helper.gd`** (~110 lines, `class_name SaveAchievementsHelper`)
+
+| What | Details |
+|------|---------|
+| Constants | `ACHIEVEMENTS` dictionary (~70 lines of definitions) |
+| Methods | `check_achievements(get_stat_callable)`, `unlock_achievement(id)`, `is_achievement_unlocked(id)`, `get_unlocked_achievements()`, `get_achievement_progress(id, get_stat_callable)` |
+| Data | Operates on `save_data["achievements"]` |
+| Dependencies | Receives `get_stat` callable from SaveManager for condition checking |
+
+**`scripts/save_statistics_helper.gd`** (~45 lines, `class_name SaveStatisticsHelper`)
+
+| What | Details |
+|------|---------|
+| Methods | `increment_stat(name, amount)`, `get_stat(name)`, `update_stat_if_higher(name, value)`, `get_all_statistics()` |
+| Data | Operates on `save_data["statistics"]` |
+
+**SaveManager core retains (~365 lines):**
+- File I/O: `load_save()`, `save_to_disk()`, `create_default_save()` + migration logic
+- Progression: level unlock/complete/high-score functions
+- Set system: set high-score/complete/unlock functions
+- Last played tracking
+- Reset operations: `reset_save_data()`, `reset_progress_data()`
+- Facade wrappers (~60 lines of one-liner delegations)
+- Preload consts, helper instantiation, signals
+
+**Verification:** Settings round-trip (change every setting, reopen, verify). Stats increment during gameplay. Achievement unlock signal fires. Level progression + high scores persist. Save/load cycle with fresh save file. Reset settings vs reset progress.
 
 ### 3.2 Unify Power-Up State
 
