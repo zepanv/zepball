@@ -27,11 +27,11 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/keybinding-menu.md` - Keybinding menu and input map persistence ✅ IMPLEMENTED
   - `Tasks/Completed/settings-enhancements.md` - Settings QoL expansions ✅ IMPLEMENTED
   - `Tasks/Completed/quick-actions.md` - Menu/gameplay convenience actions ✅ IMPLEMENTED
+  - `Tasks/Completed/optimization-pass.md` - Performance and architecture optimization audit ✅ IMPLEMENTED
+  - `Tasks/Completed/ui-gaps.md` - Launch indicator (aim mode) ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
-  - **`Tasks/Backlog/future-features.md`** - Planned features for future development (Time Attack, Survival, settings enhancements, advanced gameplay, advanced tile elements)
-  - **`Tasks/Backlog/level-overhaul.md`** - Level system overhaul: shareable `.zeppack` pack format, in-game level editor, enhanced level select UX, third content set
-  - **`Tasks/Backlog/optimization-pass.md`** - Full optimization and best practices audit: debug prints, cached references, magic numbers, type annotations, file splits, architecture cleanup
-- `Tasks/Completed/ui-gaps.md` - Launch indicator (aim mode) ✅ IMPLEMENTED
+  - **`Tasks/Backlog/future-features.md`** - Planned gameplay features (Time Attack, Survival, skip options, advanced gameplay, advanced tile elements)
+  - **`Tasks/Backlog/level-overhaul.md`** - Level system overhaul: shareable `.zeppack` pack format, in-game level editor, pack select + enhanced level select UX, third content set
 
 ### SOP/
 Best practices and workflows for development.
@@ -148,14 +148,15 @@ These are always accessible and control key game systems:
 - SFX: paddle hit, brick hit, wall hit, power-up good/bad, life lost, combo milestone, level complete, game over
 
 ### 📅 Phase 8: Advanced Features (FUTURE)
-See `Tasks/Backlog/future-features.md` for detailed plans:
+See `Tasks/Backlog/future-features.md` and `Tasks/Backlog/level-overhaul.md` for detailed plans:
 - Game Modes: Time Attack, Survival, Iron Ball, One Life
-- QoL: Enhanced level select with star ratings, quick actions, skip options
+- QoL: Skip options and mode-specific UX polish
+- Level System: Pack format migration, in-game editor, pack select, enhanced level select, third built-in pack
 - Advanced Gameplay: Ball speed zones, brick chains, paddle abilities
 
 ## Recent Update History
 
-### 2026-02-11 (Latest) - Optimization Pass Started
+### 2026-02-11 (Latest) - Optimization Pass Completed
 - ✅ **Achievement Unlock Warning Fix**: Renamed local variable in `save_manager.gd` unlock flow to avoid shadowing `Node.name` (`SHADOWED_VARIABLE_BASE_CLASS`)
 - ✅ **Triple-Ball Spawn Crash Fix**: Hardened `ball.gd` `set_is_main_ball()` to initialize/guard aim helper when called pre-`_ready`, preventing null `aim_available` assignment during extra-ball spawn
 - ✅ **Performance Logging Cleanup**: Removed `print()` calls from core gameplay hot paths (`ball`, `main`, `brick`, `game_manager`, `power_up_manager`, `hud`, loaders)
@@ -192,7 +193,7 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 - ✅ **Main Power-Up Handler Split**: Collected power-up effect dispatch moved from `main.gd` into new `scripts/main_power_up_handler.gd` helper
 - ✅ **Ball Legacy Cleanup**: Removed unused legacy launch-direction indicator path from `ball.gd` (aim-indicator flow remains canonical)
 - ✅ **Ball Air-Ball Helper Split**: Air-ball landing cache/query helper logic moved from `ball.gd` into `scripts/ball_air_ball_helper.gd`
-- ✅ **Task Tracking**: `Tasks/Backlog/optimization-pass.md` moved to in-progress with concrete completed items
+- ✅ **Task Tracking**: `Tasks/Completed/optimization-pass.md` finalized and moved out of backlog
 
 ### 2026-01-31 - Documentation Refresh
 - ✅ **System Docs**: Updated architecture + tech stack (keybindings, audio, debug notes)

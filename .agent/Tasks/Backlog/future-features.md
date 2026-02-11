@@ -61,23 +61,13 @@ These are features that have been designed but not yet implemented (or are only 
 
 ## Quality of Life Improvements
 
+### Level System Overhaul
+- **Status**: Tracked in `Tasks/Backlog/level-overhaul.md`
+- **Scope moved**: Pack format (`.zeppack`), in-game level editor, pack select rework, enhanced level select (thumbnails/stars/filter/sort), and third built-in pack.
+
 ### Settings Enhancements
 - **Description**: Add advanced options beyond the current settings screen
 - **Status**: ✅ Completed (see `Tasks/Completed/settings-enhancements.md`)
-
-### Enhanced Level Select
-- **Description**: Better level browsing experience
-- **Features**:
-  - Level preview/thumbnail (procedurally generated from brick layout)
-  - Completion percentage (X/Y bricks)
-  - Star rating system (bronze/silver/gold based on score)
-  - Filter buttons: All/Completed/Locked
-  - Sort options: By level/By score/By completion
-  - "Replay Tutorial" button for level 1
-- **Implementation**:
-  - Enhance level_select.gd
-  - Add preview generation
-  - Add filters and sorting logic
 
 ### Quick Actions
 - **Description**: Convenience features
@@ -140,18 +130,17 @@ These are features that have been designed but not yet implemented (or are only 
 ## Implementation Priority
 
 **High Priority:**
-1. Enhanced Level Select (better UX)
-2. Time Attack Mode (easiest mode to add)
+1. Time Attack Mode (easiest mode to add)
 
 **Medium Priority:**
-3. Survival Mode (good for replayability)
-4. Skip Options (easy wins)
-5. Advanced Tile Elements (force zones + data-driven placement)
+2. Survival Mode (good for replayability)
+3. Skip Options (easy wins)
+4. Advanced Tile Elements (force zones + data-driven placement)
 
 **Low Priority:**
-6. Advanced abilities (complex, can wait)
-7. Brick Chains (nice to have)
-8. Hardcore modes (for skilled players only)
+5. Advanced abilities (complex, can wait)
+6. Brick Chains (nice to have)
+7. Hardcore modes (for skilled players only)
 
 ---
 
@@ -163,7 +152,7 @@ These are features that have been designed but not yet implemented (or are only 
 
 ---
 
-Last Updated: 2026-01-31
+Last Updated: 2026-02-11
 ### Advanced Tile Elements (from tile-advanced backlog)
 - **Description**: Special brick/zone mechanics beyond standard bricks
 - **Features**:
