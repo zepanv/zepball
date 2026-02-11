@@ -156,6 +156,8 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 ## Recent Update History
 
 ### 2026-02-11 (Latest) - Optimization Pass Started
+- ✅ **Achievement Unlock Warning Fix**: Renamed local variable in `save_manager.gd` unlock flow to avoid shadowing `Node.name` (`SHADOWED_VARIABLE_BASE_CLASS`)
+- ✅ **Triple-Ball Spawn Crash Fix**: Hardened `ball.gd` `set_is_main_ball()` to initialize/guard aim helper when called pre-`_ready`, preventing null `aim_available` assignment during extra-ball spawn
 - ✅ **Performance Logging Cleanup**: Removed `print()` calls from core gameplay hot paths (`ball`, `main`, `brick`, `game_manager`, `power_up_manager`, `hud`, loaders)
 - ✅ **Project-Wide Logging Cleanup**: Removed remaining runtime `print()` calls from save/difficulty/UI scripts; moved critical cases to warnings/errors
 - ✅ **Cached Lookups**: HUD/game-manager and power-up/game-manager references cached to avoid repeated per-frame group lookups

@@ -107,8 +107,7 @@ func _ready():
 		trail_node.texture = TRAIL_SMALL
 		trail_node.color = TRAIL_COLOR_NORMAL
 
-	aim_helper = AIM_HELPER_SCRIPT.new()
-	aim_helper.aim_available = is_main_ball
+	_ensure_aim_helper()
 	aim_helper.create_indicator(self)
 	aim_helper.virtual_mouse_pos = viewport_ref.get_mouse_position()
 	stuck_helper = STUCK_HELPER_SCRIPT.new()
@@ -458,9 +457,16 @@ func _unhandled_input(event: InputEvent) -> void:
 func set_is_main_ball(value: bool) -> void:
 	is_main_ball = value
 	set_process_unhandled_input(value)
+	_ensure_aim_helper()
+	aim_helper.aim_available = value
 	if not value:
-		aim_helper.aim_available = false
 		aim_helper.set_mode(false, paddle_reference)
+
+func _ensure_aim_helper() -> void:
+	if aim_helper != null:
+		return
+	aim_helper = AIM_HELPER_SCRIPT.new()
+	aim_helper.aim_available = is_main_ball
 
 
 func enable_grab():
@@ -817,4 +823,3 @@ func enable_collision_immunity(_duration: float = 0.5):
 	# Balls no longer collide with each other at all (mask excludes layer 1)
 	# This function kept for compatibility but does nothing
 	pass
-

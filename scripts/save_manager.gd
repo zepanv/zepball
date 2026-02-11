@@ -470,9 +470,9 @@ func check_achievements() -> void:
 		unlock_achievement(entry["id"])
 
 func unlock_achievement(achievement_id: String) -> void:
-	var name = achievements_helper.unlock(save_data, save_to_disk, achievement_id)
-	if name != "":
-		achievement_unlocked.emit(achievement_id, name)
+	var achievement_name = achievements_helper.unlock(save_data, save_to_disk, achievement_id)
+	if achievement_name != "":
+		achievement_unlocked.emit(achievement_id, achievement_name)
 
 func is_achievement_unlocked(achievement_id: String) -> bool:
 	return achievements_helper.is_unlocked(save_data, achievement_id)
