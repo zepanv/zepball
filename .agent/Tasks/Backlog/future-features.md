@@ -62,20 +62,8 @@ Last Updated: 2026-02-12
 ## Advanced Gameplay Features
 
 ### Advanced Tile Elements
-- **Description**: Special brick/zone mechanics beyond standard bricks
-- **Features**:
-  - Force Arrow (assets/graphics/powerups/unused/arrow_down_right.png) that redirect or repel the ball
-  - Penetrating Spin interaction (ball passes through bricks when spin threshold is met)
-  - Spin should lose momentum as it hits, shown visibly (ball curves/arcs when spinning)
-  - Ball somewhat spins now but mostly only changes the angle it bounces, should be able to arc/curve when hit by fast moving paddle.
-  - Powerups as bricks - can be placed in level editor, collected on hit, ball passes through
-  - Force Arrows should be placeable in editor, option to rotate to direct force.
-  - Data-driven placement for special tiles in level JSON
-- **Implementation**:
-  - Add new scene(s) for force zones
-  - Extend level JSON schema and `scripts/pack_loader.gd`
-  - Update `scripts/ball.gd` to apply force zones and penetrating spin logic
-  - Update `scripts/brick.gd` to support special behaviors
+> **Extracted to dedicated task**: See `Tasks/Backlog/advanced-tile-elements.md` for full PRD and implementation plan.
+> Covers: Force Arrow tiles, Power-up Bricks, Enhanced Spin (dramatic curve), Penetrating Spin.
 
 ### Ball Speed Zones
 - **Description**: Special bricks that affect ball speed temporarily
@@ -120,7 +108,7 @@ Last Updated: 2026-02-12
 ## Implementation Priority
 
 **High Priority:**
-1. Advanced Tile Elements (adds depth to gameplay)
+1. Advanced Tile Elements → see `Tasks/Backlog/advanced-tile-elements.md`
 2. Time Attack Mode (easy to add, good replayability)
 
 **Medium Priority:**

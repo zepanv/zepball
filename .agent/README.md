@@ -41,7 +41,8 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/level-overhaul.md` - Pack-format migration, in-game editor, pack/level UX overhaul, third built-in pack ✅ IMPLEMENTED
   - `Tasks/Completed/skip-options.md` - Input-based intro skip, fast-forward level complete, quick restart ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
-  - **`Tasks/Backlog/future-features.md`** - Planned gameplay features (Time Attack, Survival, advanced gameplay, advanced tile elements)
+  - **`Tasks/Backlog/advanced-tile-elements.md`** - Force Arrows, Power-up Bricks, Enhanced Spin, Penetrating Spin (full PRD + implementation plan)
+  - **`Tasks/Backlog/future-features.md`** - Remaining planned features (Time Attack, Survival, Ball Speed Zones, Brick Chains, Paddle Abilities, hardcore modes)
 
 ### SOP/
 Best practices and workflows for development. **These procedures are mandatory and must be followed for all development work.**

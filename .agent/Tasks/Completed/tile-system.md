@@ -14,11 +14,13 @@ Core brick types and particle effects are implemented. Advanced tile mechanics (
 - Angled collision shapes for diamond/pentagon bricks.
 
 ## Not Implemented (Tracked in Backlog)
-- Force Arrow / Force Field zones that redirect or repel the ball.
-- Penetrating Spin interaction (ball passes through bricks at high spin).
-- Data-driven placement for special tiles in level JSON.
-- Level authoring workflow for special tiles.
+- Force Arrow tiles (directional force fields) - see `Tasks/Backlog/advanced-tile-elements.md`
+- Power-up Bricks (pass-through power-up collection tiles) - see `Tasks/Backlog/advanced-tile-elements.md`
+- Enhanced Spin (persistent spin with dramatic curve) - see `Tasks/Backlog/advanced-tile-elements.md`
+- Penetrating Spin (high spin passes through bricks) - see `Tasks/Backlog/advanced-tile-elements.md`
+- Data-driven placement for special tiles in level JSON (schema v2)
 
 ## Related Docs
+- `Tasks/Backlog/advanced-tile-elements.md`
 - `Tasks/Backlog/future-features.md`
 - `Tasks/Completed/level-system.md`
