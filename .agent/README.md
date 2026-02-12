@@ -4,6 +4,15 @@ This folder contains the canonical documentation for the Zep Ball codebase. All 
 
 ## Documentation Structure
 
+### ⚠️ CRITICAL: Always Follow the SOP
+**The Standard Operating Procedures (SOP) in `SOP/godot-workflow.md` must be followed at all times.** This document contains mandatory workflows, best practices, and critical procedures that ensure consistency, prevent bugs, and maintain documentation accuracy. Key SOP requirements include:
+- **Save System Compatibility** - Always add migration logic when modifying save data
+- **Asset Documentation** - Update `used-assets.md` and `unused-assets.md` when adding/removing assets
+- **Commit Message Format** - Follow the required format for all commits
+- **Testing Checklists** - Complete all checklists before committing
+
+**When in doubt, refer to the SOP. It is the single source of truth for development workflows.**
+
 ### Project README
 High-level, less technical overview for players and general readers.
 - **`../README.md`** - Main project README; keep updated when appropriate.
@@ -35,8 +44,8 @@ PRDs and implementation plans for features (both implemented and future).
   - **`Tasks/Backlog/future-features.md`** - Planned gameplay features (Time Attack, Survival, advanced gameplay, advanced tile elements)
 
 ### SOP/
-Best practices and workflows for development.
-- **`SOP/godot-workflow.md`** - Working with Godot scenes, nodes, signals, and **CRITICAL: Save System Compatibility** section for handling save data migrations.
+Best practices and workflows for development. **These procedures are mandatory and must be followed for all development work.**
+- **`SOP/godot-workflow.md`** - **MANDATORY** workflows including: Godot scenes/nodes/signals, **Asset Documentation** (update docs when adding/removing assets), **CRITICAL: Save System Compatibility** (migration requirements), and commit message formats.
 
 ## Current Game State (2026-02-12)
 
@@ -121,7 +130,7 @@ These are always accessible and control key game systems:
 
 ## Quick Start for New Developers
 1. **Read** `System/architecture.md` - Complete system overview with all features documented
-2. **Check** `SOP/godot-workflow.md` - Development workflows and **save migration best practices**
+2. **Read and Follow** `SOP/godot-workflow.md` - **Mandatory development workflows** including save migration, asset documentation, and commit procedures
 3. **Explore** `Tasks/Backlog/future-features.md` - Planned future development
 4. **Note**: Save system has automatic migration - see SOP for how to add new fields safely
 

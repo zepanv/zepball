@@ -493,6 +493,7 @@ if loaded_data.get("version", 0) < SAVE_VERSION:
 3. Select in FileSystem panel
 4. Check Import panel for settings
 5. Drag to Sprite2D node or set in Texture property
+6. **Update asset documentation** (see below)
 
 ### Import Settings
 - **Filter**: Nearest (pixel art) or Linear (smooth)
@@ -507,6 +508,72 @@ if loaded_data.get("version", 0) < SAVE_VERSION:
 ### Audio Import Settings
 - **Loop**: Enable for music, disable for SFX
 - **Format**: Keep as OGG Vorbis (smaller) or WAV (quality)
+
+### Asset Documentation Requirements
+
+**CRITICAL: Always update asset documentation when adding or removing assets**
+
+When you add a new asset to the project or remove one from use, you **MUST** update the corresponding documentation files. Failure to do this will cause the documentation to become out of sync with the actual asset usage.
+
+#### When to Update Documentation
+
+Update the docs when you:
+- ✅ Add a new graphic asset (sprites, backgrounds, powerups, particles)
+- ✅ Add a new audio asset (SFX, music)
+- ✅ Remove an asset from use (stop referencing it in code)
+- ✅ Change which assets are used (e.g., switching paddle sprite)
+- ✅ Add new powerup types that need icons
+- ✅ Add new brick types with new textures
+
+#### Documentation Files
+
+| File | Purpose | Update When |
+|------|---------|-------------|
+| `.agent/System/used-assets.md` | Lists all actively used assets | Add new assets, update references |
+| `.agent/System/unused-assets.md` | Lists assets not currently in use | Remove assets from use, clean up unused |
+
+#### Update Process
+
+**Adding a New Asset:**
+1. Import the asset into the appropriate `assets/` folder
+2. Reference it in your code/scene
+3. Add entry to `used-assets.md` with:
+   - Asset path and filename
+   - Usage description
+   - Line reference (file:line)
+4. If replacing an existing asset, move old asset to `unused-assets.md`
+
+**Removing an Asset from Use:**
+1. Remove references from code/scenes
+2. Move entry from `used-assets.md` to `unused-assets.md`
+3. Add reason for removal in unused-assets.md
+4. Recommendation: Keep or Delete
+
+**Example - Adding a New Powerup:**
+```
+In used-assets.md:
+| `freeze_time.png` | Freeze time power-up | power_up.gd:50 |
+
+In power_up.gd:
+# Add to texture dictionary
+POWERUP_TEXTURES[PowerUpType.FREEZE_TIME] = preload("res://assets/graphics/powerups/freeze_time.png")
+```
+
+**Example - Removing an Asset:**
+```
+In unused-assets.md:
+| `old_sprite.png` | assets/graphics/ | Removed - Replaced with new_sprite.png |
+```
+
+#### Asset Documentation Checklist
+
+Before committing changes involving assets:
+- [ ] New assets added to `used-assets.md`
+- [ ] Line references updated for code changes
+- [ ] Removed assets moved to `unused-assets.md`
+- [ ] Unused folder assets documented (if applicable)
+- [ ] File paths are correct and relative to project root
+- [ ] Usage descriptions are clear and accurate
 
 ## Building and Exporting
 
