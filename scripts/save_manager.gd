@@ -542,9 +542,6 @@ func is_level_key_unlocked(level_key: String) -> bool:
 	if level_index == 0:
 		return true
 
-	if MenuController.current_set_pack_id == pack_id and level_index == 0:
-		return true
-
 	var entry: Dictionary = save_data.get("pack_progression", {}).get(pack_id, {})
 	var highest_unlocked := int(entry.get("highest_unlocked_level_index", -1))
 	return level_index <= highest_unlocked

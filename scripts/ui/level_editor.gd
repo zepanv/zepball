@@ -20,22 +20,8 @@ const BRICK_TYPE_OPTIONS: Array[String] = [
 	"POLYGON_GLOSSY"
 ]
 
-const BRICK_COLORS: Dictionary = {
-	"NORMAL": Color(0.059, 0.773, 0.627, 1.0),
-	"STRONG": Color(0.914, 0.275, 0.376, 1.0),
-	"UNBREAKABLE": Color(0.5, 0.5, 0.5, 1.0),
-	"GOLD": Color(1.0, 0.843, 0.0, 1.0),
-	"RED": Color(1.0, 0.2, 0.2, 1.0),
-	"BLUE": Color(0.2, 0.4, 1.0, 1.0),
-	"GREEN": Color(0.2, 0.8, 0.2, 1.0),
-	"PURPLE": Color(0.6, 0.2, 0.8, 1.0),
-	"ORANGE": Color(1.0, 0.5, 0.0, 1.0),
-	"BOMB": Color(1.0, 0.3, 0.0, 1.0),
-	"DIAMOND": Color(0.2, 0.4, 1.0, 1.0),
-	"DIAMOND_GLOSSY": Color(0.2, 0.6, 1.0, 1.0),
-	"POLYGON": Color(0.35, 0.7, 1.0, 1.0),
-	"POLYGON_GLOSSY": Color(0.55, 0.8, 1.0, 1.0)
-}
+var BRICK_COLORS: Dictionary:
+	get: return PackLoader.BRICK_PREVIEW_COLOR_MAP
 
 @onready var title_label: Label = $VBoxContainer/HeaderRow/TitleLabel
 @onready var back_button: Button = $VBoxContainer/HeaderRow/BackButton

@@ -162,6 +162,6 @@ Last Updated: 2026-02-11
   - Level authoring workflow for special tiles (tooling TBD)
 - **Implementation**:
   - Add new scene(s) for force zones
-  - Extend level JSON schema and `scripts/level_loader.gd`
+  - Extend level JSON schema and `scripts/pack_loader.gd`
   - Update `scripts/ball.gd` to apply force zones and penetrating spin logic
   - Update `scripts/brick.gd` to support special behaviors

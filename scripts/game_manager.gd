@@ -219,27 +219,9 @@ func complete_level():
 	set_state(GameState.LEVEL_COMPLETE)
 	level_complete.emit()
 
-## Reset game state
-func reset_game():
-	score = 0
-	lives = 3
-	current_level = 1
-	combo = 0
-	no_miss_hits = 0
-	is_perfect_clear = true
-	had_continue = false
-	set_state(GameState.READY)
-	score_changed.emit(score)
-	lives_changed.emit(lives)
-	combo_changed.emit(combo)
-	no_miss_streak_changed.emit(no_miss_hits)
-	_reset_level_breakdown()
-
 ## Start playing (ball launched)
 func start_playing():
 	set_state(GameState.PLAYING)
-	# Reset perfect clear flag for new level attempt
-	is_perfect_clear = true
 
 func check_perfect_clear() -> bool:
 	"""Check if player achieved a perfect clear (all lives intact)"""
