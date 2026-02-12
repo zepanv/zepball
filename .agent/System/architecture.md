@@ -375,7 +375,6 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - Particle effects toggle
    - Ball trail toggle
    - Combo flash toggle
-   - Short level intro toggle
    - Skip level intro toggle
    - Show FPS toggle
    - Paddle sensitivity slider (0.5x - 2.0x)
@@ -454,7 +453,6 @@ This convention is now the default for optimization-pass Section 2.4 and should 
     "particle_effects_enabled": true,
     "ball_trail_enabled": true,
     "combo_flash_enabled": true,
-    "short_level_intro": false,
     "skip_level_intro": false,
     "show_fps": false,
     "paddle_sensitivity": 1.0
@@ -523,9 +521,10 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - **Multiplier Display**: Shows active score bonuses (top-left, below difficulty)
 - **Combo Counter**: "COMBO x12!" (center, visible when combo >= 3)
 - **Power-Up Timers**: Active effects with countdown (top-right)
-- **Launch Aim Indicator**: Right-mouse hold locks paddle and shows a launch arrow for the main ball’s first shot per life
+- **Launch Aim Indicator**: Right-mouse hold locks paddle and shows a launch arrow for the main ball's first shot per life
 - **Pause Menu**: Enhanced pause screen with level info, resume, restart, settings, level select, main menu
-- **Level Intro**: Fade in/out display of level name and description
+- **Level Intro**: Fade in/out display of level name and description (2.0s total: 0.5s fade in + 1.0s hold + 0.5s fade out)
+  - Space/Click during intro skips it immediately
 - **Debug Overlay**: FPS, ball count, velocity, speed, combo (backtick ` key)
 
 **Signal Connections**:
@@ -695,10 +694,9 @@ All settings auto-save and load:
 8. Ball trail (On/Off)
 9. Paddle sensitivity (0.5x - 2.0x)
 10. Combo flash (On/Off)
-11. Short level intro (On/Off)
-12. Skip level intro (On/Off)
-13. Show FPS (On/Off)
-14. Keybindings (input map overrides)
+11. Skip level intro (On/Off)
+12. Show FPS (On/Off)
+13. Keybindings (input map overrides)
 
 ## Complex or Risky Areas
 
@@ -756,7 +754,7 @@ All settings auto-save and load:
 
 ---
 
-**Last Updated**: 2026-02-11
+**Last Updated**: 2026-02-12
 **Godot Version**: 4.6
 **Total Levels**: 30
 **Total Sets**: 3

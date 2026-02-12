@@ -64,7 +64,10 @@ func create_level_intro() -> Control:
 	level_intro = intro
 	return intro
 
-func show(hud: Control, level_id: int, level_name: String, level_description: String, short: bool, skip: bool) -> void:
+var _active_tween: Tween = null
+var _showing: bool = false
+
+func show(hud: Control, level_id: int, level_name: String, level_description: String, skip: bool) -> void:
 	if not level_intro:
 		return
 	if skip:
@@ -79,10 +82,26 @@ func show(hud: Control, level_id: int, level_name: String, level_description: St
 
 	level_intro.modulate.a = 0.0
 	level_intro.visible = true
+	_showing = true
 
-	var tween = hud.create_tween()
-	var hold_duration = 1.0 if short else 2.5
-	tween.tween_property(level_intro, "modulate:a", 1.0, 0.5)
-	tween.tween_interval(hold_duration)
-	tween.tween_property(level_intro, "modulate:a", 0.0, 0.5)
-	tween.tween_callback(func(): level_intro.visible = false)
+	_active_tween = hud.create_tween()
+	_active_tween.tween_property(level_intro, "modulate:a", 1.0, 0.5)
+	_active_tween.tween_interval(1.0)
+	_active_tween.tween_property(level_intro, "modulate:a", 0.0, 0.5)
+	_active_tween.tween_callback(_on_intro_finished)
+
+func skip_intro() -> void:
+	if not _showing:
+		return
+	if _active_tween and _active_tween.is_valid():
+		_active_tween.kill()
+	_on_intro_finished()
+
+func is_showing() -> bool:
+	return _showing
+
+func _on_intro_finished() -> void:
+	_showing = false
+	_active_tween = null
+	if level_intro:
+		level_intro.visible = false

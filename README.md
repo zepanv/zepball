@@ -2,7 +2,7 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Features: 2026-02-11
+## Current Features: 2026-02-12
 
 Highlights:
 
@@ -17,8 +17,10 @@ Highlights:
 - **S / Down Arrow**: Move paddle down
 - **Mouse**: Paddle follows mouse Y position
 - **Space / Left Click**: Launch ball
+- **Space (during intro)**: Skip level intro
+- **Enter (level complete/game over)**: Quick advance/retry
 - **Escape**: Pause/unpause game
-- **R**: Restart current level
+- **R**: Restart current level (also works on game over)
 - **Right Click (hold)**: Aim mode for first shot per life (paddle locks)
 - **- / =**: Music volume down/up
 - **[ / ]**: Previous/next music track
@@ -62,8 +64,8 @@ Highlights:
 - Screen shake intensity
 - Particle effects toggle
 - Ball trail toggle
-- Visual toggles (combo flash, short/skip intro, FPS) default Off
-- Paddle sensitivity
+- Visual toggles (combo flash, skip intro, FPS) default Off
+- Paddle sensitivity (0.5x - 2.0x)
 - Music/SFX volume (applies immediately)
 - Music playback mode (Off / Loop One / Loop All / Shuffle)
 - Music track selection (Loop One)

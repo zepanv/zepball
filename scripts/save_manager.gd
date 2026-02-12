@@ -894,12 +894,6 @@ func save_combo_flash_enabled(enabled: bool) -> void:
 func get_combo_flash_enabled() -> bool:
 	return settings_helper.get_combo_flash_enabled(save_data)
 
-func save_short_level_intro(enabled: bool) -> void:
-	settings_helper.save_short_level_intro(save_data, save_to_disk, enabled)
-
-func get_short_level_intro() -> bool:
-	return settings_helper.get_short_level_intro(save_data)
-
 func save_skip_level_intro(enabled: bool) -> void:
 	settings_helper.save_skip_level_intro(save_data, save_to_disk, enabled)
 

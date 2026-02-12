@@ -20,8 +20,11 @@ extends Control
 @onready var play_again_button = $VBoxContainer/HBoxContainer/ButtonsContainer/PlayAgainButton
 @onready var next_level_button = $VBoxContainer/HBoxContainer/ButtonsContainer/NextLevelButton
 
+var _ready_time: float = 0.0
+
 func _ready():
 	"""Initialize level complete screen"""
+	_ready_time = Time.get_ticks_msec()
 	# Get data from MenuController
 	var final_score = MenuController.get_current_score()
 	var level_ref = MenuController.get_current_level_ref()
@@ -111,6 +114,16 @@ func _ready():
 
 	if legacy_level_id == 0:
 		score_label.text = "Level %d Score: %d" % [level_index + 1, level_score_final]
+
+func _unhandled_input(event: InputEvent) -> void:
+	if Time.get_ticks_msec() - _ready_time < 500:
+		return
+	if event.is_action_pressed("ui_accept"):
+		get_viewport().set_input_as_handled()
+		if not next_level_button.disabled:
+			_on_next_level_button_pressed()
+		else:
+			_on_play_again_button_pressed()
 
 func _on_next_level_button_pressed():
 	"""Continue to next level"""

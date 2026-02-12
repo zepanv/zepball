@@ -124,10 +124,6 @@ layout_mode = 2
 button_pressed = true
 text = "Combo Flash"
 
-[node name="ShortIntroCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
-layout_mode = 2
-text = "Short Level Intro"
-
 [node name="SkipIntroCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
 layout_mode = 2
 text = "Skip Level Intro"

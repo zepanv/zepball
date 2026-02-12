@@ -14,7 +14,6 @@ extends Control
 @onready var particles_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ParticlesCheck
 @onready var trail_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/TrailCheck
 @onready var combo_flash_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ComboFlashCheck
-@onready var short_intro_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ShortIntroCheck
 @onready var skip_intro_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/SkipIntroCheck
 @onready var show_fps_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ShowFpsCheck
 
@@ -68,7 +67,6 @@ func _ready():
 	particles_check.toggled.connect(_on_particles_toggled)
 	trail_check.toggled.connect(_on_trail_toggled)
 	combo_flash_check.toggled.connect(_on_combo_flash_toggled)
-	short_intro_check.toggled.connect(_on_short_intro_toggled)
 	skip_intro_check.toggled.connect(_on_skip_intro_toggled)
 	show_fps_check.toggled.connect(_on_show_fps_toggled)
 
@@ -123,14 +121,7 @@ func _load_current_settings():
 	_update_checkbox_visual(combo_flash_check, combo_flash_check.button_pressed)
 
 	# Level intro options
-	var short_intro_enabled = SaveManager.get_short_level_intro()
-	var skip_intro_enabled = SaveManager.get_skip_level_intro()
-	if short_intro_enabled and skip_intro_enabled:
-		short_intro_enabled = false
-		SaveManager.save_short_level_intro(false)
-	short_intro_check.button_pressed = short_intro_enabled
-	skip_intro_check.button_pressed = skip_intro_enabled
-	_update_checkbox_visual(short_intro_check, short_intro_check.button_pressed)
+	skip_intro_check.button_pressed = SaveManager.get_skip_level_intro()
 	_update_checkbox_visual(skip_intro_check, skip_intro_check.button_pressed)
 
 	# FPS toggle
@@ -188,26 +179,10 @@ func _on_combo_flash_toggled(enabled: bool):
 	_update_checkbox_visual(combo_flash_check, enabled)
 	_apply_live_settings()
 
-func _on_short_intro_toggled(enabled: bool):
-	"""Handle short level intro toggle"""
-	if is_loading_settings:
-		return
-	if enabled and skip_intro_check.button_pressed:
-		skip_intro_check.set_pressed_no_signal(false)
-		SaveManager.save_skip_level_intro(false)
-		_update_checkbox_visual(skip_intro_check, false)
-	SaveManager.save_short_level_intro(enabled)
-	_update_checkbox_visual(short_intro_check, enabled)
-	_apply_live_settings()
-
 func _on_skip_intro_toggled(enabled: bool):
 	"""Handle skip level intro toggle"""
 	if is_loading_settings:
 		return
-	if enabled and short_intro_check.button_pressed:
-		short_intro_check.set_pressed_no_signal(false)
-		SaveManager.save_short_level_intro(false)
-		_update_checkbox_visual(short_intro_check, false)
 	SaveManager.save_skip_level_intro(enabled)
 	_update_checkbox_visual(skip_intro_check, enabled)
 	_apply_live_settings()

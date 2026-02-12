@@ -20,7 +20,6 @@ var combo_label: Label = null
 var multiplier_label: Label = null
 var combo_flash: ColorRect = null
 var combo_flash_enabled: bool = true
-var short_level_intro: bool = false
 var skip_level_intro: bool = false
 var show_fps: bool = false
 var debug_visible: bool = false
@@ -73,7 +72,6 @@ func _ready() -> void:
 
 	# Load HUD-related settings
 	combo_flash_enabled = SaveManager.get_combo_flash_enabled()
-	short_level_intro = SaveManager.get_short_level_intro()
 	skip_level_intro = SaveManager.get_skip_level_intro()
 	show_fps = SaveManager.get_show_fps()
 	debug_visible = show_fps
@@ -86,7 +84,6 @@ func _ready() -> void:
 func apply_settings_from_save() -> void:
 	"""Refresh HUD settings while paused"""
 	combo_flash_enabled = SaveManager.get_combo_flash_enabled()
-	short_level_intro = SaveManager.get_short_level_intro()
 	skip_level_intro = SaveManager.get_skip_level_intro()
 	show_fps = SaveManager.get_show_fps()
 	debug_visible = show_fps
@@ -243,7 +240,12 @@ func _on_effect_expired(type: int) -> void:
 
 func show_level_intro(level_id: int, level_name: String, level_description: String):
 	"""Show level intro with fade in/out animation"""
-	intro_helper.show(self, level_id, level_name, level_description, short_level_intro, skip_level_intro)
+	intro_helper.show(self, level_id, level_name, level_description, skip_level_intro)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if intro_helper and intro_helper.is_showing() and event.is_action_pressed("launch_ball"):
+		intro_helper.skip_intro()
+		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
 	"""Update power-up timer displays and debug overlay"""

@@ -14,7 +14,6 @@ const DEFAULT_SETTINGS = {
 	"ball_trail_enabled": true,
 	"paddle_sensitivity": 1.0,
 	"combo_flash_enabled": false,
-	"short_level_intro": false,
 	"skip_level_intro": false,
 	"show_fps": false,
 	"keybindings": {}
@@ -111,13 +110,6 @@ func save_combo_flash_enabled(save_data: Dictionary, save_to_disk: Callable, ena
 
 func get_combo_flash_enabled(save_data: Dictionary) -> bool:
 	return save_data["settings"].get("combo_flash_enabled", false)
-
-func save_short_level_intro(save_data: Dictionary, save_to_disk: Callable, enabled: bool) -> void:
-	save_data["settings"]["short_level_intro"] = enabled
-	save_to_disk.call()
-
-func get_short_level_intro(save_data: Dictionary) -> bool:
-	return save_data["settings"].get("short_level_intro", false)
 
 func save_skip_level_intro(save_data: Dictionary, save_to_disk: Callable, enabled: bool) -> void:
 	save_data["settings"]["skip_level_intro"] = enabled
@@ -226,9 +218,6 @@ func migrate_settings(save_data: Dictionary, save_to_disk: Callable) -> void:
 		updated = true
 	if not save_data["settings"].has("combo_flash_enabled"):
 		save_data["settings"]["combo_flash_enabled"] = false
-		updated = true
-	if not save_data["settings"].has("short_level_intro"):
-		save_data["settings"]["short_level_intro"] = false
 		updated = true
 	if not save_data["settings"].has("skip_level_intro"):
 		save_data["settings"]["skip_level_intro"] = false

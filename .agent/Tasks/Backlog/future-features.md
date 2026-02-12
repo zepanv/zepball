@@ -1,8 +1,10 @@
 # Future Features - Pending Implementation
 
-## Status: 📋 BACKLOG (Verified Against Code)
+## Status: 📋 BACKLOG
 
-These are features that have been designed but not yet implemented (or are only partially implemented). Notes below reflect what is actually in code as of 2026-01-31.
+Features that have been designed but not yet implemented.
+
+Last Updated: 2026-02-12
 
 ---
 
@@ -57,37 +59,21 @@ These are features that have been designed but not yet implemented (or are only 
   - Disable extra life mechanics
   - Special badge for completing game in One Life mode
 
----
-
-## Quality of Life Improvements
-
-### Level System Overhaul
-- **Status**: Tracked in `Tasks/Backlog/level-overhaul.md`
-- **Scope moved**: Pack format (`.zeppack`), in-game level editor, pack select rework, enhanced level select (thumbnails/stars/filter/sort), and third built-in pack.
-
-### Settings Enhancements
-- **Description**: Add advanced options beyond the current settings screen
-- **Status**: ✅ Completed (see `Tasks/Completed/settings-enhancements.md`)
-
-### Quick Actions
-- **Description**: Convenience features
-- **Status**: ✅ Completed (see `Tasks/Completed/quick-actions.md`)
-
-### Skip Options
-- **Description**: Let players skip animations
-- **Features**:
-  - Skip level intro (Space/Click to skip) ❌
-  - Disable level intros entirely (setting) ✅
-  - Fast forward level complete screen ❌
-  - Quick restart (skip menus) ❌
-- **Implementation**:
-  - Input-based skip for intro (pending)
-  - Fast-forward/skip on level complete screen (pending)
-  - Keyboard shortcuts for quick actions (pending)
-
----
-
 ## Advanced Gameplay Features
+
+### Advanced Tile Elements
+- **Description**: Special brick/zone mechanics beyond standard bricks
+- **Features**:
+  - Force Arrow / Force Field zones that redirect or repel the ball
+  - Penetrating Spin interaction (ball passes through bricks when spin threshold is met)
+  - Spin should lose momentum as it hits, shown visibly (ball curves/arcs when spinning)
+  - Powerups as bricks - can be placed in level editor, collected on hit, ball passes through
+  - Data-driven placement for special tiles in level JSON
+- **Implementation**:
+  - Add new scene(s) for force zones
+  - Extend level JSON schema and `scripts/pack_loader.gd`
+  - Update `scripts/ball.gd` to apply force zones and penetrating spin logic
+  - Update `scripts/brick.gd` to support special behaviors
 
 ### Ball Speed Zones
 - **Description**: Special bricks that affect ball speed temporarily
@@ -127,20 +113,22 @@ These are features that have been designed but not yet implemented (or are only 
 
 ---
 
+---
+
 ## Implementation Priority
 
 **High Priority:**
-1. Time Attack Mode (easiest mode to add)
+1. Advanced Tile Elements (adds depth to gameplay)
+2. Time Attack Mode (easy to add, good replayability)
 
 **Medium Priority:**
-2. Survival Mode (good for replayability)
-3. Skip Options (easy wins)
-4. Advanced Tile Elements (force zones + data-driven placement)
+3. Survival Mode (endless gameplay mode)
+4. Ball Speed Zones (simple mechanic, strategic depth)
 
 **Low Priority:**
-5. Advanced abilities (complex, can wait)
-6. Brick Chains (nice to have)
-7. Hardcore modes (for skilled players only)
+5. Paddle Abilities (complex, needs careful balancing)
+6. Brick Chains (nice to have, not essential)
+7. Hardcore modes (Iron Ball, One Life - for skilled players only)
 
 ---
 
@@ -149,19 +137,3 @@ These are features that have been designed but not yet implemented (or are only 
 - Features use existing sprites, colors, and Godot built-ins
 - Most features integrate with existing SaveManager system
 - Consider user feedback before implementing complex features
-
----
-
-Last Updated: 2026-02-11
-### Advanced Tile Elements (from tile-advanced backlog)
-- **Description**: Special brick/zone mechanics beyond standard bricks
-- **Features**:
-  - Force Arrow / Force Field zones that redirect or repel the ball
-  - Penetrating Spin interaction (ball passes through bricks when spin threshold is met)
-  - Data-driven placement for special tiles in level JSON
-  - Level authoring workflow for special tiles (tooling TBD)
-- **Implementation**:
-  - Add new scene(s) for force zones
-  - Extend level JSON schema and `scripts/pack_loader.gd`
-  - Update `scripts/ball.gd` to apply force zones and penetrating spin logic
-  - Update `scripts/brick.gd` to support special behaviors

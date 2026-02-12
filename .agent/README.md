@@ -30,14 +30,15 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/optimization-pass.md` - Performance and architecture optimization audit ✅ IMPLEMENTED
   - `Tasks/Completed/ui-gaps.md` - Launch indicator (aim mode) ✅ IMPLEMENTED
   - `Tasks/Completed/level-overhaul.md` - Pack-format migration, in-game editor, pack/level UX overhaul, third built-in pack ✅ IMPLEMENTED
+  - `Tasks/Completed/skip-options.md` - Input-based intro skip, fast-forward level complete, quick restart ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
-  - **`Tasks/Backlog/future-features.md`** - Planned gameplay features (Time Attack, Survival, skip options, advanced gameplay, advanced tile elements)
+  - **`Tasks/Backlog/future-features.md`** - Planned gameplay features (Time Attack, Survival, advanced gameplay, advanced tile elements)
 
 ### SOP/
 Best practices and workflows for development.
 - **`SOP/godot-workflow.md`** - Working with Godot scenes, nodes, signals, and **CRITICAL: Save System Compatibility** section for handling save data migrations.
 
-## Current Game State (2026-02-11)
+## Current Game State (2026-02-12)
 
 ### Core Features ✅ COMPLETE
 - **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 14 brick types (including bomb/diamond/pentagon), collision detection, score tracking
@@ -67,12 +68,11 @@ Best practices and workflows for development.
 - **Tracking**: `total_playtime` increments during READY/PLAYING (flushed every 5s), and `total_games_played` increments per level start
 
 ### Settings System ✅ COMPLETE
-- **Gameplay Settings (13)**:
+- **Gameplay Settings (12)**:
   - Screen shake intensity (Off/Low/Medium/High)
   - Particle effects toggle
   - Ball trail toggle
   - Combo flash toggle
-  - Short level intro toggle
   - Skip level intro toggle
   - Show FPS toggle
   - Paddle sensitivity (0.5x - 2.0x)
@@ -96,11 +96,12 @@ Best practices and workflows for development.
 
 ### UI Features ✅ COMPLETE
 - **Enhanced Pause Menu**: Level info, Resume, Restart, Settings, Level Select, Main Menu buttons
-- **Level Intro**: Fade in/out animation with level name and description
+- **Level Intro**: Fade in/out animation with level name and description (2.0s total: 0.5s fade in + 1.0s hold + 0.5s fade out)
 - **Debug Overlay**: FPS, ball stats, combo (toggle with backtick ` key when enabled)
 - **HUD Elements**: Score, lives, difficulty label, combo counter (with elastic bounce at milestones), multiplier display, power-up timers
 - **Launch Aim Indicator**: Right-mouse hold locks paddle and aims first shot per life
 - **Quick Actions**: Play Again button on level complete, Return to Last Level on main menu
+- **Skip Options**: Space during intro skips it, Enter on level complete/game over advances/retries (0.5s guard delay)
 
 ## Tech Stack
 - **Engine**: Godot 4.6
@@ -156,7 +157,13 @@ See `Tasks/Backlog/future-features.md` for detailed plans:
 
 ## Recent Update History
 
-### 2026-02-11 (Latest) - Legacy Loader Cleanup Complete
+### 2026-02-12 (Latest) - Skip Options Complete
+- ✅ **Removed Short Intro Setting**: Deleted `short_level_intro` from settings/save/HUD; default intro hold is now 1.0s (total 2.0s with fades).
+- ✅ **Input-Based Intro Skip**: Space/Click during intro immediately hides it.
+- ✅ **Fast-Forward Level Complete**: Enter on level complete screen advances after 0.5s guard delay.
+- ✅ **Quick Restart from Game Over**: R or Enter on game over retries after 0.5s guard delay.
+
+### 2026-02-11 - Legacy Loader Cleanup Complete
 - ✅ **Legacy Loaders Removed**: Deleted `scripts/level_loader.gd` and `scripts/set_loader.gd`; removed both autoloads from `project.godot`.
 - ✅ **Runtime Calls Migrated**: Gameplay/UI/save flows now use `PackLoader` directly for level and set compatibility lookups.
 - ✅ **Legacy Data Removed**: Deleted `data/level_sets.json` and `levels/level_01.json`-`level_20.json`.
@@ -448,7 +455,7 @@ Pause overlay settings apply live for paddle sensitivity, ball trail, combo flas
 
 ---
 
-**Last Updated**: 2026-02-11
+**Last Updated**: 2026-02-12
 **Total Levels**: 30
 **Total Sets**: 3
 **Total Achievements**: 12

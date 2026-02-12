@@ -31,8 +31,7 @@
 - `DifficultyManager`: `res://scripts/difficulty_manager.gd`.
 - `SaveManager`: `res://scripts/save_manager.gd`.
 - `AudioManager`: `res://scripts/audio_manager.gd`.
-- `LevelLoader`: `res://scripts/level_loader.gd`.
-- `SetLoader`: `res://scripts/set_loader.gd`.
+- `PackLoader`: `res://scripts/pack_loader.gd`.
 - `MenuController`: `res://scripts/ui/menu_controller.gd`.
 
 ## Asset Formats in Use

@@ -10,9 +10,11 @@ extends Control
 @onready var vbox_container = $VBoxContainer
 
 var continue_set_button: Button = null
+var _ready_time: float = 0.0
 
 func _ready():
 	"""Initialize game over screen"""
+	_ready_time = Time.get_ticks_msec()
 	# Get score from MenuController
 	var final_score = MenuController.get_current_score()
 	var level_key = MenuController.get_current_level_key()
@@ -60,6 +62,13 @@ func add_continue_set_button():
 
 	# Connect signal
 	continue_set_button.pressed.connect(_on_continue_set_button_pressed)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if Time.get_ticks_msec() - _ready_time < 500:
+		return
+	if event.is_action_pressed("restart_game") or event.is_action_pressed("ui_accept"):
+		get_viewport().set_input_as_handled()
+		_on_retry_button_pressed()
 
 func _on_retry_button_pressed():
 	"""Restart the same level"""
