@@ -64,10 +64,12 @@ Last Updated: 2026-02-12
 ### Advanced Tile Elements
 - **Description**: Special brick/zone mechanics beyond standard bricks
 - **Features**:
-  - Force Arrow / Force Field zones that redirect or repel the ball
+  - Force Arrow (assets/graphics/powerups/unused/arrow_down_right.png) that redirect or repel the ball
   - Penetrating Spin interaction (ball passes through bricks when spin threshold is met)
   - Spin should lose momentum as it hits, shown visibly (ball curves/arcs when spinning)
+  - Ball somewhat spins now but mostly only changes the angle it bounces, should be able to arc/curve when hit by fast moving paddle.
   - Powerups as bricks - can be placed in level editor, collected on hit, ball passes through
+  - Force Arrows should be placeable in editor, option to rotate to direct force.
   - Data-driven placement for special tiles in level JSON
 - **Implementation**:
   - Add new scene(s) for force zones
