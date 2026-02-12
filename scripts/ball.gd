@@ -8,16 +8,27 @@ extends CharacterBody2D
 const BASE_SPEED = 500.0   # Base speed (pixels/second)
 const BASE_RADIUS = 16.0
 const BASE_VISUAL_SCALE = Vector2(0.0185, 0.0185)
-const SPIN_FACTOR = 0.3         # How much paddle velocity affects ball
 const MAX_VERTICAL_ANGLE = 0.8  # Prevent pure vertical/horizontal motion
 const INITIAL_ANGLE = -45.0     # Launch angle (degrees, toward left)
 const MAGNET_PULL = 800.0       # Paddle gravity strength for Magnet power-up
 const TOP_WALL_Y = 20.0
 const BOTTOM_WALL_Y = 700.0
+const SPIN_DECAY_RATE = 0.85
+const SPIN_CURVE_STRENGTH = 420.0
+const SPIN_IMPART_FACTOR = 0.45
+const SPIN_ON_HIT_DECAY = 0.5
+const SPIN_MAX = 800.0
 const HIGH_SPIN_THRESHOLD = 250.0
-const HIGH_SPIN_TRAIL_DURATION = 0.35
+const PENETRATING_SPIN_THRESHOLD = 400.0
+const FORCE_ARROW_RANGE = 96.0
+const FORCE_ARROW_MAX_STRENGTH = 2400.0
+const FORCE_ARROW_MIN_STRENGTH = 400.0
+const FORCE_ARROW_COLLISION_BOOST = 260.0
+const FORCE_ARROW_COLLISION_BLEND = 0.9
 const FAST_SPEED_MULTIPLIER = 1.15
 const BRICK_TYPE_UNBREAKABLE = 2
+const BRICK_TYPE_FORCE_ARROW = 14
+const BRICK_TYPE_POWERUP_BRICK = 15
 const RIGHT_BOUNDARY_X = 1300.0
 const LEFT_BOUNDARY_X = 0.0
 const TOP_BOUNDARY_Y = 0.0
@@ -48,6 +59,7 @@ const STUCK_HELPER_SCRIPT = preload("res://scripts/ball_stuck_detection_helper.g
 const TRAIL_COLOR_NORMAL = Color(0.3, 0.6, 0.95, 0.7)
 const TRAIL_COLOR_FAST = Color(1.0, 0.8, 0.2, 0.7)
 const TRAIL_COLOR_SLOW = Color(0.2, 0.6, 1.0, 0.7)
+const TRAIL_COLOR_HIGH_SPIN = Color(1.0, 0.35, 0.9, 0.8)
 
 # Dynamic speed (can be modified by power-ups)
 var current_speed: float = BASE_SPEED
@@ -64,7 +76,7 @@ var block_pass_timer: float = 0.0  # Allow pass-through behind block right after
 
 var ball_radius: float = BASE_RADIUS
 var last_physics_delta: float = 0.0
-var spin_trail_timer: float = 0.0
+var spin_amount: float = 0.0
 var air_ball_helper: RefCounted = null
 var aim_helper: RefCounted = null
 var stuck_helper: RefCounted = null
@@ -135,8 +147,6 @@ func _physics_process(delta):
 		grab_immunity_timer -= delta
 	if block_pass_timer > 0.0:
 		block_pass_timer -= delta
-	if spin_trail_timer > 0.0:
-		spin_trail_timer -= delta
 	if paddle_reference == null or not is_instance_valid(paddle_reference):
 		_ensure_paddle_reference()
 	_refresh_effect_flags()
@@ -164,6 +174,8 @@ func _physics_process(delta):
 	else:
 		stuck_helper.tick_collision_age(delta)
 		# Ball is in motion
+		_apply_persistent_spin(delta)
+		_apply_force_arrows(delta)
 		# Apply magnet pull toward paddle (curve trajectory, keep speed)
 		if frame_magnet_active:
 			_apply_magnet_pull(delta)
@@ -193,7 +205,8 @@ func _physics_process(delta):
 		# Rotate ball to show movement/spin (only if actually moving)
 		# Rotation based on distance traveled (creates rolling effect)
 		if visual_node and velocity.length_squared() > 100.0:
-			var rotation_speed = current_speed / 16.0  # Ball radius for natural rolling
+			var spin_ratio = clampf(absf(spin_amount) / SPIN_MAX, 0.0, 1.0)
+			var rotation_speed = (current_speed / 16.0) + (spin_ratio * 20.0)
 			visual_node.rotation += rotation_speed * delta
 
 		_update_trail_appearance()
@@ -204,6 +217,7 @@ func launch_ball():
 	"""
 	is_attached_to_paddle = false
 	var launched_with_aim = false
+	spin_amount = 0.0
 	if aim_helper.aim_active:
 		var aim_dir = aim_helper.aim_direction.normalized()
 		aim_helper.set_mode(false, paddle_reference)
@@ -233,9 +247,7 @@ func launch_ball():
 			# Launch with spin based on paddle movement
 			var angle_rad = deg_to_rad(INITIAL_ANGLE + angle_variation)
 			velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
-			# Add paddle spin influence
-			velocity.y += paddle_velocity_y * SPIN_FACTOR
-			velocity = velocity.normalized() * current_speed
+			spin_amount = clampf(paddle_velocity_y * SPIN_IMPART_FACTOR, -SPIN_MAX, SPIN_MAX)
 		else:
 			# Launch straight left with slight angle variation
 			var angle_rad = deg_to_rad(180.0 + angle_variation)  # 180° = straight left
@@ -301,9 +313,7 @@ func handle_collision(collision: KinematicCollision2D):
 			# Add paddle spin influence
 			if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
 				var paddle_velocity = paddle_reference.get_velocity_for_spin()
-				velocity.y += paddle_velocity * SPIN_FACTOR
-				if abs(paddle_velocity) >= HIGH_SPIN_THRESHOLD:
-					spin_trail_timer = HIGH_SPIN_TRAIL_DURATION
+				spin_amount = clampf(paddle_velocity * SPIN_IMPART_FACTOR, -SPIN_MAX, SPIN_MAX)
 
 			# Prevent pure vertical motion
 			if abs(velocity.x) < current_speed * (1.0 - MAX_VERTICAL_ANGLE):
@@ -329,8 +339,12 @@ func handle_collision(collision: KinematicCollision2D):
 		var old_velocity = velocity  # Store for particle direction
 		var hit_brick_position = collider.global_position  # Store for bomb effect
 		var is_unbreakable = false
+		var is_force_arrow = false
+		var is_powerup_brick = false
 		if "brick_type" in collider:
 			is_unbreakable = collider.brick_type == BRICK_TYPE_UNBREAKABLE
+			is_force_arrow = collider.brick_type == BRICK_TYPE_FORCE_ARROW
+			is_powerup_brick = collider.brick_type == BRICK_TYPE_POWERUP_BRICK
 
 		var is_block_brick = collider.is_in_group("block_brick")
 		if is_block_brick and (velocity.x < 0.0 or grab_immunity_timer > 0.0 or block_pass_timer > 0.0):
@@ -338,12 +352,24 @@ func handle_collision(collision: KinematicCollision2D):
 			position += velocity * last_physics_delta
 			return
 
+		if is_powerup_brick:
+			brick_hit.emit(collider)
+			if collider.has_method("collect_powerup"):
+				collider.collect_powerup()
+			position += velocity * last_physics_delta
+			AudioManager.play_sfx("power_up")
+			return
+
 		# Check if brick through is enabled (block + unbreakable bricks always behave normally)
-		if not is_block_brick and not is_unbreakable and frame_brick_through_active:
+		var has_penetrating_spin = absf(spin_amount) >= PENETRATING_SPIN_THRESHOLD
+		var can_pass_through = not is_block_brick and not is_unbreakable and not is_force_arrow and (frame_brick_through_active or has_penetrating_spin)
+		if can_pass_through:
 			# Don't bounce, just pass through and notify brick
 			brick_hit.emit(collider)
 			if collider.has_method("hit"):
 				collider.hit(old_velocity.normalized())
+			spin_amount *= SPIN_ON_HIT_DECAY
+			position += velocity * last_physics_delta
 		else:
 			var bounce_normal = normal
 			if collider.has_method("_get_brick_shape") and collider._get_brick_shape() == "square":
@@ -357,16 +383,23 @@ func handle_collision(collision: KinematicCollision2D):
 					var y_sign = sign(offset.y)
 					if y_sign != 0:
 						bounce_normal = Vector2(0, y_sign)
-			# Normal bounce behavior
-			velocity = velocity.bounce(bounce_normal)
-			normal = bounce_normal
-			if is_unbreakable:
-				# Add a small random deflection to avoid edge hugging
-				velocity = velocity.rotated(deg_to_rad(randf_range(-12.0, 12.0)))
-				position += bounce_normal * (ball_radius * 0.6)
-			brick_hit.emit(collider)
-			if collider.has_method("hit"):
-				collider.hit(old_velocity.normalized())
+				# Normal bounce behavior
+				velocity = velocity.bounce(bounce_normal)
+				normal = bounce_normal
+				if is_force_arrow:
+					var arrow_push_dir = Vector2.RIGHT.rotated(deg_to_rad(int(collider.direction)))
+					velocity += arrow_push_dir * FORCE_ARROW_COLLISION_BOOST
+					var blended = velocity.normalized() + (arrow_push_dir * FORCE_ARROW_COLLISION_BLEND)
+					if blended.length_squared() > 0.0001:
+						velocity = blended.normalized() * current_speed
+				if is_unbreakable:
+					# Add a small random deflection to avoid edge hugging
+					velocity = velocity.rotated(deg_to_rad(randf_range(-12.0, 12.0)))
+					position += bounce_normal * (ball_radius * 0.6)
+				brick_hit.emit(collider)
+				if collider.has_method("hit"):
+					collider.hit(old_velocity.normalized())
+				spin_amount *= SPIN_ON_HIT_DECAY
 		AudioManager.play_sfx("hit_brick")
 
 		# Check if bomb ball is active - destroy surrounding bricks (skip block bricks)
@@ -385,6 +418,7 @@ func reset_ball():
 	"""Reset ball to paddle after losing a life"""
 	is_attached_to_paddle = true
 	velocity = Vector2.ZERO
+	spin_amount = 0.0
 	aim_helper.reset(is_main_ball)
 
 	# Disable trail effect
@@ -428,7 +462,7 @@ func _update_trail_appearance() -> void:
 	if not SaveManager.get_ball_trail():
 		return
 	var new_texture = TRAIL_SMALL
-	if spin_trail_timer > 0.0:
+	if absf(spin_amount) >= HIGH_SPIN_THRESHOLD:
 		new_texture = TRAIL_LARGE
 	elif current_speed >= base_speed * FAST_SPEED_MULTIPLIER:
 		new_texture = TRAIL_MEDIUM
@@ -443,6 +477,8 @@ func _get_trail_color() -> Color:
 		var visual_color = visual_node.modulate
 		if visual_color != Color(1.0, 1.0, 1.0, 1.0):
 			return visual_color
+	if absf(spin_amount) >= HIGH_SPIN_THRESHOLD:
+		return TRAIL_COLOR_HIGH_SPIN
 	if current_speed >= base_speed * FAST_SPEED_MULTIPLIER:
 		return TRAIL_COLOR_FAST
 	if current_speed <= base_speed * SLOW_SPEED_MULTIPLIER:
@@ -524,6 +560,31 @@ func _is_moving_toward_paddle_horizontally() -> bool:
 	var to_paddle_x = paddle_reference.position.x - position.x
 	return to_paddle_x * velocity.x > 0.0
 
+func _apply_persistent_spin(delta: float) -> void:
+	if absf(spin_amount) < 1.0:
+		spin_amount = 0.0
+		return
+	var velocity_len_sq = velocity.length_squared()
+	if velocity_len_sq <= 0.0001:
+		return
+	var velocity_len = sqrt(velocity_len_sq)
+	var perp = Vector2(-velocity.y / velocity_len, velocity.x / velocity_len)
+	var spin_ratio = clampf(spin_amount / SPIN_MAX, -1.0, 1.0)
+	velocity += perp * spin_ratio * SPIN_CURVE_STRENGTH * delta
+	spin_amount *= pow(SPIN_DECAY_RATE, delta)
+
+func _apply_force_arrows(delta: float) -> void:
+	for arrow in _get_cached_force_arrows():
+		if not is_instance_valid(arrow):
+			continue
+		var dist = global_position.distance_to(arrow.global_position)
+		if dist > FORCE_ARROW_RANGE or dist < 0.001:
+			continue
+		var force_dir = Vector2.RIGHT.rotated(deg_to_rad(int(arrow.direction)))
+		var strength_factor = 1.0 - (dist / FORCE_ARROW_RANGE)
+		var magnitude = lerpf(FORCE_ARROW_MIN_STRENGTH, FORCE_ARROW_MAX_STRENGTH, strength_factor)
+		velocity += force_dir * magnitude * delta
+
 func _apply_magnet_pull(delta: float) -> void:
 	if not _is_moving_toward_paddle_horizontally():
 		return
@@ -541,6 +602,19 @@ func _apply_magnet_pull(delta: float) -> void:
 	var speed_scale = current_speed / sqrt(next_len_sq)
 	velocity.x = next_vx * speed_scale
 	velocity.y = next_vy * speed_scale
+
+func _get_cached_force_arrows() -> Array[Node]:
+	if (main_controller_ref == null or not is_instance_valid(main_controller_ref)):
+		_cache_main_controller_ref()
+	if main_controller_ref and main_controller_ref.has_method("get_cached_force_arrows"):
+		var arrows: Array[Node] = main_controller_ref.get_cached_force_arrows()
+		if not arrows.is_empty():
+			return arrows
+	var fallback: Array[Node] = []
+	for node in get_tree().get_nodes_in_group("force_arrow"):
+		if node is Node:
+			fallback.append(node)
+	return fallback
 
 func _handle_out_of_bounds() -> void:
 	if position.x > RIGHT_BOUNDARY_X:

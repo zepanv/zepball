@@ -18,12 +18,16 @@ enum BrickType {
 	DIAMOND,        # 1-hit diamond brick (random color)
 	DIAMOND_GLOSSY, # 2-hit diamond brick (random color)
 	POLYGON,        # 1-hit pentagon brick (random color)
-	POLYGON_GLOSSY  # 2-hit pentagon brick (random color)
+	POLYGON_GLOSSY,  # 2-hit pentagon brick (random color)
+	FORCE_ARROW,     # Non-breakable directional force tile
+	POWERUP_BRICK    # Pass-through tile that grants a specific power-up
 }
 
 # Configuration
 @export var brick_type: BrickType = BrickType.NORMAL
 @export var brick_color: Color = Color(0.059, 0.773, 0.627)  # Teal (fallback for ColorRect mode)
+@export var direction: int = 45
+@export var powerup_type_name: String = "MYSTERY"
 
 const TARGET_BRICK_SIZE = 48.0
 const UNBREAKABLE_HITS = 999
@@ -32,6 +36,44 @@ const BOMB_RADIUS_SQ = BOMB_RADIUS * BOMB_RADIUS
 const DEFAULT_POWER_UP_SPAWN_CHANCE = 0.20
 const POWER_UP_SCENE = preload("res://scenes/gameplay/power_up.tscn")
 const POWER_UP_TYPES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+const FORCE_ARROW_TEXTURE_PATH = "res://assets/graphics/powerups/unused/arrow_down_right.png"
+const FORCE_ARROW_BASE_ANGLE_DEG = 45
+const POWERUP_TEXTURE_MAP: Dictionary = {
+	"EXPAND": "res://assets/graphics/powerups/expand.png",
+	"CONTRACT": "res://assets/graphics/powerups/contract.png",
+	"SPEED_UP": "res://assets/graphics/powerups/speed_up.png",
+	"TRIPLE_BALL": "res://assets/graphics/powerups/triple_ball.png",
+	"BIG_BALL": "res://assets/graphics/powerups/big_ball.png",
+	"SMALL_BALL": "res://assets/graphics/powerups/small_ball.png",
+	"SLOW_DOWN": "res://assets/graphics/powerups/slow_down.png",
+	"EXTRA_LIFE": "res://assets/graphics/powerups/extra_life.png",
+	"GRAB": "res://assets/graphics/powerups/grab.png",
+	"BRICK_THROUGH": "res://assets/graphics/powerups/brick_through.png",
+	"DOUBLE_SCORE": "res://assets/graphics/powerups/double_score.png",
+	"MYSTERY": "res://assets/graphics/powerups/mystery.png",
+	"BOMB_BALL": "res://assets/graphics/powerups/bomb_ball.png",
+	"AIR_BALL": "res://assets/graphics/powerups/air_ball.png",
+	"MAGNET": "res://assets/graphics/powerups/magnet.png",
+	"BLOCK": "res://assets/graphics/powerups/block.png"
+}
+const POWERUP_NAME_TO_TYPE: Dictionary = {
+	"EXPAND": 0,
+	"CONTRACT": 1,
+	"SPEED_UP": 2,
+	"TRIPLE_BALL": 3,
+	"BIG_BALL": 4,
+	"SMALL_BALL": 5,
+	"SLOW_DOWN": 6,
+	"EXTRA_LIFE": 7,
+	"GRAB": 8,
+	"BRICK_THROUGH": 9,
+	"DOUBLE_SCORE": 10,
+	"MYSTERY": 11,
+	"BOMB_BALL": 12,
+	"AIR_BALL": 13,
+	"MAGNET": 14,
+	"BLOCK": 15
+}
 
 const DIAMOND_VARIANTS = [
 	{"texture": "res://assets/graphics/bricks/element_blue_diamond.png", "color": Color(0.2, 0.4, 1.0)},
@@ -89,12 +131,15 @@ var main_controller_ref: Node = null
 # Signals
 signal brick_broken(score_value: int)
 signal power_up_spawned(power_up_node: Node)
+signal powerup_collected(powerup_type_int: int)
 
 # Power-up configuration
 @export var power_up_spawn_chance: float = DEFAULT_POWER_UP_SPAWN_CHANCE  # 20% chance to spawn
 
 func _ready():
 	_cache_main_controller_ref()
+	direction = _normalize_direction(direction)
+	powerup_type_name = _normalize_powerup_type_name(powerup_type_name)
 
 	# Set up brick based on type
 	match brick_type:
@@ -154,6 +199,15 @@ func _ready():
 			hits_remaining = 2
 			score_value = 20
 			brick_color = Color(0.2, 0.4, 1.0)
+		BrickType.FORCE_ARROW:
+			hits_remaining = UNBREAKABLE_HITS
+			score_value = 0
+			brick_color = Color(1.0, 0.85, 0.3)
+			add_to_group("force_arrow")
+		BrickType.POWERUP_BRICK:
+			hits_remaining = 1
+			score_value = 0
+			brick_color = Color(0.3, 1.0, 0.45)
 
 	# Set up sprite if using Sprite2D
 	if has_node("Sprite"):
@@ -215,6 +269,10 @@ func setup_sprite():
 			var variant = _pick_variant(POLYGON_GLOSSY_VARIANTS)
 			texture_path = variant["texture"]
 			brick_color = variant["color"]
+		BrickType.FORCE_ARROW:
+			texture_path = FORCE_ARROW_TEXTURE_PATH
+		BrickType.POWERUP_BRICK:
+			texture_path = str(POWERUP_TEXTURE_MAP.get(powerup_type_name, POWERUP_TEXTURE_MAP["MYSTERY"]))
 
 	# Load texture
 	var texture = load(texture_path)
@@ -223,6 +281,11 @@ func setup_sprite():
 		return
 
 	sprite.texture = texture
+	if brick_type == BrickType.FORCE_ARROW:
+		# Source art points down-right (45 deg), so offset rotation to match configured push direction.
+		sprite.rotation_degrees = float(direction - FORCE_ARROW_BASE_ANGLE_DEG)
+	else:
+		sprite.rotation_degrees = 0.0
 
 	# Scale based on brick type
 	# Most textures are 32x32, scaled to 1.5x = 48px
@@ -236,6 +299,12 @@ func setup_sprite():
 		else:
 			var uniform_scale = TARGET_BRICK_SIZE / tex_size.x
 			sprite.scale = Vector2(uniform_scale, uniform_scale)
+
+	if brick_type == BrickType.POWERUP_BRICK:
+		sprite.modulate = Color(1.0, 1.0, 1.0, 0.95)
+	elif brick_type == BrickType.FORCE_ARROW:
+		sprite.modulate = Color(1.0, 1.0, 1.0, 0.9)
+		_start_force_arrow_pulse(sprite)
 
 func _pick_variant(variants: Array) -> Dictionary:
 	if variants.is_empty():
@@ -270,13 +339,19 @@ func _get_brick_shape() -> String:
 		return "polygon"
 	return "square"
 
+func collect_powerup() -> void:
+	if is_breaking:
+		return
+	powerup_collected.emit(_resolve_powerup_type(powerup_type_name))
+	break_brick(Vector2.ZERO)
+
 func hit(impact_direction: Vector2 = Vector2.ZERO):
 	"""Called when ball collides with brick
 	impact_direction: Direction the ball was traveling when it hit (for particle emission)
 	"""
 	if is_breaking:
 		return
-	if brick_type == BrickType.UNBREAKABLE:
+	if brick_type == BrickType.UNBREAKABLE or brick_type == BrickType.FORCE_ARROW:
 		return
 	hits_remaining -= 1
 
@@ -347,7 +422,7 @@ func break_brick(impact_direction: Vector2 = Vector2.ZERO):
 func try_spawn_power_up():
 	"""Randomly spawn a power-up at this brick's position"""
 	# Skip if unbreakable (shouldn't happen, but safety check)
-	if brick_type == BrickType.UNBREAKABLE:
+	if brick_type == BrickType.UNBREAKABLE or brick_type == BrickType.FORCE_ARROW or brick_type == BrickType.POWERUP_BRICK:
 		return
 
 	# Random chance to spawn
@@ -379,7 +454,11 @@ func explode_surrounding_bricks():
 			continue
 		if brick.is_in_group("block_brick"):
 			continue
-		if "brick_type" in brick and brick.brick_type == BrickType.UNBREAKABLE:
+		if "brick_type" in brick and (
+			brick.brick_type == BrickType.UNBREAKABLE
+			or brick.brick_type == BrickType.FORCE_ARROW
+			or brick.brick_type == BrickType.POWERUP_BRICK
+		):
 			continue
 
 		# Check distance from this brick using squared values (avoid sqrt in hot path)
@@ -405,3 +484,26 @@ func _cache_main_controller_ref() -> void:
 	var candidate = get_tree().get_first_node_in_group("main_controller")
 	if candidate and is_instance_valid(candidate):
 		main_controller_ref = candidate
+
+func _normalize_direction(raw_direction: int) -> int:
+	match raw_direction:
+		0, 45, 90, 135, 180, 225, 270, 315:
+			return raw_direction
+		_:
+			return 45
+
+func _normalize_powerup_type_name(raw_name: String) -> String:
+	var normalized: String = raw_name.strip_edges().to_upper()
+	if POWERUP_NAME_TO_TYPE.has(normalized):
+		return normalized
+	return "MYSTERY"
+
+func _resolve_powerup_type(type_name: String) -> int:
+	var normalized: String = _normalize_powerup_type_name(type_name)
+	return int(POWERUP_NAME_TO_TYPE.get(normalized, POWERUP_NAME_TO_TYPE["MYSTERY"]))
+
+func _start_force_arrow_pulse(sprite: Sprite2D) -> void:
+	var tween: Tween = create_tween()
+	tween.set_loops()
+	tween.tween_property(sprite, "modulate:a", 0.55, 0.65)
+	tween.tween_property(sprite, "modulate:a", 0.95, 0.65)

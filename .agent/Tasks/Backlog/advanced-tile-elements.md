@@ -1,10 +1,15 @@
 # Advanced Tile Elements
 
-## Status: 📋 BACKLOG
+## Status: 🚧 IN PROGRESS (BACKLOG)
 
 Special brick/zone mechanics beyond standard bricks. Adds depth to gameplay through physics-based interactions, enhanced spin control, and editor-placeable special tiles.
 
-Last Updated: 2026-02-12
+Last Updated: 2026-02-12 (Returned to backlog)
+
+## Current State (Blocking Issues)
+- Force Arrow visuals/directions are improved, but gameplay push is still not behaving as desired; balls can still mostly bounce without clear directional push.
+- Persistent spin behavior remains unpredictable and can produce unstable trajectories/losses.
+- Feature is partially implemented and requires additional tuning/fixes before completion.
 
 ---
 
@@ -101,16 +106,20 @@ if not is_block_brick and not is_unbreakable and (frame_brick_through_active or 
 | Constant | Value | Purpose |
 |----------|-------|---------|
 | `FORCE_ARROW_RANGE` | `72.0` | Influence radius (1.5 brick widths) |
-| `FORCE_ARROW_MAX_STRENGTH` | `400.0` | Acceleration at point-blank (px/sec^2) |
-| `FORCE_ARROW_MIN_STRENGTH` | `50.0` | Acceleration at edge of range |
+| `FORCE_ARROW_MAX_STRENGTH` | `900.0` | Acceleration at point-blank (px/sec^2) |
+| `FORCE_ARROW_MIN_STRENGTH` | `120.0` | Acceleration at edge of range |
 
 **Direction encoding** (stored as `direction` field in brick data):
 | `direction` | Force Vector | Grid Display |
 |-------------|-------------|--------------|
-| `0` | Right | `>` |
-| `90` | Down | `v` |
-| `180` | Left | `<` |
-| `270` | Up | `^` |
+| `0` | Right | `R` |
+| `45` | Down-Right | `DR` |
+| `90` | Down | `D` |
+| `135` | Down-Left | `DL` |
+| `180` | Left | `L` |
+| `225` | Up-Left | `UL` |
+| `270` | Up | `U` |
+| `315` | Up-Right | `UR` |
 
 Force direction computed as: `Vector2.RIGHT.rotated(deg_to_rad(direction))`
 
@@ -234,7 +243,7 @@ const POWERUP_TEXTURE_MAP: Dictionary = {
 | `row` | int | yes | all | - |
 | `col` | int | yes | all | - |
 | `type` | string | yes | all | - |
-| `direction` | int | no | FORCE_ARROW | `0` |
+| `direction` | int | no | FORCE_ARROW | `45` |
 | `powerup_type` | string | no | POWERUP_BRICK | `"EXPAND"` |
 
 ### PackLoader Changes (`scripts/pack_loader.gd`)
@@ -245,7 +254,7 @@ const POWERUP_TEXTURE_MAP: Dictionary = {
 - Define `NON_BREAKABLE_TYPES: Array[String] = ["UNBREAKABLE", "FORCE_ARROW", "POWERUP_BRICK"]`
 - Update `breakable_count` in `instantiate_level()` to exclude all `NON_BREAKABLE_TYPES`
 - Pass `direction` and `powerup_type_name` to brick instances during instantiation
-- Validate `direction` (must be 0/90/180/270) and `powerup_type` (must be known type) for v2 packs
+- Validate `direction` (must be one of 0/45/90/135/180/225/270/315) and `powerup_type` (must be known type) for v2 packs
 
 ---
 
@@ -255,7 +264,7 @@ const POWERUP_TEXTURE_MAP: Dictionary = {
 Add `"FORCE_ARROW"` and `"POWERUP_BRICK"` to `BRICK_TYPE_OPTIONS`.
 
 ### Direction Picker (Force Arrow)
-- OptionButton with 4 options: Right (0), Down (90), Left (180), Up (270)
+- OptionButton with 8 options: Right, Down-Right, Down, Down-Left, Left, Up-Left, Up, Up-Right
 - Visible only when `FORCE_ARROW` is selected in palette
 - Value stored in brick data as `"direction": int`
 
@@ -263,7 +272,7 @@ Add `"FORCE_ARROW"` and `"POWERUP_BRICK"` to `BRICK_TYPE_OPTIONS`.
 - OptionButton listing all 16 power-up type names
 - Visible only when `POWERUP_BRICK` is selected in palette
 - Value stored in brick data as `"powerup_type": string`
-- Random powerup is the default selection
+- MYSTERY is the default selection
 
 ### Grid Cell Display
 - Force Arrow: shows directional character (`>`, `v`, `<`, `^`)
@@ -344,3 +353,22 @@ Phases 1-2 (spin) and Phases 3-7 (new tiles) are independent tracks that can be 
 - All 16 power-up textures already exist in `assets/graphics/powerups/`
 - Spin constants will likely need gameplay tuning after initial implementation
 - Force arrow range (72px = 1.5 brick widths) balances visibility with precision
+
+## Implementation Summary (2026-02-12)
+- Implemented persistent spin state, spin decay/curve, high-spin trail color/size, and spin-scaled ball rotation in `scripts/ball.gd`.
+- Implemented penetrating spin pass-through and integrated with existing brick-through behavior.
+- Added `FORCE_ARROW` and `POWERUP_BRICK` to `scripts/brick.gd` with editor-configurable metadata (`direction`, `powerup_type_name`) plus collection/pulse behavior.
+- Added force-arrow runtime caching and completion-brick filtering in `scripts/main.gd` so non-completion tiles do not affect level clear counts.
+- Extended pack schema support in `scripts/pack_loader.gd` to accept `zeppack_version` 1 or 2, validate v2 brick metadata, and instantiate extra brick fields.
+- Extended level editor palette and controls (`scripts/ui/level_editor.gd`, `scenes/ui/level_editor.tscn`) with direction and power-up selectors and v2 save promotion.
+
+## Verification Notes (2026-02-12)
+- Runtime launch via `godot --headless --path . --check-only` failed in this environment due a Godot log file crash (`user://logs/...`, signal 11), so in-engine manual verification remains pending.
+
+## Follow-Up Fixes (2026-02-12)
+- Force Arrow influence now uses global-space distance checks (`global_position.distance_to(...)`) to avoid missed range detection from mixed coordinate spaces.
+- Added a small directional collision boost when directly bouncing off a Force Arrow tile so push feedback is visible on contact.
+- Added `force_arrow` group fallback query path for ball runtime in case cached arrow list is empty/stale.
+- Fixed `ball.gd` brick-collision indentation regression so non-unbreakable bricks still receive `brick_hit`/`hit(...)` callbacks in normal bounce paths.
+- Reworked persistent spin curve to use normalized spin ratio (`spin_amount / SPIN_MAX`) instead of raw spin magnitude to prevent immediate erratic trajectory flips/losses.
+- Increased Force Arrow field strength/range and added directional collision blending to make arrow push visibly steer the ball.

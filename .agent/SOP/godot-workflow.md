@@ -246,6 +246,21 @@ func _unhandled_input(event):
 - **F8**: Continue (debugging)
 - **Ctrl+F5**: Run without debugging
 
+### Headless Validation (CLI)
+
+When running Godot in headless mode from terminal, always isolate runtime data to a temp location and force process exit:
+
+- Always include `--quit` so the process exits after startup/check actions.
+- Always use temp paths so `user://` writes (logs/settings) do not touch your normal profile data.
+- Prefer this pattern:
+
+```bash
+HOME=/tmp/zepball-godot-home \
+  godot --headless --quit --path .
+```
+
+For script/check commands, keep the same rule: `--quit` + temp user/output paths.
+
 ### Debugging Tools
 
 **Print Debugging:**
@@ -366,6 +381,12 @@ Notes:
 
 ### Versioning Note
 We are using date/time instead of version currently.
+
+### Main Menu Date Label
+When the project date/version changes, update the main menu date label in:
+- `scenes/ui/main_menu.tscn` (`VersionLabel.text`)
+
+Keep this label aligned with the current project update date shown in docs/changelog entries.
 
 ## Save System Compatibility
 

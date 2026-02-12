@@ -199,6 +199,24 @@ text = "Brush"
 [node name="PaletteSelect" type="OptionButton" parent="VBoxContainer/Body/RightPanel/RightControls"]
 layout_mode = 2
 
+[node name="DirectionLabel" type="Label" parent="VBoxContainer/Body/RightPanel/RightControls"]
+visible = false
+layout_mode = 2
+text = "Force Arrow Direction"
+
+[node name="DirectionSelect" type="OptionButton" parent="VBoxContainer/Body/RightPanel/RightControls"]
+visible = false
+layout_mode = 2
+
+[node name="PowerupTypeLabel" type="Label" parent="VBoxContainer/Body/RightPanel/RightControls"]
+visible = false
+layout_mode = 2
+text = "Power-up Brick Type"
+
+[node name="PowerupTypeSelect" type="OptionButton" parent="VBoxContainer/Body/RightPanel/RightControls"]
+visible = false
+layout_mode = 2
+
 [node name="ActionRow" type="HBoxContainer" parent="VBoxContainer/Body/RightPanel/RightControls"]
 layout_mode = 2
 theme_override_constants/separation = 8
@@ -285,6 +303,8 @@ dialog_text = "Delete this pack?"
 [connection signal="value_changed" from="VBoxContainer/Body/LeftPanel/GridConfig/RowsInput" to="." method="_on_rows_input_value_changed"]
 [connection signal="value_changed" from="VBoxContainer/Body/LeftPanel/GridConfig/ColsInput" to="." method="_on_cols_input_value_changed"]
 [connection signal="item_selected" from="VBoxContainer/Body/RightPanel/RightControls/PaletteSelect" to="." method="_on_palette_select_item_selected"]
+[connection signal="item_selected" from="VBoxContainer/Body/RightPanel/RightControls/DirectionSelect" to="." method="_on_direction_select_item_selected"]
+[connection signal="item_selected" from="VBoxContainer/Body/RightPanel/RightControls/PowerupTypeSelect" to="." method="_on_powerup_type_select_item_selected"]
 [connection signal="pressed" from="VBoxContainer/Body/RightPanel/RightControls/ActionRow/UndoButton" to="." method="_on_undo_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/Body/RightPanel/RightControls/ActionRow/RedoButton" to="." method="_on_redo_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/Body/RightPanel/RightControls/ActionRow/TestButton" to="." method="_on_test_button_pressed"]

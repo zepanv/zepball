@@ -17,7 +17,28 @@ const BRICK_TYPE_OPTIONS: Array[String] = [
 	"DIAMOND",
 	"DIAMOND_GLOSSY",
 	"POLYGON",
-	"POLYGON_GLOSSY"
+	"POLYGON_GLOSSY",
+	"FORCE_ARROW",
+	"POWERUP_BRICK"
+]
+const FORCE_ARROW_DIRECTIONS: Array[int] = [45, 0, 90, 135, 180, 225, 270, 315]
+const POWERUP_TYPE_OPTIONS: Array[String] = [
+	"EXPAND",
+	"CONTRACT",
+	"SPEED_UP",
+	"TRIPLE_BALL",
+	"BIG_BALL",
+	"SMALL_BALL",
+	"SLOW_DOWN",
+	"EXTRA_LIFE",
+	"GRAB",
+	"BRICK_THROUGH",
+	"DOUBLE_SCORE",
+	"MYSTERY",
+	"BOMB_BALL",
+	"AIR_BALL",
+	"MAGNET",
+	"BLOCK"
 ]
 
 var BRICK_COLORS: Dictionary:
@@ -35,6 +56,10 @@ var BRICK_COLORS: Dictionary:
 @onready var rows_input: SpinBox = $VBoxContainer/Body/LeftPanel/GridConfig/RowsInput
 @onready var cols_input: SpinBox = $VBoxContainer/Body/LeftPanel/GridConfig/ColsInput
 @onready var palette_select: OptionButton = $VBoxContainer/Body/RightPanel/RightControls/PaletteSelect
+@onready var direction_label: Label = $VBoxContainer/Body/RightPanel/RightControls/DirectionLabel
+@onready var direction_select: OptionButton = $VBoxContainer/Body/RightPanel/RightControls/DirectionSelect
+@onready var powerup_type_label: Label = $VBoxContainer/Body/RightPanel/RightControls/PowerupTypeLabel
+@onready var powerup_type_select: OptionButton = $VBoxContainer/Body/RightPanel/RightControls/PowerupTypeSelect
 @onready var grid_container: GridContainer = $VBoxContainer/Body/RightPanel/GridScroll/GridContainer
 @onready var status_label: Label = $VBoxContainer/FooterRow/StatusLabel
 @onready var delete_button: Button = $VBoxContainer/Body/RightPanel/RightControls/ActionRow/DeleteButton
@@ -43,6 +68,8 @@ var BRICK_COLORS: Dictionary:
 var current_pack: Dictionary = {}
 var selected_level_index: int = 0
 var selected_brick_type: String = "NORMAL"
+var selected_direction: int = 45
+var selected_powerup_type: String = "MYSTERY"
 var undo_stack: Array[Dictionary] = []
 var redo_stack: Array[Dictionary] = []
 var is_refreshing_ui: bool = false
@@ -86,6 +113,21 @@ func _initialize_palette() -> void:
 		palette_select.add_item(option)
 	palette_select.select(1)
 	selected_brick_type = "NORMAL"
+	_initialize_special_option_pickers()
+	_refresh_special_picker_visibility()
+
+func _initialize_special_option_pickers() -> void:
+	direction_select.clear()
+	for direction in FORCE_ARROW_DIRECTIONS:
+		direction_select.add_item(_get_direction_label(direction), direction)
+	direction_select.select(0)
+	selected_direction = FORCE_ARROW_DIRECTIONS[0]
+
+	powerup_type_select.clear()
+	for powerup_type in POWERUP_TYPE_OPTIONS:
+		powerup_type_select.add_item(powerup_type)
+	powerup_type_select.select(POWERUP_TYPE_OPTIONS.find("MYSTERY"))
+	selected_powerup_type = "MYSTERY"
 
 func _initialize_editor_pack() -> void:
 	var draft_pack: Dictionary = MenuController.get_editor_draft_pack()
@@ -171,6 +213,83 @@ func _refresh_all_ui() -> void:
 	_refresh_level_details()
 	_refresh_grid()
 	_update_delete_button_state()
+	_refresh_special_picker_visibility()
+
+func _refresh_special_picker_visibility() -> void:
+	var is_force_arrow: bool = selected_brick_type == "FORCE_ARROW"
+	var is_powerup_brick: bool = selected_brick_type == "POWERUP_BRICK"
+	direction_label.visible = is_force_arrow
+	direction_select.visible = is_force_arrow
+	powerup_type_label.visible = is_powerup_brick
+	powerup_type_select.visible = is_powerup_brick
+
+func _get_direction_label(direction: int) -> String:
+	match direction:
+		0:
+			return "Right (0)"
+		45:
+			return "Down-Right (45)"
+		90:
+			return "Down (90)"
+		135:
+			return "Down-Left (135)"
+		180:
+			return "Left (180)"
+		225:
+			return "Up-Left (225)"
+		270:
+			return "Up (270)"
+		315:
+			return "Up-Right (315)"
+		_:
+			return "Right (0)"
+
+func _get_direction_marker(direction: int) -> String:
+	match direction:
+		0:
+			return "R"
+		45:
+			return "DR"
+		90:
+			return "D"
+		135:
+			return "DL"
+		180:
+			return "L"
+		225:
+			return "UL"
+		270:
+			return "U"
+		315:
+			return "UR"
+		_:
+			return "R"
+
+func _get_powerup_abbreviation(powerup_type: String) -> String:
+	var normalized: String = powerup_type.strip_edges().to_upper()
+	match normalized:
+		"TRIPLE_BALL":
+			return "TB"
+		"EXTRA_LIFE":
+			return "XL"
+		"SPEED_UP":
+			return "SU"
+		"SLOW_DOWN":
+			return "SD"
+		"BIG_BALL":
+			return "BB"
+		"SMALL_BALL":
+			return "SB"
+		"BRICK_THROUGH":
+			return "BT"
+		"DOUBLE_SCORE":
+			return "DS"
+		"BOMB_BALL":
+			return "BO"
+		"AIR_BALL":
+			return "AB"
+		_:
+			return normalized.substr(0, min(2, normalized.length()))
 
 func _refresh_metadata_fields() -> void:
 	is_refreshing_ui = true
@@ -258,7 +377,18 @@ func _normalize_level_to_play_area(level_data: Dictionary) -> Dictionary:
 		var row: int = int(brick_data.get("row", -1))
 		var col: int = int(brick_data.get("col", -1))
 		if row >= 0 and row < rows and col >= 0 and col < cols:
-			filtered.append(brick_data)
+			var normalized_brick: Dictionary = {
+				"row": row,
+				"col": col,
+				"type": str(brick_data.get("type", "NORMAL"))
+			}
+			if normalized_brick["type"] == "FORCE_ARROW":
+				var direction: int = int(brick_data.get("direction", 45))
+				normalized_brick["direction"] = direction if FORCE_ARROW_DIRECTIONS.has(direction) else 45
+			elif normalized_brick["type"] == "POWERUP_BRICK":
+				var powerup_type: String = str(brick_data.get("powerup_type", "MYSTERY")).strip_edges().to_upper()
+				normalized_brick["powerup_type"] = powerup_type if POWERUP_TYPE_OPTIONS.has(powerup_type) else "MYSTERY"
+			filtered.append(normalized_brick)
 	output["bricks"] = filtered
 	return output
 
@@ -308,9 +438,14 @@ func _get_brick_count(level_data: Dictionary) -> int:
 	return bricks.size()
 
 func _get_cell_short_text(row: int, col: int) -> String:
-	var brick_type: String = _get_brick_type_at(row, col)
+	var brick_data: Dictionary = _get_brick_data_at(row, col)
+	var brick_type: String = str(brick_data.get("type", ""))
 	if brick_type.is_empty():
 		return ""
+	if brick_type == "FORCE_ARROW":
+		return _get_direction_marker(int(brick_data.get("direction", 45)))
+	if brick_type == "POWERUP_BRICK":
+		return _get_powerup_abbreviation(str(brick_data.get("powerup_type", "MYSTERY")))
 	return brick_type.substr(0, 1)
 
 func _get_cell_color(row: int, col: int) -> Color:
@@ -320,6 +455,10 @@ func _get_cell_color(row: int, col: int) -> Color:
 	return BRICK_COLORS.get(brick_type, Color.WHITE)
 
 func _get_brick_type_at(row: int, col: int) -> String:
+	var brick_data: Dictionary = _get_brick_data_at(row, col)
+	return str(brick_data.get("type", ""))
+
+func _get_brick_data_at(row: int, col: int) -> Dictionary:
 	var level_data: Dictionary = _get_current_level()
 	var bricks: Array = level_data.get("bricks", [])
 	for brick_variant in bricks:
@@ -327,8 +466,8 @@ func _get_brick_type_at(row: int, col: int) -> String:
 			continue
 		var brick_data: Dictionary = brick_variant
 		if int(brick_data.get("row", -1)) == row and int(brick_data.get("col", -1)) == col:
-			return str(brick_data.get("type", ""))
-	return ""
+			return brick_data
+	return {}
 
 func _set_brick_type_at(row: int, col: int, brick_type: String) -> bool:
 	var level_data: Dictionary = _get_current_level()
@@ -355,11 +494,15 @@ func _set_brick_type_at(row: int, col: int, brick_type: String) -> bool:
 			"col": col,
 			"type": brick_type
 		}
+		if brick_type == "FORCE_ARROW":
+			entry["direction"] = selected_direction
+		elif brick_type == "POWERUP_BRICK":
+			entry["powerup_type"] = selected_powerup_type
 		if index == -1:
 			bricks.append(entry)
 		else:
 			var existing: Dictionary = bricks[index]
-			if int(existing.get("row", -1)) == row and int(existing.get("col", -1)) == col and str(existing.get("type", "")) == brick_type:
+			if existing == entry:
 				return false
 			bricks[index] = entry
 
@@ -512,7 +655,16 @@ func _on_remove_level_button_pressed() -> void:
 
 func _on_palette_select_item_selected(index: int) -> void:
 	selected_brick_type = palette_select.get_item_text(index)
+	_refresh_special_picker_visibility()
 	status_label.text = "Brush: %s" % selected_brick_type
+
+func _on_direction_select_item_selected(index: int) -> void:
+	selected_direction = int(direction_select.get_item_id(index))
+	status_label.text = "Arrow direction: %s" % _get_direction_label(selected_direction)
+
+func _on_powerup_type_select_item_selected(index: int) -> void:
+	selected_powerup_type = powerup_type_select.get_item_text(index)
+	status_label.text = "Power-up brick: %s" % selected_powerup_type
 
 func _on_rows_input_value_changed(value: float) -> void:
 	if is_refreshing_ui:
@@ -748,6 +900,7 @@ func _build_pack_payload(target_pack_id: String) -> Dictionary:
 			level_data["name"] = "Level %d" % (idx + 1)
 		levels[idx] = level_data
 	to_save["levels"] = levels
+	to_save["zeppack_version"] = 2 if _requires_pack_v2(to_save) else 1
 
 	var errors: Array[String] = PackLoader.validate_pack(to_save)
 	if not errors.is_empty():
@@ -755,3 +908,19 @@ func _build_pack_payload(target_pack_id: String) -> Dictionary:
 		return {}
 
 	return to_save
+
+func _requires_pack_v2(pack_data: Dictionary) -> bool:
+	var levels: Array = pack_data.get("levels", [])
+	for level_variant in levels:
+		if not (level_variant is Dictionary):
+			continue
+		var level_data: Dictionary = level_variant
+		var bricks: Array = level_data.get("bricks", [])
+		for brick_variant in bricks:
+			if not (brick_variant is Dictionary):
+				continue
+			var brick_data: Dictionary = brick_variant
+			var brick_type: String = str(brick_data.get("type", ""))
+			if brick_type == "FORCE_ARROW" or brick_type == "POWERUP_BRICK":
+				return true
+	return false

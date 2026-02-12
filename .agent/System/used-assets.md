@@ -11,9 +11,9 @@ This document lists all assets currently referenced and in use by the game code.
 | Particle Graphics | 3 | 3 | 100% |
 | Paddle Graphics | 1 | 2 | 50% |
 | Background Graphics | 7 | 7 | 100% |
-| Powerup Graphics | 16 | 16 | 100% |
+| Powerup Graphics | 17 | 24 | 70.8% |
 | Audio SFX | 9 | 10 | 90% |
-| **TOTAL** | **77** | **91** | **84.6%** |
+| **TOTAL** | **78** | **99** | **78.8%** |
 
 ---
 
@@ -134,7 +134,7 @@ All backgrounds are randomly selected by `main_background_manager.gd`.
 
 ---
 
-## 6. Powerup Graphics (16 used)
+## 6. Powerup Graphics (17 used)
 
 Location: `assets/graphics/powerups/`
 
@@ -158,6 +158,7 @@ All referenced in `scripts/power_up.gd` in the texture loading dictionary.
 | `air_ball.png` | Air ball | power_up.gd:47 |
 | `magnet.png` | Magnet | power_up.gd:48 |
 | `block.png` | Block barrier | power_up.gd:49 |
+| `unused/arrow_down_right.png` | FORCE_ARROW tile sprite (rotated per direction) | brick.gd:39 |
 
 ---
 

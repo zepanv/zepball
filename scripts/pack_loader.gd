@@ -6,7 +6,7 @@ extends Node
 const BUILTIN_PACKS_PATH = "res://packs/"
 const USER_PACKS_PATH = "user://packs/"
 const PACK_EXTENSION = ".zeppack"
-const SUPPORTED_PACK_VERSION = 1
+const SUPPORTED_PACK_VERSIONS: Array[int] = [1, 2]
 const BRICK_SCENE = preload("res://scenes/gameplay/brick.tscn")
 
 const BRICK_TYPE_MAP: Dictionary = {
@@ -23,7 +23,9 @@ const BRICK_TYPE_MAP: Dictionary = {
 	"DIAMOND": 10,  # BrickType.DIAMOND
 	"DIAMOND_GLOSSY": 11,  # BrickType.DIAMOND_GLOSSY
 	"POLYGON": 12,  # BrickType.POLYGON
-	"POLYGON_GLOSSY": 13  # BrickType.POLYGON_GLOSSY
+	"POLYGON_GLOSSY": 13,  # BrickType.POLYGON_GLOSSY
+	"FORCE_ARROW": 14,  # BrickType.FORCE_ARROW
+	"POWERUP_BRICK": 15  # BrickType.POWERUP_BRICK
 }
 
 const BRICK_BASE_SCORE_MAP: Dictionary = {
@@ -40,7 +42,9 @@ const BRICK_BASE_SCORE_MAP: Dictionary = {
 	"DIAMOND": 15,
 	"DIAMOND_GLOSSY": 20,
 	"POLYGON": 15,
-	"POLYGON_GLOSSY": 20
+	"POLYGON_GLOSSY": 20,
+	"FORCE_ARROW": 0,
+	"POWERUP_BRICK": 0
 }
 
 const BRICK_PREVIEW_COLOR_MAP: Dictionary = {
@@ -57,8 +61,30 @@ const BRICK_PREVIEW_COLOR_MAP: Dictionary = {
 	"DIAMOND": Color(0.2, 0.4, 1.0, 1.0),
 	"DIAMOND_GLOSSY": Color(0.2, 0.6, 1.0, 1.0),
 	"POLYGON": Color(0.35, 0.7, 1.0, 1.0),
-	"POLYGON_GLOSSY": Color(0.55, 0.8, 1.0, 1.0)
+	"POLYGON_GLOSSY": Color(0.55, 0.8, 1.0, 1.0),
+	"FORCE_ARROW": Color(1.0, 0.85, 0.3, 1.0),
+	"POWERUP_BRICK": Color(0.3, 1.0, 0.45, 1.0)
 }
+const NON_BREAKABLE_TYPES: Array[String] = ["UNBREAKABLE", "FORCE_ARROW", "POWERUP_BRICK"]
+const VALID_FORCE_DIRECTIONS: Array[int] = [0, 45, 90, 135, 180, 225, 270, 315]
+const VALID_POWERUP_TYPES: Array[String] = [
+	"EXPAND",
+	"CONTRACT",
+	"SPEED_UP",
+	"TRIPLE_BALL",
+	"BIG_BALL",
+	"SMALL_BALL",
+	"SLOW_DOWN",
+	"EXTRA_LIFE",
+	"GRAB",
+	"BRICK_THROUGH",
+	"DOUBLE_SCORE",
+	"MYSTERY",
+	"BOMB_BALL",
+	"AIR_BALL",
+	"MAGNET",
+	"BLOCK"
+]
 
 const LEGACY_PACK_ORDER: Array[String] = ["classic-challenge", "prism-showcase", "nebula-ascend"]
 
@@ -178,7 +204,8 @@ func _load_pack_file(path: String) -> Dictionary:
 
 func validate_pack(data: Dictionary) -> Array[String]:
 	var errors: Array[String] = []
-	if int(data.get("zeppack_version", -1)) != SUPPORTED_PACK_VERSION:
+	var zeppack_version: int = int(data.get("zeppack_version", -1))
+	if not SUPPORTED_PACK_VERSIONS.has(zeppack_version):
 		errors.append("unsupported zeppack_version")
 
 	var pack_id: String = str(data.get("pack_id", "")).strip_edges()
@@ -214,6 +241,21 @@ func validate_pack(data: Dictionary) -> Array[String]:
 			if not (brick is Dictionary):
 				errors.append("levels[%d].bricks[%d] is not an object" % [i, j])
 				break
+			var brick_type: String = str(brick.get("type", ""))
+			if not BRICK_TYPE_MAP.has(brick_type):
+				errors.append("levels[%d].bricks[%d].type is unknown" % [i, j])
+				continue
+			if zeppack_version < 2 and (brick_type == "FORCE_ARROW" or brick_type == "POWERUP_BRICK"):
+				errors.append("levels[%d].bricks[%d].type requires zeppack_version 2" % [i, j])
+				continue
+			if zeppack_version >= 2 and brick_type == "FORCE_ARROW":
+				var direction: int = int(brick.get("direction", 45))
+				if not VALID_FORCE_DIRECTIONS.has(direction):
+					errors.append("levels[%d].bricks[%d].direction must be one of 0/45/90/135/180/225/270/315" % [i, j])
+			if zeppack_version >= 2 and brick_type == "POWERUP_BRICK":
+				var powerup_type: String = str(brick.get("powerup_type", "MYSTERY")).strip_edges().to_upper()
+				if not VALID_POWERUP_TYPES.has(powerup_type):
+					errors.append("levels[%d].bricks[%d].powerup_type is unknown" % [i, j])
 
 	return errors
 
@@ -313,9 +355,13 @@ func instantiate_level(pack_id: String, level_index: int, brick_container: Node2
 			start_y + row * (brick_size + spacing)
 		)
 		brick.brick_type = BRICK_TYPE_MAP[brick_type_string]
+		if brick_type_string == "FORCE_ARROW":
+			brick.direction = int(brick_def.get("direction", 45))
+		elif brick_type_string == "POWERUP_BRICK":
+			brick.powerup_type_name = str(brick_def.get("powerup_type", "MYSTERY"))
 
 		brick_container.add_child(brick)
-		if brick.brick_type != BRICK_TYPE_MAP["UNBREAKABLE"]:
+		if not NON_BREAKABLE_TYPES.has(brick_type_string):
 			breakable_count += 1
 
 	return {

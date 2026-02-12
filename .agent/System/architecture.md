@@ -127,7 +127,8 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 **Responsibilities**:
 - Loads level data from MenuController pack refs and instantiates bricks via PackLoader
 - Connects signals between ball, GameManager, HUD, and bricks
-- Tracks `remaining_breakable_bricks` for level completion detection
+- Tracks `remaining_breakable_bricks` for level completion detection (excludes UNBREAKABLE/FORCE_ARROW/POWERUP_BRICK/block bricks)
+- Maintains cached lists for `get_cached_level_bricks()` and `get_cached_force_arrows()` used by ball runtime
 - Handles ball loss logic (life loss only if last ball in play)
 - Spawns and manages power-ups with 20% drop chance
 - Manages multi-ball behavior from TRIPLE_BALL power-up
@@ -139,7 +140,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 **Key Methods**:
 - `load_level(level_id)` - Loads level from JSON and spawns bricks
 - `_on_ball_lost(ball)` - Checks if main ball, handles life loss
-- `_on_brick_broken(score_value)` - Awards points, tracks progress, checks completion
+- `_on_brick_broken(score_value, brick_ref)` - Awards points, tracks progress, checks completion using brick type
 - `spawn_additional_balls_with_retry()` - Creates extra balls with retry logic
 
 ### 2. Game State Manager (`scripts/game_manager.gd`)
@@ -204,20 +205,22 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 
 **Physics**:
 - Constant speed movement (base 500, adjusted by difficulty)
-- Spin factor (0.3) - paddle velocity influences ball trajectory
+- Persistent spin model (`spin_amount`) with curve force, exponential decay, and per-hit spin decay
 - Max vertical angle (0.8) - prevents pure horizontal/vertical bounces
 - Ball-to-ball collisions explicitly ignored (no physics conflicts)
 
 **Collision Handling**:
 - **Paddle**: Bounce + add spin from paddle velocity (or grab if active)
-- **Bricks**: Bounce + notify brick with impact direction
+- **Bricks**: Bounce/pass-through based on state (brick-through, penetrating spin, power-up brick pass-through)
 - **Walls**: Simple reflection
 - **Out of bounds**: Right edge = lost, others = error (auto-correct)
 
 **Special Features**:
 - Stuck detection: Monitors movement over 2 seconds, applies escape boost if needed
-- Trail particles: Cyan (normal), Yellow (speed up), Blue (slow down)
+- Trail particles: Cyan (normal), Yellow (speed up), Blue (slow down), Pink/Purple (high spin)
 - Trail toggling based on settings
+- Force Arrow tile influence (`_apply_force_arrows`) curves velocity using cached arrow tiles from main controller
+- Penetrating spin threshold enables pass-through on breakable bricks while consuming spin
 - Air-ball landing uses cached unbreakable-row slot checks first, with physics-query fallback only when cached row data is unavailable
 - Air-ball landing cache/query helpers are delegated to `ball_air_ball_helper.gd` to keep core ball runtime logic focused
 
@@ -251,6 +254,8 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 | DIAMOND_GLOSSY | 2 | 20 | Random color diamond | Angled edges |
 | POLYGON | 1 | 15 | Random color pentagon | Angled edges |
 | POLYGON_GLOSSY | 2 | 20 | Random color pentagon | Angled edges |
+| FORCE_ARROW | ∞ | 0 | Arrow icon | Non-breakable directional force field |
+| POWERUP_BRICK | 1 (on collect) | 0 | Power-up icon | Pass-through tile, grants configured power-up instantly |
 
 **On Break**:
 1. Emits `brick_broken(score_value)` signal
@@ -341,6 +346,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - Create/edit user packs (`.zeppack`) in-game
    - Edit pack metadata and level roster
    - Paint/erase bricks on a configurable rows/cols grid
+   - Advanced tile controls: Force Arrow direction picker and Power-up Brick type picker
    - Duplicate/reorder levels and undo/redo edits
    - Run `TEST LEVEL` from in-memory draft and return to editor
    - Save to `user://packs/` through `PackLoader.save_user_pack()`
@@ -487,6 +493,8 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Levels are grouped into `.zeppack` files in `res://packs/` and `user://packs/`.
 - Active built-in packs: `classic-challenge`, `prism-showcase`, `nebula-ascend`.
 - Runtime addressing is `pack_id + level_index` (legacy integer IDs are compatibility-only).
+- Supported schema versions: `zeppack_version` 1 and 2.
+- Version 2 adds optional per-brick metadata: `direction` for `FORCE_ARROW`, `powerup_type` for `POWERUP_BRICK`.
 
 **PackLoader Functions**:
 - `get_all_packs()` / `get_builtin_packs()` / `get_user_packs()`

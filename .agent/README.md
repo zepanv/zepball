@@ -41,7 +41,7 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/level-overhaul.md` - Pack-format migration, in-game editor, pack/level UX overhaul, third built-in pack ✅ IMPLEMENTED
   - `Tasks/Completed/skip-options.md` - Input-based intro skip, fast-forward level complete, quick restart ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
-  - **`Tasks/Backlog/advanced-tile-elements.md`** - Force Arrows, Power-up Bricks, Enhanced Spin, Penetrating Spin (full PRD + implementation plan)
+  - **`Tasks/Backlog/advanced-tile-elements.md`** - Force arrows, power-up bricks, persistent spin, penetrating spin 🚧 IN PROGRESS (push/spin tuning pending)
   - **`Tasks/Backlog/future-features.md`** - Remaining planned features (Time Attack, Survival, Ball Speed Zones, Brick Chains, Paddle Abilities, hardcore modes)
 
 ### SOP/
@@ -51,9 +51,9 @@ Best practices and workflows for development. **These procedures are mandatory a
 ## Current Game State (2026-02-12)
 
 ### Core Features ✅ COMPLETE
-- **Gameplay**: Paddle movement (keyboard + mouse), ball physics with spin, 14 brick types (including bomb/diamond/pentagon), collision detection, score tracking
+- **Gameplay**: Paddle movement (keyboard + mouse), ball physics with persistent/decaying spin, 16 brick types, collision detection, score tracking
 - **Power-Ups**: 16 types with visual timers and effects (Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block)
-- **Special Bricks**: Bomb bricks that explode and destroy surrounding bricks (75px radius)
+- **Special Bricks/Tiles**: Bomb bricks (AoE break), Force Arrow tiles (directional force field), Power-up Bricks (instant power-up pass-through)
 - **Difficulty**: 3 modes (Easy/Normal/Hard) with speed and score multipliers
 - **Levels**: 30 built-in levels with varied brick mixes (bomb bricks appear across all sets)
 - **Menu System**: Complete flow (Main Menu, Set Select, Level Select, Game Over, Level Complete, Set Complete, Stats, Settings)
@@ -159,13 +159,19 @@ These are always accessible and control key game systems:
 - Settings UI for music mode + loop-one track selection
 - SFX: paddle hit, brick hit, wall hit, power-up good/bad, life lost, combo milestone, level complete, game over
 
-### 📅 Phase 8: Advanced Features (FUTURE)
-See `Tasks/Backlog/future-features.md` for detailed plans:
+### 📅 Phase 8: Advanced Features (IN PROGRESS)
+- 🚧 Advanced Tile Elements in progress (`Tasks/Backlog/advanced-tile-elements.md`)
+- Remaining roadmap in `Tasks/Backlog/future-features.md`:
 - Game Modes: Time Attack, Survival, Iron Ball, One Life
 - QoL: Skip options and mode-specific UX polish
 - Advanced Gameplay: Ball speed zones, brick chains, paddle abilities
 
 ## Recent Update History
+
+### 2026-02-12 (Latest) - Advanced Tile Elements In Progress
+- 🚧 **Status Change**: Moved back to backlog for continued tuning.
+- 🚧 **Force Arrow**: Direction visuals improved, but arrow push behavior still needs tuning (balls still bounce off without desired directional push).
+- 🚧 **Spin System**: Persistent spin remains unpredictable and needs stabilization before feature completion.
 
 ### 2026-02-12 (Latest) - Skip Options Complete
 - ✅ **Removed Short Intro Setting**: Deleted `short_level_intro` from settings/save/HUD; default intro hold is now 1.0s (total 2.0s with fades).

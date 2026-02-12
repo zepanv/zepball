@@ -71,6 +71,8 @@ const TRIPLE_BALL_LEFT_ZONE_ANGLE_OFFSET = 10.0
 const TRIPLE_BALL_STANDARD_ANGLE_OFFSET = 5.0
 const TRIPLE_BALL_ADDITIONAL_COUNT = 2
 const TRIPLE_BALL_IMMUNITY_DURATION = 0.5
+const BRICK_TYPE_FORCE_ARROW = 14
+const BRICK_TYPE_POWERUP_BRICK = 15
 
 # Boundary constants
 const RIGHT_BOUNDARY = 1300   # Past paddle (ball lost)
@@ -79,6 +81,7 @@ const POWER_UP_MISS_X = 1300  # X position where power-ups despawn
 # Track only breakable bricks so level completion is deterministic
 var remaining_breakable_bricks: int = 0
 var cached_level_bricks: Array[Node] = []
+var cached_force_arrows: Array[Node] = []
 var background_manager: RefCounted = null
 var power_up_handler: RefCounted = null
 
@@ -224,8 +227,12 @@ func _instantiate_level_from_data(level_data: Dictionary, pack_id: String, level
 			start_y + row * (brick_size + spacing)
 		)
 		brick.brick_type = PackLoader.BRICK_TYPE_MAP[brick_type_string]
+		if brick_type_string == "FORCE_ARROW":
+			brick.direction = int(brick_def.get("direction", 45))
+		elif brick_type_string == "POWERUP_BRICK":
+			brick.powerup_type_name = str(brick_def.get("powerup_type", "MYSTERY"))
 		brick_container.add_child(brick)
-		if brick.brick_type != PackLoader.BRICK_TYPE_MAP["UNBREAKABLE"]:
+		if not PackLoader.NON_BREAKABLE_TYPES.has(brick_type_string):
 			breakable_count += 1
 
 	return {
@@ -264,14 +271,21 @@ func connect_brick_signals():
 	"""Connect all brick signals to game manager"""
 	remaining_breakable_bricks = 0
 	cached_level_bricks.clear()
+	cached_force_arrows.clear()
 	for brick in brick_container.get_children():
 		if brick.has_signal("brick_broken"):
-			brick.brick_broken.connect(_on_brick_broken)
+			brick.brick_broken.connect(_on_brick_broken.bind(brick))
 		if brick.has_signal("power_up_spawned"):
 			brick.power_up_spawned.connect(_on_power_up_spawned)
+		if brick.has_signal("powerup_collected"):
+			brick.powerup_collected.connect(_on_power_up_collected)
 		cached_level_bricks.append(brick)
-		if brick.brick_type != brick.BrickType.UNBREAKABLE:
+		if int(brick.brick_type) == BRICK_TYPE_FORCE_ARROW:
+			cached_force_arrows.append(brick)
+		if _is_completion_brick(int(brick.brick_type)) and not brick.is_in_group("block_brick"):
 			remaining_breakable_bricks += 1
+	if remaining_breakable_bricks == 0:
+		call_deferred("check_level_complete")
 
 func get_cached_level_bricks() -> Array[Node]:
 	"""Return live level bricks with in-place compaction to avoid full container scans."""
@@ -280,7 +294,13 @@ func get_cached_level_bricks() -> Array[Node]:
 			cached_level_bricks.remove_at(i)
 	return cached_level_bricks
 
-func _on_brick_broken(score_value: int):
+func get_cached_force_arrows() -> Array[Node]:
+	for i in range(cached_force_arrows.size() - 1, -1, -1):
+		if not is_instance_valid(cached_force_arrows[i]):
+			cached_force_arrows.remove_at(i)
+	return cached_force_arrows
+
+func _on_brick_broken(score_value: int, brick_ref: Node):
 	"""Handle brick destruction"""
 	game_manager.add_score(score_value)
 
@@ -292,8 +312,17 @@ func _on_brick_broken(score_value: int):
 	_apply_brick_hit_shake(score_value)
 
 	# Decrement breakable brick count and check completion immediately
-	remaining_breakable_bricks = max(remaining_breakable_bricks - 1, 0)
+	if brick_ref and is_instance_valid(brick_ref) and not brick_ref.is_in_group("block_brick"):
+		if _is_completion_brick(int(brick_ref.brick_type)):
+			remaining_breakable_bricks = max(remaining_breakable_bricks - 1, 0)
 	check_level_complete()
+
+func _is_completion_brick(brick_type_int: int) -> bool:
+	return (
+		brick_type_int != PackLoader.BRICK_TYPE_MAP["UNBREAKABLE"]
+		and brick_type_int != BRICK_TYPE_FORCE_ARROW
+		and brick_type_int != BRICK_TYPE_POWERUP_BRICK
+	)
 
 func check_level_complete():
 	"""Check if all bricks have been destroyed"""
