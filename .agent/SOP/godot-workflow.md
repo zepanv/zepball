@@ -610,6 +610,7 @@ Before committing changes involving assets:
    - Application name
    - Icon
    - Code signing (macOS)
+   - Include non-resource pack files in `include_filter` (for this project: `packs/*.zeppack`)
 4. Save preset
 
 ### Exporting Build
@@ -618,6 +619,25 @@ Before committing changes involving assets:
 3. Click Export Project
 4. Choose output file location
 5. Export
+
+### Automated Release Export (CLI)
+For this project, use the release automation script when you want all release presets plus a distributable bundle:
+
+```bash
+./scripts/export_release_bundle.sh
+```
+
+What it does:
+- Exports every configured preset in `export_presets.cfg` via `--export-release`
+- Uses each preset's configured `export_path`
+- Copies root `README.md` into each preset bundle
+- Creates one zip per preset in `dist/releases/` (overwrites on subsequent runs)
+  - Linux executable (`zepball.x86_64`) -> `dist/releases/zepball.x86_64.zip`
+  - Windows executable (`zepball.exe`) -> `dist/releases/zepball.zip`
+- Keeps temporary staging artifacts in `dist/releases/.staging/`
+
+Optional:
+- Set a custom Godot binary with `GODOT_BIN`, e.g. `GODOT_BIN=godot4 ./scripts/export_release_bundle.sh`
 
 ### Testing Exports
 - **macOS**: Run .app bundle, check for errors

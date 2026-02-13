@@ -178,6 +178,9 @@ These are always accessible and control key game systems:
 ## Recent Update History
 
 ### 2026-02-13 (Latest) - Launch & Spin Fixes
+- ✅ **Built-In Pack Export Fix**: `PackLoader` now discovers built-in `.zeppack` files with `ResourceLoader.list_directory()` and a `DirAccess` fallback, fixing missing built-in pack cards in exported builds.
+- ✅ **Export Preset Include Fix**: Added `packs/*.zeppack` to export preset include filters so built-in packs are bundled in exported binaries.
+- ✅ **Release Export Automation**: Added `scripts/export_release_bundle.sh` to export all release presets, copy `README.md`, and generate per-preset zips in `dist/releases/` (`zepball.x86_64.zip` for Linux, `zepball.zip` for Windows).
 - ✅ **Launch Angle Fix**: Fixed ball launching toward paddle when paddle was moving. Now uses correct leftward angles (180° straight, 135° up-left when moving down, 225° down-left when moving up) instead of incorrectly using -45°.
 - ✅ **Brick-Through Powerup Fix**: Fixed powerup bricks not being collected when ball has brick-through active or penetrating spin - now properly calls collect_powerup() in pass-through path.
 - ✅ **Spin Safety on Launch**: Reduced max spin on launch to 50% of normal, with additional reduction near vertical boundaries.

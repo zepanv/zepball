@@ -528,6 +528,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Runtime addressing is `pack_id + level_index` (legacy integer IDs are compatibility-only).
 - Supported schema versions: `zeppack_version` 1 and 2.
 - Version 2 adds optional per-brick metadata: `direction` for `FORCE_ARROW`, `powerup_type` for `POWERUP_BRICK`.
+- Export-safe built-in pack discovery uses `ResourceLoader.list_directory()` with `DirAccess` fallback so pack cards populate correctly in exported builds.
 
 **PackLoader Functions**:
 - `get_all_packs()` / `get_builtin_packs()` / `get_user_packs()`

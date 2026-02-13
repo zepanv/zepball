@@ -23,6 +23,7 @@ mono_crash.*.json
 # Build results
 builds/
 exports/
+dist/
 
 # Logs
 *.log

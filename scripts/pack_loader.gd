@@ -122,23 +122,11 @@ func reload_packs() -> void:
 	)
 
 func _load_pack_directory(base_path: String, is_builtin: bool) -> void:
-	var dir: DirAccess = DirAccess.open(base_path)
-	if dir == null:
+	var files: Array[String] = _list_pack_files(base_path, is_builtin)
+	if files.is_empty():
 		if is_builtin:
-			push_warning("PackLoader: built-in packs directory missing: %s" % base_path)
+			push_warning("PackLoader: built-in packs directory missing or empty: %s" % base_path)
 		return
-
-	var files: Array[String] = []
-	dir.list_dir_begin()
-	var file_name: String = dir.get_next()
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.to_lower().ends_with(PACK_EXTENSION):
-			files.append(file_name)
-		file_name = dir.get_next()
-	dir.list_dir_end()
-	files.sort_custom(func(a: String, b: String) -> bool:
-		return a.naturalnocasecmp_to(b) < 0
-	)
 
 	for pack_file in files:
 		var full_path: String = base_path + pack_file
@@ -172,6 +160,46 @@ func _load_pack_directory(base_path: String, is_builtin: bool) -> void:
 			_builtin_pack_ids.append(pack_id)
 		else:
 			_user_pack_ids.append(pack_id)
+
+func _list_pack_files(base_path: String, is_builtin: bool) -> Array[String]:
+	var files: Array[String] = []
+	if is_builtin and ResourceLoader.has_method("list_directory"):
+		var resource_files = ResourceLoader.list_directory(base_path.trim_suffix("/"))
+		if resource_files != null and resource_files.size() > 0:
+			for file_name in resource_files:
+				files.append(str(file_name))
+
+	if files.is_empty():
+		var dir: DirAccess = DirAccess.open(base_path)
+		if dir == null:
+			return []
+		for file_name in dir.get_files():
+			files.append(str(file_name))
+
+	var cleaned: Array[String] = []
+	var seen: Dictionary = {}
+	for raw_name in files:
+		var file_name: String = str(raw_name)
+		if file_name.ends_with(".import"):
+			file_name = file_name.substr(0, file_name.length() - 7)
+		elif file_name.ends_with(".remap"):
+			file_name = file_name.substr(0, file_name.length() - 6)
+		elif file_name.find(".") == -1:
+			var candidate: String = file_name + PACK_EXTENSION
+			if FileAccess.file_exists(base_path + candidate):
+				file_name = candidate
+
+		if not file_name.to_lower().ends_with(PACK_EXTENSION):
+			continue
+		if seen.has(file_name):
+			continue
+		seen[file_name] = true
+		cleaned.append(file_name)
+
+	cleaned.sort_custom(func(a: String, b: String) -> bool:
+		return a.naturalnocasecmp_to(b) < 0
+	)
+	return cleaned
 
 func _load_pack_file(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
