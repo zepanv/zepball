@@ -302,6 +302,9 @@ func start_level_ref(pack_id: String, level_index: int) -> void:
 	# Lock difficulty during gameplay
 	DifficultyManager.lock_difficulty()
 
+	# Clear any active power-ups from previous level
+	PowerUpManager.clear_all_effects()
+
 	# Load gameplay scene
 	get_tree().change_scene_to_file(GAMEPLAY_SCENE)
 	scene_changed.emit(GAMEPLAY_SCENE)
@@ -719,9 +722,24 @@ func _reset_set_breakdown() -> void:
 	set_perfect_bonus = 0
 
 func _get_next_level_ref() -> Dictionary:
+	# First check if there's a next level within the same pack
+	var next_level_index = current_level_index + 1
+	var level_count = PackLoader.get_level_count(current_pack_id)
+
+	if next_level_index < level_count:
+		# Next level exists in the same pack
+		return {
+			"pack_id": current_pack_id,
+			"level_index": next_level_index
+		}
+
+	# No next level in current pack - check legacy system for cross-pack progression
 	var current_legacy_id := PackLoader.get_legacy_level_id(current_pack_id, current_level_index)
 	if current_legacy_id == -1:
+		# Not a legacy pack and no more levels in this pack
 		return {}
+
+	# Legacy pack - try to get next level across packs
 	return PackLoader.get_legacy_level_ref(current_legacy_id + 1)
 
 func _find_set_id_by_pack_id(pack_id: String) -> int:

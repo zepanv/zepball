@@ -27,13 +27,13 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = -250.0
-offset_right = 200.0
-offset_bottom = 250.0
+offset_left = -220.0
+offset_top = -280.0
+offset_right = 220.0
+offset_bottom = 280.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 12
 
 [node name="TitleLabel" type="Label" parent="VBoxContainer" unique_id=2078753568]
 layout_mode = 2
@@ -43,108 +43,108 @@ text = "ZEP BALL"
 horizontal_alignment = 1
 
 [node name="Spacer1" type="Control" parent="VBoxContainer" unique_id=1784051722]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 15)
 layout_mode = 2
 
 [node name="PlayButton" type="Button" parent="VBoxContainer" unique_id=1672319743]
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
 theme_override_colors/font_hover_color = Color(0.9, 0.3, 0.4, 1)
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 30
 text = "PLAY"
 
 [node name="ReturnButton" type="Button" parent="VBoxContainer" unique_id=563068928]
 visible = false
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 1, 0.5, 1)
 theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 26
+theme_override_font_sizes/font_size = 22
 text = "RETURN TO LAST LEVEL"
 
 [node name="Spacer2" type="Control" parent="VBoxContainer" unique_id=349361510]
-custom_minimum_size = Vector2(0, 20)
+custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
 [node name="DifficultyLabel" type="Label" parent="VBoxContainer" unique_id=424761969]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "DIFFICULTY"
 horizontal_alignment = 1
 
 [node name="DifficultyButtons" type="HBoxContainer" parent="VBoxContainer" unique_id=1667795932]
 layout_mode = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 10
 alignment = 1
 
 [node name="EasyButton" type="Button" parent="VBoxContainer/DifficultyButtons" unique_id=1100847822]
-custom_minimum_size = Vector2(110, 50)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 1, 0.5, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "EASY"
 
 [node name="NormalButton" type="Button" parent="VBoxContainer/DifficultyButtons" unique_id=1319997160]
-custom_minimum_size = Vector2(110, 50)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
 theme_override_colors/font_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "NORMAL"
 
 [node name="HardButton" type="Button" parent="VBoxContainer/DifficultyButtons" unique_id=1877448607]
-custom_minimum_size = Vector2(110, 50)
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.3, 0.4, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "HARD"
 
 [node name="CurrentDifficultyLabel" type="Label" parent="VBoxContainer" unique_id=490023433]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
+theme_override_font_sizes/font_size = 16
 text = "Current: NORMAL"
 horizontal_alignment = 1
 
 [node name="Spacer3" type="Control" parent="VBoxContainer" unique_id=1136815340]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 15)
 layout_mode = 2
 
 [node name="EditorButton" type="Button" parent="VBoxContainer" unique_id=893158771]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.75, 0.25, 1)
 theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 22
 text = "EDITOR"
 
 [node name="StatsButton" type="Button" parent="VBoxContainer" unique_id=363254312]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.3, 1)
 theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 22
 text = "STATS"
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer" unique_id=341168533]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 22
 text = "SETTINGS"
 
 [node name="Spacer4" type="Control" parent="VBoxContainer" unique_id=129340431]
-custom_minimum_size = Vector2(0, 20)
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
 [node name="QuitButton" type="Button" parent="VBoxContainer" unique_id=626379057]
-custom_minimum_size = Vector2(0, 50)
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
 theme_override_colors/font_hover_color = Color(0.9, 0.3, 0.4, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 22
 text = "QUIT"
 
 [node name="VersionLabel" type="Label" parent="." unique_id=1563886061]

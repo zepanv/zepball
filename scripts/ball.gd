@@ -74,6 +74,7 @@ var is_main_ball: bool = true  # Identifies the original ball in the scene
 var paddle_offset: Vector2 = Vector2(-30, 0)  # Offset from paddle when attached/grabbed
 var grab_immunity_timer: float = 0.0  # Prevents immediate re-grab after launch
 var block_pass_timer: float = 0.0  # Allow pass-through behind block right after launch
+var spin_delay_timer: float = 0.0  # Delay before spin takes effect after launch
 
 var ball_radius: float = BASE_RADIUS
 var last_physics_delta: float = 0.0
@@ -149,11 +150,13 @@ func _physics_process(delta):
 		velocity = Vector2.ZERO
 		return
 
-	# Decrement grab immunity timer
+	# Decrement timers
 	if grab_immunity_timer > 0.0:
 		grab_immunity_timer -= delta
 	if block_pass_timer > 0.0:
 		block_pass_timer -= delta
+	if spin_delay_timer > 0.0:
+		spin_delay_timer -= delta
 	if paddle_reference == null or not is_instance_valid(paddle_reference):
 		_ensure_paddle_reference()
 	_refresh_effect_flags()
@@ -234,10 +237,12 @@ func launch_ball():
 	# Set grab immunity to prevent immediate re-grab after launch
 	grab_immunity_timer = 0.2  # 200ms immunity
 	block_pass_timer = 0.35  # Allow passing block barrier on launch
+	spin_delay_timer = 0.45  # 450ms delay before spin takes effect (prevents immediate curve on launch)
 
 	# Add small random position offset to prevent stacked balls from colliding
 	# This helps when multiple balls are grabbed at the same spot
-	position += Vector2(randf_range(-3.0, 3.0), randf_range(-3.0, 3.0))
+	# Always offset to the left (negative X) to ensure balls don't spawn behind the paddle
+	position += Vector2(randf_range(-8.0, -3.0), randf_range(-3.0, 3.0))
 
 	if not launched_with_aim:
 		# Check if paddle is moving
@@ -377,7 +382,11 @@ func handle_collision(collision: KinematicCollision2D):
 			position += velocity * last_physics_delta
 		else:
 			var bounce_normal = normal
-			if collider.has_method("_get_brick_shape") and collider._get_brick_shape() == "square":
+			var brick_shape = "square"
+			if collider.has_method("_get_brick_shape"):
+				brick_shape = collider._get_brick_shape()
+
+			if brick_shape == "square":
 				var hit_pos = collision.get_position()
 				var offset = hit_pos - collider.global_position
 				if abs(offset.x) > abs(offset.y):
@@ -388,17 +397,25 @@ func handle_collision(collision: KinematicCollision2D):
 					var y_sign = sign(offset.y)
 					if y_sign != 0:
 						bounce_normal = Vector2(0, y_sign)
-				# Normal bounce behavior
-				velocity = velocity.bounce(bounce_normal)
-				normal = bounce_normal
-				if is_unbreakable:
-					# Add a small random deflection to avoid edge hugging
-					velocity = velocity.rotated(deg_to_rad(randf_range(-12.0, 12.0)))
-					position += bounce_normal * (ball_radius * 0.6)
-				brick_hit.emit(collider)
-				if collider.has_method("hit"):
-					collider.hit(old_velocity.normalized())
-				spin_amount *= SPIN_ON_HIT_DECAY
+
+			# Normal bounce behavior
+			velocity = velocity.bounce(bounce_normal)
+			normal = bounce_normal
+
+			# Push ball away from brick to prevent rapid re-collision
+			# This is especially important for polygon/diamond shapes with angled faces
+			if is_unbreakable:
+				# Add a small random deflection to avoid edge hugging
+				velocity = velocity.rotated(deg_to_rad(randf_range(-12.0, 12.0)))
+				position += bounce_normal * (ball_radius * 0.6)
+			elif brick_shape in ["polygon", "diamond"]:
+				# For polygon/diamond bricks, add slight separation to prevent stuck loops
+				position += bounce_normal * (ball_radius * 0.3)
+
+			brick_hit.emit(collider)
+			if collider.has_method("hit"):
+				collider.hit(old_velocity.normalized())
+			spin_amount *= SPIN_ON_HIT_DECAY
 		AudioManager.play_sfx("hit_brick")
 
 		# Check if bomb ball is active - destroy surrounding bricks (skip block bricks)
@@ -566,6 +583,9 @@ func _is_moving_toward_paddle_horizontally() -> bool:
 	return to_paddle_x * velocity.x > 0.0
 
 func _apply_persistent_spin(delta: float) -> void:
+	# Don't apply spin until delay timer expires (prevents dangerous curves on launch)
+	if spin_delay_timer > 0.0:
+		return
 	if absf(spin_amount) < 1.0:
 		spin_amount = 0.0
 		return
@@ -919,8 +939,14 @@ func destroy_surrounding_bricks(impact_position: Vector2):
 		# Check distance from impact point using squared values (avoid sqrt in hot path)
 		var dist_sq = brick.global_position.distance_squared_to(impact_position)
 		if dist_sq <= bomb_radius_sq:
-			# Break this brick with a fake velocity
-			if brick.has_method("break_brick"):
+			# For power-up bricks, grant the effect immediately (not a falling power-up)
+			if "brick_type" in brick and brick.brick_type == BRICK_TYPE_POWERUP_BRICK:
+				if brick.has_method("collect_powerup"):
+					brick.collect_powerup()
+				else:
+					brick.break_brick(Vector2(-1, 0))
+			# For regular bricks, break normally
+			elif brick.has_method("break_brick"):
 				brick.break_brick(Vector2(-1, 0))  # Use left direction for consistency
 			elif brick.has_method("hit"):
 				brick.hit(Vector2(-1, 0))  # Fallback for safety

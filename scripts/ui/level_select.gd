@@ -131,7 +131,10 @@ func _apply_filter(entries: Array[Dictionary]) -> Array[Dictionary]:
 	for entry in entries:
 		var unlocked := bool(entry.get("is_unlocked", false))
 		var completed := bool(entry.get("is_completed", false))
-		if filter_mode == "completed" and completed:
+		var score := int(entry.get("score", 0))
+		# Match the same logic used in the card display (line 221)
+		var is_visually_completed := completed or score > 0
+		if filter_mode == "completed" and is_visually_completed:
 			filtered.append(entry)
 		elif filter_mode == "locked" and not unlocked:
 			filtered.append(entry)
@@ -158,7 +161,7 @@ func _apply_sort(entries: Array[Dictionary]) -> void:
 
 func create_level_card(entry: Dictionary) -> void:
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(350, 130)
+	panel.custom_minimum_size = Vector2(360, 130)
 
 	var root := HBoxContainer.new()
 	root.add_theme_constant_override("separation", 10)

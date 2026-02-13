@@ -430,7 +430,7 @@ func break_brick(impact_direction: Vector2 = Vector2.ZERO):
 
 func try_spawn_power_up():
 	"""Randomly spawn a power-up at this brick's position"""
-	# Skip if unbreakable (shouldn't happen, but safety check)
+	# Skip if unbreakable, force arrow, or power-up brick (power-up bricks grant effect immediately via collect_powerup)
 	if brick_type == BrickType.UNBREAKABLE or brick_type == BrickType.FORCE_ARROW or brick_type == BrickType.POWERUP_BRICK:
 		return
 
@@ -466,15 +466,20 @@ func explode_surrounding_bricks():
 		if "brick_type" in brick and (
 			brick.brick_type == BrickType.UNBREAKABLE
 			or brick.brick_type == BrickType.FORCE_ARROW
-			or brick.brick_type == BrickType.POWERUP_BRICK
 		):
 			continue
 
 		# Check distance from this brick using squared values (avoid sqrt in hot path)
 		var dist_sq = brick.global_position.distance_squared_to(global_position)
 		if dist_sq <= BOMB_RADIUS_SQ:
-			# Break this brick
-			if brick.has_method("break_brick"):
+			# For power-up bricks, grant the effect immediately (not a falling power-up)
+			if "brick_type" in brick and brick.brick_type == BrickType.POWERUP_BRICK:
+				if brick.has_method("collect_powerup"):
+					brick.collect_powerup()
+				else:
+					brick.break_brick(Vector2(-1, 0))
+			# For regular bricks, break normally
+			elif brick.has_method("break_brick"):
 				brick.break_brick(Vector2(-1, 0))  # Use left direction for consistency
 			elif brick.has_method("hit"):
 				brick.hit(Vector2(-1, 0))  # Fallback for safety

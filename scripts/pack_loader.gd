@@ -540,8 +540,9 @@ func legacy_set_exists(set_id: int) -> bool:
 	return not get_legacy_set_data(set_id).is_empty()
 
 func get_legacy_set_pack_id(set_id: int) -> String:
-	var set_data: Dictionary = get_legacy_set_data(set_id)
-	return str(set_data.get("pack_id", ""))
+	if set_id <= 0 or set_id > LEGACY_PACK_ORDER.size():
+		return ""
+	return LEGACY_PACK_ORDER[set_id - 1]
 
 func get_legacy_set_level_ids(set_id: int) -> Array:
 	var pack_id: String = get_legacy_set_pack_id(set_id)

@@ -49,9 +49,9 @@ layout_mode = 2
 [node name="LevelsGrid" type="GridContainer" parent="VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/h_separation = 20
+theme_override_constants/h_separation = 16
 theme_override_constants/v_separation = 15
-columns = 3
+columns = 4
 
 [node name="Spacer2" type="Control" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 20)

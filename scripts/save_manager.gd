@@ -278,50 +278,37 @@ func _ensure_pack_progression_defaults() -> void:
 		save_data["pack_progression"] = {}
 
 	var pack_progression: Dictionary = save_data["pack_progression"]
-	if not pack_progression.has("classic-challenge"):
-		pack_progression["classic-challenge"] = {
-			"highest_unlocked_level_index": 0,
-			"levels_completed": [],
-			"stars": {}
-		}
-	var classic_entry: Dictionary = pack_progression["classic-challenge"]
-	if not classic_entry.has("highest_unlocked_level_index"):
-		classic_entry["highest_unlocked_level_index"] = 0
-	if not classic_entry.has("levels_completed"):
-		classic_entry["levels_completed"] = []
-	if not classic_entry.has("stars"):
-		classic_entry["stars"] = {}
-	pack_progression["classic-challenge"] = classic_entry
 
-	if not pack_progression.has("prism-showcase"):
-		pack_progression["prism-showcase"] = {
-			"highest_unlocked_level_index": -1,
-			"levels_completed": [],
-			"stars": {}
-		}
-	var prism_entry: Dictionary = pack_progression["prism-showcase"]
-	if not prism_entry.has("highest_unlocked_level_index"):
-		prism_entry["highest_unlocked_level_index"] = -1
-	if not prism_entry.has("levels_completed"):
-		prism_entry["levels_completed"] = []
-	if not prism_entry.has("stars"):
-		prism_entry["stars"] = {}
-	pack_progression["prism-showcase"] = prism_entry
+	# Dynamically initialize all available packs (built-in and user-created)
+	if PackLoader:
+		var all_packs: Array[Dictionary] = PackLoader.get_all_packs()
+		for pack in all_packs:
+			var pack_id := str(pack.get("pack_id", ""))
+			if pack_id.is_empty():
+				continue
 
-	if not pack_progression.has("nebula-ascend"):
-		pack_progression["nebula-ascend"] = {
-			"highest_unlocked_level_index": -1,
-			"levels_completed": [],
-			"stars": {}
-		}
-	var nebula_entry: Dictionary = pack_progression["nebula-ascend"]
-	if not nebula_entry.has("highest_unlocked_level_index"):
-		nebula_entry["highest_unlocked_level_index"] = -1
-	if not nebula_entry.has("levels_completed"):
-		nebula_entry["levels_completed"] = []
-	if not nebula_entry.has("stars"):
-		nebula_entry["stars"] = {}
-	pack_progression["nebula-ascend"] = nebula_entry
+			# Determine default unlock state: classic-challenge starts with level 0 unlocked, others start locked
+			var default_unlock := -1
+			if pack_id == "classic-challenge":
+				default_unlock = 0
+
+			if not pack_progression.has(pack_id):
+				pack_progression[pack_id] = {
+					"highest_unlocked_level_index": default_unlock,
+					"levels_completed": [],
+					"stars": {}
+				}
+
+			# Ensure all required fields exist in the entry
+			var entry: Dictionary = pack_progression[pack_id]
+			if not entry.has("highest_unlocked_level_index"):
+				entry["highest_unlocked_level_index"] = default_unlock
+			if not entry.has("levels_completed"):
+				entry["levels_completed"] = []
+			if not entry.has("stars"):
+				entry["stars"] = {}
+			pack_progression[pack_id] = entry
+
 	save_data["pack_progression"] = pack_progression
 
 	if not save_data.has("pack_high_scores"):

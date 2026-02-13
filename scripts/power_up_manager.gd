@@ -352,3 +352,21 @@ func is_air_ball_active() -> bool:
 func is_magnet_active() -> bool:
 	"""Check if magnet power-up is currently active"""
 	return active_effects.has(PowerUpType.MAGNET)
+
+func clear_all_effects() -> void:
+	"""Clear all active power-up effects (used when transitioning between levels)"""
+	# Create a copy of effect types to avoid modifying dict during iteration
+	var effect_types: Array = active_effects.keys()
+
+	# Remove each effect properly to reset states
+	for effect_type in effect_types:
+		remove_effect(effect_type)
+
+	# Clear tracking
+	active_effects.clear()
+	tracked_balls.clear()
+	_cached_paddle = null
+	_cached_ball = null
+
+	# Stop processing
+	set_process(false)
