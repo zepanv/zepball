@@ -219,7 +219,8 @@ func _load_sfx_streams() -> void:
 		"life_lost": load(SFX_DIR + "/life_lost.mp3"),
 		"level_complete": load(SFX_DIR + "/level_complete.mp3"),
 		"game_over": load(SFX_DIR + "/game_over.mp3"),
-		"combo_milestone": load(SFX_DIR + "/combo_milestone.mp3")
+		"combo_milestone": load(SFX_DIR + "/combo_milestone.mp3"),
+		"force_arrow": load(SFX_DIR + "/bzzrt.mp3")
 	}
 	var sfx_keys = sfx_streams.keys()
 	for sfx_name in sfx_keys:

@@ -14,17 +14,18 @@ const MAGNET_PULL = 800.0       # Paddle gravity strength for Magnet power-up
 const TOP_WALL_Y = 20.0
 const BOTTOM_WALL_Y = 700.0
 const SPIN_DECAY_RATE = 0.85
-const SPIN_CURVE_STRENGTH = 420.0
+const SPIN_CURVE_STRENGTH = 320.0
 const SPIN_IMPART_FACTOR = 0.45
+const SPIN_MAX_ANGLE_CHANGE_DEG = 25.0
 const SPIN_ON_HIT_DECAY = 0.5
 const SPIN_MAX = 800.0
 const HIGH_SPIN_THRESHOLD = 250.0
 const PENETRATING_SPIN_THRESHOLD = 400.0
-const FORCE_ARROW_RANGE = 96.0
-const FORCE_ARROW_MAX_STRENGTH = 2400.0
-const FORCE_ARROW_MIN_STRENGTH = 400.0
-const FORCE_ARROW_COLLISION_BOOST = 260.0
-const FORCE_ARROW_COLLISION_BLEND = 0.9
+const FORCE_ARROW_RANGE = 120.0
+const FORCE_ARROW_MAX_STRENGTH = 4000.0
+const FORCE_ARROW_MIN_STRENGTH = 800.0
+const FORCE_ARROW_DWELL_MULTIPLIER = 2.5  # Max multiplier from dwell time
+const FORCE_ARROW_DWELL_CHARGE_TIME = 0.8  # Seconds to reach max multiplier
 const FAST_SPEED_MULTIPLIER = 1.15
 const BRICK_TYPE_UNBREAKABLE = 2
 const BRICK_TYPE_FORCE_ARROW = 14
@@ -77,6 +78,8 @@ var block_pass_timer: float = 0.0  # Allow pass-through behind block right after
 var ball_radius: float = BASE_RADIUS
 var last_physics_delta: float = 0.0
 var spin_amount: float = 0.0
+var force_arrow_dwell_time: float = 0.0
+var current_force_arrow: Node = null
 var air_ball_helper: RefCounted = null
 var aim_helper: RefCounted = null
 var stuck_helper: RefCounted = null
@@ -91,6 +94,7 @@ var frame_magnet_active: bool = false
 @onready var visual_node: Sprite2D = get_node_or_null("Visual")
 @onready var collision_shape_node: CollisionShape2D = get_node_or_null("CollisionShape2D")
 @onready var viewport_ref: Viewport = get_viewport()
+var force_arrow_audio: AudioStreamPlayer = null
 
 # Signals
 signal ball_lost
@@ -118,6 +122,9 @@ func _ready():
 		trail_node.emitting = false  # Starts disabled until launched
 		trail_node.texture = TRAIL_SMALL
 		trail_node.color = TRAIL_COLOR_NORMAL
+
+	# Create dedicated audio player for force arrow sound
+	_init_force_arrow_audio()
 
 	_ensure_aim_helper()
 	aim_helper.create_indicator(self)
@@ -339,11 +346,9 @@ func handle_collision(collision: KinematicCollision2D):
 		var old_velocity = velocity  # Store for particle direction
 		var hit_brick_position = collider.global_position  # Store for bomb effect
 		var is_unbreakable = false
-		var is_force_arrow = false
 		var is_powerup_brick = false
 		if "brick_type" in collider:
 			is_unbreakable = collider.brick_type == BRICK_TYPE_UNBREAKABLE
-			is_force_arrow = collider.brick_type == BRICK_TYPE_FORCE_ARROW
 			is_powerup_brick = collider.brick_type == BRICK_TYPE_POWERUP_BRICK
 
 		var is_block_brick = collider.is_in_group("block_brick")
@@ -362,7 +367,7 @@ func handle_collision(collision: KinematicCollision2D):
 
 		# Check if brick through is enabled (block + unbreakable bricks always behave normally)
 		var has_penetrating_spin = absf(spin_amount) >= PENETRATING_SPIN_THRESHOLD
-		var can_pass_through = not is_block_brick and not is_unbreakable and not is_force_arrow and (frame_brick_through_active or has_penetrating_spin)
+		var can_pass_through = not is_block_brick and not is_unbreakable and (frame_brick_through_active or has_penetrating_spin)
 		if can_pass_through:
 			# Don't bounce, just pass through and notify brick
 			brick_hit.emit(collider)
@@ -386,12 +391,6 @@ func handle_collision(collision: KinematicCollision2D):
 				# Normal bounce behavior
 				velocity = velocity.bounce(bounce_normal)
 				normal = bounce_normal
-				if is_force_arrow:
-					var arrow_push_dir = Vector2.RIGHT.rotated(deg_to_rad(int(collider.direction)))
-					velocity += arrow_push_dir * FORCE_ARROW_COLLISION_BOOST
-					var blended = velocity.normalized() + (arrow_push_dir * FORCE_ARROW_COLLISION_BLEND)
-					if blended.length_squared() > 0.0001:
-						velocity = blended.normalized() * current_speed
 				if is_unbreakable:
 					# Add a small random deflection to avoid edge hugging
 					velocity = velocity.rotated(deg_to_rad(randf_range(-12.0, 12.0)))
@@ -419,11 +418,17 @@ func reset_ball():
 	is_attached_to_paddle = true
 	velocity = Vector2.ZERO
 	spin_amount = 0.0
+	force_arrow_dwell_time = 0.0
+	current_force_arrow = null
 	aim_helper.reset(is_main_ball)
 
 	# Disable trail effect
 	if trail_node:
 		trail_node.emitting = false
+
+	# Stop force arrow audio
+	if force_arrow_audio and force_arrow_audio.playing:
+		force_arrow_audio.stop()
 
 func apply_speed_up_effect():
 	"""Increase ball speed to 650 for 12 seconds"""
@@ -568,22 +573,86 @@ func _apply_persistent_spin(delta: float) -> void:
 	if velocity_len_sq <= 0.0001:
 		return
 	var velocity_len = sqrt(velocity_len_sq)
+
+	# Store original direction
+	var old_direction = velocity / velocity_len
+
+	# Calculate perpendicular force
 	var perp = Vector2(-velocity.y / velocity_len, velocity.x / velocity_len)
 	var spin_ratio = clampf(spin_amount / SPIN_MAX, -1.0, 1.0)
-	velocity += perp * spin_ratio * SPIN_CURVE_STRENGTH * delta
+
+	# Reduce spin near bottom boundary to prevent losses
+	var danger_factor = 1.0
+	if position.y > BOTTOM_ESCAPE_ZONE_Y and velocity.y > 0:
+		danger_factor = 0.3  # Drastically reduce spin curve when heading toward loss
+
+	velocity += perp * spin_ratio * SPIN_CURVE_STRENGTH * delta * danger_factor
+
+	# Limit angle change per frame to prevent extreme trajectory flips
+	var new_direction = velocity.normalized()
+	var angle_change = old_direction.angle_to(new_direction)
+	var max_angle_rad = deg_to_rad(SPIN_MAX_ANGLE_CHANGE_DEG * delta * 60.0)  # Scale by expected 60fps
+	if absf(angle_change) > max_angle_rad:
+		var clamped_angle = old_direction.angle() + sign(angle_change) * max_angle_rad
+		velocity = Vector2.from_angle(clamped_angle) * velocity_len
+
 	spin_amount *= pow(SPIN_DECAY_RATE, delta)
 
+func _init_force_arrow_audio() -> void:
+	"""Create and configure dedicated audio player for force arrow sound"""
+	force_arrow_audio = AudioStreamPlayer.new()
+	force_arrow_audio.bus = "SFX"
+	if AudioManager and AudioManager.sfx_streams.has("force_arrow"):
+		force_arrow_audio.stream = AudioManager.sfx_streams["force_arrow"]
+	force_arrow_audio.volume_db = -80.0  # Start silent
+	add_child(force_arrow_audio)
+
 func _apply_force_arrows(delta: float) -> void:
+	var nearest_arrow: Node = null
+	var nearest_dist: float = FORCE_ARROW_RANGE + 1.0
+
+	# Find nearest arrow in range
 	for arrow in _get_cached_force_arrows():
 		if not is_instance_valid(arrow):
 			continue
 		var dist = global_position.distance_to(arrow.global_position)
-		if dist > FORCE_ARROW_RANGE or dist < 0.001:
-			continue
-		var force_dir = Vector2.RIGHT.rotated(deg_to_rad(int(arrow.direction)))
-		var strength_factor = 1.0 - (dist / FORCE_ARROW_RANGE)
+		if dist <= FORCE_ARROW_RANGE and dist < nearest_dist:
+			nearest_arrow = arrow
+			nearest_dist = dist
+
+	# Track dwell time with nearest arrow
+	if nearest_arrow != null:
+		if current_force_arrow == nearest_arrow:
+			# Still near same arrow - increase dwell time
+			force_arrow_dwell_time += delta
+		else:
+			# Switched to different arrow - reset dwell
+			current_force_arrow = nearest_arrow
+			force_arrow_dwell_time = 0.0
+
+		# Calculate dwell multiplier (1.0 to FORCE_ARROW_DWELL_MULTIPLIER)
+		var dwell_progress = minf(force_arrow_dwell_time / FORCE_ARROW_DWELL_CHARGE_TIME, 1.0)
+		var dwell_multiplier = 1.0 + (dwell_progress * (FORCE_ARROW_DWELL_MULTIPLIER - 1.0))
+
+		# Apply force with dwell multiplier
+		var force_dir = Vector2.RIGHT.rotated(deg_to_rad(int(nearest_arrow.direction)))
+		var strength_factor = 1.0 - (nearest_dist / FORCE_ARROW_RANGE)
 		var magnitude = lerpf(FORCE_ARROW_MIN_STRENGTH, FORCE_ARROW_MAX_STRENGTH, strength_factor)
-		velocity += force_dir * magnitude * delta
+		velocity += force_dir * magnitude * delta * dwell_multiplier
+
+		# Control force arrow audio
+		if force_arrow_audio:
+			if not force_arrow_audio.playing:
+				force_arrow_audio.play()
+			# Scale volume from -6 dB to +6 dB based on dwell progress
+			var target_volume_db = lerpf(-6.0, 6.0, dwell_progress)
+			force_arrow_audio.volume_db = target_volume_db
+	else:
+		# No arrow in range - reset tracking and stop audio
+		current_force_arrow = null
+		force_arrow_dwell_time = 0.0
+		if force_arrow_audio and force_arrow_audio.playing:
+			force_arrow_audio.stop()
 
 func _apply_magnet_pull(delta: float) -> void:
 	if not _is_moving_toward_paddle_horizontally():

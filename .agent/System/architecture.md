@@ -219,10 +219,35 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Stuck detection: Monitors movement over 2 seconds, applies escape boost if needed
 - Trail particles: Cyan (normal), Yellow (speed up), Blue (slow down), Pink/Purple (high spin)
 - Trail toggling based on settings
-- Force Arrow tile influence (`_apply_force_arrows`) curves velocity using cached arrow tiles from main controller
-- Penetrating spin threshold enables pass-through on breakable bricks while consuming spin
 - Air-ball landing uses cached unbreakable-row slot checks first, with physics-query fallback only when cached row data is unavailable
 - Air-ball landing cache/query helpers are delegated to `ball_air_ball_helper.gd` to keep core ball runtime logic focused
+
+**Advanced Tile Elements** (Enhanced Spin & Special Tiles):
+- **Enhanced Spin System**:
+  - Persistent `spin_amount` state tracks spin magnitude/direction
+  - Paddle velocity imparts spin on collision (scaled by `SPIN_IMPART_FACTOR = 0.45`)
+  - Per-frame curve application via perpendicular force (strength reduced from 420→320 for stability)
+  - Exponential decay (`SPIN_DECAY_RATE = 0.85` per second)
+  - Spin reduction on brick hits (`SPIN_ON_HIT_DECAY = 0.5`)
+  - Visual feedback: trail size/color changes at high spin, ball rotation speed scales with spin
+  - Angle change limiting (max 25°/frame) prevents trajectory flips
+  - Boundary protection reduces spin curve when near bottom edge
+- **Penetrating Spin**:
+  - When `abs(spin_amount) >= 400.0`, ball passes through breakable bricks (breaking them)
+  - Does NOT penetrate UNBREAKABLE, block bricks, or FORCE_ARROW tiles
+  - Spin cost per penetration via `SPIN_ON_HIT_DECAY`
+- **Force Arrow Tiles**:
+  - Non-collidable directional force fields (8 directions: 0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°)
+  - Proximity-based repulsion (range 120px, strength 800-4000 px/sec²)
+  - Charge-up mechanic: force multiplier grows 1.0× to 2.5× over 0.8s dwell time
+  - Pulsing visual effect (size 100%-115%, opacity 55%-95%)
+  - Audio feedback: bzzrt.mp3 loops with volume scaling (-6 dB to +6 dB based on charge)
+  - Cached via `get_cached_force_arrows()` for efficient runtime queries
+- **Power-up Bricks**:
+  - Pass-through tiles (no collision/bounce) that grant instant power-up on contact
+  - All 16 power-up types configurable via editor
+  - Disappear after collection with particle effect
+  - Do not count toward level completion (non-breakable for completion purposes)
 
 **Power-Up Effects**:
 - `apply_speed_up_effect()` - 500 → 650 speed (12s)
@@ -762,7 +787,7 @@ All settings auto-save and load:
 
 ---
 
-**Last Updated**: 2026-02-12
+**Last Updated**: 2026-02-13
 **Godot Version**: 4.6
 **Total Levels**: 30
 **Total Sets**: 3

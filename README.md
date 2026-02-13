@@ -2,7 +2,7 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Features: 2026-02-12
+## Current Features: 2026-02-13
 
 Highlights:
 
@@ -33,8 +33,12 @@ Highlights:
 ## Game Features
 
 ### Core Mechanics
-- Paddle spin affects ball trajectory
-- **14 brick types** (including bomb bricks that explode)
+- **Enhanced Spin System**: Paddle spin creates persistent ball curve with visual trail effects. High-spin balls pass through breakable bricks (penetrating spin)
+- **16 brick types** including:
+  - Standard bricks (normal, strong, colored variants, diamond, polygon shapes)
+  - Bomb bricks (explode on hit)
+  - Force Arrow tiles (non-collidable directional force fields with charge-up mechanic and audio feedback)
+  - Power-up bricks (instant power-up grant on contact, all 16 types)
 - Combo and no-miss streak multipliers
 - Perfect clear bonus on level completion
 - Ball escape logic prevents wedging in corners
@@ -75,8 +79,10 @@ Highlights:
 - Clear Save Data resets progress/scores without changing settings
 
 ### Level Editor + Packs
-- Create and edit custom `.zeppack` files in-game
-- Paint levels with all current brick types
+- Create and edit custom `.zeppack` files in-game (supports v1 and v2 formats)
+- Paint levels with all 16 brick types including special tiles:
+  - Force Arrows: 8 directional options (Up, Down, Left, Right, and diagonals)
+  - Power-up Bricks: All 16 power-up type options
 - Add/remove/duplicate/reorder levels
 - Undo/redo support (`Ctrl/Cmd+Z`, `Ctrl/Cmd+Y`, `Ctrl/Cmd+Shift+Z`)
 - Test current draft level without affecting progression/stats
@@ -84,6 +90,7 @@ Highlights:
 - Export timestamped pack files to `user://exports/`
 - Open export folder directly (Finder/Explorer/file manager)
 - Delete saved custom packs with confirmation
+- Backward compatible (v1 packs load seamlessly)
 
 ## Asset Credits
 - Graphics: Kenney Vleugels (kenney.nl) Puzzle Packs + AI-Generated

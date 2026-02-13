@@ -8,9 +8,9 @@ This document lists assets that exist in the project but are not currently refer
 |----------|--------------|-------------------|------------|
 | Brick Graphics | 12 | 52 | 23.1% |
 | Paddle Graphics | 1 | 2 | 50% |
-| Powerup Graphics (unused folder) | 8 | 8 | 100% |
-| Audio SFX | 1 | 10 | 10% |
-| **TOTAL** | **22** | **72** | **30.6%** |
+| Powerup Graphics | 7 | 24 | 29.2% |
+| Audio SFX | 0 | 10 | 0% |
+| **TOTAL** | **20** | **88** | **22.7%** |
 
 ---
 
@@ -57,15 +57,14 @@ Location: `assets/graphics/paddles/`
 
 ---
 
-## 3. Powerup Graphics - Unused Folder (8 unused)
+## 3. Powerup Graphics (7 unused)
 
-Location: `assets/graphics/powerups/unused/`
+Location: `assets/graphics/powerups/`
 
-These are intentionally stored in an "unused" folder for future power-up implementations.
+Unused assets stored alongside active powerup graphics. Usage tracked in agent documentation.
 
 | Asset | Size | Status |
 |-------|------|--------|
-| `arrow_down_right.png` | ~4 KB | Keep - Future: Diagonal ball direction |
 | `attract.png` | ~4 KB | Keep - Future: Attract power-up |
 | `bine.png` | ~4 KB | Keep - Future: Multi-ball variant |
 | `powerups.jpg` | ~150 KB | Keep - Source sheet |
@@ -74,15 +73,17 @@ These are intentionally stored in an "unused" folder for future power-up impleme
 | `shockwave.png` | ~5 KB | Keep - Future: Area damage power-up |
 | `warp.png` | ~4 KB | Keep - Future: Teleport power-up |
 
+**Note**: `arrow_down_right.png` is now in use for Force Arrow tiles (Advanced Tile Elements feature).
+
 ---
 
-## 4. Audio SFX (1 unused)
+## 4. Audio SFX (0 unused)
 
 Location: `assets/audio/sfx/`
 
-| Asset | Size | Recommendation |
-|-------|------|----------------|
-| `bzzrt.mp3` | ~12 KB | Review - Either implement or remove (currently not loaded in AudioManager) |
+All audio SFX files are now in use.
+
+**Note**: `bzzrt.mp3` is now used for Force Arrow field effects (Advanced Tile Elements feature).
 
 ---
 
@@ -93,13 +94,12 @@ Location: `assets/audio/sfx/`
 
 ### Review Recommended
 - **Rectangle brick variants** - Consider if these will be used for new brick types
-- **bzzrt.mp3** - Either wire up in AudioManager or remove
 - **paddleRed.png** - Decide if alternate paddle colors are planned
 
 ### Keep (Future Use)
-- All files in `powerups/unused/` folder - Documented for future features
+- Unused powerup assets in `powerups/` folder - Documented for future features
 - `bricks.svg` - Source file
 
 ---
 
-*Last updated: February 12, 2026*
+*Last updated: February 13, 2026*

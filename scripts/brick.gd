@@ -36,7 +36,7 @@ const BOMB_RADIUS_SQ = BOMB_RADIUS * BOMB_RADIUS
 const DEFAULT_POWER_UP_SPAWN_CHANCE = 0.20
 const POWER_UP_SCENE = preload("res://scenes/gameplay/power_up.tscn")
 const POWER_UP_TYPES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-const FORCE_ARROW_TEXTURE_PATH = "res://assets/graphics/powerups/unused/arrow_down_right.png"
+const FORCE_ARROW_TEXTURE_PATH = "res://assets/graphics/powerups/arrow_down_right.png"
 const FORCE_ARROW_BASE_ANGLE_DEG = 45
 const POWERUP_TEXTURE_MAP: Dictionary = {
 	"EXPAND": "res://assets/graphics/powerups/expand.png",
@@ -221,6 +221,15 @@ func _ready():
 		$Particles.color = brick_color
 
 	_update_collision_shape()
+
+	# Disable collision for force arrows - they should only exert field forces
+	if brick_type == BrickType.FORCE_ARROW:
+		if has_node("CollisionShape2D"):
+			$CollisionShape2D.disabled = true
+		if has_node("CollisionPolygon2D"):
+			$CollisionPolygon2D.disabled = true
+		collision_layer = 0
+		collision_mask = 0
 
 func setup_sprite():
 	"""Load PNG texture based on brick type
@@ -503,7 +512,15 @@ func _resolve_powerup_type(type_name: String) -> int:
 	return int(POWERUP_NAME_TO_TYPE.get(normalized, POWERUP_NAME_TO_TYPE["MYSTERY"]))
 
 func _start_force_arrow_pulse(sprite: Sprite2D) -> void:
+	var base_scale = sprite.scale
 	var tween: Tween = create_tween()
 	tween.set_loops()
+	tween.set_parallel(true)
+	# Pulse alpha
 	tween.tween_property(sprite, "modulate:a", 0.55, 0.65)
+	# Pulse scale (grow slightly)
+	tween.tween_property(sprite, "scale", base_scale * 1.15, 0.65)
+	tween.set_parallel(false)
 	tween.tween_property(sprite, "modulate:a", 0.95, 0.65)
+	tween.set_parallel(true)
+	tween.tween_property(sprite, "scale", base_scale, 0.65)

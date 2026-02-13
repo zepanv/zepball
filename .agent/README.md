@@ -40,20 +40,23 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/ui-gaps.md` - Launch indicator (aim mode) ✅ IMPLEMENTED
   - `Tasks/Completed/level-overhaul.md` - Pack-format migration, in-game editor, pack/level UX overhaul, third built-in pack ✅ IMPLEMENTED
   - `Tasks/Completed/skip-options.md` - Input-based intro skip, fast-forward level complete, quick restart ✅ IMPLEMENTED
+  - `Tasks/Completed/advanced-tile-elements.md` - Force arrows, power-up bricks, persistent spin, penetrating spin ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
-  - **`Tasks/Backlog/advanced-tile-elements.md`** - Force arrows, power-up bricks, persistent spin, penetrating spin 🚧 IN PROGRESS (push/spin tuning pending)
   - **`Tasks/Backlog/future-features.md`** - Remaining planned features (Time Attack, Survival, Ball Speed Zones, Brick Chains, Paddle Abilities, hardcore modes)
 
 ### SOP/
 Best practices and workflows for development. **These procedures are mandatory and must be followed for all development work.**
 - **`SOP/godot-workflow.md`** - **MANDATORY** workflows including: Godot scenes/nodes/signals, **Asset Documentation** (update docs when adding/removing assets), **CRITICAL: Save System Compatibility** (migration requirements), and commit message formats.
 
-## Current Game State (2026-02-12)
+## Current Game State (2026-02-13)
 
 ### Core Features ✅ COMPLETE
-- **Gameplay**: Paddle movement (keyboard + mouse), ball physics with persistent/decaying spin, 16 brick types, collision detection, score tracking
+- **Gameplay**: Paddle movement (keyboard + mouse), ball physics with persistent/decaying spin, enhanced spin system with visual curve effects and penetrating spin, 16 brick types, collision detection, score tracking
 - **Power-Ups**: 16 types with visual timers and effects (Expand, Contract, Speed Up, Slow Down, Triple Ball, Big/Small Ball, Extra Life, Grab, Brick Through, Double Score, Mystery, Bomb Ball, Air Ball, Magnet, Block)
-- **Special Bricks/Tiles**: Bomb bricks (AoE break), Force Arrow tiles (directional force field), Power-up Bricks (instant power-up pass-through)
+- **Special Bricks/Tiles**:
+  - Bomb bricks (AoE break)
+  - Force Arrow tiles (non-collidable directional force fields with charge-up mechanic, pulsing visuals, and audio feedback)
+  - Power-up Bricks (instant power-up grant on pass-through contact, all 16 types available)
 - **Difficulty**: 3 modes (Easy/Normal/Hard) with speed and score multipliers
 - **Levels**: 30 built-in levels with varied brick mixes (bomb bricks appear across all sets)
 - **Menu System**: Complete flow (Main Menu, Set Select, Level Select, Game Over, Level Complete, Set Complete, Stats, Settings)
@@ -159,21 +162,32 @@ These are always accessible and control key game systems:
 - Settings UI for music mode + loop-one track selection
 - SFX: paddle hit, brick hit, wall hit, power-up good/bad, life lost, combo milestone, level complete, game over
 
-### 📅 Phase 8: Advanced Features (IN PROGRESS)
-- 🚧 Advanced Tile Elements in progress (`Tasks/Backlog/advanced-tile-elements.md`)
+### ✅ Phase 8: Advanced Tile Elements (COMPLETE)
+- ✅ Enhanced Spin - Persistent spin state with visual curve effects, decay, and trail color changes
+- ✅ Penetrating Spin - High-spin balls pass through breakable bricks
+- ✅ Force Arrow Tiles - Non-collidable directional force fields with charge-up, pulsing visuals, and audio
+- ✅ Power-up Bricks - Pass-through instant power-up tiles (all 16 types)
+- ✅ Schema v2 - Backward-compatible pack format with new brick metadata
+- ✅ Editor Support - Full palette, direction/power-up pickers, save/load
+
+### 📅 Phase 9: Future Features (PLANNED)
 - Remaining roadmap in `Tasks/Backlog/future-features.md`:
 - Game Modes: Time Attack, Survival, Iron Ball, One Life
-- QoL: Skip options and mode-specific UX polish
 - Advanced Gameplay: Ball speed zones, brick chains, paddle abilities
 
 ## Recent Update History
 
-### 2026-02-12 (Latest) - Advanced Tile Elements In Progress
-- 🚧 **Status Change**: Moved back to backlog for continued tuning.
-- 🚧 **Force Arrow**: Direction visuals improved, but arrow push behavior still needs tuning (balls still bounce off without desired directional push).
-- 🚧 **Spin System**: Persistent spin remains unpredictable and needs stabilization before feature completion.
+### 2026-02-13 (Latest) - Advanced Tile Elements Complete
+- ✅ **Enhanced Spin**: Persistent spin state with per-frame curve, exponential decay, visual trail effects (color/size change at high spin), and ball rotation scaling
+- ✅ **Penetrating Spin**: High-spin balls (≥400 spin threshold) pass through and break regular bricks, does NOT penetrate unbreakable/block/force arrow tiles
+- ✅ **Force Arrow Tiles**: Non-collidable directional force fields (8 directions) with proximity-based strength, charge-up mechanic (1.0× to 2.5× over 0.8s), pulsing visual effect (size + opacity), and audio feedback (bzzrt.mp3 with volume scaling)
+- ✅ **Power-up Bricks**: Pass-through tiles that grant instant power-ups (all 16 types), disappear on collection, do not count toward level completion
+- ✅ **Schema Extension v2**: Backward-compatible pack format supporting direction and powerup_type metadata fields
+- ✅ **Editor Integration**: Force Arrow direction picker (8 options), Power-up type picker (16 options), grid cell display, v2 save logic
+- ✅ **Blocking Issues Resolved**: Force arrows made non-collidable (field forces only), spin stabilized with angle limiting and boundary protection
+- ✅ **File Organization**: Moved unused powerup assets to main directory, updated documentation
 
-### 2026-02-12 (Latest) - Skip Options Complete
+### 2026-02-12 - Skip Options Complete
 - ✅ **Removed Short Intro Setting**: Deleted `short_level_intro` from settings/save/HUD; default intro hold is now 1.0s (total 2.0s with fades).
 - ✅ **Input-Based Intro Skip**: Space/Click during intro immediately hides it.
 - ✅ **Fast-Forward Level Complete**: Enter on level complete screen advances after 0.5s guard delay.
@@ -471,7 +485,7 @@ Pause overlay settings apply live for paddle sensitivity, ball trail, combo flas
 
 ---
 
-**Last Updated**: 2026-02-12
+**Last Updated**: 2026-02-13
 **Total Levels**: 30
 **Total Sets**: 3
 **Total Achievements**: 12

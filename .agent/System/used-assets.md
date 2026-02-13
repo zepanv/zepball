@@ -11,9 +11,9 @@ This document lists all assets currently referenced and in use by the game code.
 | Particle Graphics | 3 | 3 | 100% |
 | Paddle Graphics | 1 | 2 | 50% |
 | Background Graphics | 7 | 7 | 100% |
-| Powerup Graphics | 17 | 24 | 70.8% |
-| Audio SFX | 9 | 10 | 90% |
-| **TOTAL** | **78** | **99** | **78.8%** |
+| Powerup Graphics | 18 | 24 | 75.0% |
+| Audio SFX | 10 | 10 | 100% |
+| **TOTAL** | **80** | **99** | **80.8%** |
 
 ---
 
@@ -134,7 +134,7 @@ All backgrounds are randomly selected by `main_background_manager.gd`.
 
 ---
 
-## 6. Powerup Graphics (17 used)
+## 6. Powerup Graphics (18 used)
 
 Location: `assets/graphics/powerups/`
 
@@ -158,11 +158,12 @@ All referenced in `scripts/power_up.gd` in the texture loading dictionary.
 | `air_ball.png` | Air ball | power_up.gd:47 |
 | `magnet.png` | Magnet | power_up.gd:48 |
 | `block.png` | Block barrier | power_up.gd:49 |
-| `unused/arrow_down_right.png` | FORCE_ARROW tile sprite (rotated per direction) | brick.gd:39 |
+| `arrow_down_right.png` | FORCE_ARROW tile sprite (rotated per direction) | brick.gd:39 |
+| `mystery.png` | POWERUP_BRICK default (all 16 types via POWERUP_TEXTURE_MAP) | brick.gd:41-58 |
 
 ---
 
-## 7. Audio SFX (9 used)
+## 7. Audio SFX (10 used)
 
 Location: `assets/audio/sfx/`
 
@@ -179,6 +180,7 @@ All referenced in `scripts/audio_manager.gd` in the `_load_sfx_streams()` functi
 | `level_complete.mp3` | Level completion | audio_manager.gd:220 |
 | `game_over.mp3` | Game over | audio_manager.gd:221 |
 | `combo_milestone.mp3` | Combo milestone reached | audio_manager.gd:222 |
+| `bzzrt.mp3` | Force arrow field effect (looping, volume-scaled) | audio_manager.gd:223, ball.gd:598-604 |
 
 ---
 
@@ -196,4 +198,4 @@ All referenced in `scripts/audio_manager.gd` in the `_load_sfx_streams()` functi
 
 ---
 
-*Last updated: February 12, 2026*
+*Last updated: February 13, 2026*
