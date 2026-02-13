@@ -232,10 +232,17 @@ This convention is now the default for optimization-pass Section 2.4 and should 
   - Visual feedback: trail size/color changes at high spin, ball rotation speed scales with spin
   - Angle change limiting (max 25°/frame) prevents trajectory flips
   - Boundary protection reduces spin curve when near bottom edge
+  - **Launch spin safety**: On ball launch, spin is capped at 50% of max, further reduced near vertical boundaries
+  - **Return-to-paddle protection**: Spin curve is reduced by 70% when ball is heading right (back toward paddle) to prevent going behind paddle
 - **Penetrating Spin**:
   - When `abs(spin_amount) >= 400.0`, ball passes through breakable bricks (breaking them)
   - Does NOT penetrate UNBREAKABLE, block bricks, or FORCE_ARROW tiles
   - Spin cost per penetration via `SPIN_ON_HIT_DECAY`
+- **Launch Angle Logic**:
+  - When paddle is stationary: 180° (straight left)
+  - When paddle moving UP: 225° (down-left) - ball starts lower, curves upward
+  - When paddle moving DOWN: 135° (up-left) - ball starts higher, curves downward
+  - This replaces the previous -45° angle which incorrectly launched toward the paddle
 - **Force Arrow Tiles**:
   - Non-collidable directional force fields (8 directions: 0°, 45°, 90°, 135°, 180°, 225°, 270°, 315°)
   - Proximity-based repulsion (range 120px, strength 800-4000 px/sec²)
@@ -248,6 +255,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
   - All 16 power-up types configurable via editor
   - Disappear after collection with particle effect
   - Do not count toward level completion (non-breakable for completion purposes)
+  - Now properly collected when ball has brick-through active or penetrating spin
 
 **Power-Up Effects**:
 - `apply_speed_up_effect()` - 500 → 650 speed (12s)

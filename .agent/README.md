@@ -177,7 +177,13 @@ These are always accessible and control key game systems:
 
 ## Recent Update History
 
-### 2026-02-13 (Latest) - Advanced Tile Elements Complete
+### 2026-02-13 (Latest) - Launch & Spin Fixes
+- ✅ **Launch Angle Fix**: Fixed ball launching toward paddle when paddle was moving. Now uses correct leftward angles (180° straight, 135° up-left when moving down, 225° down-left when moving up) instead of incorrectly using -45°.
+- ✅ **Brick-Through Powerup Fix**: Fixed powerup bricks not being collected when ball has brick-through active or penetrating spin - now properly calls collect_powerup() in pass-through path.
+- ✅ **Spin Safety on Launch**: Reduced max spin on launch to 50% of normal, with additional reduction near vertical boundaries.
+- ✅ **Return-to-Paddle Protection**: Added spin curve reduction (70%) when ball is heading right (back toward paddle) to prevent going behind paddle.
+- ✅ **Spin Delay Removed**: Removed the 450ms spin delay that was previously added to try to fix launch issues - no longer needed with correct launch angles.
+- ✅ **Powerup Brick Bomb Fix**: Bomb explosions now properly grant powerup effects when destroying powerup bricks (previously only broke them without granting effect).
 - ✅ **Enhanced Spin**: Persistent spin state with per-frame curve, exponential decay, visual trail effects (color/size change at high spin), and ball rotation scaling
 - ✅ **Penetrating Spin**: High-spin balls (≥400 spin threshold) pass through and break regular bricks, does NOT penetrate unbreakable/block/force arrow tiles
 - ✅ **Force Arrow Tiles**: Non-collidable directional force fields (8 directions) with proximity-based strength, charge-up mechanic (1.0× to 2.5× over 0.8s), pulsing visual effect (size + opacity), and audio feedback (bzzrt.mp3 with volume scaling)

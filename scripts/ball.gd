@@ -74,7 +74,6 @@ var is_main_ball: bool = true  # Identifies the original ball in the scene
 var paddle_offset: Vector2 = Vector2(-30, 0)  # Offset from paddle when attached/grabbed
 var grab_immunity_timer: float = 0.0  # Prevents immediate re-grab after launch
 var block_pass_timer: float = 0.0  # Allow pass-through behind block right after launch
-var spin_delay_timer: float = 0.0  # Delay before spin takes effect after launch
 
 var ball_radius: float = BASE_RADIUS
 var last_physics_delta: float = 0.0
@@ -155,8 +154,6 @@ func _physics_process(delta):
 		grab_immunity_timer -= delta
 	if block_pass_timer > 0.0:
 		block_pass_timer -= delta
-	if spin_delay_timer > 0.0:
-		spin_delay_timer -= delta
 	if paddle_reference == null or not is_instance_valid(paddle_reference):
 		_ensure_paddle_reference()
 	_refresh_effect_flags()
@@ -237,7 +234,6 @@ func launch_ball():
 	# Set grab immunity to prevent immediate re-grab after launch
 	grab_immunity_timer = 0.2  # 200ms immunity
 	block_pass_timer = 0.35  # Allow passing block barrier on launch
-	spin_delay_timer = 0.45  # 450ms delay before spin takes effect (prevents immediate curve on launch)
 
 	# Add small random position offset to prevent stacked balls from colliding
 	# This helps when multiple balls are grabbed at the same spot
@@ -256,10 +252,25 @@ func launch_ball():
 
 		# If paddle is moving significantly, add vertical component
 		if abs(paddle_velocity_y) > 50:  # Minimum movement threshold
-			# Launch with spin based on paddle movement
-			var angle_rad = deg_to_rad(INITIAL_ANGLE + angle_variation)
+			# Launch toward left based on paddle movement direction
+			# In Godot: 180° = left, 135° = up-left, 225° = down-left
+			var base_angle = 180.0
+			if paddle_velocity_y < 0:  # Paddle moving UP - aim more downward
+				base_angle = 225.0  # down-left
+			else:  # Paddle moving DOWN - aim more upward  
+				base_angle = 135.0  # up-left
+			var angle_rad = deg_to_rad(base_angle + angle_variation)
 			velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
-			spin_amount = clampf(paddle_velocity_y * SPIN_IMPART_FACTOR, -SPIN_MAX, SPIN_MAX)
+			# Clamp launch spin to lower value than max to prevent dangerous curves on launch
+			var launch_spin_max = SPIN_MAX * 0.5  # 50% of max spin on launch
+			var raw_spin = paddle_velocity_y * SPIN_IMPART_FACTOR
+			# Reduce spin if paddle is moving very fast (prevents extreme curves that could go behind paddle)
+			if abs(raw_spin) > launch_spin_max:
+				raw_spin = sign(raw_spin) * launch_spin_max
+			# Also reduce spin if ball will be heading right after bouncing (dangerous)
+			if position.y > BOTTOM_ESCAPE_ZONE_Y * 0.7 or position.y < TOP_ESCAPE_ZONE_Y * 1.3:
+				raw_spin *= 0.5  # Reduce spin when near vertical boundaries
+			spin_amount = raw_spin
 		else:
 			# Launch straight left with slight angle variation
 			var angle_rad = deg_to_rad(180.0 + angle_variation)  # 180° = straight left
@@ -376,9 +387,15 @@ func handle_collision(collision: KinematicCollision2D):
 		if can_pass_through:
 			# Don't bounce, just pass through and notify brick
 			brick_hit.emit(collider)
-			if collider.has_method("hit"):
+			if is_powerup_brick and collider.has_method("collect_powerup"):
+				collider.collect_powerup()
+				AudioManager.play_sfx("power_up")
+			elif collider.has_method("hit"):
 				collider.hit(old_velocity.normalized())
-			spin_amount *= SPIN_ON_HIT_DECAY
+			else:
+				collider.break_brick(Vector2(-1, 0))
+			if not is_powerup_brick:
+				spin_amount *= SPIN_ON_HIT_DECAY
 			position += velocity * last_physics_delta
 		else:
 			var bounce_normal = normal
@@ -583,9 +600,6 @@ func _is_moving_toward_paddle_horizontally() -> bool:
 	return to_paddle_x * velocity.x > 0.0
 
 func _apply_persistent_spin(delta: float) -> void:
-	# Don't apply spin until delay timer expires (prevents dangerous curves on launch)
-	if spin_delay_timer > 0.0:
-		return
 	if absf(spin_amount) < 1.0:
 		spin_amount = 0.0
 		return
@@ -605,6 +619,11 @@ func _apply_persistent_spin(delta: float) -> void:
 	var danger_factor = 1.0
 	if position.y > BOTTOM_ESCAPE_ZONE_Y and velocity.y > 0:
 		danger_factor = 0.3  # Drastically reduce spin curve when heading toward loss
+	# Reduce spin when heading back toward paddle (right side) to prevent going behind paddle
+	if velocity.x > 0 and paddle_reference and is_instance_valid(paddle_reference):
+		var dist_to_paddle = paddle_reference.position.x - position.x
+		if dist_to_paddle > 0:  # Paddle is to the right
+			danger_factor = 0.3  # Reduce curve when heading toward paddle
 
 	velocity += perp * spin_ratio * SPIN_CURVE_STRENGTH * delta * danger_factor
 

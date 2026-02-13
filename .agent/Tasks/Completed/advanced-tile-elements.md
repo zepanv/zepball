@@ -4,7 +4,7 @@
 
 Special brick/zone mechanics beyond standard bricks. Adds depth to gameplay through physics-based interactions, enhanced spin control, and editor-placeable special tiles.
 
-Last Updated: 2026-02-13 (Completed)
+Last Updated: 2026-02-13 (Completed + Spin/L Launch Fixes)
 
 ## Completion Summary
 All features fully implemented and blocking issues resolved:
@@ -19,6 +19,12 @@ All features fully implemented and blocking issues resolved:
 **Blocking Issues Resolved (2026-02-13):**
 - Force arrows now non-collidable with field-only repulsion (strength increased, charge-up added)
 - Spin stabilized with angle limiting, boundary protection, and reduced curve strength
+
+**Recent Fixes (2026-02-13):**
+- **Launch Angle Fix**: Fixed ball launching toward paddle when paddle was moving - now uses correct leftward angles
+- **Brick-Through Powerup Fix**: Fixed powerup bricks not being collected with brick-through active
+- **Spin Safety**: Reduced max spin on launch (50%) and added return-to-paddle protection
+- **Spin Delay Removed**: Removed 450ms spin delay - no longer needed with correct launch angles
 
 **Bonus Enhancements:**
 - Pulsing visual effect for force arrows (breathing animation)
