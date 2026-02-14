@@ -22,9 +22,14 @@ func _ready():
 	_populate_statistics()
 	_populate_achievements()
 
+	# Grab focus for controller navigation
+	await get_tree().process_frame
+	back_button.grab_focus()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_pressed()
+		accept_event()
 
 func _populate_statistics():
 	"""Load and display all statistics from SaveManager"""

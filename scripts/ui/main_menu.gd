@@ -26,6 +26,19 @@ func _ready():
 
 	_update_return_button()
 
+	# Grab focus on the first button for controller navigation
+	await get_tree().process_frame
+	var first_button = $VBoxContainer/PlayButton
+	if return_button.visible:
+		first_button = return_button
+	first_button.grab_focus()
+
+func _unhandled_input(event: InputEvent) -> void:
+	"""Handle B button to quit from main menu"""
+	if event.is_action_pressed("ui_cancel"):
+		_on_quit_button_pressed()
+		get_viewport().set_input_as_handled()
+
 func apply_saved_difficulty(difficulty_name: String):
 	"""Apply the saved difficulty setting"""
 	match difficulty_name:

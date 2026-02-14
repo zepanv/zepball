@@ -91,15 +91,17 @@ func _ready():
 	# Load and apply current settings
 	_load_current_settings()
 
+	# Grab focus on back button for controller navigation
+	await get_tree().process_frame
+	back_button.grab_focus()
+
 func _unhandled_input(event: InputEvent) -> void:
 	"""Handle Esc to go back from settings"""
 	if has_node("KeybindingsMenu"):
 		return
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_pressed()
-		var viewport = get_viewport()
-		if viewport:
-			viewport.set_input_as_handled()
+		accept_event()
 
 func _load_current_settings():
 	"""Load settings from SaveManager and update UI"""
@@ -243,7 +245,13 @@ func _on_keybindings_pressed() -> void:
 	var menu_scene = preload("res://scenes/ui/keybindings.tscn")
 	var menu = menu_scene.instantiate()
 	menu.z_index = 300
+	menu.closed.connect(_on_keybindings_closed)
 	add_child(menu)
+
+func _on_keybindings_closed() -> void:
+	"""Restore focus to keybindings button when keybindings menu closes"""
+	await get_tree().process_frame
+	keybindings_button.grab_focus()
 
 func _update_sensitivity_label(value: float):
 	"""Update sensitivity display label"""

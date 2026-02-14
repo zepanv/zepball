@@ -21,6 +21,9 @@ extends Control
 
 func _ready():
 	"""Initialize set complete screen"""
+	# Grab focus for controller navigation
+	await get_tree().process_frame
+
 	# Get data from MenuController
 	var final_score = MenuController.get_current_score()
 	var set_id = MenuController.current_set_id
@@ -83,9 +86,16 @@ func _ready():
 		next_set_button.disabled = false
 		var next_set_name = PackLoader.get_legacy_set_name(next_set_id)
 		next_set_button.text = "NEXT SET: " + next_set_name.to_upper()
+		next_set_button.grab_focus()
 	else:
 		next_set_button.disabled = true
 		next_set_button.text = "NO MORE PACKS"
+
+func _unhandled_input(event: InputEvent) -> void:
+	"""Handle B button to return to menu"""
+	if event.is_action_pressed("ui_cancel"):
+		_on_menu_button_pressed()
+		get_viewport().set_input_as_handled()
 
 func _on_next_set_button_pressed():
 	"""Start the next set"""

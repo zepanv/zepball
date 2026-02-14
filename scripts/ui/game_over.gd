@@ -44,6 +44,10 @@ func _ready():
 		retry_button.text = "RETEST LEVEL"
 		menu_button.text = "RETURN TO EDITOR"
 
+	# Grab focus for controller navigation
+	await get_tree().process_frame
+	retry_button.grab_focus()
+
 func add_continue_set_button():
 	"""Add Continue Set button between Retry and Menu buttons"""
 	# Create the button
@@ -69,6 +73,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("restart_game") or event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		_on_retry_button_pressed()
+	elif event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_on_menu_button_pressed()
 
 func _on_retry_button_pressed():
 	"""Restart the same level"""

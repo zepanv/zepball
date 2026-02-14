@@ -2,7 +2,7 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Features: 2026-02-13
+## Current Features: 2026-02-14
 
 Highlights:
 
@@ -13,6 +13,8 @@ Highlights:
 - Audio playback (music + SFX)
 
 ## Controls
+
+### Keyboard & Mouse
 - **W / Up Arrow**: Move paddle up
 - **S / Down Arrow**: Move paddle down
 - **Mouse**: Paddle follows mouse Y position
@@ -25,7 +27,17 @@ Highlights:
 - **- / =**: Music volume down/up
 - **[ / ]**: Previous/next music track
 - **\\**: Toggle music pause/play
-- **Keybindings**: Rebindable in Settings (except Escape)
+- **Keybindings**: All actions rebindable in Settings (separate keyboard/controller columns)
+
+### Controller (Gamepad)
+- **Left Stick / D-Pad**: Move paddle up/down, navigate menus
+- **A Button (Xbox) / Cross (PlayStation)**: Launch ball, select/confirm in menus
+- **B Button (Xbox) / Circle (PlayStation)**: Pause/back in menus
+- **Y Button (Xbox) / Triangle (PlayStation)**: Restart level
+- **LB/L1 & RB/R1**: Previous/next music track
+- **L3/R3**: Music volume down/up
+- **Back/Select**: Toggle music pause/play
+- **Controller Support**: Full menu navigation, gameplay, and keybinding customization
 
 ### Debug Controls (Debug Build Only)
 - **C**: Clear all bricks

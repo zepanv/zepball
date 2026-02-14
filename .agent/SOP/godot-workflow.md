@@ -208,9 +208,39 @@ func _on_ball_lost():
 ## Working with Input
 
 ### Input Map (Already Configured)
-- move_up: Up Arrow, W
-- move_down: Down Arrow, S
-- launch_ball: Space, Left Mouse
+
+**Gameplay Actions:**
+- move_up: Up Arrow, W, D-Pad Up, Left Stick Up
+- move_down: Down Arrow, S, D-Pad Down, Left Stick Down
+- launch_ball: Space, Left Mouse, A Button (Gamepad)
+- restart_game: R, Y Button (Gamepad)
+
+**UI Navigation:**
+- ui_accept: Enter, Space, A Button (Gamepad)
+- ui_cancel: Escape, B Button (Gamepad)
+- ui_up/down/left/right: Arrow Keys, D-Pad, Left Stick
+
+**Audio Controls:**
+- audio_volume_down: -, L3 (Gamepad)
+- audio_volume_up: =, R3 (Gamepad)
+- audio_prev_track: [, LB/L1 (Gamepad)
+- audio_next_track: ], RB/R1 (Gamepad)
+- audio_toggle_pause: \\, Back/Select (Gamepad)
+
+### Controller Button Indices (Godot 4.x)
+- 0: A (Xbox) / Cross (PS)
+- 1: B (Xbox) / Circle (PS)
+- 2: X (Xbox) / Square (PS)
+- 3: Y (Xbox) / Triangle (PS)
+- 4: LB/L1
+- 5: RB/R1
+- 6: Back/Select
+- 7: Start
+- 8: L3 (Left stick press)
+- 9: R3 (Right stick press)
+- 11-14: D-Pad (Up/Down/Left/Right)
+- Axis 0: Left Stick X
+- Axis 1: Left Stick Y
 
 ### Using Input in Scripts
 ```gdscript
@@ -234,8 +264,34 @@ func _unhandled_input(event):
 1. Project → Project Settings
 2. Input Map tab
 3. Add new action name
-4. Click "+" to add key/mouse binding
+4. Click "+" to add bindings:
+   - Key: Keyboard keys
+   - Mouse Button: Mouse clicks
+   - Joypad Button: Controller buttons (see indices above)
+   - Joypad Axis: Analog stick movement
 5. Use in scripts with `Input.is_action_pressed("action_name")`
+
+### Controller Support Checklist
+
+When adding new UI screens:
+- [ ] Call `grab_focus()` on first button in `_ready()` after `await get_tree().process_frame`
+- [ ] Handle `ui_cancel` in `_unhandled_input()` for back navigation
+- [ ] Call `accept_event()` after handling input to prevent propagation
+- [ ] Make level panels/cards focusable with `focus_mode = Control.FOCUS_ALL`
+- [ ] Connect `focus_entered/exited` signals for visual feedback
+
+**Example:**
+```gdscript
+func _ready() -> void:
+	# ... setup code ...
+	await get_tree().process_frame
+	first_button.grab_focus()
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_on_back_pressed()
+		accept_event()
+```
 
 ## Testing and Debugging
 

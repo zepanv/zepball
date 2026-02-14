@@ -19,9 +19,14 @@ func _ready() -> void:
 		add_pack_context_ui(MenuController.current_browse_pack_id)
 	populate_levels()
 
+	# Grab focus on first button for controller navigation
+	await get_tree().process_frame
+	_grab_first_button_focus()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_button_pressed()
+		accept_event()
 
 func build_toolbar() -> void:
 	toolbar_row = HBoxContainer.new()
@@ -238,8 +243,14 @@ func create_level_card(entry: Dictionary) -> void:
 		panel.gui_input.connect(_on_level_panel_input.bind(panel))
 		panel.mouse_entered.connect(_on_level_hover_start.bind(panel))
 		panel.mouse_exited.connect(_on_level_hover_end.bind(panel))
+
+		# Enable controller navigation
+		panel.focus_mode = Control.FOCUS_ALL
+		panel.focus_entered.connect(_on_level_hover_start.bind(panel))
+		panel.focus_exited.connect(_on_level_hover_end.bind(panel))
 	else:
 		panel.modulate = Color(0.55, 0.55, 0.55, 1)
+		panel.focus_mode = Control.FOCUS_NONE
 
 	levels_grid.add_child(panel)
 
@@ -291,9 +302,15 @@ func _on_level_panel_input(event: InputEvent, panel: PanelContainer) -> void:
 		var pack_id := str(panel.get_meta("pack_id"))
 		var level_index := int(panel.get_meta("level_index"))
 		MenuController.start_level_ref(pack_id, level_index)
+	elif event.is_action_pressed("ui_accept"):
+		var pack_id := str(panel.get_meta("pack_id"))
+		var level_index := int(panel.get_meta("level_index"))
+		MenuController.start_level_ref(pack_id, level_index)
+		accept_event()
 
 func _on_level_hover_start(panel: PanelContainer) -> void:
-	panel.modulate = Color(1.12, 1.12, 1.12, 1)
+	# Brighter highlight for better visibility with controller
+	panel.modulate = Color(1.3, 1.3, 1.3, 1)
 
 func _on_level_hover_end(panel: PanelContainer) -> void:
 	panel.modulate = Color.WHITE
@@ -304,3 +321,24 @@ func _on_back_button_pressed() -> void:
 		MenuController.show_set_select()
 		return
 	MenuController.show_main_menu()
+
+func _grab_first_button_focus() -> void:
+	"""Grab focus on the first available button for controller navigation"""
+	# Try first level panel (most common use case)
+	if levels_grid:
+		for child in levels_grid.get_children():
+			if child is PanelContainer and child.is_visible_in_tree() and child.focus_mode == Control.FOCUS_ALL:
+				child.grab_focus()
+				return
+
+	# Try play pack button
+	if play_pack_button and play_pack_button.is_visible_in_tree() and not play_pack_button.disabled:
+		play_pack_button.grab_focus()
+		return
+
+	# Try first filter/sort button in toolbar
+	if toolbar_row:
+		for child in toolbar_row.get_children():
+			if child is Button and child.is_visible_in_tree() and not child.disabled:
+				child.grab_focus()
+				return

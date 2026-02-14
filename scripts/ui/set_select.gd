@@ -9,9 +9,14 @@ func _ready() -> void:
 	title_label.text = "SELECT PACK"
 	populate_packs()
 
+	# Grab focus on first button for controller navigation
+	await get_tree().process_frame
+	_grab_first_button_focus()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_button_pressed()
+		accept_event()
 
 func populate_packs() -> void:
 	for child in sets_container.get_children():
@@ -197,3 +202,23 @@ func _on_create_pack_pressed() -> void:
 
 func _on_back_button_pressed() -> void:
 	MenuController.show_main_menu()
+
+func _grab_first_button_focus() -> void:
+	"""Grab focus on the first available button for controller navigation"""
+	if sets_container:
+		for child in sets_container.get_children():
+			if child is PanelContainer and child.is_visible_in_tree():
+				# Look for the first button inside the panel
+				var buttons = _find_buttons_recursive(child)
+				if not buttons.is_empty():
+					buttons[0].grab_focus()
+					return
+
+func _find_buttons_recursive(node: Node) -> Array[Button]:
+	"""Recursively find all buttons in a node"""
+	var buttons: Array[Button] = []
+	for child in node.get_children():
+		if child is Button and child.is_visible_in_tree() and not child.disabled:
+			buttons.append(child)
+		buttons.append_array(_find_buttons_recursive(child))
+	return buttons

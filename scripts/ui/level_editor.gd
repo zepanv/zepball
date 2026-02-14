@@ -85,9 +85,14 @@ func _ready() -> void:
 	_initialize_editor_pack()
 	_refresh_all_ui()
 
+	# Grab focus on back button for controller navigation
+	await get_tree().process_frame
+	back_button.grab_focus()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_button_pressed()
+		accept_event()
 		return
 	if event is InputEventKey:
 		var key_event: InputEventKey = event

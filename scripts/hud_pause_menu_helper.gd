@@ -10,6 +10,7 @@ var pause_level_info_label: Label = null
 var pause_score_info_label: Label = null
 var pause_lives_info_label: Label = null
 var return_editor_btn: Button = null
+var resume_btn: Button = null
 
 func create_pause_menu(hud: Control) -> Control:
 	var menu = Control.new()
@@ -73,7 +74,7 @@ func create_pause_menu(hud: Control) -> Control:
 	spacer2.custom_minimum_size = Vector2(0, 30)
 	vbox.add_child(spacer2)
 
-	var resume_btn = Button.new()
+	resume_btn = Button.new()
 	resume_btn.text = "RESUME"
 	resume_btn.custom_minimum_size = Vector2(0, 60)
 	resume_btn.set("theme_override_font_sizes/font_size", 32)
@@ -135,7 +136,18 @@ func create_pause_menu(hud: Control) -> Control:
 	vbox.add_child(hint)
 
 	pause_menu = menu
+
+	# Connect visibility changed to grab focus when shown
+	menu.visibility_changed.connect(_on_pause_menu_visibility_changed)
+
 	return menu
+
+func _on_pause_menu_visibility_changed() -> void:
+	"""Grab focus on resume button when pause menu becomes visible"""
+	if pause_menu and pause_menu.visible and resume_btn:
+		# Wait one frame for the menu to fully show
+		await pause_menu.get_tree().process_frame
+		resume_btn.grab_focus()
 
 func create_level_select_confirm(hud: Control) -> ConfirmationDialog:
 	level_select_confirm = ConfirmationDialog.new()

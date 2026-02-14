@@ -124,6 +124,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			_on_next_level_button_pressed()
 		else:
 			_on_play_again_button_pressed()
+	elif event.is_action_pressed("ui_cancel"):
+		get_viewport().set_input_as_handled()
+		_on_play_again_button_pressed()
 
 func _on_next_level_button_pressed():
 	"""Continue to next level"""

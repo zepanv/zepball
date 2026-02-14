@@ -225,6 +225,22 @@ func migrate_settings(save_data: Dictionary, save_to_disk: Callable) -> void:
 	if not save_data["settings"].has("show_fps"):
 		save_data["settings"]["show_fps"] = false
 		updated = true
+
+	# Migrate keybindings to add gamepad support (reset if no gamepad events found)
+	if save_data["settings"].has("keybindings"):
+		var keybindings = save_data["settings"]["keybindings"]
+		var has_gamepad = false
+		for action in keybindings.keys():
+			for event_data in keybindings[action]:
+				if event_data.get("type") == "joypad_button" or event_data.get("type") == "joypad_motion":
+					has_gamepad = true
+					break
+			if has_gamepad:
+				break
+		# If no gamepad events found, reset to defaults to get gamepad support
+		if not has_gamepad:
+			save_data["settings"]["keybindings"] = {}
+			updated = true
 	if not save_data["settings"].has("keybindings"):
 		save_data["settings"]["keybindings"] = {}
 		updated = true
