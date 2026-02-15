@@ -51,13 +51,17 @@ func _ready():
 		perfect_clear_label.visible = false
 
 	# Check if this was a high score
-	var high_score = SaveManager.get_level_key_high_score(level_key)
-	if final_score >= high_score:
-		high_score_label.text = "NEW HIGH SCORE!"
-		high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1))
-	elif high_score > 0:
-		high_score_label.text = "High Score: " + str(high_score)
-		high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+	if MenuController.was_new_machine_best:
+		high_score_label.text = "NEW MACHINE HIGH SCORE!"
+		high_score_label.set("theme_override_colors/font_color", Color(0, 1, 1, 1)) # Cyan
+	elif MenuController.was_new_personal_best:
+		high_score_label.text = "NEW PERSONAL BEST!"
+		high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1)) # Yellow
+	else:
+		var personal_best = SaveManager.get_level_key_high_score(level_key)
+		if personal_best > 0:
+			high_score_label.text = "Personal Best: " + str(personal_best)
+			high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
 
 	# Populate score breakdown
 	var base_points = int(breakdown.get("base_points", 0))

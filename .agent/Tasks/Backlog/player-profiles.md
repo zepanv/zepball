@@ -82,3 +82,6 @@ Implement a robust player profile system that allows multiple users to have thei
 - [ ] High scores correctly show names from different profiles.
 - [ ] Profile name is visible on HUD during gameplay.
 - [ ] All menu navigation works via D-Pad/Joystick.
+
+# Outstanding issues
+- Controller B button not cancelling new menus

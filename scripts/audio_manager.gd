@@ -308,8 +308,14 @@ func _list_music_files() -> Array:
 	return cleaned
 
 func _apply_saved_volumes() -> void:
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), SaveManager.get_music_volume())
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"), SaveManager.get_sfx_volume())
+	_ensure_audio_buses()
+	var music_bus = AudioServer.get_bus_index("Music")
+	var sfx_bus = AudioServer.get_bus_index("SFX")
+	
+	if music_bus != -1:
+		AudioServer.set_bus_volume_db(music_bus, SaveManager.get_music_volume())
+	if sfx_bus != -1:
+		AudioServer.set_bus_volume_db(sfx_bus, SaveManager.get_sfx_volume())
 
 func _load_saved_music_settings() -> void:
 	music_mode = SaveManager.get_music_playback_mode()
@@ -599,3 +605,20 @@ func _show_toast(text: String) -> void:
 	if toast_ui == null or not toast_ui.has_method("show_toast"):
 		return
 	toast_ui.call("show_toast", text)
+
+func refresh_from_save() -> void:
+	"""Re-apply all audio settings from SaveManager (e.g. after profile switch)"""
+	_apply_saved_volumes()
+	
+	var old_mode = music_mode
+	_load_saved_music_settings()
+	
+	if music_mode == MUSIC_MODE_OFF:
+		_fade_out_and_stop_music()
+	elif old_mode == MUSIC_MODE_OFF and music_mode != MUSIC_MODE_OFF:
+		_start_music_if_enabled()
+	else:
+		# Update current track if mode is loop_one
+		if music_mode == MUSIC_MODE_LOOP_ONE:
+			set_music_track(music_track_id)
+		_refresh_music_processing_state()

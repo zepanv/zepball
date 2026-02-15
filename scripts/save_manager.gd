@@ -4,7 +4,9 @@ extends Node
 ## Handles level progression, high scores, and settings persistence
 ## Facade: delegates to SaveSettingsHelper, SaveAchievementsHelper, SaveStatisticsHelper
 
-const SAVE_FILE_PATH = "user://save_data.json"
+const METADATA_PATH = "user://metadata.json"
+const PROFILES_DIR = "user://profiles/"
+const LEGACY_SAVE_PATH = "user://save_data.json"
 const SAVE_VERSION = 2
 const TOTAL_LEVELS = 30
 
@@ -20,7 +22,14 @@ var settings_helper: RefCounted = null
 var achievements_helper: RefCounted = null
 var statistics_helper: RefCounted = null
 
-# Save data structure
+# Metadata for tracking all profiles
+var metadata = {
+	"last_selected_id": "",
+	"profiles": {} # id: name
+}
+var current_profile_id: String = ""
+
+# Save data structure (Current Profile)
 var save_data = {
 	"version": SAVE_VERSION,
 	"profile": {
@@ -76,54 +85,212 @@ signal high_score_updated(level_id: int, new_score: int)
 signal achievement_unlocked(achievement_id: String, achievement_name: String)
 
 func _ready():
-	"""Load save data on startup"""
+	"""Initialize helpers and load profiles"""
 	settings_helper = SETTINGS_HELPER_SCRIPT.new()
 	achievements_helper = ACHIEVEMENTS_HELPER_SCRIPT.new()
 	statistics_helper = STATISTICS_HELPER_SCRIPT.new()
 	settings_helper.capture_default_keybindings()
+	
+	_ensure_dir_exists(PROFILES_DIR)
 	load_save()
-	settings_helper.apply_saved_keybindings(save_data)
+
+func _ensure_dir_exists(path: String) -> void:
+	if not DirAccess.dir_exists_absolute(path):
+		DirAccess.make_dir_recursive_absolute(path)
 
 func load_save() -> void:
-	"""Load save data from disk, or create default if none exists"""
-	if not FileAccess.file_exists(SAVE_FILE_PATH):
-		create_default_save()
-		save_to_disk()
-		save_loaded.emit()
+	"""Load metadata and the current profile"""
+	load_metadata()
+	
+	# Check for legacy migration
+	if metadata["profiles"].is_empty() and FileAccess.file_exists(LEGACY_SAVE_PATH):
+		_migrate_legacy_save()
+	
+	if metadata["profiles"].is_empty():
+		# No profiles found, create a default one
+		create_profile("Player 1")
+	else:
+		# Load the last selected profile, or the first one available
+		var profile_id = metadata.get("last_selected_id", "")
+		if profile_id == "" or not metadata["profiles"].has(profile_id):
+			profile_id = metadata["profiles"].keys()[0]
+			metadata["last_selected_id"] = profile_id
+			save_metadata()
+		
+		load_profile(profile_id)
+
+func load_metadata() -> void:
+	"""Load profile metadata from disk"""
+	if not FileAccess.file_exists(METADATA_PATH):
+		metadata = {
+			"last_selected_id": "",
+			"profiles": {}
+		}
 		return
 
-	var file = FileAccess.open(SAVE_FILE_PATH, FileAccess.READ)
-	if file == null:
-		push_error("Failed to open save file: " + str(FileAccess.get_open_error()))
+	var file = FileAccess.open(METADATA_PATH, FileAccess.READ)
+	if file:
+		var json_string = file.get_as_text()
+		file.close()
+		var json = JSON.new()
+		if json.parse(json_string) == OK:
+			metadata = json.data
+		else:
+			push_error("Failed to parse metadata JSON")
+
+func save_metadata() -> void:
+	"""Save profile metadata to disk"""
+	var file = FileAccess.open(METADATA_PATH, FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(metadata, "\t"))
+		file.close()
+
+func _migrate_legacy_save() -> void:
+	"""Move legacy save_data.json to a new profile"""
+	print("Migrating legacy save data to Player 1 profile...")
+	
+	var file = FileAccess.open(LEGACY_SAVE_PATH, FileAccess.READ)
+	if file:
+		var json_string = file.get_as_text()
+		file.close()
+		var json = JSON.new()
+		if json.parse(json_string) == OK:
+			var legacy_data = json.data
+			
+			# Create Player 1 profile with legacy data
+			var profile_id = "player_1"
+			metadata["profiles"][profile_id] = "Player 1"
+			metadata["last_selected_id"] = profile_id
+			save_metadata()
+			
+			current_profile_id = profile_id
+			save_data = legacy_data
+			save_to_disk()
+			
+			# Rename/Backup legacy file
+			var dir = DirAccess.open("user://")
+			dir.rename(LEGACY_SAVE_PATH, "user://save_data.json.bak")
+			print("Migration complete.")
+			save_loaded.emit()
+			return
+	
+	# If migration fails for some reason, just create a default
+	create_profile("Player 1")
+
+func create_profile(profile_name: String) -> String:
+	"""Create a new profile with the given name. Returns the profile_id."""
+	var sanitized_name = sanitize_name(profile_name)
+	if sanitized_name == "":
+		sanitized_name = "Player"
+		
+	# Generate a unique ID based on the name
+	var base_id = sanitized_name.to_lower().replace(" ", "_")
+	var profile_id = base_id
+	var counter = 1
+	while metadata["profiles"].has(profile_id) or FileAccess.file_exists(_get_profile_path(profile_id)):
+		profile_id = base_id + "_" + str(counter)
+		counter += 1
+	
+	# Create default data
+	create_default_save()
+	save_data["profile"]["player_name"] = profile_name
+	
+	# Register in metadata
+	metadata["profiles"][profile_id] = profile_name
+	metadata["last_selected_id"] = profile_id
+	save_metadata()
+	
+	current_profile_id = profile_id
+	save_to_disk()
+	
+	_apply_profile_settings()
+	return profile_id
+
+func load_profile(profile_id: String) -> void:
+	"""Load a specific profile by ID"""
+	if not metadata["profiles"].has(profile_id):
+		push_error("Attempted to load non-existent profile: " + profile_id)
+		return
+		
+	var path = _get_profile_path(profile_id)
+	if not FileAccess.file_exists(path):
+		push_error("Profile file missing: " + path)
+		# Fallback: create default if file missing
 		create_default_save()
+		save_data["profile"]["player_name"] = metadata["profiles"][profile_id]
+		current_profile_id = profile_id
 		save_to_disk()
-		save_loaded.emit()
+		_apply_profile_settings()
 		return
 
-	var json_string = file.get_as_text()
-	file.close()
+	var file = FileAccess.open(path, FileAccess.READ)
+	if file:
+		var json_string = file.get_as_text()
+		file.close()
+		var json = JSON.new()
+		if json.parse(json_string) == OK:
+			save_data = json.data
+			current_profile_id = profile_id
+			metadata["last_selected_id"] = profile_id
+			save_metadata()
+			
+			# Perform migrations if needed
+			_perform_migrations()
+			
+			_apply_profile_settings()
+		else:
+			push_error("Failed to parse profile JSON: " + path)
 
-	var json = JSON.new()
-	var parse_result = json.parse(json_string)
-
-	if parse_result != OK:
-		push_error("Failed to parse save file JSON")
-		create_default_save()
-		save_to_disk()
-		save_loaded.emit()
+func delete_profile(profile_id: String) -> void:
+	"""Delete a profile and its associated file"""
+	if not metadata["profiles"].has(profile_id):
 		return
+		
+	print("Deleting profile: ", profile_id)
+	# Delete the file
+	var path = _get_profile_path(profile_id)
+	if FileAccess.file_exists(path):
+		var err = DirAccess.remove_absolute(path)
+		if err != OK:
+			push_error("Failed to delete profile file: " + path)
+		else:
+			print("Deleted profile file: ", path)
+	
+	# Remove from metadata
+	metadata["profiles"].erase(profile_id)
+	
+	if current_profile_id == profile_id:
+		print("Deleted active profile, reloading...")
+		current_profile_id = ""
+		metadata["last_selected_id"] = ""
+		save_metadata() # CRITICAL: Save to disk before reload
+		# Reload to catch a new profile or create default
+		load_save()
+	else:
+		save_metadata()
 
-	var loaded_data = json.data
-
-	if not loaded_data.has("version"):
-		push_warning("Old save format detected, migrating to default save data")
-		create_default_save()
-		save_to_disk()
-		save_loaded.emit()
+func rename_current_profile(new_name: String) -> void:
+	"""Rename the currently active profile"""
+	if current_profile_id == "" or not metadata["profiles"].has(current_profile_id):
 		return
+	
+	metadata["profiles"][current_profile_id] = new_name
+	save_metadata()
+	
+	save_data["profile"]["player_name"] = new_name
+	save_to_disk()
 
-	save_data = loaded_data
+func _get_profile_path(profile_id: String) -> String:
+	return PROFILES_DIR + profile_id + ".json"
 
+func sanitize_name(profile_name: String) -> String:
+	"""Sanitize name to be safe for filenames (alphanumeric and spaces only)"""
+	var regex = RegEx.new()
+	regex.compile("[^a-zA-Z0-9 ]")
+	return regex.sub(profile_name, "", true).strip_edges()
+
+func _perform_migrations() -> void:
+	"""Consolidated migration logic for the currently loaded save_data"""
 	var did_migrate = false
 	if int(save_data.get("version", 0)) < SAVE_VERSION:
 		did_migrate = _migrate_to_v2_pack_data()
@@ -141,22 +308,37 @@ func load_save() -> void:
 			"total_games_played": 0,
 			"perfect_clears": 0
 		}
-		save_to_disk()
+		did_migrate = true
 
 	if not save_data.has("achievements"):
 		save_data["achievements"] = []
-		save_to_disk()
+		did_migrate = true
+
+	if not save_data.has("high_score_timestamps"):
+		save_data["high_score_timestamps"] = {}
+		# Set current time for migrated scores so they aren't "Unknown"
+		var now = Time.get_datetime_string_from_system()
+		for key in save_data.get("pack_high_scores", {}).keys():
+			save_data["high_score_timestamps"][key] = now
+		did_migrate = true
+	
+	if not save_data.has("set_high_score_timestamps"):
+		save_data["set_high_score_timestamps"] = {}
+		var now = Time.get_datetime_string_from_system()
+		for key in save_data.get("pack_set_high_scores", {}).keys():
+			save_data["set_high_score_timestamps"][key] = now
+		did_migrate = true
 
 	if not save_data.has("set_progression"):
 		save_data["set_progression"] = {
 			"highest_unlocked_set": 1,
 			"sets_completed": []
 		}
-		save_to_disk()
+		did_migrate = true
 
 	if not save_data.has("set_high_scores"):
 		save_data["set_high_scores"] = {}
-		save_to_disk()
+		did_migrate = true
 
 	if not save_data.has("pack_progression"):
 		save_data["pack_progression"] = {}
@@ -201,26 +383,74 @@ func load_save() -> void:
 		did_migrate = true
 
 	_ensure_pack_progression_defaults()
-	if did_migrate:
-		save_to_disk()
-
+	
 	# Delegate migration to helpers
 	var _disk_cb = save_to_disk
 	statistics_helper.migrate_statistics(save_data, _disk_cb)
 	settings_helper.migrate_settings(save_data, _disk_cb)
 
-	save_loaded.emit()
+	if did_migrate:
+		save_to_disk()
 
 func save_to_disk() -> void:
-	"""Write current save data to disk"""
-	var file = FileAccess.open(SAVE_FILE_PATH, FileAccess.WRITE)
+	"""Write current save data to its specific profile file"""
+	if current_profile_id == "":
+		return
+		
+	var path = _get_profile_path(current_profile_id)
+	var file = FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
-		push_error("Failed to create save file: " + str(FileAccess.get_open_error()))
+		push_error("Failed to create profile file: " + str(FileAccess.get_open_error()))
 		return
 
 	var json_string = JSON.stringify(save_data, "\t")
 	file.store_string(json_string)
 	file.close()
+
+func get_profile_list() -> Dictionary:
+	"""Return the list of profiles (id: name)"""
+	return metadata["profiles"].duplicate()
+
+func get_current_profile_id() -> String:
+	return current_profile_id
+
+func get_current_profile_name() -> String:
+	if current_profile_id != "" and metadata["profiles"].has(current_profile_id):
+		return metadata["profiles"][current_profile_id]
+	return "Unknown"
+
+func switch_profile(profile_id: String) -> void:
+	"""Switch to a different profile"""
+	if profile_id == current_profile_id:
+		return
+	load_profile(profile_id)
+
+func _apply_profile_settings() -> void:
+	"""Apply engine-level settings from the current save_data (Audio, Keybindings)"""
+	if settings_helper:
+		settings_helper.apply_saved_keybindings(save_data)
+	
+	if AudioManager and AudioManager.has_method("refresh_from_save"):
+		AudioManager.refresh_from_save()
+	
+	# Notify UI and game systems
+	save_loaded.emit()
+
+func get_next_default_name() -> String:
+	"""Get the next available default name like Player 1, Player 2, etc."""
+	var counter = 1
+	var base_name = "Player "
+	while true:
+		var name_candidate = base_name + str(counter)
+		var already_exists = false
+		for p_name in metadata["profiles"].values():
+			if p_name == name_candidate:
+				already_exists = true
+				break
+		if not already_exists:
+			return name_candidate
+		counter += 1
+	return "Player"
 
 func create_default_save() -> void:
 	"""Reset to default save data"""
@@ -593,7 +823,12 @@ func update_level_key_high_score(level_key: String, score: int) -> bool:
 	if score <= current_high_score:
 		return false
 
+	if not save_data.has("high_score_timestamps"):
+		save_data["high_score_timestamps"] = {}
+	
 	save_data["pack_high_scores"][level_key] = score
+	save_data["high_score_timestamps"][level_key] = Time.get_datetime_string_from_system()
+	
 	var parsed := _parse_level_key(level_key)
 	if not parsed.is_empty():
 		var pack_id := str(parsed.get("pack_id", ""))
@@ -613,6 +848,89 @@ func get_level_key_stars(level_key: String) -> int:
 	var entry: Dictionary = save_data.get("pack_progression", {}).get(pack_id, {})
 	var stars: Dictionary = entry.get("stars", {})
 	return int(stars.get(level_key, 0))
+
+func get_all_leaderboards() -> Dictionary:
+	"""Scan all profile files and return aggregated leaderboards"""
+	var leaderboards = {
+		"levels": {}, # level_key: [ {name, score, date}, ... ]
+		"sets": {}    # pack_id: [ {name, score, date}, ... ]
+	}
+	
+	var profiles = get_profile_list()
+	for profile_id in profiles.keys():
+		var path = _get_profile_path(profile_id)
+		if not FileAccess.file_exists(path):
+			continue
+			
+		var file = FileAccess.open(path, FileAccess.READ)
+		if not file:
+			continue
+			
+		var json_string = file.get_as_text()
+		file.close()
+		var json = JSON.new()
+		if json.parse(json_string) != OK:
+			continue
+			
+		var p_data = json.data
+		var p_name = profiles[profile_id]
+		
+		# Process level high scores
+		var p_level_scores = p_data.get("pack_high_scores", {})
+		var p_level_times = p_data.get("high_score_timestamps", {})
+		for l_key in p_level_scores.keys():
+			if not leaderboards["levels"].has(l_key):
+				leaderboards["levels"][l_key] = []
+			
+			leaderboards["levels"][l_key].append({
+				"name": p_name,
+				"score": int(p_level_scores[l_key]),
+				"date": str(p_level_times.get(l_key, "Unknown"))
+			})
+			
+		# Process set high scores
+		var p_set_scores = p_data.get("pack_set_high_scores", {})
+		var p_set_times = p_data.get("set_high_score_timestamps", {})
+		for s_id in p_set_scores.keys():
+			if not leaderboards["sets"].has(s_id):
+				leaderboards["sets"][s_id] = []
+				
+			leaderboards["sets"][s_id].append({
+				"name": p_name,
+				"score": int(p_set_scores[s_id]),
+				"date": str(p_set_times.get(s_id, "Unknown"))
+			})
+			
+	# Sort all lists by score descending
+	for l_key in leaderboards["levels"].keys():
+		leaderboards["levels"][l_key].sort_custom(func(a, b): return a["score"] > b["score"])
+		# Keep only top 10
+		if leaderboards["levels"][l_key].size() > 10:
+			leaderboards["levels"][l_key] = leaderboards["levels"][l_key].slice(0, 10)
+			
+	for s_id in leaderboards["sets"].keys():
+		leaderboards["sets"][s_id].sort_custom(func(a, b): return a["score"] > b["score"])
+		# Keep only top 10
+		if leaderboards["sets"][s_id].size() > 10:
+			leaderboards["sets"][s_id] = leaderboards["sets"][s_id].slice(0, 10)
+			
+	return leaderboards
+
+func get_global_high_score(level_key: String) -> int:
+	"""Find the highest score for a level across all profiles"""
+	var leaderboards = get_all_leaderboards()
+	var scores = leaderboards["levels"].get(level_key, [])
+	if scores.is_empty():
+		return 0
+	return int(scores[0]["score"])
+
+func get_global_set_high_score(pack_id: String) -> int:
+	"""Find the highest score for a set/pack across all profiles"""
+	var leaderboards = get_all_leaderboards()
+	var scores = leaderboards["sets"].get(pack_id, [])
+	if scores.is_empty():
+		return 0
+	return int(scores[0]["score"])
 
 func update_level_key_stars(level_key: String, stars_value: int) -> bool:
 	var parsed := _parse_level_key(level_key)
@@ -705,7 +1023,9 @@ func reset_progress_data() -> void:
 	save_to_disk()
 
 func get_save_file_location() -> String:
-	return ProjectSettings.globalize_path(SAVE_FILE_PATH)
+	if current_profile_id == "":
+		return ""
+	return ProjectSettings.globalize_path(_get_profile_path(current_profile_id))
 
 # ============================================================================
 # LAST PLAYED TRACKING (stays inline - small)
@@ -788,7 +1108,12 @@ func update_set_pack_high_score(pack_id: String, score: int) -> bool:
 	if score <= current_high_score:
 		return false
 
+	if not save_data.has("set_high_score_timestamps"):
+		save_data["set_high_score_timestamps"] = {}
+
 	save_data["pack_set_high_scores"][pack_id] = score
+	save_data["set_high_score_timestamps"][pack_id] = Time.get_datetime_string_from_system()
+	
 	var set_id := _legacy_set_id_for_pack(pack_id)
 	if set_id != -1:
 		save_data["set_high_scores"][str(set_id)] = score

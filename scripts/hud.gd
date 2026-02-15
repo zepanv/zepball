@@ -10,7 +10,8 @@ const POWERUP_HELPER_SCRIPT = preload("res://scripts/hud_power_up_timers_helper.
 
 @onready var score_label: Label = $TopBar/ScoreLabel
 @onready var lives_label: Label = $TopBar/LivesLabel
-@onready var logo_label: Label = $TopBar/LogoLabel
+@onready var logo_label: Label = $TopBar/LogoVBox/LogoLabel
+@onready var player_name_label: Label = $TopBar/LogoVBox/PlayerNameLabel
 @onready var powerup_container: VBoxContainer = $PowerUpIndicators
 
 var difficulty_label: Label = null
@@ -77,6 +78,9 @@ func _ready() -> void:
 	debug_visible = show_fps
 	if debug_helper.debug_overlay:
 		debug_helper.debug_overlay.visible = debug_visible
+	
+	if player_name_label:
+		player_name_label.text = "CURRENT PLAYER: " + SaveManager.get_current_profile_name().to_upper()
 
 	_init_dynamic_elements()
 	_refresh_processing_state()

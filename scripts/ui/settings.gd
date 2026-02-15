@@ -5,36 +5,44 @@ extends Control
 @onready var back_button = $BackButton
 
 # Screen shake controls
-@onready var shake_off_button = $Panel/VBoxContainer/ScreenShakeSection/ShakeButtons/OffButton
-@onready var shake_low_button = $Panel/VBoxContainer/ScreenShakeSection/ShakeButtons/LowButton
-@onready var shake_medium_button = $Panel/VBoxContainer/ScreenShakeSection/ShakeButtons/MediumButton
-@onready var shake_high_button = $Panel/VBoxContainer/ScreenShakeSection/ShakeButtons/HighButton
+@onready var shake_off_button = $Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons/OffButton
+@onready var shake_low_button = $Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons/LowButton
+@onready var shake_medium_button = $Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons/MediumButton
+@onready var shake_high_button = $Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons/HighButton
 
 # Toggle controls
-@onready var particles_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ParticlesCheck
-@onready var trail_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/TrailCheck
-@onready var combo_flash_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ComboFlashCheck
-@onready var skip_intro_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/SkipIntroCheck
-@onready var show_fps_check = $Panel/VBoxContainer/EffectsSection/EffectsGrid/ShowFpsCheck
+@onready var particles_check = $Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid/ParticlesCheck
+@onready var trail_check = $Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid/TrailCheck
+@onready var combo_flash_check = $Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid/ComboFlashCheck
+@onready var skip_intro_check = $Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid/SkipIntroCheck
+@onready var show_fps_check = $Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid/ShowFpsCheck
 
 # Sensitivity slider
-@onready var sensitivity_slider = $Panel/VBoxContainer/ControlsSection/SensitivitySlider
-@onready var sensitivity_label = $Panel/VBoxContainer/ControlsSection/SensitivityLabel
-@onready var keybindings_button = $Panel/VBoxContainer/ControlsSection/KeybindingsButton
+@onready var sensitivity_slider = $Panel/ScrollContainer/VBoxContainer/ControlsSection/ControlsHBox/SensitivityColumn/SensitivitySlider
+@onready var sensitivity_label = $Panel/ScrollContainer/VBoxContainer/ControlsSection/ControlsHBox/SensitivityColumn/SensitivityLabel
+@onready var keybindings_button = $Panel/ScrollContainer/VBoxContainer/ControlsSection/ControlsHBox/KeybindingsButton
 
 # Audio sliders
-@onready var music_slider = $Panel/VBoxContainer/AudioSection/MusicSlider
-@onready var sfx_slider = $Panel/VBoxContainer/AudioSection/SFXSlider
-@onready var music_label = $Panel/VBoxContainer/AudioSection/MusicLabel
-@onready var sfx_label = $Panel/VBoxContainer/AudioSection/SFXLabel
-@onready var music_mode_label = $Panel/VBoxContainer/AudioSection/MusicModeLabel
-@onready var music_mode_option = $Panel/VBoxContainer/AudioSection/MusicModeOption
-@onready var music_track_label = $Panel/VBoxContainer/AudioSection/MusicTrackLabel
-@onready var music_track_option = $Panel/VBoxContainer/AudioSection/MusicTrackOption
+@onready var music_slider = $Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/MusicColumn/MusicSlider
+@onready var sfx_slider = $Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/SFXColumn/SFXSlider
+@onready var music_label = $Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/MusicColumn/MusicLabel
+@onready var sfx_label = $Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/SFXColumn/SFXLabel
+@onready var music_mode_label = $Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/PlaybackColumn/MusicModeLabel
+@onready var music_mode_option = $Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/PlaybackColumn/MusicModeOption
+@onready var music_track_label = $Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/PlaybackColumn/MusicTrackLabel
+@onready var music_track_option = $Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/PlaybackColumn/MusicTrackOption
+
+# Profile management
+@onready var current_profile_label = $Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/CurrentProfileLabel
+@onready var rename_profile_button = $Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/ProfileButtons/RenameProfileButton
+@onready var delete_profile_button = $Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/ProfileButtons/DeleteProfileButton
+@onready var rename_dialog = $RenameProfileDialog
+@onready var rename_input = $RenameProfileDialog/VBoxContainer/ProfileNameInput
+@onready var delete_confirm_dialog = $DeleteProfileConfirmDialog
 
 # Clear/reset buttons
-@onready var reset_settings_button = $Panel/VBoxContainer/DataSection/ResetSettingsButton
-@onready var clear_save_button = $Panel/VBoxContainer/DataSection/ClearSaveButton
+@onready var reset_settings_button = $Panel/ScrollContainer/VBoxContainer/DataSection/DataHBox/ResetSettingsButton
+@onready var clear_save_button = $Panel/ScrollContainer/VBoxContainer/DataSection/DataHBox/ClearSaveButton
 @onready var confirm_dialog = $ConfirmDialog
 @onready var reset_confirm_dialog = $ResetSettingsConfirmDialog
 
@@ -53,6 +61,8 @@ func _ready():
 		clear_save_button.disabled = true
 		clear_save_button.text = "CLEAR SAVE DATA (MAIN MENU)"
 		clear_save_button.modulate = Color(0.6, 0.6, 0.6)
+		rename_profile_button.disabled = true
+		delete_profile_button.disabled = true
 
 	# Connect buttons and sliders
 	back_button.pressed.connect(_on_back_pressed)
@@ -72,15 +82,28 @@ func _ready():
 
 	# Sensitivity slider
 	sensitivity_slider.value_changed.connect(_on_sensitivity_changed)
+	_disable_slider_wheel(sensitivity_slider)
 	keybindings_button.pressed.connect(_on_keybindings_pressed)
 
 	# Audio sliders
 	music_slider.value_changed.connect(_on_music_volume_changed)
+	_disable_slider_wheel(music_slider)
 	sfx_slider.value_changed.connect(_on_sfx_volume_changed)
+	_disable_slider_wheel(sfx_slider)
 	music_mode_option.item_selected.connect(_on_music_mode_selected)
 	music_track_option.item_selected.connect(_on_music_track_selected)
 	if AudioManager.music_volume_changed.is_connected(_on_music_volume_external_changed) == false:
 		AudioManager.music_volume_changed.connect(_on_music_volume_external_changed)
+
+	# Profile buttons
+	rename_profile_button.pressed.connect(_on_rename_profile_pressed)
+	delete_profile_button.pressed.connect(_on_delete_profile_pressed)
+	rename_dialog.confirmed.connect(_on_rename_confirmed)
+	rename_input.text_submitted.connect(func(_text): 
+		_on_rename_confirmed()
+		rename_dialog.hide()
+	)
+	delete_confirm_dialog.confirmed.connect(_on_delete_confirmed)
 
 	# Clear/reset buttons
 	reset_settings_button.pressed.connect(_on_reset_settings_pressed)
@@ -95,8 +118,24 @@ func _ready():
 	await get_tree().process_frame
 	back_button.grab_focus()
 
+func _input(event: InputEvent) -> void:
+	"""Catch Esc/B before dialogs potentially consume it"""
+	if event.is_action_pressed("ui_cancel"):
+		if rename_dialog.visible:
+			rename_dialog.hide()
+			get_viewport().set_input_as_handled()
+		elif delete_confirm_dialog.visible:
+			delete_confirm_dialog.hide()
+			get_viewport().set_input_as_handled()
+		elif confirm_dialog.visible:
+			confirm_dialog.hide()
+			get_viewport().set_input_as_handled()
+		elif reset_confirm_dialog.visible:
+			reset_confirm_dialog.hide()
+			get_viewport().set_input_as_handled()
+
 func _unhandled_input(event: InputEvent) -> void:
-	"""Handle Esc to go back from settings"""
+	"""Handle Esc/B to go back (only if no dialog was handled in _input)"""
 	if has_node("KeybindingsMenu"):
 		return
 	if event.is_action_pressed("ui_cancel"):
@@ -106,6 +145,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _load_current_settings():
 	"""Load settings from SaveManager and update UI"""
 	is_loading_settings = true
+	# Profile info
+	current_profile_label.text = "Current Profile: " + SaveManager.get_current_profile_name()
+	
 	# Screen shake intensity
 	var shake_intensity = SaveManager.get_screen_shake_intensity()
 	_update_shake_buttons(shake_intensity)
@@ -348,6 +390,28 @@ func _update_sfx_label(value: float):
 	var percentage = int((value + 40) / 40 * 100)  # Assuming -40 to 0 dB range
 	sfx_label.text = "SFX Volume: " + str(percentage) + "%"
 
+# Profile management handlers
+func _on_rename_profile_pressed():
+	rename_input.text = SaveManager.get_current_profile_name()
+	rename_dialog.popup_centered()
+	# Focus the OK button for controller support
+	rename_dialog.get_ok_button().grab_focus()
+
+func _on_rename_confirmed():
+	var new_name = rename_input.text.strip_edges()
+	if new_name != "":
+		SaveManager.rename_current_profile(new_name)
+		_load_current_settings()
+
+func _on_delete_profile_pressed():
+	delete_confirm_dialog.popup_centered()
+
+func _on_delete_confirmed():
+	var profile_id = SaveManager.get_current_profile_id()
+	SaveManager.delete_profile(profile_id)
+	# Always return to main menu after a deletion to ensure full UI refresh
+	MenuController.show_main_menu()
+
 func _on_clear_save_pressed():
 	"""Show confirmation dialog before clearing save"""
 	confirm_dialog.popup_centered()
@@ -384,3 +448,11 @@ func _on_back_pressed():
 		queue_free()
 	else:
 		MenuController.show_main_menu()
+
+func _disable_slider_wheel(slider: Slider):
+	"""Prevent mouse wheel from changing slider values to avoid conflict with scrolling"""
+	slider.gui_input.connect(func(event):
+		if event is InputEventMouseButton:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				slider.accept_event()
+	)

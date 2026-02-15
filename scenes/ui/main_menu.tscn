@@ -46,6 +46,30 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 15)
 layout_mode = 2
 
+[node name="ProfileContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="ProfileLabel" type="Label" parent="VBoxContainer/ProfileContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+text = "PLAYER:"
+
+[node name="ProfileDropdown" type="OptionButton" parent="VBoxContainer/ProfileContainer"]
+custom_minimum_size = Vector2(200, 44)
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+alignment = 1
+
+[node name="AddProfileButton" type="Button" parent="VBoxContainer/ProfileContainer"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.15, 0.95, 0.65, 1)
+theme_override_font_sizes/font_size = 24
+text = "+"
+
 [node name="PlayButton" type="Button" parent="VBoxContainer" unique_id=1672319743]
 custom_minimum_size = Vector2(0, 54)
 layout_mode = 2
@@ -119,13 +143,27 @@ theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 22
 text = "EDITOR"
 
-[node name="StatsButton" type="Button" parent="VBoxContainer" unique_id=363254312]
+[node name="StatsHBox" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StatsButton" type="Button" parent="VBoxContainer/StatsHBox" unique_id=363254312]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 0.9, 0.3, 1)
 theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 22
 text = "STATS"
+
+[node name="HighScoresButton" type="Button" parent="VBoxContainer/StatsHBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.8, 0.4, 1)
+theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "HIGH SCORES"
 
 [node name="SettingsButton" type="Button" parent="VBoxContainer" unique_id=341168533]
 custom_minimum_size = Vector2(0, 44)
@@ -165,12 +203,39 @@ theme_override_font_sizes/font_size = 16
 text = "2026-02-14"
 horizontal_alignment = 2
 
+[node name="NewProfileDialog" type="ConfirmationDialog" parent="."]
+title = "New Profile"
+initial_position = 2
+size = Vector2i(400, 150)
+ok_button_text = "CREATE"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="NewProfileDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 392.0
+offset_bottom = 101.0
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="NewProfileDialog/VBoxContainer"]
+layout_mode = 2
+text = "Enter profile name:"
+
+[node name="ProfileNameInput" type="LineEdit" parent="NewProfileDialog/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Player Name"
+max_length = 20
+context_menu_enabled = false
+select_all_on_focus = true
+
+[connection signal="item_selected" from="VBoxContainer/ProfileContainer/ProfileDropdown" to="." method="_on_profile_dropdown_item_selected"]
+[connection signal="pressed" from="VBoxContainer/ProfileContainer/AddProfileButton" to="." method="_on_add_profile_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/PlayButton" to="." method="_on_play_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ReturnButton" to="." method="_on_return_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/DifficultyButtons/EasyButton" to="." method="_on_easy_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/DifficultyButtons/NormalButton" to="." method="_on_normal_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/DifficultyButtons/HardButton" to="." method="_on_hard_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/EditorButton" to="." method="_on_editor_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/StatsButton" to="." method="_on_stats_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/StatsHBox/StatsButton" to="." method="_on_stats_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/StatsHBox/HighScoresButton" to="." method="_on_high_scores_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]

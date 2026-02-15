@@ -14,6 +14,7 @@ const LEVEL_COMPLETE_SCENE = "res://scenes/ui/level_complete.tscn"
 const STATS_SCENE = "res://scenes/ui/stats.tscn"
 const SETTINGS_SCENE = "res://scenes/ui/settings.tscn"
 const LEVEL_EDITOR_SCENE = "res://scenes/ui/level_editor.tscn"
+const HIGH_SCORES_SCENE = "res://scenes/ui/high_scores.tscn"
 
 # Play mode enum
 enum PlayMode { INDIVIDUAL, SET }
@@ -27,6 +28,8 @@ var current_browse_pack_id: String = ""
 var current_score: int = 0
 var is_in_gameplay: bool = false
 var was_perfect_clear: bool = false
+var was_new_personal_best: bool = false
+var was_new_machine_best: bool = false
 var settings_opened_from_pause: bool = false
 var current_editor_pack_id: String = ""
 var editor_return_target: EditorReturnTarget = EditorReturnTarget.SET_SELECT
@@ -121,6 +124,16 @@ func show_stats() -> void:
 
 	get_tree().change_scene_to_file(STATS_SCENE)
 	scene_changed.emit(STATS_SCENE)
+
+func show_high_scores() -> void:
+	"""Load and show the high scores screen"""
+	is_in_gameplay = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+	DifficultyManager.unlock_difficulty()
+
+	get_tree().change_scene_to_file(HIGH_SCORES_SCENE)
+	scene_changed.emit(HIGH_SCORES_SCENE)
 
 func show_settings(from_pause: bool = false) -> void:
 	"""Load and show the settings screen"""
@@ -460,6 +473,14 @@ func show_level_complete(final_score: int) -> void:
 		scene_changed.emit(LEVEL_COMPLETE_SCENE)
 		return
 
+	# Determine high score status BEFORE saving
+	var level_key = get_current_level_key()
+	var prev_pb = SaveManager.get_level_key_high_score(level_key)
+	var prev_global = SaveManager.get_global_high_score(level_key)
+	
+	was_new_personal_best = (current_score > prev_pb) or (prev_pb == 0 and current_score > 0)
+	was_new_machine_best = (current_score > prev_global) or (prev_global == 0 and current_score > 0)
+
 	# Save game state for set mode (before scene changes)
 	if current_play_mode == PlayMode.SET and game_manager:
 		set_saved_score = current_score
@@ -533,6 +554,13 @@ func show_set_complete(final_score: int) -> void:
 		set_perfect_bonus = current_score - final_score
 	else:
 		current_score = final_score
+
+	# Determine high score status BEFORE saving
+	var prev_pb = SaveManager.get_set_pack_high_score(current_set_pack_id)
+	var prev_global = SaveManager.get_global_set_high_score(current_set_pack_id)
+	
+	was_new_personal_best = (current_score > prev_pb) or (prev_pb == 0 and current_score > 0)
+	was_new_machine_best = (current_score > prev_global) or (prev_global == 0 and current_score > 0)
 
 	# Update set high score
 	SaveManager.update_set_pack_high_score(current_set_pack_id, current_score)

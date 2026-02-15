@@ -27,14 +27,14 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -480.0
-offset_top = -320.0
-offset_right = 480.0
-offset_bottom = 320.0
+offset_left = -550.0
+offset_top = -420.0
+offset_right = 550.0
+offset_bottom = 420.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -45,195 +45,274 @@ offset_right = -20.0
 offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 15
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 1
 
-[node name="TitleLabel" type="Label" parent="Panel/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 text = "SETTINGS"
 horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 32
 
-[node name="HSeparator" type="HSeparator" parent="Panel/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="ScreenShakeSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+[node name="TopRow" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="EffectsSection" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="ShakeTitle" type="Label" parent="Panel/VBoxContainer/ScreenShakeSection"]
-layout_mode = 2
-text = "Screen Shake Intensity"
-theme_override_font_sizes/font_size = 18
-
-[node name="ShakeButtons" type="HBoxContainer" parent="Panel/VBoxContainer/ScreenShakeSection"]
-layout_mode = 2
-theme_override_constants/separation = 10
-alignment = 1
-
-[node name="OffButton" type="Button" parent="Panel/VBoxContainer/ScreenShakeSection/ShakeButtons"]
-custom_minimum_size = Vector2(90, 40)
-layout_mode = 2
-text = "OFF"
-
-[node name="LowButton" type="Button" parent="Panel/VBoxContainer/ScreenShakeSection/ShakeButtons"]
-custom_minimum_size = Vector2(90, 40)
-layout_mode = 2
-text = "LOW"
-
-[node name="MediumButton" type="Button" parent="Panel/VBoxContainer/ScreenShakeSection/ShakeButtons"]
-custom_minimum_size = Vector2(90, 40)
-layout_mode = 2
-text = "MEDIUM"
-
-[node name="HighButton" type="Button" parent="Panel/VBoxContainer/ScreenShakeSection/ShakeButtons"]
-custom_minimum_size = Vector2(90, 40)
-layout_mode = 2
-text = "HIGH"
-
-[node name="HSeparator2" type="HSeparator" parent="Panel/VBoxContainer"]
-layout_mode = 2
-
-[node name="EffectsSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="EffectsTitle" type="Label" parent="Panel/VBoxContainer/EffectsSection"]
+[node name="EffectsTitle" type="Label" parent="Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection"]
 layout_mode = 2
 text = "Visual Effects"
 theme_override_font_sizes/font_size = 18
 
-[node name="EffectsGrid" type="GridContainer" parent="Panel/VBoxContainer/EffectsSection"]
+[node name="EffectsGrid" type="GridContainer" parent="Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection"]
 layout_mode = 2
-columns = 3
+columns = 2
 theme_override_constants/h_separation = 20
 theme_override_constants/v_separation = 6
 
-[node name="ParticlesCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
+[node name="ParticlesCheck" type="CheckBox" parent="Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid"]
 layout_mode = 2
 button_pressed = true
 text = "Particle Effects"
 
-[node name="TrailCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
+[node name="TrailCheck" type="CheckBox" parent="Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid"]
 layout_mode = 2
 button_pressed = true
 text = "Ball Trail"
 
-[node name="ComboFlashCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
+[node name="ComboFlashCheck" type="CheckBox" parent="Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid"]
 layout_mode = 2
 button_pressed = true
 text = "Combo Flash"
 
-[node name="SkipIntroCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
+[node name="SkipIntroCheck" type="CheckBox" parent="Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid"]
 layout_mode = 2
 text = "Skip Level Intro"
 
-[node name="ShowFpsCheck" type="CheckBox" parent="Panel/VBoxContainer/EffectsSection/EffectsGrid"]
+[node name="ShowFpsCheck" type="CheckBox" parent="Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid"]
 layout_mode = 2
 text = "Show FPS"
 
-[node name="HSeparator3" type="HSeparator" parent="Panel/VBoxContainer"]
+[node name="ScreenShakeSection" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="ShakeTitle" type="Label" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection"]
+layout_mode = 2
+text = "Screen Shake Intensity"
+theme_override_font_sizes/font_size = 18
+
+[node name="ShakeButtons" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 0
+
+[node name="OffButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons"]
+custom_minimum_size = Vector2(80, 40)
+layout_mode = 2
+text = "OFF"
+
+[node name="LowButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons"]
+custom_minimum_size = Vector2(80, 40)
+layout_mode = 2
+text = "LOW"
+
+[node name="MediumButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons"]
+custom_minimum_size = Vector2(80, 40)
+layout_mode = 2
+text = "MEDIUM"
+
+[node name="HighButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons"]
+custom_minimum_size = Vector2(80, 40)
+layout_mode = 2
+text = "HIGH"
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="ControlsSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+[node name="AudioSection" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ControlsTitle" type="Label" parent="Panel/VBoxContainer/ControlsSection"]
+[node name="AudioTitle" type="Label" parent="Panel/ScrollContainer/VBoxContainer/AudioSection"]
+layout_mode = 2
+text = "Audio"
+theme_override_font_sizes/font_size = 18
+
+[node name="AudioGrid" type="GridContainer" parent="Panel/ScrollContainer/VBoxContainer/AudioSection"]
+layout_mode = 2
+theme_override_constants/h_separation = 40
+columns = 3
+
+[node name="MusicColumn" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MusicLabel" type="Label" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/MusicColumn"]
+layout_mode = 2
+text = "Music Volume: 100%"
+
+[node name="MusicSlider" type="HSlider" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/MusicColumn"]
+layout_mode = 2
+min_value = -40.0
+max_value = 0.0
+step = 1.0
+value = 0.0
+
+[node name="SFXColumn" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SFXLabel" type="Label" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/SFXColumn"]
+layout_mode = 2
+text = "SFX Volume: 100%"
+
+[node name="SFXSlider" type="HSlider" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/SFXColumn"]
+layout_mode = 2
+min_value = -40.0
+max_value = 0.0
+step = 1.0
+value = 0.0
+
+[node name="PlaybackColumn" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MusicModeLabel" type="Label" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/PlaybackColumn"]
+layout_mode = 2
+text = "Music Mode"
+
+[node name="MusicModeOption" type="OptionButton" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/PlaybackColumn"]
+layout_mode = 2
+
+[node name="MusicTrackLabel" type="Label" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/PlaybackColumn"]
+layout_mode = 2
+text = "Loop Track"
+
+[node name="MusicTrackOption" type="OptionButton" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid/PlaybackColumn"]
+layout_mode = 2
+
+[node name="HSeparator3" type="HSeparator" parent="Panel/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="ControlsSection" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ControlsTitle" type="Label" parent="Panel/ScrollContainer/VBoxContainer/ControlsSection"]
 layout_mode = 2
 text = "Controls"
 theme_override_font_sizes/font_size = 18
 
-[node name="SensitivityLabel" type="Label" parent="Panel/VBoxContainer/ControlsSection"]
+[node name="ControlsHBox" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/ControlsSection"]
+layout_mode = 2
+theme_override_constants/separation = 40
+
+[node name="SensitivityColumn" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/ControlsSection/ControlsHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SensitivityLabel" type="Label" parent="Panel/ScrollContainer/VBoxContainer/ControlsSection/ControlsHBox/SensitivityColumn"]
 layout_mode = 2
 text = "Paddle Sensitivity: 1.0x"
 
-[node name="SensitivitySlider" type="HSlider" parent="Panel/VBoxContainer/ControlsSection"]
+[node name="SensitivitySlider" type="HSlider" parent="Panel/ScrollContainer/VBoxContainer/ControlsSection/ControlsHBox/SensitivityColumn"]
 layout_mode = 2
 min_value = 0.5
 max_value = 2.0
 step = 0.1
 value = 1.0
 
-[node name="KeybindingsButton" type="Button" parent="Panel/VBoxContainer/ControlsSection"]
-custom_minimum_size = Vector2(0, 45)
+[node name="KeybindingsButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/ControlsSection/ControlsHBox"]
+custom_minimum_size = Vector2(250, 45)
 layout_mode = 2
+size_flags_vertical = 4
 theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 20
 text = "KEYBINDINGS"
 
-[node name="HSeparator4" type="HSeparator" parent="Panel/VBoxContainer"]
+[node name="HSeparator4" type="HSeparator" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="AudioSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+[node name="ProfileSection" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="AudioTitle" type="Label" parent="Panel/VBoxContainer/AudioSection"]
+[node name="ProfileTitle" type="Label" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection"]
 layout_mode = 2
-text = "Audio"
+text = "Profile Management"
 theme_override_font_sizes/font_size = 18
 
-[node name="MusicLabel" type="Label" parent="Panel/VBoxContainer/AudioSection"]
+[node name="ProfileHBox" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection"]
 layout_mode = 2
-text = "Music Volume: 100%"
+theme_override_constants/separation = 40
 
-[node name="MusicSlider" type="HSlider" parent="Panel/VBoxContainer/AudioSection"]
+[node name="CurrentProfileLabel" type="Label" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox"]
 layout_mode = 2
-min_value = -40.0
-max_value = 0.0
-step = 1.0
-value = 0.0
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0, 0.9, 1, 1)
+text = "Current Profile: Player"
 
-[node name="SFXLabel" type="Label" parent="Panel/VBoxContainer/AudioSection"]
+[node name="ProfileButtons" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox"]
 layout_mode = 2
-text = "SFX Volume: 100%"
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
 
-[node name="SFXSlider" type="HSlider" parent="Panel/VBoxContainer/AudioSection"]
-layout_mode = 2
-min_value = -40.0
-max_value = 0.0
-step = 1.0
-value = 0.0
+[node name="RenameProfileButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/ProfileButtons"]
+custom_minimum_size = Vector2(0, 45)
+size_flags_horizontal = 3
+text = "RENAME"
 
-[node name="MusicModeLabel" type="Label" parent="Panel/VBoxContainer/AudioSection"]
-layout_mode = 2
-text = "Music Mode"
+[node name="DeleteProfileButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/ProfileButtons"]
+custom_minimum_size = Vector2(0, 45)
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.3, 0.4, 1)
+text = "DELETE"
 
-[node name="MusicModeOption" type="OptionButton" parent="Panel/VBoxContainer/AudioSection"]
-layout_mode = 2
-
-[node name="MusicTrackLabel" type="Label" parent="Panel/VBoxContainer/AudioSection"]
-layout_mode = 2
-text = "Loop Track"
-
-[node name="MusicTrackOption" type="OptionButton" parent="Panel/VBoxContainer/AudioSection"]
+[node name="HSeparator5" type="HSeparator" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="HSeparator5" type="HSeparator" parent="Panel/VBoxContainer"]
-layout_mode = 2
-
-[node name="DataSection" type="VBoxContainer" parent="Panel/VBoxContainer"]
+[node name="DataSection" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="DataTitle" type="Label" parent="Panel/VBoxContainer/DataSection"]
+[node name="DataTitle" type="Label" parent="Panel/ScrollContainer/VBoxContainer/DataSection"]
 layout_mode = 2
 text = "Save Data"
 theme_override_font_sizes/font_size = 18
 
-[node name="ResetSettingsButton" type="Button" parent="Panel/VBoxContainer/DataSection"]
+[node name="DataHBox" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/DataSection"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="ResetSettingsButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/DataSection/DataHBox"]
 custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_colors/font_hover_color = Color(0.95, 0.95, 0.95, 1)
 theme_override_font_sizes/font_size = 20
 text = "RESET SETTINGS"
 
-[node name="ClearSaveButton" type="Button" parent="Panel/VBoxContainer/DataSection"]
+[node name="ClearSaveButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/DataSection/DataHBox"]
 custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.9, 0.3, 0.4, 1)
 theme_override_colors/font_hover_color = Color(1, 0.5, 0.5, 1)
 theme_override_font_sizes/font_size = 20
@@ -263,6 +342,41 @@ This will NOT affect:
 - High scores
 - Statistics
 - Achievements"
+
+[node name="RenameProfileDialog" type="ConfirmationDialog" parent="."]
+title = "Rename Profile"
+initial_position = 2
+size = Vector2i(400, 150)
+ok_button_text = "RENAME"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="RenameProfileDialog"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 392.0
+offset_bottom = 101.0
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="RenameProfileDialog/VBoxContainer"]
+layout_mode = 2
+text = "Enter new profile name:"
+
+[node name="ProfileNameInput" type="LineEdit" parent="RenameProfileDialog/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Player Name"
+max_length = 20
+context_menu_enabled = false
+select_all_on_focus = true
+
+[node name="DeleteProfileConfirmDialog" type="ConfirmationDialog" parent="."]
+title = "Delete Profile"
+initial_position = 2
+size = Vector2i(450, 180)
+ok_button_text = "DELETE PERMANENTLY"
+dialog_text = "Are you sure you want to delete this profile?
+All progression, high scores, and statistics for this
+player will be lost forever.
+
+This action cannot be undone."
 
 [node name="BackButton" type="Button" parent="."]
 layout_mode = 1

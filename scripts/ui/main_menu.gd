@@ -8,33 +8,102 @@ extends Control
 @onready var normal_button = $VBoxContainer/DifficultyButtons/NormalButton
 @onready var hard_button = $VBoxContainer/DifficultyButtons/HardButton
 @onready var return_button = $VBoxContainer/ReturnButton
+@onready var profile_dropdown = $VBoxContainer/ProfileContainer/ProfileDropdown
+@onready var new_profile_dialog = $NewProfileDialog
+@onready var profile_name_input = $NewProfileDialog/VBoxContainer/ProfileNameInput
 
 func _ready():
 	"""Initialize main menu"""
 	# Unlock difficulty selection
 	DifficultyManager.unlock_difficulty()
 
+	# Connect signals
+	DifficultyManager.difficulty_changed.connect(_on_difficulty_changed)
+	SaveManager.save_loaded.connect(_on_save_loaded)
+	
+	new_profile_dialog.confirmed.connect(_on_new_profile_confirmed)
+	profile_name_input.text_submitted.connect(func(_text):
+		_on_new_profile_confirmed()
+		new_profile_dialog.hide()
+	)
+
+	_refresh_full_ui()
+
+	# Grab focus on the first button for controller navigation
+	await get_tree().process_frame
+	var first_button = profile_dropdown
+	if return_button.visible:
+		first_button = return_button
+	first_button.grab_focus()
+
+func _refresh_full_ui():
+	"""Update all UI elements based on current save/profile"""
 	# Load saved difficulty preference
 	var saved_difficulty = SaveManager.get_saved_difficulty()
 	apply_saved_difficulty(saved_difficulty)
 
 	# Update UI to show current difficulty
 	update_difficulty_display()
-
-	# Connect difficulty change signal
-	DifficultyManager.difficulty_changed.connect(_on_difficulty_changed)
-
+	
 	_update_return_button()
+	_populate_profiles()
 
-	# Grab focus on the first button for controller navigation
-	await get_tree().process_frame
-	var first_button = $VBoxContainer/PlayButton
-	if return_button.visible:
-		first_button = return_button
-	first_button.grab_focus()
+func _on_save_loaded():
+	"""Called when save data is loaded or profile is switched"""
+	_refresh_full_ui()
+
+func _populate_profiles():
+	"""Populate the profile dropdown"""
+	profile_dropdown.clear()
+	var profiles = SaveManager.get_profile_list()
+	var current_id = SaveManager.get_current_profile_id()
+	
+	var select_index = 0
+	var i = 0
+	for id in profiles.keys():
+		profile_dropdown.add_item(profiles[id])
+		profile_dropdown.set_item_metadata(i, id)
+		if id == current_id:
+			select_index = i
+		i += 1
+	
+	profile_dropdown.selected = select_index
+
+func _on_profile_dropdown_item_selected(index: int):
+	"""Handle profile selection from dropdown"""
+	var profile_id = profile_dropdown.get_item_metadata(index)
+	if profile_id != SaveManager.get_current_profile_id():
+		SaveManager.switch_profile(profile_id)
+
+func _on_add_profile_button_pressed():
+	"""Open new profile dialog"""
+	profile_name_input.text = SaveManager.get_next_default_name()
+	new_profile_dialog.popup_centered()
+	# For controller support, focus the OK button by default
+	# This allows immediate "CREATE" via A button or navigating up to rename
+	new_profile_dialog.get_ok_button().grab_focus()
+
+func _on_new_profile_confirmed():
+	"""Handle new profile creation"""
+	var profile_name = profile_name_input.text.strip_edges()
+	if profile_name == "":
+		profile_name = "Player"
+	
+	SaveManager.create_profile(profile_name)
+
+func _input(event: InputEvent) -> void:
+	"""Handle B button to quit or close dialogs (called before dialogs consume it)"""
+	if event.is_action_pressed("ui_cancel"):
+		if new_profile_dialog.visible:
+			new_profile_dialog.hide()
+			get_viewport().set_input_as_handled()
+		else:
+			# Only handle quit if no dialog is open
+			# Note: quit button handler already exists
+			pass
 
 func _unhandled_input(event: InputEvent) -> void:
-	"""Handle B button to quit from main menu"""
+	"""Handle B button to quit when no dialog is open"""
 	if event.is_action_pressed("ui_cancel"):
 		_on_quit_button_pressed()
 		get_viewport().set_input_as_handled()
@@ -91,6 +160,10 @@ func _on_hard_button_pressed():
 func _on_stats_button_pressed():
 	"""Handle Stats button - show stats screen"""
 	MenuController.show_stats()
+
+func _on_high_scores_button_pressed():
+	"""Handle High Scores button - show leaderboards"""
+	MenuController.show_high_scores()
 
 func _on_editor_button_pressed():
 	"""Handle Editor button - open pack editor"""

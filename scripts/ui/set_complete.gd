@@ -70,15 +70,19 @@ func _ready():
 	time_label.text = "Set Time: " + _format_time(set_time)
 
 	# Check if this was a set high score
-	var set_high_score = SaveManager.get_set_pack_high_score(pack_id)
-	if final_score >= set_high_score:
-		set_high_score_label.text = "NEW SET HIGH SCORE!"
-		set_high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1))
-	elif set_high_score > 0:
-		set_high_score_label.text = "Set High Score: " + str(set_high_score)
-		set_high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+	if MenuController.was_new_machine_best:
+		set_high_score_label.text = "NEW MACHINE SET RECORD!"
+		set_high_score_label.set("theme_override_colors/font_color", Color(0, 1, 1, 1)) # Cyan
+	elif MenuController.was_new_personal_best:
+		set_high_score_label.text = "NEW PERSONAL SET BEST!"
+		set_high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1)) # Yellow
 	else:
-		set_high_score_label.text = ""
+		var personal_best = SaveManager.get_set_pack_high_score(pack_id)
+		if personal_best > 0:
+			set_high_score_label.text = "Set Personal Best: " + str(personal_best)
+			set_high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+		else:
+			set_high_score_label.text = ""
 
 	# Check if there's a next set
 	var next_set_id = set_id + 1
