@@ -1,5 +1,19 @@
 # Godot Workflow - Standard Operating Procedures
 
+**⚠️ CRITICAL PROJECT-SPECIFIC PROCEDURES ARE AT THE BOTTOM OF THIS FILE**
+
+Jump to: [Save System Compatibility](#save-system-compatibility) | [Asset Documentation](#asset-documentation-requirements) | [Commit Format](#commit-message-format)
+
+**For quick reference, see:** `SOP/critical-workflows.md`
+
+---
+
+# PART 1: GENERAL GODOT REFERENCE
+
+*This section contains general Godot development guidance. For project-specific mandatory procedures, scroll to Part 2.*
+
+---
+
 ## Daily Development Workflow
 
 ### Starting a Coding Session
@@ -399,8 +413,12 @@ git commit -m "feat: Implement paddle vertical movement
 - Keyboard controls (W/S, arrows)
 - Mouse following (optional toggle)
 - Constrained to screen bounds (40-680 Y)
-- Velocity tracking for spin mechanics"
+- Velocity tracking for spin mechanics
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 ```
+
+**Note:** This example shows Claude Sonnet 4.5. Use your actual agent name/model when committing.
 
 ### Commit Message Format (Required)
 All commits must follow the format, the agent should be the co-author:
@@ -428,8 +446,10 @@ Code Improvements:
 Documentation:
 - Doc updates
 
-Co-Authored-By: 
+Co-Authored-By: <Your Agent Name/Model> <email>
 ```
+
+**Note:** Replace with your actual agent identifier (e.g., "Claude Sonnet 4.5 <noreply@anthropic.com>", "GPT-4 <noreply@openai.com>", etc.)
 
 Notes:
 - `<type>` should be `feat`, `fix`, `refactor`, `docs`, or `chore`.
@@ -443,6 +463,18 @@ When the project date/version changes, update the main menu date label in:
 - `scenes/ui/main_menu.tscn` (`VersionLabel.text`)
 
 Keep this label aligned with the current project update date shown in docs/changelog entries.
+
+---
+
+# ════════════════════════════════════════════════════════════════════
+# PART 2: PROJECT-SPECIFIC CRITICAL PROCEDURES
+# ════════════════════════════════════════════════════════════════════
+
+**⚠️ THE FOLLOWING SECTIONS ARE MANDATORY FOR ALL CODE CHANGES**
+
+**Quick link:** See `SOP/critical-workflows.md` for a condensed version of these procedures.
+
+---
 
 ## Save System Compatibility
 

@@ -1,95 +1,197 @@
 # Agent Instructions
 
-## Required Reading
+**Welcome! This is your entry point to the Zep Ball codebase.**
 
-**Before starting any work on this project, you MUST read the following files in order:**
+---
 
-1. **`.agent/README.md`** - Start here. This is the documentation index and provides:
-   - Complete overview of the documentation structure
-   - Current game state and feature status
-   - Critical warnings and important notes
-   - Quick start guide for new developers
-   - Recent update history
+## 🚀 Quick Start (3-5 minutes)
 
-2. **`SOP/godot-workflow.md`** - After README, read this SOP document which contains:
-   - **MANDATORY development workflows**
-   - Save System Compatibility requirements (CRITICAL)
-   - Asset Documentation requirements (CRITICAL)
-   - Commit message format requirements
-   - Testing checklists
-   - Godot-specific best practices
+**Read these files in order before starting work:**
 
-3. **`System/architecture.md`** - Read for full system context:
-   - Complete project architecture
-   - Autoload systems
-   - Core gameplay systems
-   - Scene graph
+1. **`QUICK-REF.md`** (1 min) - Fast lookup reference
+   - Common scenarios with line references
+   - Critical rules summary
+   - Quick facts about the project
+
+2. **`README.md`** (2 min) - Project overview
+   - Current game state and features
+   - Documentation structure
+   - Tech stack and autoloads
+
+3. **`System/architecture.md`** (5-10 min, can skim if experienced)
+   - Complete system architecture
+   - Scene graph and core systems
    - All implemented features
 
-## Documentation Maintenance
+---
+
+## ⚠️ BEFORE YOU CODE - Critical Checks
+
+**When modifying code, ask yourself:**
+
+- [ ] Am I changing save data structure? → See `SOP/critical-workflows.md` → Save System
+- [ ] Am I adding/removing assets? → See `SOP/critical-workflows.md` → Asset Docs
+- [ ] Am I ready to commit? → See `SOP/critical-workflows.md` → Commit Format
+
+**If yes to any, read the relevant section BEFORE making changes.**
+
+**Quick version:** `QUICK-REF.md` has abbreviated versions of these rules.
+
+---
+
+## 📚 Deep Dives (Reference as Needed)
+
+Use these when you need detailed information:
+
+| Task | Read This |
+|------|-----------|
+| Change save data? | `SOP/critical-workflows.md` → Save System Compatibility |
+| Add/remove assets? | `SOP/critical-workflows.md` → Asset Documentation |
+| Make a commit? | `SOP/critical-workflows.md` → Commit Format |
+| Godot workflow help? | `SOP/godot-workflow.md` (general Godot reference) |
+| Current features? | `README.md` → Current Game State |
+| Recent changes? | `CHANGELOG.md` |
+| Future plans? | `Tasks/Backlog/future-features.md` |
+| Completed work? | `Tasks/Completed/` |
+
+---
+
+## 🎯 Documentation Maintenance
 
 **You are responsible for keeping documentation up to date with your changes.**
 
 ### When to Update Documentation
 
-Update documentation immediately when you:
+Update docs immediately when you:
 
-- ✅ **Add/remove/modify features** → Update `Tasks/`, `System/architecture.md`, and this README
-- ✅ **Add/remove assets** → Update `System/used-assets.md` and `System/unused-assets.md`
-- ✅ **Change save data structure** → Update SOP migration section and add migration code
+- ✅ **Add/remove/modify features** → Update `Tasks/`, `System/architecture.md`, and `README.md`
+- ✅ **Add/remove assets** → Update `System/used-assets.md` and `System/unused-assets.md` (MANDATORY)
+- ✅ **Change save data** → Update SOP and add migration code (MANDATORY)
 - ✅ **Modify settings** → Update `System/tech-stack.md`
-- ✅ **Complete implementation** → Move task from `Tasks/Backlog/` to `Tasks/Completed/`
-- ✅ **Change tech stack or configuration** → Update `System/tech-stack.md`
+- ✅ **Complete tasks** → Move from `Tasks/Backlog/` to `Tasks/Completed/`
 - ✅ **Add new systems** → Update `System/architecture.md`
+- ✅ **Make major changes** → Update `CHANGELOG.md`
 
 ### Documentation Update Checklist
 
 Before committing any changes:
 
-- [ ] Read `.agent/README.md` to understand current state
-- [ ] Read relevant SOP sections if applicable
+- [ ] Read relevant docs to understand current state
 - [ ] Made changes to code/scenes
 - [ ] Updated documentation to reflect changes:
-  - [ ] `README.md` - Update Current Game State section
-  - [ ] `System/architecture.md` - Update architecture details if systems changed
-  - [ ] `System/used-assets.md` - If new assets added
-  - [ ] `System/unused-assets.md` - If assets removed from use
-  - [ ] `Tasks/` - Move completed items to Completed/, update Backlog/
-- [ ] Updated "Last Updated" dates in documentation files
-- [ ] Followed commit message format from SOP
-
-## Critical Reminders
-
-### ⚠️ Save System Compatibility
-**ALWAYS** add migration logic when modifying save data structure. See `SOP/godot-workflow.md` → "Save System Compatibility" section.
-
-### ⚠️ Asset Documentation
-**ALWAYS** update asset docs when adding/removing assets. See `SOP/godot-workflow.md` → "Asset Documentation Requirements" section.
-
-### ⚠️ Follow the SOP
-The Standard Operating Procedures in `SOP/godot-workflow.md` are **mandatory**. They exist to prevent bugs, ensure consistency, and maintain documentation accuracy.
-
-## Workflow Summary
-
-```
-1. READ .agent/README.md (always start here)
-2. READ SOP/godot-workflow.md (follow all procedures)
-3. READ System/architecture.md (understand the system)
-4. IMPLEMENT changes
-5. UPDATE documentation (keep in sync with changes)
-6. TEST thoroughly
-7. COMMIT with proper format
-```
-
-## Questions?
-
-- **Architecture**: See `System/architecture.md`
-- **Workflows**: See `SOP/godot-workflow.md`
-- **Current State**: See `.agent/README.md`
-- **Future Plans**: See `Tasks/Backlog/`
+  - [ ] `README.md` - If major features added
+  - [ ] `CHANGELOG.md` - If user-facing changes
+  - [ ] `System/architecture.md` - If systems changed
+  - [ ] `System/used-assets.md` - If assets added
+  - [ ] `System/unused-assets.md` - If assets removed
+  - [ ] `Tasks/` - Move completed items to Completed/
+- [ ] Updated "Last Updated" dates in docs
+- [ ] Followed commit format from `SOP/critical-workflows.md`
 
 ---
 
-*This file ensures all agents working on this project follow consistent procedures and maintain accurate documentation.*
+## ⚡ Workflow Summary
 
-**Last Updated**: 2026-02-13
+```
+1. READ QUICK-REF.md (fast lookups)
+2. READ README.md (project overview)
+3. SKIM System/architecture.md (system context)
+4. CHECK critical workflows (if changing save/assets/commits)
+5. IMPLEMENT changes
+6. UPDATE documentation (keep in sync)
+7. TEST thoroughly
+8. COMMIT with proper format
+```
+
+---
+
+## ❓ Finding Information
+
+**Architecture & Systems:**
+- See `System/architecture.md`
+
+**Workflows & Procedures:**
+- See `SOP/critical-workflows.md` (mandatory)
+- See `SOP/godot-workflow.md` (general reference)
+
+**Current State:**
+- See `README.md` → Current Game State
+- See `CHANGELOG.md` → Recent updates
+
+**Future Plans:**
+- See `Tasks/Backlog/`
+
+**Completed Work:**
+- See `Tasks/Completed/`
+
+**Quick Lookups:**
+- See `QUICK-REF.md`
+
+---
+
+## 🔥 The Three Non-Negotiables
+
+### 1. Save System Migration
+**When changing save data structure, ALWAYS add migration logic.**
+
+Bad: Adding a new save field without migration → Users crash
+Good: Add field with migration check → Old saves work
+
+**See:** `SOP/critical-workflows.md` → Save System Compatibility
+
+### 2. Asset Documentation
+**When adding/removing assets, ALWAYS update asset docs.**
+
+Bad: Add powerup sprite, skip docs → Docs become inaccurate
+Good: Add sprite + update `used-assets.md` → Docs stay current
+
+**See:** `SOP/critical-workflows.md` → Asset Documentation
+
+### 3. Commit Format
+**All commits MUST follow the required format.**
+
+Bad: `git commit -m "fixed stuff"` → Inconsistent history
+Good: Follow template with Co-Authored-By → Clean history
+
+**See:** `SOP/critical-workflows.md` → Commit Format
+
+---
+
+## 📂 Documentation File Structure
+
+```
+.agent/
+├── AGENTS.md              ← YOU ARE HERE (start point)
+├── QUICK-REF.md           ← Fast lookups (read first!)
+├── README.md              ← Project overview (read second)
+├── CHANGELOG.md           ← Recent updates
+├── System/
+│   ├── architecture.md    ← Complete system docs (read third)
+│   ├── tech-stack.md      ← Settings/config
+│   ├── used-assets.md     ← Active assets (keep updated!)
+│   └── unused-assets.md   ← Deprecated assets
+├── Tasks/
+│   ├── Completed/         ← Done features
+│   └── Backlog/           ← Future work
+└── SOP/
+    ├── critical-workflows.md  ← MANDATORY procedures ⚠️
+    └── godot-workflow.md      ← General Godot reference
+```
+
+---
+
+## 🎮 Project Quick Facts
+
+- **Engine:** Godot 4.6
+- **Language:** GDScript
+- **Main Scene:** `res://scenes/ui/main_menu.tscn`
+- **Gameplay:** 30 levels across 3 packs
+- **Power-Ups:** 16 types
+- **Achievements:** 12 total
+- **Autoloads:** 6 (PowerUpManager, DifficultyManager, SaveManager, AudioManager, PackLoader, MenuController)
+
+---
+
+**Last Updated:** 2026-02-15
+
+**Remember:** When in doubt, check `QUICK-REF.md` first, then dive into specific docs as needed.
