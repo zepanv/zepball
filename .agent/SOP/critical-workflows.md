@@ -11,6 +11,7 @@ These workflows MUST be followed for all development work on this project.
 1. [Save System Compatibility](#save-system-compatibility) - CRITICAL
 2. [Asset Documentation Requirements](#asset-documentation-requirements) - CRITICAL
 3. [Commit Message Format](#commit-message-format) - Required
+4. [Release Versioning (SemVer) and Git Tags](#release-versioning-semver-and-git-tags) - Required for releases
 
 ---
 
@@ -274,6 +275,79 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 
 ---
 
+## Release Versioning (SemVer) and Git Tags
+
+### Versioning Policy
+
+- Public versioning uses **Semantic Versioning**: `MAJOR.MINOR.PATCH`.
+- Current baseline version is **`0.5.0`**.
+- The in-game public version is shown **only** on the main menu (`VersionLabel`).
+- Do **not** auto-increment the version unless the user explicitly requests a bump.
+
+### When a Version Bump Is Requested
+
+Update all of the following in the same change:
+1. Main menu version display source:
+   - `scripts/ui/main_menu.gd` (`PUBLIC_VERSION`)
+   - `scenes/ui/main_menu.tscn` (`VersionLabel.text`, fallback/default)
+2. Documentation references:
+   - `README.md` (player-facing version mention if present)
+   - `.agent/CHANGELOG.md` (release entry)
+   - Any `.agent` docs that reference the current public version
+
+### Git Tag at Release Time
+
+Yes, create a Git tag when the version is incremented.
+
+Recommended commands:
+```bash
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+Tag format: `vMAJOR.MINOR.PATCH` (for example `v0.5.0`).
+
+### Release Integrity (Minisign)
+
+Use checksum signing for release integrity:
+1. Generate `SHA256SUMS.txt` for release zips.
+2. Sign `SHA256SUMS.txt` with Minisign.
+3. Publish these files with release assets:
+   - `*.zip`
+   - `SHA256SUMS.txt`
+   - `SHA256SUMS.txt.minisig`
+   - `minisign.pub` (public verification key)
+
+Script support:
+- `scripts/export_release_bundle.sh` can sign automatically when these env vars are provided:
+  - `MINISIGN_SECRET_KEY=/path/to/minisign.key`
+  - `MINISIGN_PUBLIC_KEY=/path/to/minisign.pub` (optional but recommended for distribution)
+
+Verification example for users:
+```bash
+minisign -Vm SHA256SUMS.txt -P "<public-key>"
+sha256sum -c SHA256SUMS.txt
+```
+
+### One-Command GitHub Release Publish
+
+After building/singing release assets, publish with:
+```bash
+scripts/publish_github_release.sh X.Y.Z
+```
+
+What it does:
+- Creates/pushes tag `vX.Y.Z` (if missing)
+- Creates GitHub Release (or updates existing release assets)
+- Uploads:
+  - `dist/releases/zepball.zip`
+  - `dist/releases/zepball.x86_64.zip`
+  - `dist/releases/SHA256SUMS.txt`
+  - `dist/releases/SHA256SUMS.txt.minisig`
+  - `dist/releases/minisign.pub`
+
+---
+
 ## Quick Pre-Commit Checklist
 
 Before committing ANY changes:
@@ -294,6 +368,13 @@ Before committing ANY changes:
 - [ ] Includes Co-Authored-By line
 - [ ] Type is correct (feat/fix/refactor/docs/chore)
 - [ ] Sections only include relevant changes
+
+### If This Is a Version Bump
+- [ ] Version bump was explicitly requested by user
+- [ ] `PUBLIC_VERSION` updated in `scripts/ui/main_menu.gd`
+- [ ] `VersionLabel.text` updated in `scenes/ui/main_menu.tscn`
+- [ ] Release docs/changelog updated
+- [ ] Git tag planned/created using `vMAJOR.MINOR.PATCH`
 
 ---
 

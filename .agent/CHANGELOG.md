@@ -12,7 +12,7 @@ For current game state, see `README.md`. For full system architecture, see `Syst
 - ✅ **Pack Select Filters Added**: Filter packs by ALL / OFFICIAL / CUSTOM
 - ✅ **Pack Select Sorting Added**: Sort by ORDER (custom A-Z, then official legacy order) or PROGRESSION (completion percentage)
 - ✅ **Pack Select Toolbar UI**: Added controller-accessible filter/sort controls to Pack Select screen
-- ✅ **Main Menu Date Updated**: Version label updated to 2026-02-15
+- ✅ **SemVer Adoption**: Switched public versioning to Semantic Versioning; main menu now displays `v0.5.0` (single in-game location)
 
 ## 2026-02-13 - Launch & Spin Fixes
 - ✅ **Built-In Pack Export Fix**: `PackLoader` now discovers built-in `.zeppack` files with `ResourceLoader.list_directory()` and a `DirAccess` fallback, fixing missing built-in pack cards in exported builds.

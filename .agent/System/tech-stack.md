@@ -8,6 +8,7 @@
 ## Project Settings (project.godot)
 - **Run main scene**: `res://scenes/ui/main_menu.tscn`.
 - **Gameplay scene**: `res://scenes/main/main.tscn`.
+- **Public version display**: Main menu only (`scripts/ui/main_menu.gd` → `PUBLIC_VERSION`), currently `0.5.0`.
 - **Window size**: 1600x900.
 - **Stretch mode**: `canvas_items`.
 - **2D gravity**: 0 (no gravity).
@@ -37,8 +38,8 @@
 ## Asset Formats in Use
 - **Sprites and textures**: PNG, JPG.
 - **Vector icon**: SVG (`icon.svg`).
-- **Level data**: JSON (10 files in `levels/`).
-- **Set data**: JSON (`data/level_sets.json`).
+- **Runtime level/set data**: `.zeppack` files in `packs/` (built-in) and `user://packs/` (user-authored).
+- **Legacy format reference**: `levels/README.md` documents old JSON structure for compatibility context.
 
 ## Audio Status
 - **Audio playback system**: Implemented via `AudioManager` (music playlists + SFX).

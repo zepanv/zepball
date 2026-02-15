@@ -6,8 +6,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 PRESETS_FILE="$PROJECT_ROOT/export_presets.cfg"
 README_FILE="$PROJECT_ROOT/README.md"
+LICENSE_FILE="$PROJECT_ROOT/LICENSE"
 
 GODOT_BIN="${GODOT_BIN:-godot}"
+MINISIGN_BIN="${MINISIGN_BIN:-minisign}"
+MINISIGN_SECRET_KEY="${MINISIGN_SECRET_KEY:-}"
+MINISIGN_PUBLIC_KEY="${MINISIGN_PUBLIC_KEY:-}"
 RELEASES_DIR="$PROJECT_ROOT/dist/releases"
 STAGING_DIR="$RELEASES_DIR/.staging"
 
@@ -18,6 +22,11 @@ fi
 
 if [[ ! -f "$README_FILE" ]]; then
   echo "error: missing README at $README_FILE" >&2
+  exit 1
+fi
+
+if [[ ! -f "$LICENSE_FILE" ]]; then
+  echo "error: missing LICENSE at $LICENSE_FILE" >&2
   exit 1
 fi
 
@@ -77,6 +86,8 @@ rm -rf "$STAGING_DIR"
 mkdir -p "$STAGING_DIR"
 mkdir -p "$RELEASES_DIR"
 
+declare -a CREATED_ZIPS=()
+
 for row in "${PRESET_ROWS[@]}"; do
   IFS=$'\t' read -r PRESET_NAME EXPORT_PATH <<< "$row"
 
@@ -112,6 +123,7 @@ PY
   mkdir -p "$PRESET_STAGE_DIR"
 
   cp "$README_FILE" "$PRESET_STAGE_DIR/README.md"
+  cp "$LICENSE_FILE" "$PRESET_STAGE_DIR/LICENSE"
   cp "$RESOLVED_EXPORT_PATH" "$PRESET_STAGE_DIR/"
 
   EXPORT_DIR="$(dirname "$RESOLVED_EXPORT_PATH")"
@@ -146,7 +158,62 @@ with ZipFile(zip_output, "w", compression=ZIP_DEFLATED) as zf:
 PY
 
   echo "Created: $ZIP_OUTPUT"
+  CREATED_ZIPS+=("$ZIP_OUTPUT")
 done
+
+CHECKSUMS_FILE="$RELEASES_DIR/SHA256SUMS.txt"
+if [[ ${#CREATED_ZIPS[@]} -gt 0 ]]; then
+  # Write checksums using artifact filenames (not absolute paths) for portable release verification.
+  mapfile -t ZIP_BASENAMES < <(
+    for zip_path in "${CREATED_ZIPS[@]}"; do
+      basename "$zip_path"
+    done | sort
+  )
+  if command -v sha256sum >/dev/null 2>&1; then
+    (
+      cd "$RELEASES_DIR"
+      sha256sum "${ZIP_BASENAMES[@]}"
+    ) > "$CHECKSUMS_FILE"
+  elif command -v shasum >/dev/null 2>&1; then
+    (
+      cd "$RELEASES_DIR"
+      shasum -a 256 "${ZIP_BASENAMES[@]}"
+    ) > "$CHECKSUMS_FILE"
+  else
+    echo "error: neither sha256sum nor shasum is available for checksum generation" >&2
+    exit 1
+  fi
+  echo "Created: $CHECKSUMS_FILE"
+
+  # Optional: sign checksums file with Minisign when key is provided.
+  # Example:
+  #   MINISIGN_SECRET_KEY=/path/to/minisign.key \
+  #   MINISIGN_PUBLIC_KEY=/path/to/minisign.pub \
+  #   ./scripts/export_release_bundle.sh
+  if [[ -n "$MINISIGN_SECRET_KEY" ]]; then
+    if ! command -v "$MINISIGN_BIN" >/dev/null 2>&1; then
+      echo "error: minisign binary not found: $MINISIGN_BIN" >&2
+      exit 1
+    fi
+    if [[ ! -f "$MINISIGN_SECRET_KEY" ]]; then
+      echo "error: Minisign secret key not found: $MINISIGN_SECRET_KEY" >&2
+      exit 1
+    fi
+
+    MINISIG_FILE="$RELEASES_DIR/SHA256SUMS.txt.minisig"
+    "$MINISIGN_BIN" -S -s "$MINISIGN_SECRET_KEY" -m "$CHECKSUMS_FILE" -x "$MINISIG_FILE"
+    echo "Created: $MINISIG_FILE"
+
+    if [[ -n "$MINISIGN_PUBLIC_KEY" ]]; then
+      if [[ ! -f "$MINISIGN_PUBLIC_KEY" ]]; then
+        echo "error: Minisign public key not found: $MINISIGN_PUBLIC_KEY" >&2
+        exit 1
+      fi
+      cp "$MINISIGN_PUBLIC_KEY" "$RELEASES_DIR/minisign.pub"
+      echo "Created: $RELEASES_DIR/minisign.pub"
+    fi
+  fi
+fi
 
 echo ""
 echo "Done."

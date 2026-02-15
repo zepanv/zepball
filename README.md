@@ -6,13 +6,41 @@ A breakout-style game with a unique vertical paddle positioned on the right side
 
 Highlights:
 
-- 30 built-in levels across 3 packs
+- Current version: **v0.5.0**
+- 40 built-in levels across 4 official packs
 - Player profiles with local high score tracking
 - Difficulty modes (Easy/Normal/Hard) with multipliers
 - Statistics + achievements tracking
 - Pack Select with filtering (ALL/OFFICIAL/CUSTOM) and sorting (BY ORDER/BY PROGRESSION)
 - In-game level/pack editor with test, save, export, and delete flows
 - Audio playback (music + SFX)
+
+## Releases and Verification
+
+### Release Assets
+- GitHub Releases include prebuilt binaries for:
+  - Windows (`zepball.zip`)
+  - Linux (`zepball.x86_64.zip`)
+- macOS binaries are not currently published.
+
+### macOS Status
+- For now, macOS users should download source and build locally with Godot 4.6.
+
+### Verify Download Integrity
+Each release includes:
+- `SHA256SUMS.txt`
+- `SHA256SUMS.txt.minisig`
+- `minisign.pub`
+
+Verify signature:
+```bash
+minisign -Vm SHA256SUMS.txt -p minisign.pub
+```
+
+Verify file checksums:
+```bash
+sha256sum -c SHA256SUMS.txt
+```
 
 ## Controls
 
@@ -59,6 +87,7 @@ Highlights:
   - **Classic Challenge** (levels 1-10)
   - **Prism Showcase** (levels 11-20)
   - **Nebula Ascend** (levels 21-30)
+  - **Advanced Elements** (levels 31-40)
 - Player profiles with individual progression tracking
 - Unlock progression, per-level high scores, per-pack run scores
 - Star ratings per level (0-3 stars)

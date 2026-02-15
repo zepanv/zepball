@@ -2,6 +2,7 @@ extends Control
 
 ## Main Menu - Entry point for the game
 ## Allows player to start game, select difficulty, and quit
+const PUBLIC_VERSION: String = "0.5.0"
 
 @onready var current_difficulty_label = $VBoxContainer/CurrentDifficultyLabel
 @onready var easy_button = $VBoxContainer/DifficultyButtons/EasyButton
@@ -10,11 +11,14 @@ extends Control
 @onready var play_button = $VBoxContainer/PlayButton
 @onready var return_button = $VBoxContainer/ReturnButton
 @onready var profile_dropdown = $VBoxContainer/ProfileContainer/ProfileDropdown
+@onready var version_label = $VersionLabel
 @onready var new_profile_dialog = $NewProfileDialog
 @onready var profile_name_input = $NewProfileDialog/VBoxContainer/ProfileNameInput
 
 func _ready():
 	"""Initialize main menu"""
+	version_label.text = "v%s" % PUBLIC_VERSION
+
 	# Unlock difficulty selection
 	DifficultyManager.unlock_difficulty()
 

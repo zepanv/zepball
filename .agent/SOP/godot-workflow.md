@@ -456,13 +456,16 @@ Notes:
 - Omit sections that don’t apply, but keep headings for major changes.
 
 ### Versioning Note
-We are using date/time instead of version currently.
+Public releases use Semantic Versioning (`MAJOR.MINOR.PATCH`).
+Current baseline is `0.5.0`.
+Do not auto-increment version unless explicitly requested by the user.
 
-### Main Menu Date Label
-When the project date/version changes, update the main menu date label in:
-- `scenes/ui/main_menu.tscn` (`VersionLabel.text`)
+### Main Menu Version Label
+When the project version changes, update the main menu version label in:
+- `scripts/ui/main_menu.gd` (`PUBLIC_VERSION`)
+- `scenes/ui/main_menu.tscn` (`VersionLabel.text`, fallback/default)
 
-Keep this label aligned with the current project update date shown in docs/changelog entries.
+Keep this label aligned with release docs/changelog, and create a matching Git tag (`vMAJOR.MINOR.PATCH`) when requested.
 
 ---
 

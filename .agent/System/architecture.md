@@ -1,7 +1,7 @@
 # Zep Ball - System Architecture
 
 ## Overview
-Zep Ball is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 30 built-in levels across 3 sets, a set-play mode, difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
+Zep Ball is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 40 built-in levels across 4 official packs, a pack-run mode (legacy UI name: "Set Mode"), difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
 
 ## Project Structure
 ```
@@ -16,8 +16,8 @@ zepball/
 │   │   └── power_up.tscn      # Collectible power-ups
 │   └── ui/                    # Menu screens
 │       ├── main_menu.tscn     # Start screen + difficulty selection
-│       ├── set_select.tscn    # Set browser (entry for Play)
-│       ├── level_select.tscn  # Level browser (individual or set context)
+│       ├── set_select.tscn    # Pack browser (legacy scene name retained)
+│       ├── level_select.tscn  # Level browser (individual or pack context)
 │       ├── level_editor.tscn  # In-game pack/level editor (stage 4 WIP)
 │       ├── game_over.tscn     # Game over screen
 │       ├── level_complete.tscn # Level victory screen
@@ -55,11 +55,9 @@ zepball/
 ├── packs/                     # Built-in pack definitions (.zeppack)
 │   ├── classic-challenge.zeppack
 │   ├── prism-showcase.zeppack
-│   └── nebula-ascend.zeppack
-├── levels/                    # Legacy level definitions (JSON, compatibility during migration)
-│   ├── level_01.json through level_20.json
-├── data/
-│   └── (no runtime set JSON; set metadata comes from built-in packs)
+│   ├── nebula-ascend.zeppack
+│   └── advanced-elements.zeppack
+├── levels/                    # Legacy format reference docs only (`levels/README.md`)
 ├── assets/
 │   ├── audio/
 │   │   ├── music/             # Background music tracks (mp3)
@@ -93,7 +91,7 @@ Main (Node2D) [scripts/main.gd]
 │   │   └── LeftWall (StaticBody2D + CollisionShape2D)
 │   ├── Paddle (CharacterBody2D) [instance: paddle.tscn] (group: paddle)
 │   ├── Ball (CharacterBody2D) [instance: ball.tscn] (group: ball)
-│   └── BrickContainer (Node2D) [dynamically populated from level JSON]
+│   └── BrickContainer (Node2D) [dynamically populated from pack level data]
 └── UI (CanvasLayer)
     └── HUD (Control) [scripts/hud.gd]
         ├── TopBar (Score/Logo/Lives labels)
@@ -132,13 +130,13 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Handles ball loss logic (life loss only if last ball in play)
 - Spawns and manages power-ups with 20% drop chance
 - Manages multi-ball behavior from TRIPLE_BALL power-up
-- Restores set-mode state between levels (score/lives/combo/streak)
+- Restores pack-run state between levels (score/lives/combo/streak)
 - Delegates random background selection/CanvasLayer setup to `main_background_manager.gd`
 - Delegates collected power-up effect dispatch to `main_power_up_handler.gd`
 - Triggers camera shake on brick breaks (intensity scales with combo)
 
 **Key Methods**:
-- `load_level(level_id)` - Loads level from JSON and spawns bricks
+- `load_level_ref(pack_id, level_index)` - Loads a pack-native level reference and spawns bricks
 - `_on_ball_lost(ball)` - Checks if main ball, handles life loss
 - `_on_brick_broken(score_value, brick_ref)` - Awards points, tracks progress, checks completion using brick type
 - `spawn_additional_balls_with_retry()` - Creates extra balls with retry logic
@@ -160,7 +158,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - `combo` - Consecutive brick hits (combo multiplier)
 - `no_miss_hits` - Streak without losing ball (streak multiplier)
 - `is_perfect_clear` - True if no lives lost this level (2x bonus)
-- `had_continue` - Set mode flag; disables perfect set bonus
+- `had_continue` - Pack-run continue flag; disables perfect-run bonus (legacy label: perfect set)
 - `current_pack_id` / `current_level_index` / `current_level_key` - Pack-native level identity (legacy `current_level` int retained for compatibility)
 
 **Scoring System**:
@@ -335,23 +333,24 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Powers HUD timer display in top-right corner
 - `power_up.gd` movement processing auto-disables when inactive (terminal game state or zero-speed) to avoid idle per-frame physics work
 
-### 7. Set System (`scripts/pack_loader.gd` + set UI)
-**Purpose**: Curated multi-level runs with cumulative scoring.
+### 7. Pack Run System (`scripts/pack_loader.gd` + pack UI)
+**Purpose**: Curated multi-level pack runs with cumulative scoring.
 
-**Set Data** (`packs/*.zeppack`):
-- Set metadata derives from built-in pack files.
-- Current built-in sets:
+**Pack Data** (`packs/*.zeppack`):
+- Pack metadata derives from built-in `.zeppack` files.
+- Current built-in packs:
   - **Classic Challenge** (levels 1-10)
   - **Prism Showcase** (levels 11-20)
   - **Nebula Ascend** (levels 21-30)
+  - **Advanced Elements** (levels 31-40)
 - Runtime pack identity is `pack_id` + `level_index` (legacy integer IDs are compatibility-only via PackLoader helpers)
 
 **Runtime Behavior**:
-- Main Menu → Set Select → Play Set or View Levels
-- Set play carries score/lives/combo/streak across levels
+- Main Menu → Pack Select (`set_select.tscn`) → Play Pack or View Levels
+- Pack play carries score/lives/combo/streak across levels
 - Level completion saves interim state in MenuController and restores in `main.gd`
-- Set completion applies **Perfect Set** bonus (3x) if all lives intact and no continues
-- Game Over in set mode allows **Continue Set** (marks `had_continue`)
+- Pack completion applies **Perfect Set** bonus (3x) if all lives intact and no continues
+- Game Over in pack mode allows **Continue Set** (legacy UI label; marks `had_continue`)
 
 ### 8. Menu System (`scripts/ui/menu_controller.gd` + menu scenes)
 **Purpose**: Scene transitions and game flow orchestration.
@@ -368,7 +367,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - Cards for built-in and user packs (source badge + author + progress + stars + best score)
    - Filter: ALL / OFFICIAL / CUSTOM
    - Sort: BY ORDER (custom A-Z, official legacy order) / BY PROGRESSION (completion %)
-   - Play Pack → starts pack mode
+   - Play Pack → starts pack-run mode
    - View Levels → opens Level Select scoped to selected pack
 
 3. **Level Select** (`scenes/ui/level_select.tscn`)
@@ -391,7 +390,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - Final score display
    - High score comparison
    - Retry level button
-   - Continue Set button (only in set mode)
+   - Continue Set button (only in pack mode; legacy label retained)
    - Back to Main Menu button
 
 6. **Level Complete** (`scenes/ui/level_complete.tscn`)
@@ -399,11 +398,11 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - Score breakdown (base + bonuses + time)
    - High score notification if beaten
    - “Perfect Clear” bonus message (2x)
-   - Continue Set (set mode) or Next Level (individual mode)
+   - Continue Set (pack mode; legacy label retained) or Next Level (individual mode)
 
 7. **Set Complete** (`scenes/ui/set_complete.tscn`)
    - Cumulative score
-   - Score breakdown (base + bonuses + set time)
+   - Score breakdown (base + bonuses + pack time)
    - Perfect set bonus message (3x)
    - Set high score display
 
@@ -432,10 +431,10 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - `show_editor()` / `show_editor_for_pack(pack_id)` for editor entry flow
 - `start_editor_test(pack_data, level_index)` / `return_to_editor_from_test()` for editor gameplay test loop
 - `start_level(level_id)` - Loads gameplay scene with specified level
-- `start_set(set_id)` - Starts set mode and first level
+- `start_set(set_id)` - Starts pack-run mode and first level (legacy API name retained)
 - `show_game_over(final_score)` - Shows game over screen, saves high score
 - `show_level_complete(final_score)` - Shows level complete, unlocks next level, checks perfect clear
-- `show_set_complete(final_score)` - Shows set summary and set high score
+- `show_set_complete(final_score)` - Shows pack summary and pack high score (legacy API name retained)
 - `restart_current_level()` - Reloads current level
 - Difficulty locking: Unlocked in menus, locked during gameplay
 
@@ -443,6 +442,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 **Purpose**: Persistent player data, statistics, achievements, and settings.
 
 **Save Data Structure** (`user://save_data.json`):
+Note: some keys retain legacy "set" names for backward compatibility.
 ```json
 {
   "version": 1,
@@ -526,7 +526,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 
 **Pack Format**:
 - Levels are grouped into `.zeppack` files in `res://packs/` and `user://packs/`.
-- Active built-in packs: `classic-challenge`, `prism-showcase`, `nebula-ascend`.
+- Active built-in packs: `classic-challenge`, `prism-showcase`, `nebula-ascend`, `advanced-elements`.
 - Runtime addressing is `pack_id + level_index` (legacy integer IDs are compatibility-only).
 - Supported schema versions: `zeppack_version` 1 and 2.
 - Version 2 adds optional per-brick metadata: `direction` for `FORCE_ARROW`, `powerup_type` for `POWERUP_BRICK`.
@@ -620,13 +620,13 @@ Main Menu
 
 Gameplay (main.tscn)
   ├─→ Level Complete → Level Complete Screen
-  │                      ├─→ CONTINUE SET (set mode)
+  │                      ├─→ CONTINUE SET (pack mode; legacy label)
   │                      ├─→ NEXT LEVEL (individual mode)
   │                      ├─→ LEVEL SELECT → Level Select
   │                      └─→ MAIN MENU → Main Menu
   └─→ Game Over → Game Over Screen
                    ├─→ RETRY → Restart current level
-                   ├─→ CONTINUE SET (set mode)
+                   ├─→ CONTINUE SET (pack mode; legacy label)
                    └─→ MAIN MENU → Main Menu
 
 Set Complete → Set Complete Screen
@@ -652,7 +652,7 @@ Set Complete → Set Complete Screen
    - Unlock next level
    - Check and unlock achievements
    - Show Level Complete screen
-6. **Set Mode Only**:
+6. **Pack Mode Only** (legacy "Set Mode" naming in UI/save keys):
    - Save score/lives/perfect-status after each level (combo/streak reset per level)
    - Restore saved state at next level
    - Perfect Set bonus (3x) if all lives intact, no continues, and perfect-status maintained
@@ -786,8 +786,8 @@ All settings auto-save and load:
 **Exception**: Audio settings apply immediately via AudioServer/AudioManager.
 
 ## Known Issues and Gaps
-- Set unlocking is stubbed; `highest_unlocked_set` is always 1 and all sets are effectively unlocked.
-- No major known migration blockers; level/set runtime is fully pack-native.
+- Pack unlocking is stubbed; legacy `highest_unlocked_set` remains 1 and all packs are effectively unlocked.
+- No major known migration blockers; runtime loading is fully pack-native.
 
 ## Related Docs
 - `System/tech-stack.md` - Engine version, project settings, input configuration
@@ -798,8 +798,8 @@ All settings auto-save and load:
 
 ---
 
-**Last Updated**: 2026-02-13
+**Last Updated**: 2026-02-15
 **Godot Version**: 4.6
-**Total Levels**: 30
-**Total Sets**: 3
+**Total Levels**: 40
+**Total Packs**: 4
 **Total Achievements**: 12
