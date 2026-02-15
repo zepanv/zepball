@@ -237,6 +237,9 @@ Co-Authored-By: <Your Agent Name/Model> <email>
 
 **Note:** Replace `<Your Agent Name/Model>` with your actual model/agent identifier (e.g., "Claude Sonnet 4.5", "GPT-4", "Gemini Pro", etc.)
 
+For Codex commits in this repository, use:
+`Co-Authored-By: Codex <codex@openai.com>`
+
 ### Commit Types
 
 - `feat` - New feature

@@ -449,7 +449,9 @@ Documentation:
 Co-Authored-By: <Your Agent Name/Model> <email>
 ```
 
-**Note:** Replace with your actual agent identifier (e.g., "Claude Sonnet 4.5 <noreply@anthropic.com>", "GPT-4 <noreply@openai.com>", etc.)
+**Note:** Replace with your actual agent identifier.
+For Codex commits in this repository, use:
+`Co-Authored-By: Codex <codex@openai.com>`
 
 Notes:
 - `<type>` should be `feat`, `fix`, `refactor`, `docs`, or `chore`.
