@@ -29,6 +29,10 @@ var metadata = {
 }
 var current_profile_id: String = ""
 
+# Leaderboard cache for performance
+var _leaderboard_cache: Dictionary = {}
+var _leaderboard_cache_dirty: bool = true
+
 # Save data structure (Current Profile)
 var save_data = {
 	"version": SAVE_VERSION,
@@ -177,33 +181,45 @@ func _migrate_legacy_save() -> void:
 	# If migration fails for some reason, just create a default
 	create_profile("Player 1")
 
+func _invalidate_leaderboard_cache() -> void:
+	"""Mark leaderboard cache as dirty so it regenerates on next access"""
+	_leaderboard_cache_dirty = true
+
 func create_profile(profile_name: String) -> String:
 	"""Create a new profile with the given name. Returns the profile_id."""
 	var sanitized_name = sanitize_name(profile_name)
 	if sanitized_name == "":
 		sanitized_name = "Player"
-		
-	# Generate a unique ID based on the name
+
+	# Check for duplicate display names and auto-append counter
+	var final_name = profile_name
+	var name_counter = 2
+	while _profile_name_exists(final_name):
+		final_name = profile_name + " (" + str(name_counter) + ")"
+		name_counter += 1
+
+	# Generate a unique ID based on the sanitized name
 	var base_id = sanitized_name.to_lower().replace(" ", "_")
 	var profile_id = base_id
-	var counter = 1
+	var id_counter = 1
 	while metadata["profiles"].has(profile_id) or FileAccess.file_exists(_get_profile_path(profile_id)):
-		profile_id = base_id + "_" + str(counter)
-		counter += 1
+		profile_id = base_id + "_" + str(id_counter)
+		id_counter += 1
 	
 	# Create default data
 	create_default_save()
-	save_data["profile"]["player_name"] = profile_name
+	save_data["profile"]["player_name"] = final_name
 	
 	# Register in metadata
-	metadata["profiles"][profile_id] = profile_name
+	metadata["profiles"][profile_id] = final_name
 	metadata["last_selected_id"] = profile_id
 	save_metadata()
 	
 	current_profile_id = profile_id
 	save_to_disk()
-	
+
 	_apply_profile_settings()
+	_invalidate_leaderboard_cache()
 	return profile_id
 
 func load_profile(profile_id: String) -> void:
@@ -258,7 +274,10 @@ func delete_profile(profile_id: String) -> void:
 	
 	# Remove from metadata
 	metadata["profiles"].erase(profile_id)
-	
+
+	# Invalidate cache since profile was deleted
+	_invalidate_leaderboard_cache()
+
 	if current_profile_id == profile_id:
 		print("Deleted active profile, reloading...")
 		current_profile_id = ""
@@ -273,12 +292,15 @@ func rename_current_profile(new_name: String) -> void:
 	"""Rename the currently active profile"""
 	if current_profile_id == "" or not metadata["profiles"].has(current_profile_id):
 		return
-	
+
 	metadata["profiles"][current_profile_id] = new_name
 	save_metadata()
-	
+
 	save_data["profile"]["player_name"] = new_name
 	save_to_disk()
+
+	# Invalidate cache since profile name changed
+	_invalidate_leaderboard_cache()
 
 func _get_profile_path(profile_id: String) -> String:
 	return PROFILES_DIR + profile_id + ".json"
@@ -288,6 +310,13 @@ func sanitize_name(profile_name: String) -> String:
 	var regex = RegEx.new()
 	regex.compile("[^a-zA-Z0-9 ]")
 	return regex.sub(profile_name, "", true).strip_edges()
+
+func _profile_name_exists(profile_name: String) -> bool:
+	"""Check if a profile with the given display name already exists"""
+	for existing_name in metadata["profiles"].values():
+		if existing_name == profile_name:
+			return true
+	return false
 
 func _perform_migrations() -> void:
 	"""Consolidated migration logic for the currently loaded save_data"""
@@ -396,7 +425,7 @@ func save_to_disk() -> void:
 	"""Write current save data to its specific profile file"""
 	if current_profile_id == "":
 		return
-		
+
 	var path = _get_profile_path(current_profile_id)
 	var file = FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
@@ -406,6 +435,9 @@ func save_to_disk() -> void:
 	var json_string = JSON.stringify(save_data, "\t")
 	file.store_string(json_string)
 	file.close()
+
+	# Invalidate leaderboard cache when profile data changes
+	_invalidate_leaderboard_cache()
 
 func get_profile_list() -> Dictionary:
 	"""Return the list of profiles (id: name)"""
@@ -849,8 +881,12 @@ func get_level_key_stars(level_key: String) -> int:
 	var stars: Dictionary = entry.get("stars", {})
 	return int(stars.get(level_key, 0))
 
-func get_all_leaderboards() -> Dictionary:
-	"""Scan all profile files and return aggregated leaderboards"""
+func get_all_leaderboards(use_cache: bool = true) -> Dictionary:
+	"""Scan all profile files and return aggregated leaderboards with optional caching"""
+	# Return cached version if valid
+	if use_cache and not _leaderboard_cache_dirty and not _leaderboard_cache.is_empty():
+		return _leaderboard_cache.duplicate(true)
+
 	var leaderboards = {
 		"levels": {}, # level_key: [ {name, score, date}, ... ]
 		"sets": {}    # pack_id: [ {name, score, date}, ... ]
@@ -913,7 +949,11 @@ func get_all_leaderboards() -> Dictionary:
 		# Keep only top 10
 		if leaderboards["sets"][s_id].size() > 10:
 			leaderboards["sets"][s_id] = leaderboards["sets"][s_id].slice(0, 10)
-			
+
+	# Cache the result
+	_leaderboard_cache = leaderboards.duplicate(true)
+	_leaderboard_cache_dirty = false
+
 	return leaderboards
 
 func get_global_high_score(level_key: String) -> int:

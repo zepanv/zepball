@@ -165,17 +165,25 @@ func _add_score_entry(entry: Dictionary, rank: int):
 	hbox.custom_minimum_size = Vector2(0, 35)
 	hbox.add_theme_constant_override("separation", 15)
 	scores_container.add_child(hbox)
-	
+
+	# Highlight current player's scores
+	var is_current_player = (entry["name"] == SaveManager.get_current_profile_name())
+
 	var rank_label = Label.new()
 	rank_label.text = "#" + str(rank)
 	rank_label.custom_minimum_size = Vector2(50, 0)
-	rank_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	if is_current_player:
+		rank_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.6))
+	else:
+		rank_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	hbox.add_child(rank_label)
-	
+
 	var name_label = Label.new()
-	name_label.text = entry["name"]
+	name_label.text = entry["name"] + (" (YOU)" if is_current_player else "")
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	if is_current_player:
+		name_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.6))
 	hbox.add_child(name_label)
 	
 	if entry.has("context"):
@@ -214,13 +222,37 @@ func _add_score_entry(entry: Dictionary, rank: int):
 	hbox.add_child(scroll_spacer)
 
 func _add_empty_message(text: String):
+	var vbox = VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_theme_constant_override("separation", 15)
+
+	# Main message
 	var label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.custom_minimum_size = Vector2(0, 100)
+	label.custom_minimum_size = Vector2(0, 60)
 	label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
-	scores_container.add_child(label)
+	label.add_theme_font_size_override("font_size", 16)
+	vbox.add_child(label)
+
+	# Helpful hint
+	var hint = Label.new()
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 14)
+	hint.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
+
+	# Contextual hints based on filter
+	match current_filter:
+		"overall":
+			hint.text = "Complete any level to start building your leaderboard!"
+		"sets":
+			hint.text = "Complete a full set run to appear here."
+		"levels":
+			hint.text = "Play individual levels to see scores grouped by level."
+
+	vbox.add_child(hint)
+	scores_container.add_child(vbox)
 
 func _get_level_name(level_key: String) -> String:
 	var parts = level_key.split(":")

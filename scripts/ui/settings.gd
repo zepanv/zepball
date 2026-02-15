@@ -34,11 +34,16 @@ extends Control
 
 # Profile management
 @onready var current_profile_label = $Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/CurrentProfileLabel
+@onready var profile_buttons_container = $Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/ProfileButtons
 @onready var rename_profile_button = $Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/ProfileButtons/RenameProfileButton
 @onready var delete_profile_button = $Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/ProfileButtons/DeleteProfileButton
 @onready var rename_dialog = $RenameProfileDialog
 @onready var rename_input = $RenameProfileDialog/VBoxContainer/ProfileNameInput
 @onready var delete_confirm_dialog = $DeleteProfileConfirmDialog
+
+var switch_profile_button: Button = null
+var switch_profile_dialog: ConfirmationDialog = null
+var switch_profile_dropdown: OptionButton = null
 
 # Clear/reset buttons
 @onready var reset_settings_button = $Panel/ScrollContainer/VBoxContainer/DataSection/DataHBox/ResetSettingsButton
@@ -95,21 +100,29 @@ func _ready():
 	if AudioManager.music_volume_changed.is_connected(_on_music_volume_external_changed) == false:
 		AudioManager.music_volume_changed.connect(_on_music_volume_external_changed)
 
+	# Create Switch Profile button dynamically
+	_create_switch_profile_button()
+	_create_switch_profile_dialog()
+
 	# Profile buttons
 	rename_profile_button.pressed.connect(_on_rename_profile_pressed)
 	delete_profile_button.pressed.connect(_on_delete_profile_pressed)
 	rename_dialog.confirmed.connect(_on_rename_confirmed)
-	rename_input.text_submitted.connect(func(_text): 
+	rename_dialog.canceled.connect(_on_dialog_canceled)
+	rename_input.text_submitted.connect(func(_text):
 		_on_rename_confirmed()
 		rename_dialog.hide()
 	)
 	delete_confirm_dialog.confirmed.connect(_on_delete_confirmed)
+	delete_confirm_dialog.canceled.connect(_on_dialog_canceled)
 
 	# Clear/reset buttons
 	reset_settings_button.pressed.connect(_on_reset_settings_pressed)
 	clear_save_button.pressed.connect(_on_clear_save_pressed)
 	confirm_dialog.confirmed.connect(_on_clear_save_confirmed)
+	confirm_dialog.canceled.connect(_on_dialog_canceled)
 	reset_confirm_dialog.confirmed.connect(_on_reset_settings_confirmed)
+	reset_confirm_dialog.canceled.connect(_on_dialog_canceled)
 
 	# Load and apply current settings
 	_load_current_settings()
@@ -118,26 +131,26 @@ func _ready():
 	await get_tree().process_frame
 	back_button.grab_focus()
 
-func _input(event: InputEvent) -> void:
-	"""Catch Esc/B before dialogs potentially consume it"""
-	if event.is_action_pressed("ui_cancel"):
-		if rename_dialog.visible:
+
+func _process(_delta: float) -> void:
+	# Poll joypad ui_cancel since dialogs (separate Windows) swallow joypad input
+	if Input.is_action_just_pressed("ui_cancel"):
+		if switch_profile_dialog and switch_profile_dialog.visible:
+			switch_profile_dialog.hide()
+		elif rename_dialog.visible:
 			rename_dialog.hide()
-			get_viewport().set_input_as_handled()
 		elif delete_confirm_dialog.visible:
 			delete_confirm_dialog.hide()
-			get_viewport().set_input_as_handled()
 		elif confirm_dialog.visible:
 			confirm_dialog.hide()
-			get_viewport().set_input_as_handled()
 		elif reset_confirm_dialog.visible:
 			reset_confirm_dialog.hide()
-			get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
-	"""Handle Esc/B to go back (only if no dialog was handled in _input)"""
+	"""Handle Esc/B to go back when no dialog is open"""
 	if has_node("KeybindingsMenu"):
 		return
+
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_pressed()
 		accept_event()
@@ -404,6 +417,15 @@ func _on_rename_confirmed():
 		_load_current_settings()
 
 func _on_delete_profile_pressed():
+	# Check if this is the last profile
+	var profiles = SaveManager.get_profile_list()
+	if profiles.size() <= 1:
+		delete_confirm_dialog.dialog_text = "WARNING: This is your last profile!\n\nDeleting it will create a new default profile with no progress.\n\nAre you absolutely sure?"
+		delete_confirm_dialog.ok_button_text = "DELETE AND RESET"
+	else:
+		delete_confirm_dialog.dialog_text = "Are you sure you want to delete this profile?\n\nAll progress and scores will be permanently lost."
+		delete_confirm_dialog.ok_button_text = "DELETE PERMANENTLY"
+
 	delete_confirm_dialog.popup_centered()
 
 func _on_delete_confirmed():
@@ -411,6 +433,86 @@ func _on_delete_confirmed():
 	SaveManager.delete_profile(profile_id)
 	# Always return to main menu after a deletion to ensure full UI refresh
 	MenuController.show_main_menu()
+
+func _create_switch_profile_button():
+	"""Create the Switch Profile button dynamically and insert it before Rename"""
+	switch_profile_button = Button.new()
+	switch_profile_button.name = "SwitchProfileButton"
+	switch_profile_button.text = "SWITCH"
+	switch_profile_button.custom_minimum_size = Vector2(0, 45)
+	switch_profile_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	switch_profile_button.pressed.connect(_on_switch_profile_pressed)
+
+	# Insert before the rename button (index 0)
+	profile_buttons_container.add_child(switch_profile_button)
+	profile_buttons_container.move_child(switch_profile_button, 0)
+
+func _create_switch_profile_dialog():
+	"""Create the profile switcher dialog"""
+	switch_profile_dialog = ConfirmationDialog.new()
+	switch_profile_dialog.name = "SwitchProfileDialog"
+	switch_profile_dialog.title = "Switch Profile"
+	switch_profile_dialog.size = Vector2i(450, 200)
+	switch_profile_dialog.ok_button_text = "SWITCH"
+
+	var vbox = VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+
+	var label = Label.new()
+	label.text = "Select a profile to switch to:"
+	vbox.add_child(label)
+
+	switch_profile_dropdown = OptionButton.new()
+	switch_profile_dropdown.custom_minimum_size = Vector2(0, 40)
+	vbox.add_child(switch_profile_dropdown)
+
+	switch_profile_dialog.add_child(vbox)
+	switch_profile_dialog.confirmed.connect(_on_switch_profile_confirmed)
+	switch_profile_dialog.canceled.connect(_on_dialog_canceled)
+
+	add_child(switch_profile_dialog)
+
+func _on_switch_profile_pressed():
+	"""Open the switch profile dialog"""
+	_populate_switch_profile_dropdown()
+	switch_profile_dialog.popup_centered()
+	switch_profile_dialog.get_ok_button().grab_focus()
+
+func _populate_switch_profile_dropdown():
+	"""Populate the switch profile dropdown"""
+	switch_profile_dropdown.clear()
+	var profiles = SaveManager.get_profile_list()
+	var current_id = SaveManager.get_current_profile_id()
+
+	var select_index = 0
+	var i = 0
+	for id in profiles.keys():
+		var display_text = profiles[id]
+		if id == current_id:
+			display_text += " (Current)"
+		switch_profile_dropdown.add_item(display_text)
+		switch_profile_dropdown.set_item_metadata(i, id)
+		if id == current_id:
+			select_index = i
+		i += 1
+
+	switch_profile_dropdown.selected = select_index
+
+func _on_switch_profile_confirmed():
+	"""Handle profile switch from dialog"""
+	var selected_index = switch_profile_dropdown.selected
+	if selected_index < 0:
+		return
+
+	var profile_id = switch_profile_dropdown.get_item_metadata(selected_index)
+	if profile_id != SaveManager.get_current_profile_id():
+		SaveManager.switch_profile(profile_id)
+		_load_current_settings()  # Refresh the UI
+
+func _on_dialog_canceled():
+	"""Handle any dialog cancellation (B button or cancel button)"""
+	# Dialogs already hide automatically, this is just for consistency
+	pass
 
 func _on_clear_save_pressed():
 	"""Show confirmation dialog before clearing save"""

@@ -7,6 +7,7 @@ extends Control
 @onready var easy_button = $VBoxContainer/DifficultyButtons/EasyButton
 @onready var normal_button = $VBoxContainer/DifficultyButtons/NormalButton
 @onready var hard_button = $VBoxContainer/DifficultyButtons/HardButton
+@onready var play_button = $VBoxContainer/PlayButton
 @onready var return_button = $VBoxContainer/ReturnButton
 @onready var profile_dropdown = $VBoxContainer/ProfileContainer/ProfileDropdown
 @onready var new_profile_dialog = $NewProfileDialog
@@ -22,6 +23,8 @@ func _ready():
 	SaveManager.save_loaded.connect(_on_save_loaded)
 	
 	new_profile_dialog.confirmed.connect(_on_new_profile_confirmed)
+	new_profile_dialog.canceled.connect(_on_new_profile_canceled)
+
 	profile_name_input.text_submitted.connect(func(_text):
 		_on_new_profile_confirmed()
 		new_profile_dialog.hide()
@@ -29,12 +32,12 @@ func _ready():
 
 	_refresh_full_ui()
 
-	# Grab focus on the first button for controller navigation
+	# Grab focus on the play button for controller navigation
 	await get_tree().process_frame
-	var first_button = profile_dropdown
 	if return_button.visible:
-		first_button = return_button
-	first_button.grab_focus()
+		return_button.grab_focus()
+	else:
+		play_button.grab_focus()
 
 func _refresh_full_ui():
 	"""Update all UI elements based on current save/profile"""
@@ -88,25 +91,25 @@ func _on_new_profile_confirmed():
 	var profile_name = profile_name_input.text.strip_edges()
 	if profile_name == "":
 		profile_name = "Player"
-	
+
 	SaveManager.create_profile(profile_name)
 
-func _input(event: InputEvent) -> void:
-	"""Handle B button to quit or close dialogs (called before dialogs consume it)"""
-	if event.is_action_pressed("ui_cancel"):
-		if new_profile_dialog.visible:
-			new_profile_dialog.hide()
-			get_viewport().set_input_as_handled()
-		else:
-			# Only handle quit if no dialog is open
-			# Note: quit button handler already exists
-			pass
+func _on_new_profile_canceled():
+	"""Handle new profile dialog cancellation"""
+	# Dialog already hides automatically, just ensure it's handled
+	pass
+
+
+func _process(_delta: float) -> void:
+	# Poll joypad ui_cancel since dialogs (separate Windows) swallow joypad input
+	if Input.is_action_just_pressed("ui_cancel") and new_profile_dialog.visible:
+		new_profile_dialog.hide()
 
 func _unhandled_input(event: InputEvent) -> void:
-	"""Handle B button to quit when no dialog is open"""
+	"""Handle Esc/B to quit when no dialog is open"""
 	if event.is_action_pressed("ui_cancel"):
 		_on_quit_button_pressed()
-		get_viewport().set_input_as_handled()
+		accept_event()
 
 func apply_saved_difficulty(difficulty_name: String):
 	"""Apply the saved difficulty setting"""
