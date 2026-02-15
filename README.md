@@ -19,8 +19,8 @@ Highlights:
 
 ### Release Assets
 - GitHub Releases include prebuilt binaries for:
-  - Windows (`zepball.zip`)
-  - Linux (`zepball.x86_64.zip`)
+  - Windows (`zepball.zip`) - Extract and run `zepball.exe`
+  - Linux (`zepball.x86_64.zip`) - Extract and run `zepball.x86_64`
 - macOS binaries are not currently published.
 
 ### macOS Status
@@ -28,9 +28,9 @@ Highlights:
 
 ### Verify Download Integrity
 Each release includes:
-- `SHA256SUMS.txt`
-- `SHA256SUMS.txt.minisig`
-- `minisign.pub`
+- `SHA256SUMS.txt` - SHA-256 checksums for release archives
+- `SHA256SUMS.txt.minisig` - Minisign signature for `SHA256SUMS.txt`
+- `minisign.pub` - Minisign public key used to verify the checksum signature
 
 Verify signature:
 ```bash

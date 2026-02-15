@@ -13,6 +13,7 @@ For current game state, see `README.md`. For full system architecture, see `Syst
 - ✅ **Pack Select Sorting Added**: Sort by ORDER (custom A-Z, then official legacy order) or PROGRESSION (completion percentage)
 - ✅ **Pack Select Toolbar UI**: Added controller-accessible filter/sort controls to Pack Select screen
 - ✅ **SemVer Adoption**: Switched public versioning to Semantic Versioning; main menu now displays `v0.5.0` (single in-game location)
+- ✅ **Official First Public Release**: Published `v0.5.0` on GitHub Releases with signed assets (`zepball.zip`, `zepball.x86_64.zip`, `SHA256SUMS.txt`, `SHA256SUMS.txt.minisig`, `minisign.pub`)
 
 ## 2026-02-13 - Launch & Spin Fixes
 - ✅ **Built-In Pack Export Fix**: `PackLoader` now discovers built-in `.zeppack` files with `ResourceLoader.list_directory()` and a `DirAccess` fallback, fixing missing built-in pack cards in exported builds.

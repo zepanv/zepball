@@ -340,11 +340,11 @@ What it does:
 - Creates/pushes tag `vX.Y.Z` (if missing)
 - Creates GitHub Release (or updates existing release assets)
 - Uploads:
-  - `dist/releases/zepball.zip`
-  - `dist/releases/zepball.x86_64.zip`
-  - `dist/releases/SHA256SUMS.txt`
-  - `dist/releases/SHA256SUMS.txt.minisig`
-  - `dist/releases/minisign.pub`
+  - `dist/releases/zepball.zip` (Windows build)
+  - `dist/releases/zepball.x86_64.zip` (Linux x86_64 build)
+  - `dist/releases/SHA256SUMS.txt` (archive checksums)
+  - `dist/releases/SHA256SUMS.txt.minisig` (signature for checksum file)
+  - `dist/releases/minisign.pub` (public key for checksum signature verification)
 
 ---
 
