@@ -43,6 +43,8 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/advanced-tile-elements.md` - Force arrows, power-up bricks, persistent spin, penetrating spin ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
   - **`Tasks/Backlog/future-features.md`** - Remaining planned features (Time Attack, Survival, Ball Speed Zones, Brick Chains, Paddle Abilities, hardcore modes)
+  - **`Tasks/Backlog/player-profiles.md`** - Player profile system and local high scores comparison plan 🆕
+  - **`Tasks/Backlog/bugfixes-and-pack-ui.md`** - Combo reset in sets, paddle X-lock, and Pack Select UI enhancements 🆕
 
 ### SOP/
 Best practices and workflows for development. **These procedures are mandatory and must be followed for all development work.**
@@ -494,7 +496,7 @@ Pause overlay settings apply live for paddle sensitivity, ball trail, combo flas
 
 ---
 
-**Last Updated**: 2026-02-13
+**Last Updated**: 2026-02-15
 **Total Levels**: 30
 **Total Sets**: 3
 **Total Achievements**: 12

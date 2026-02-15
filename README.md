@@ -39,9 +39,6 @@ Highlights:
 - **Back/Select**: Toggle music pause/play
 - **Controller Support**: Full menu navigation, gameplay, and keybinding customization
 
-### Debug Controls (Debug Build Only)
-- **C**: Clear all bricks
-
 ## Game Features
 
 ### Core Mechanics
@@ -104,12 +101,23 @@ Highlights:
 - Delete saved custom packs with confirmation
 - Backward compatible (v1 packs load seamlessly)
 
-## Asset Credits
-- Graphics: Kenney Vleugels (kenney.nl) Puzzle Packs + AI-Generated
-- Backgrounds: AI-Generated space/abstract backgrounds
-- Music: Suno
-- SFX: ElevenLabs
+## Credits & Licensing
 
-## License
+### Software
+The source code for Zep Ball is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
 
-TBD - Personal project, not yet open source
+### Audio
+- **Music**: Generated with Suno AI (Basic Plan). Music provided by [Suno.com](https://suno.com).
+  - *License*: Non-commercial use only. Suno AI retains ownership.
+- **Sound Effects**: Generated with [ElevenLabs](https://elevenlabs.io).
+  - *License*: Royalty-free and can be used for commercial or non-commercial purposes.
+
+### Graphics
+- **Kenney Assets**: Bricks and UI elements from [Kenney.nl](https://kenney.nl) are licensed under Creative Commons CC0 (Public Domain).
+- **Backgrounds & Primary Art**: Generated with Nano Banana.
+- **Other Art Assets**: Generated with OpenAI (ChatGPT).
+- **Note on AI Art**: To the extent permitted by law, the AI-generated graphical assets in this project are provided without copyright.
+
+### Legal Considerations
+- **AI-Generated Content**: Users should be aware that AI-generated assets may not be eligible for copyright protection under current laws in various jurisdictions.
+- **Suno Music**: The music files are restricted to **non-commercial use only** per Suno AI's Basic Plan terms. If you intend to use this project for commercial purposes, you must replace the music or ensure you have a valid commercial license.
