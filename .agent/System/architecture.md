@@ -366,6 +366,8 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 
 2. **Set Select / Pack Select** (`scenes/ui/set_select.tscn`)
    - Cards for built-in and user packs (source badge + author + progress + stars + best score)
+   - Filter: ALL / OFFICIAL / CUSTOM
+   - Sort: BY ORDER (custom A-Z, official legacy order) / BY PROGRESSION (completion %)
    - Play Pack → starts pack mode
    - View Levels → opens Level Select scoped to selected pack
 
@@ -651,9 +653,9 @@ Set Complete → Set Complete Screen
    - Check and unlock achievements
    - Show Level Complete screen
 6. **Set Mode Only**:
-   - Save score/lives/combo/streak after each level
+   - Save score/lives/perfect-status after each level (combo/streak reset per level)
    - Restore saved state at next level
-   - Perfect Set bonus (3x) if all lives intact and no continues
+   - Perfect Set bonus (3x) if all lives intact, no continues, and perfect-status maintained
 7. **Game Over**: Lives reach 0
    - Save final score if high score
    - Show Game Over screen

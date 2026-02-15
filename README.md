@@ -2,13 +2,15 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Features: 2026-02-14
+## Current Features: 2026-02-15
 
 Highlights:
 
 - 30 built-in levels across 3 packs
+- Player profiles with local high score tracking
 - Difficulty modes (Easy/Normal/Hard) with multipliers
 - Statistics + achievements tracking
+- Pack Select with filtering (ALL/OFFICIAL/CUSTOM) and sorting (BY ORDER/BY PROGRESSION)
 - In-game level/pack editor with test, save, export, and delete flows
 - Audio playback (music + SFX)
 
@@ -57,8 +59,10 @@ Highlights:
   - **Classic Challenge** (levels 1-10)
   - **Prism Showcase** (levels 11-20)
   - **Nebula Ascend** (levels 21-30)
+- Player profiles with individual progression tracking
 - Unlock progression, per-level high scores, per-pack run scores
 - Star ratings per level (0-3 stars)
+- Set Mode: Score and lives carry across levels; combo/streak reset each level; Perfect Set bonus (3x) for flawless runs
 
 ### Power-Ups (16 Types)
 - **Paddle**: Expand, Contract

@@ -41,16 +41,16 @@ PRDs and implementation plans for features (both implemented and future).
   - `Tasks/Completed/level-overhaul.md` - Pack-format migration, in-game editor, pack/level UX overhaul, third built-in pack ✅ IMPLEMENTED
   - `Tasks/Completed/skip-options.md` - Input-based intro skip, fast-forward level complete, quick restart ✅ IMPLEMENTED
   - `Tasks/Completed/advanced-tile-elements.md` - Force arrows, power-up bricks, persistent spin, penetrating spin ✅ IMPLEMENTED
+  - `Tasks/Completed/player-profiles.md` - Player profile system and local high scores comparison ✅ IMPLEMENTED
+  - `Tasks/Completed/bugfixes-and-pack-ui.md` - Combo/streak reset fix, paddle X-lock, Pack Select filters/sorts ✅ IMPLEMENTED
 - **`Tasks/Backlog/`** - Not yet implemented or future work.
   - **`Tasks/Backlog/future-features.md`** - Remaining planned features (Time Attack, Survival, Ball Speed Zones, Brick Chains, Paddle Abilities, hardcore modes)
-  - **`Tasks/Backlog/player-profiles.md`** - Player profile system and local high scores comparison plan 🆕
-  - **`Tasks/Backlog/bugfixes-and-pack-ui.md`** - Combo reset in sets, paddle X-lock, and Pack Select UI enhancements 🆕
 
 ### SOP/
 Best practices and workflows for development. **These procedures are mandatory and must be followed for all development work.**
 - **`SOP/godot-workflow.md`** - **MANDATORY** workflows including: Godot scenes/nodes/signals, **Asset Documentation** (update docs when adding/removing assets), **CRITICAL: Save System Compatibility** (migration requirements), and commit message formats.
 
-## Current Game State (2026-02-13)
+## Current Game State (2026-02-15)
 
 ### Core Features ✅ COMPLETE
 - **Gameplay**: Paddle movement (keyboard + mouse), ball physics with persistent/decaying spin, enhanced spin system with visual curve effects and penetrating spin, 16 brick types, collision detection, score tracking
@@ -71,8 +71,8 @@ Best practices and workflows for development. **These procedures are mandatory a
   - **Classic Challenge** (levels 1–10)
   - **Prism Showcase** (levels 11–20)
   - **Nebula Ascend** (levels 21–30)
-- **Set Select**: Play set or view its levels
-- **Set Progression**: Score/lives/combo/streak carry across set levels
+- **Set Select**: Play set or view its levels; filter by ALL/OFFICIAL/CUSTOM; sort by ORDER or PROGRESSION
+- **Set Progression**: Score/lives carry across set levels; combo/streak reset each level; perfect status tracked for 3x bonus
 - **Set Completion Bonus**: 3x score if all lives intact and no continues
 - **Set High Scores**: Saved separately from individual level scores
 
@@ -179,7 +179,15 @@ These are always accessible and control key game systems:
 
 ## Recent Update History
 
-### 2026-02-13 (Latest) - Launch & Spin Fixes
+### 2026-02-15 (Latest) - Bugfixes & Pack Select UI Enhancements
+- ✅ **Set Mode Combo/Streak Fix**: Combo multiplier and no-miss streak now reset at the start of each level in Set Mode (Perfect Set eligibility preserved)
+- ✅ **Paddle X-Lock Fix**: Paddle is now strictly locked to its X-axis position, preventing horizontal displacement from ball collisions
+- ✅ **Pack Select Filters Added**: Filter packs by ALL / OFFICIAL / CUSTOM
+- ✅ **Pack Select Sorting Added**: Sort by ORDER (custom A-Z, then official legacy order) or PROGRESSION (completion percentage)
+- ✅ **Pack Select Toolbar UI**: Added controller-accessible filter/sort controls to Pack Select screen
+- ✅ **Main Menu Date Updated**: Version label updated to 2026-02-15
+
+### 2026-02-13 - Launch & Spin Fixes
 - ✅ **Built-In Pack Export Fix**: `PackLoader` now discovers built-in `.zeppack` files with `ResourceLoader.list_directory()` and a `DirAccess` fallback, fixing missing built-in pack cards in exported builds.
 - ✅ **Export Preset Include Fix**: Added `packs/*.zeppack` to export preset include filters so built-in packs are bundled in exported binaries.
 - ✅ **Release Export Automation**: Added `scripts/export_release_bundle.sh` to export all release presets, copy `README.md`, and generate per-preset zips in `dist/releases/` (`zepball.x86_64.zip` for Linux, `zepball.zip` for Windows).

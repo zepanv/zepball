@@ -2,11 +2,20 @@ extends Control
 
 ## Pack Select Screen - Displays available built-in and user packs
 
+# Filter and Sort modes
+enum FilterMode { ALL, OFFICIAL, CUSTOM }
+enum SortMode { BY_ORDER, BY_PROGRESSION }
+
+var current_filter_mode: FilterMode = FilterMode.ALL
+var current_sort_mode: SortMode = SortMode.BY_ORDER
+
 @onready var sets_container = $VBoxContainer/ScrollContainer/SetsContainer
 @onready var title_label = $VBoxContainer/TitleLabel
+@onready var toolbar_container = $VBoxContainer/ToolbarContainer
 
 func _ready() -> void:
 	title_label.text = "SELECT PACK"
+	_create_toolbar()
 	populate_packs()
 
 	# Grab focus on first button for controller navigation
@@ -23,6 +32,13 @@ func populate_packs() -> void:
 		child.queue_free()
 
 	var packs: Array[Dictionary] = PackLoader.get_all_packs()
+
+	# Apply filter
+	packs = _apply_filter(packs)
+
+	# Apply sort
+	packs = _apply_sort(packs)
+
 	for pack_data in packs:
 		create_pack_card(pack_data)
 	_create_new_pack_card()
@@ -202,6 +218,158 @@ func _on_create_pack_pressed() -> void:
 
 func _on_back_button_pressed() -> void:
 	MenuController.show_main_menu()
+
+func _create_toolbar() -> void:
+	"""Create the filter and sort toolbar"""
+	if not toolbar_container:
+		return
+
+	var toolbar_hbox := HBoxContainer.new()
+	toolbar_hbox.add_theme_constant_override("separation", 20)
+	toolbar_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	# Filter label
+	var filter_label := Label.new()
+	filter_label.text = "FILTER:"
+	filter_label.add_theme_font_size_override("font_size", 16)
+	filter_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	toolbar_hbox.add_child(filter_label)
+
+	# Filter buttons
+	var filter_all_btn := Button.new()
+	filter_all_btn.text = "ALL"
+	filter_all_btn.custom_minimum_size = Vector2(100, 32)
+	filter_all_btn.add_theme_font_size_override("font_size", 14)
+	filter_all_btn.pressed.connect(_on_filter_changed.bind(FilterMode.ALL))
+	toolbar_hbox.add_child(filter_all_btn)
+
+	var filter_official_btn := Button.new()
+	filter_official_btn.text = "OFFICIAL"
+	filter_official_btn.custom_minimum_size = Vector2(100, 32)
+	filter_official_btn.add_theme_font_size_override("font_size", 14)
+	filter_official_btn.pressed.connect(_on_filter_changed.bind(FilterMode.OFFICIAL))
+	toolbar_hbox.add_child(filter_official_btn)
+
+	var filter_custom_btn := Button.new()
+	filter_custom_btn.text = "CUSTOM"
+	filter_custom_btn.custom_minimum_size = Vector2(100, 32)
+	filter_custom_btn.add_theme_font_size_override("font_size", 14)
+	filter_custom_btn.pressed.connect(_on_filter_changed.bind(FilterMode.CUSTOM))
+	toolbar_hbox.add_child(filter_custom_btn)
+
+	# Spacer
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(40, 0)
+	toolbar_hbox.add_child(spacer)
+
+	# Sort label
+	var sort_label := Label.new()
+	sort_label.text = "SORT:"
+	sort_label.add_theme_font_size_override("font_size", 16)
+	sort_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	toolbar_hbox.add_child(sort_label)
+
+	# Sort buttons
+	var sort_order_btn := Button.new()
+	sort_order_btn.text = "BY ORDER"
+	sort_order_btn.custom_minimum_size = Vector2(120, 32)
+	sort_order_btn.add_theme_font_size_override("font_size", 14)
+	sort_order_btn.pressed.connect(_on_sort_changed.bind(SortMode.BY_ORDER))
+	toolbar_hbox.add_child(sort_order_btn)
+
+	var sort_progression_btn := Button.new()
+	sort_progression_btn.text = "BY PROGRESSION"
+	sort_progression_btn.custom_minimum_size = Vector2(160, 32)
+	sort_progression_btn.add_theme_font_size_override("font_size", 14)
+	sort_progression_btn.pressed.connect(_on_sort_changed.bind(SortMode.BY_PROGRESSION))
+	toolbar_hbox.add_child(sort_progression_btn)
+
+	toolbar_container.add_child(toolbar_hbox)
+
+func _on_filter_changed(mode: FilterMode) -> void:
+	"""Handle filter mode change"""
+	current_filter_mode = mode
+	populate_packs()
+	await get_tree().process_frame
+	_grab_first_button_focus()
+
+func _on_sort_changed(mode: SortMode) -> void:
+	"""Handle sort mode change"""
+	current_sort_mode = mode
+	populate_packs()
+	await get_tree().process_frame
+	_grab_first_button_focus()
+
+func _apply_filter(packs: Array[Dictionary]) -> Array[Dictionary]:
+	"""Apply current filter to pack list"""
+	if current_filter_mode == FilterMode.ALL:
+		return packs
+
+	var filtered: Array[Dictionary] = []
+	for pack in packs:
+		var source := str(pack.get("source", "user"))
+		var is_official := source == "builtin"
+
+		if current_filter_mode == FilterMode.OFFICIAL and is_official:
+			filtered.append(pack)
+		elif current_filter_mode == FilterMode.CUSTOM and not is_official:
+			filtered.append(pack)
+
+	return filtered
+
+func _apply_sort(packs: Array[Dictionary]) -> Array[Dictionary]:
+	"""Apply current sort to pack list"""
+	var sorted_packs := packs.duplicate()
+
+	if current_sort_mode == SortMode.BY_ORDER:
+		# Sort: Custom packs first (A-Z), then official packs (legacy order)
+		sorted_packs.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			var a_source := str(a.get("source", "user"))
+			var b_source := str(b.get("source", "user"))
+			var a_official := a_source == "builtin"
+			var b_official := b_source == "builtin"
+
+			# Custom packs before official
+			if not a_official and b_official:
+				return true
+			if a_official and not b_official:
+				return false
+
+			# Both custom: alphabetical by name
+			if not a_official and not b_official:
+				return str(a.get("name", "")).to_lower() < str(b.get("name", "")).to_lower()
+
+			# Both official: use legacy order
+			var a_id := str(a.get("pack_id", ""))
+			var b_id := str(b.get("pack_id", ""))
+			var a_idx := PackLoader.LEGACY_PACK_ORDER.find(a_id)
+			var b_idx := PackLoader.LEGACY_PACK_ORDER.find(b_id)
+
+			if a_idx == -1:
+				a_idx = 999
+			if b_idx == -1:
+				b_idx = 999
+
+			return a_idx < b_idx
+		)
+	elif current_sort_mode == SortMode.BY_PROGRESSION:
+		# Sort by completion percentage (descending)
+		sorted_packs.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			var a_pack_id := str(a.get("pack_id", ""))
+			var b_pack_id := str(b.get("pack_id", ""))
+			var a_count := int(a.get("levels", []).size())
+			var b_count := int(b.get("levels", []).size())
+			var a_completed := SaveManager.get_pack_completed_count(a_pack_id)
+			var b_completed := SaveManager.get_pack_completed_count(b_pack_id)
+
+			var a_pct := 0.0 if a_count == 0 else float(a_completed) / float(a_count)
+			var b_pct := 0.0 if b_count == 0 else float(b_completed) / float(b_count)
+
+			# Higher percentage first (descending)
+			return a_pct > b_pct
+		)
+
+	return sorted_packs
 
 func _grab_first_button_focus() -> void:
 	"""Grab focus on the first available button for controller navigation"""

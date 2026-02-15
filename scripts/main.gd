@@ -119,26 +119,20 @@ func _ready() -> void:
 		call_deferred("_restore_set_state",
 			MenuController.set_saved_score,
 			MenuController.set_saved_lives,
-			MenuController.set_saved_combo,
-			MenuController.set_saved_no_miss,
 			MenuController.set_saved_perfect)
 
 	# Connect existing bricks
 	connect_brick_signals()
 
-func _restore_set_state(saved_score: int, saved_lives: int, saved_combo: int, saved_no_miss: int, saved_perfect: bool) -> void:
+func _restore_set_state(saved_score: int, saved_lives: int, saved_perfect: bool) -> void:
 	"""Restore game state when continuing a set (called deferred to ensure HUD is ready)"""
 	game_manager.score = saved_score
 	game_manager.lives = saved_lives
-	game_manager.combo = saved_combo
-	game_manager.no_miss_hits = saved_no_miss
 	game_manager.is_perfect_clear = saved_perfect
 
 	# Emit signals to update HUD
 	game_manager.score_changed.emit(game_manager.score)
 	game_manager.lives_changed.emit(game_manager.lives)
-	game_manager.combo_changed.emit(game_manager.combo)
-	game_manager.no_miss_streak_changed.emit(game_manager.no_miss_hits)
 
 func setup_background() -> void:
 	"""Load and configure a random background image."""

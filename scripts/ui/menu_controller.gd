@@ -485,8 +485,6 @@ func show_level_complete(final_score: int) -> void:
 	if current_play_mode == PlayMode.SET and game_manager:
 		set_saved_score = current_score
 		set_saved_lives = game_manager.lives
-		set_saved_combo = game_manager.combo
-		set_saved_no_miss = game_manager.no_miss_hits
 		set_saved_perfect = game_manager.is_perfect_clear
 
 	# Mark level as completed

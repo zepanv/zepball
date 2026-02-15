@@ -27,6 +27,7 @@ var mouse_delta_y: float = 0.0
 var was_mouse_captured: bool = false
 
 # Velocity tracking for spin mechanics
+var initial_x: float = 0.0
 var previous_y: float = 0.0
 var actual_velocity_y: float = 0.0
 var game_manager: Node = null
@@ -45,6 +46,7 @@ var sensitivity_multiplier: float = 1.0
 var aim_locked: bool = false
 
 func _ready():
+	initial_x = position.x  # Store initial X position
 	previous_y = position.y
 	last_mouse_y = viewport_ref.get_mouse_position().y
 	game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -128,6 +130,9 @@ func _physics_process(delta):
 		position.y = min_bound_y
 	elif position.y > max_bound_y:
 		position.y = max_bound_y
+
+	# Lock paddle to initial X position (prevent horizontal displacement from ball collisions)
+	position.x = initial_x
 
 	# Calculate actual velocity (for spin mechanics)
 	actual_velocity_y = (position.y - previous_y) / delta
