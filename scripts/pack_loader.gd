@@ -483,6 +483,37 @@ func save_user_pack(pack_data: Dictionary) -> bool:
 	reload_packs()
 	return true
 
+func save_builtin_pack(pack_data: Dictionary) -> bool:
+	if not OS.is_debug_build():
+		push_error("PackLoader: save_builtin_pack is only available in debug builds")
+		return false
+
+	var to_save: Dictionary = pack_data.duplicate(true)
+	var errors: Array[String] = validate_pack(to_save)
+	if not errors.is_empty():
+		push_warning("PackLoader: builtin save rejected due to validation errors: %s" % "; ".join(errors))
+		return false
+
+	var pack_id: String = str(to_save.get("pack_id", "")).strip_edges()
+	if pack_id.is_empty():
+		return false
+
+	to_save["source"] = "builtin"
+	to_save["updated_at"] = Time.get_datetime_string_from_system(true)
+	to_save.erase("_file_path")
+	to_save.erase("_is_builtin")
+
+	var path: String = BUILTIN_PACKS_PATH + pack_id + PACK_EXTENSION
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		push_error("PackLoader: failed to save builtin pack: %s" % path)
+		return false
+
+	file.store_string(JSON.stringify(to_save, "\t"))
+	file.close()
+	reload_packs()
+	return true
+
 func delete_user_pack(pack_id: String) -> bool:
 	if not _packs_by_id.has(pack_id):
 		return false

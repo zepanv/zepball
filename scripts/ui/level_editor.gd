@@ -66,6 +66,7 @@ var BRICK_COLORS: Dictionary:
 @onready var delete_confirm_dialog: ConfirmationDialog = $DeleteConfirmDialog
 
 var current_pack: Dictionary = {}
+var _editing_builtin_pack: bool = false
 var selected_level_index: int = 0
 var selected_brick_type: String = "NORMAL"
 var selected_direction: int = 45
@@ -139,17 +140,22 @@ func _initialize_editor_pack() -> void:
 	if not draft_pack.is_empty():
 		current_pack = draft_pack.duplicate(true)
 		selected_level_index = clampi(MenuController.get_editor_draft_level_index(), 0, max(0, current_pack.get("levels", []).size() - 1))
-		title_label.text = "LEVEL EDITOR - TEST DRAFT"
+		# Preserve builtin flag through test round-trips using the authoritative PackLoader state
+		var draft_id: String = str(current_pack.get("pack_id", ""))
+		_editing_builtin_pack = bool(PackLoader.get_pack(draft_id).get("_is_builtin", false)) if PackLoader.pack_exists(draft_id) else false
+		title_label.text = "LEVEL EDITOR - EDIT BUILTIN [DEV]" if _editing_builtin_pack else "LEVEL EDITOR - TEST DRAFT"
 		status_label.text = "Restored draft after test run"
 		return
 
 	var requested_pack_id: String = MenuController.get_editor_pack_id()
 	if not requested_pack_id.is_empty() and PackLoader.pack_exists(requested_pack_id):
 		current_pack = PackLoader.get_pack(requested_pack_id)
-		title_label.text = "LEVEL EDITOR - EDIT PACK"
+		_editing_builtin_pack = bool(current_pack.get("_is_builtin", false))
+		title_label.text = "LEVEL EDITOR - EDIT BUILTIN [DEV]" if _editing_builtin_pack else "LEVEL EDITOR - EDIT PACK"
 		status_label.text = "Loaded pack: %s" % requested_pack_id
 		return
 
+	_editing_builtin_pack = false
 	current_pack = _create_new_pack_template()
 	title_label.text = "LEVEL EDITOR - NEW PACK"
 	status_label.text = "Creating a new pack"
@@ -720,19 +726,27 @@ func _on_save_button_pressed() -> void:
 		status_label.text = "Pack Name is required"
 		return
 
+	var is_builtin: bool = _editing_builtin_pack
+
 	var persist_pack: Dictionary = _build_pack_payload(normalized_pack_id)
 	if persist_pack.is_empty():
 		status_label.text = "Save failed (invalid pack data)"
 		return
 	current_pack = persist_pack.duplicate(true)
-
-	var saved: bool = PackLoader.save_user_pack(current_pack)
+	var saved: bool
+	if is_builtin and OS.is_debug_build():
+		saved = PackLoader.save_builtin_pack(current_pack)
+	else:
+		saved = PackLoader.save_user_pack(current_pack)
 	if not saved:
 		status_label.text = "Save failed (validation error)"
 		return
 
 	MenuController.current_editor_pack_id = normalized_pack_id
-	status_label.text = "Saved pack: %s (reopen via OPEN SAVED PACKS -> EDIT)" % normalized_pack_id
+	if is_builtin:
+		status_label.text = "Saved builtin pack: %s" % normalized_pack_id
+	else:
+		status_label.text = "Saved pack: %s (reopen via OPEN SAVED PACKS -> EDIT)" % normalized_pack_id
 	_update_delete_button_state()
 
 func _on_delete_button_pressed() -> void:

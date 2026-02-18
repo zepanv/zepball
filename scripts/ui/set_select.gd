@@ -173,6 +173,14 @@ func create_pack_card(pack_data: Dictionary) -> void:
 		edit_button.add_theme_color_override("font_color", Color(1.0, 0.75, 0.25, 1))
 		edit_button.pressed.connect(_on_edit_pack_pressed.bind(pack_id))
 		button_vbox.add_child(edit_button)
+	elif OS.is_debug_build():
+		var edit_button := Button.new()
+		edit_button.text = "EDIT [DEV]"
+		edit_button.custom_minimum_size = Vector2(140, 26)
+		edit_button.add_theme_font_size_override("font_size", 14)
+		edit_button.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4, 1))
+		edit_button.pressed.connect(_on_edit_pack_pressed.bind(pack_id))
+		button_vbox.add_child(edit_button)
 
 	sets_container.add_child(panel)
 
