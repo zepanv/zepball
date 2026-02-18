@@ -140,9 +140,8 @@ func _initialize_editor_pack() -> void:
 	if not draft_pack.is_empty():
 		current_pack = draft_pack.duplicate(true)
 		selected_level_index = clampi(MenuController.get_editor_draft_level_index(), 0, max(0, current_pack.get("levels", []).size() - 1))
-		# Preserve builtin flag through test round-trips using the authoritative PackLoader state
-		var draft_id: String = str(current_pack.get("pack_id", ""))
-		_editing_builtin_pack = bool(PackLoader.get_pack(draft_id).get("_is_builtin", false)) if PackLoader.pack_exists(draft_id) else false
+		# Preserve edit intent through test round-trips even if pack_id changes during editing.
+		_editing_builtin_pack = MenuController.get_editor_draft_is_builtin_edit()
 		title_label.text = "LEVEL EDITOR - EDIT BUILTIN [DEV]" if _editing_builtin_pack else "LEVEL EDITOR - TEST DRAFT"
 		status_label.text = "Restored draft after test run"
 		return
@@ -734,7 +733,8 @@ func _on_save_button_pressed() -> void:
 		return
 	current_pack = persist_pack.duplicate(true)
 	var saved: bool
-	if is_builtin and OS.is_debug_build():
+	var saved_as_builtin: bool = is_builtin and OS.is_debug_build()
+	if saved_as_builtin:
 		saved = PackLoader.save_builtin_pack(current_pack)
 	else:
 		saved = PackLoader.save_user_pack(current_pack)
@@ -743,7 +743,7 @@ func _on_save_button_pressed() -> void:
 		return
 
 	MenuController.current_editor_pack_id = normalized_pack_id
-	if is_builtin:
+	if saved_as_builtin:
 		status_label.text = "Saved builtin pack: %s" % normalized_pack_id
 	else:
 		status_label.text = "Saved pack: %s (reopen via OPEN SAVED PACKS -> EDIT)" % normalized_pack_id
@@ -837,7 +837,7 @@ func _on_test_button_pressed() -> void:
 	if str(test_pack.get("name", "")).strip_edges().is_empty():
 		test_pack["name"] = "Editor Test Pack"
 
-	MenuController.start_editor_test(test_pack, selected_level_index)
+	MenuController.start_editor_test(test_pack, selected_level_index, _editing_builtin_pack)
 
 func _on_undo_button_pressed() -> void:
 	if undo_stack.is_empty():

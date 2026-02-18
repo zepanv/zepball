@@ -38,6 +38,7 @@ var editor_test_pack_data: Dictionary = {}
 var editor_test_level_index: int = 0
 var editor_draft_pack_data: Dictionary = {}
 var editor_draft_level_index: int = 0
+var editor_draft_is_builtin_edit: bool = false
 
 # Set mode state
 var current_play_mode: PlayMode = PlayMode.INDIVIDUAL
@@ -194,12 +195,13 @@ func return_from_editor() -> void:
 	"""Return to the correct menu based on where editor was opened from."""
 	editor_draft_pack_data = {}
 	editor_draft_level_index = 0
+	editor_draft_is_builtin_edit = false
 	if editor_return_target == EditorReturnTarget.MAIN_MENU:
 		show_main_menu()
 		return
 	show_set_select()
 
-func start_editor_test(pack_data: Dictionary, level_index: int) -> void:
+func start_editor_test(pack_data: Dictionary, level_index: int, draft_is_builtin_edit: bool = false) -> void:
 	"""Start a one-level editor test run without progression/high-score side effects."""
 	if not (pack_data.get("levels", []) is Array):
 		push_error("Editor test failed: pack has invalid levels")
@@ -212,6 +214,7 @@ func start_editor_test(pack_data: Dictionary, level_index: int) -> void:
 
 	editor_draft_pack_data = pack_data.duplicate(true)
 	editor_draft_level_index = clamped_level_index
+	editor_draft_is_builtin_edit = draft_is_builtin_edit
 	editor_test_pack_data = pack_data.duplicate(true)
 	editor_test_level_index = clamped_level_index
 	is_editor_test_mode = true
@@ -262,6 +265,9 @@ func get_editor_draft_pack() -> Dictionary:
 
 func get_editor_draft_level_index() -> int:
 	return editor_draft_level_index
+
+func get_editor_draft_is_builtin_edit() -> bool:
+	return editor_draft_is_builtin_edit
 
 func clear_editor_test_state() -> void:
 	is_editor_test_mode = false
@@ -422,7 +428,7 @@ func continue_set_from_ref(pack_id: String, level_index: int) -> void:
 func restart_current_level() -> void:
 	"""Restart the current level"""
 	if is_editor_test_mode:
-		start_editor_test(editor_draft_pack_data, editor_draft_level_index)
+		start_editor_test(editor_draft_pack_data, editor_draft_level_index, editor_draft_is_builtin_edit)
 		return
 	start_level_ref(current_pack_id, current_level_index)
 
