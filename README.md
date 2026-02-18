@@ -2,11 +2,11 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Features: 2026-02-15
+## Current Features: 2026-02-18
 
 Highlights:
 
-- Current version: **v0.5.0**
+- Current version: **v0.5.1**
 - 40 built-in levels across 4 official packs
 - Player profiles with local high score tracking
 - Difficulty modes (Easy/Normal/Hard) with multipliers

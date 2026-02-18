@@ -2,7 +2,7 @@ extends Control
 
 ## Main Menu - Entry point for the game
 ## Allows player to start game, select difficulty, and quit
-const PUBLIC_VERSION: String = "0.5.0"
+const PUBLIC_VERSION: String = "0.5.1"
 
 @onready var current_difficulty_label = $VBoxContainer/CurrentDifficultyLabel
 @onready var easy_button = $VBoxContainer/DifficultyButtons/EasyButton

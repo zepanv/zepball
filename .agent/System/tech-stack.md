@@ -8,7 +8,7 @@
 ## Project Settings (project.godot)
 - **Run main scene**: `res://scenes/ui/main_menu.tscn`.
 - **Gameplay scene**: `res://scenes/main/main.tscn`.
-- **Public version display**: Main menu only (`scripts/ui/main_menu.gd` → `PUBLIC_VERSION`), currently `0.5.0`.
+- **Public version display**: Main menu only (`scripts/ui/main_menu.gd` → `PUBLIC_VERSION`), currently `0.5.1`.
 - **Window size**: 1600x900.
 - **Stretch mode**: `canvas_items`.
 - **2D gravity**: 0 (no gravity).

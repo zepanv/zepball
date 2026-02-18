@@ -12,6 +12,7 @@ These workflows MUST be followed for all development work on this project.
 2. [Asset Documentation Requirements](#asset-documentation-requirements) - CRITICAL
 3. [Commit Message Format](#commit-message-format) - Required
 4. [Release Versioning (SemVer) and Git Tags](#release-versioning-semver-and-git-tags) - Required for releases
+5. [GitHub Release Notes Format](#github-release-notes-format) - Required for release page consistency
 
 ---
 
@@ -283,7 +284,7 @@ Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
 ### Versioning Policy
 
 - Public versioning uses **Semantic Versioning**: `MAJOR.MINOR.PATCH`.
-- Current baseline version is **`0.5.0`**.
+- Current baseline version is **`0.5.1`**.
 - The in-game public version is shown **only** on the main menu (`VersionLabel`).
 - Do **not** auto-increment the version unless the user explicitly requests a bump.
 
@@ -349,6 +350,39 @@ What it does:
   - `dist/releases/SHA256SUMS.txt.minisig` (signature for checksum file)
   - `dist/releases/minisign.pub` (public key for checksum signature verification)
 
+## GitHub Release Notes Format
+
+Use a consistent release page structure. Keep changes summarized in a short list.
+
+Template:
+```text
+## Zep Ball vX.Y.Z
+
+<One short sentence describing this release focus.>
+
+## vX.Y.Z Highlights
+- <Short change 1>
+- <Short change 2>
+- <Short change 3>
+
+## Release Assets
+- `zepball.zip` (Windows x86_64)
+- `zepball.x86_64.zip` (Linux x86_64)
+- `SHA256SUMS.txt`
+- `SHA256SUMS.txt.minisig`
+- `minisign.pub`
+
+## Verify Downloads
+minisign -Vm SHA256SUMS.txt -p minisign.pub
+sha256sum -c SHA256SUMS.txt
+```
+
+Rules:
+- Keep `Highlights` concise (around 3-6 bullets).
+- Place highlights before asset listing.
+- Do not duplicate assets in separate sections (for example avoid a second "Included Files" section).
+- Prefer `scripts/publish_github_release.sh X.Y.Z --notes-file <path>` with a prepared notes file.
+
 ---
 
 ## Quick Pre-Commit Checklist
@@ -390,7 +424,7 @@ Before committing ANY changes:
 
 ---
 
-**Last Updated:** 2026-02-15
+**Last Updated:** 2026-02-18
 
 **See also:**
 - `SOP/godot-workflow.md` - General Godot development workflows

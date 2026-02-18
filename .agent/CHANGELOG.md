@@ -6,7 +6,14 @@ For current game state, see `README.md`. For full system architecture, see `Syst
 
 ---
 
-## 2026-02-15 (Latest) - Bugfixes & Pack Select UI Enhancements
+## 2026-02-18 (Latest) - v0.5.1 Release Prep + Stability Fixes
+- ✅ **Dev Builtin Pack Editing**: Added debug-only `EDIT [DEV]` entry on official packs and save path support for builtin pack edits in debug builds.
+- ✅ **Editor Save Intent Fix**: Preserved builtin-edit intent through test round-trips and corrected save status text to reflect actual save target.
+- ✅ **Shutdown Leak Fix**: Added graceful audio teardown during quit flow, removing persistent ObjectDB/resource leak warnings at exit.
+- ✅ **Public Version Bump**: Updated public version display to `v0.5.1` for release.
+- ✅ **Release Notes Standardized**: Added canonical GitHub release notes format guidance to release SOP for consistent future release pages.
+
+## 2026-02-15 - Bugfixes & Pack Select UI Enhancements
 - ✅ **Set Mode Combo/Streak Fix**: Combo multiplier and no-miss streak now reset at the start of each level in Set Mode (Perfect Set eligibility preserved)
 - ✅ **Paddle X-Lock Fix**: Paddle is now strictly locked to its X-axis position, preventing horizontal displacement from ball collisions
 - ✅ **Pack Select Filters Added**: Filter packs by ALL / OFFICIAL / CUSTOM
@@ -252,4 +259,4 @@ For current game state, see `README.md`. For full system architecture, see `Syst
 
 ---
 
-**Last Updated**: 2026-02-15
+**Last Updated**: 2026-02-18

@@ -459,7 +459,7 @@ Notes:
 
 ### Versioning Note
 Public releases use Semantic Versioning (`MAJOR.MINOR.PATCH`).
-Current baseline is `0.5.0`.
+Current baseline is `0.5.1`.
 Do not auto-increment version unless explicitly requested by the user.
 
 ### Main Menu Version Label
@@ -805,6 +805,6 @@ start_y = round((720 - used_height) / 2) - min_row * (brick_size + spacing)
 
 ---
 
-*Last Updated: 2026-02-12*
+*Last Updated: 2026-02-18*
 *Godot Version: 4.6*
 *See: architecture.md for scene structure details*
