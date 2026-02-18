@@ -39,6 +39,7 @@ var editor_test_level_index: int = 0
 var editor_draft_pack_data: Dictionary = {}
 var editor_draft_level_index: int = 0
 var editor_draft_is_builtin_edit: bool = false
+var _quit_requested: bool = false
 
 # Set mode state
 var current_play_mode: PlayMode = PlayMode.INDIVIDUAL
@@ -70,7 +71,11 @@ signal scene_changed(scene_path: String)
 
 func _ready():
 	"""Initialize MenuController"""
-	pass
+	get_tree().set_auto_accept_quit(false)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		quit_game()
 
 func show_main_menu() -> void:
 	"""Load and show the main menu"""
@@ -629,6 +634,11 @@ func resume_last_level() -> void:
 
 func quit_game() -> void:
 	"""Quit the game application"""
+	if _quit_requested:
+		return
+	_quit_requested = true
+	if AudioManager != null and AudioManager.has_method("prepare_for_quit"):
+		await AudioManager.prepare_for_quit()
 	get_tree().quit()
 
 func get_current_level_id() -> int:

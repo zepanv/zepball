@@ -34,11 +34,19 @@ var music_players: Array = []
 var sfx_players: Array = []
 var sfx_streams: Dictionary = {}
 var toast_ui: Node = null
+var _headless_runtime: bool = false
+var _is_quitting: bool = false
 
 # Signals
 signal music_volume_changed(new_volume_db: float)
 
 func _ready():
+	_headless_runtime = _is_headless_runtime()
+	if _headless_runtime:
+		set_process(false)
+		set_process_unhandled_input(false)
+		return
+
 	randomize()
 	_ensure_audio_buses()
 	_init_toast_ui()
@@ -51,6 +59,18 @@ func _ready():
 	_start_music_if_enabled()
 	_refresh_music_processing_state()
 	set_process_unhandled_input(true)
+
+func _exit_tree() -> void:
+	_release_audio_references()
+
+func prepare_for_quit() -> void:
+	if _is_quitting:
+		return
+	_is_quitting = true
+	_release_audio_references()
+	# Let the audio backend process the stop/null operations before process shutdown.
+	await get_tree().process_frame
+	await get_tree().process_frame
 
 func _process(_delta: float) -> void:
 	if music_paused:
@@ -606,6 +626,9 @@ func _show_toast(text: String) -> void:
 		return
 	toast_ui.call("show_toast", text)
 
+func _is_headless_runtime() -> bool:
+	return DisplayServer.get_name() == "headless" or OS.has_feature("dedicated_server")
+
 func refresh_from_save() -> void:
 	"""Re-apply all audio settings from SaveManager (e.g. after profile switch)"""
 	_apply_saved_volumes()
@@ -622,3 +645,36 @@ func refresh_from_save() -> void:
 		if music_mode == MUSIC_MODE_LOOP_ONE:
 			set_music_track(music_track_id)
 		_refresh_music_processing_state()
+
+func _release_audio_references() -> void:
+	set_process(false)
+	set_process_unhandled_input(false)
+	is_crossfading = false
+	music_paused = false
+	paused_player_index = -1
+	paused_position = 0.0
+
+	for player_variant in music_players:
+		if not (player_variant is AudioStreamPlayer):
+			continue
+		var player: AudioStreamPlayer = player_variant
+		player.stream_paused = false
+		player.stop()
+		player.stream = null
+		player.volume_db = MUSIC_SILENT_DB
+
+	for player_variant in sfx_players:
+		if not (player_variant is AudioStreamPlayer):
+			continue
+		var player: AudioStreamPlayer = player_variant
+		player.stop()
+		player.stream = null
+
+	for track_variant in music_tracks:
+		if not (track_variant is Dictionary):
+			continue
+		var track: Dictionary = track_variant
+		track["stream"] = null
+
+	music_tracks.clear()
+	sfx_streams.clear()
