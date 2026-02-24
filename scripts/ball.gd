@@ -36,8 +36,8 @@ const TOP_BOUNDARY_Y = 0.0
 const BOTTOM_BOUNDARY_Y = 720.0
 const TOP_ESCAPE_ZONE_Y = 40.0
 const BOTTOM_ESCAPE_ZONE_Y = 660.0
-const SPEED_UP_VALUE = 650.0
-const SLOW_DOWN_VALUE = 350.0
+const SPEED_UP_MULTIPLIER = 1.30
+const SLOW_DOWN_MULTIPLIER = 0.70
 const SLOW_SPEED_MULTIPLIER = 0.85
 const AIR_BALL_LANDING_OFFSET = 2.0
 const AIR_BALL_SEARCH_MAX_STEPS = 7
@@ -65,6 +65,8 @@ const TRAIL_COLOR_HIGH_SPIN = Color(1.0, 0.35, 0.9, 0.8)
 # Dynamic speed (can be modified by power-ups)
 var current_speed: float = BASE_SPEED
 var base_speed: float = BASE_SPEED
+var external_speed_multiplier: float = 1.0
+var speed_powerup_multiplier: float = 1.0
 
 # State
 var is_attached_to_paddle = true
@@ -107,8 +109,7 @@ func _ready():
 		PowerUpManager.register_ball(self)
 
 	# Apply difficulty multiplier to base speed
-	base_speed = BASE_SPEED * DifficultyManager.get_speed_multiplier()
-	current_speed = base_speed
+	_recalculate_speed()
 	_cache_main_controller_ref()
 
 	# Find paddle in parent scene
@@ -465,35 +466,36 @@ func reset_ball():
 		force_arrow_audio.stop()
 
 func apply_speed_up_effect():
-	"""Increase ball speed to 650 for 12 seconds"""
-	current_speed = SPEED_UP_VALUE
-	# Update velocity magnitude immediately if ball is moving
-	if not is_attached_to_paddle:
-		velocity = velocity.normalized() * current_speed
-
-	# Change trail color to yellow/orange for fast speed (if trail enabled)
+	"""Increase ball speed by a percentage of base speed."""
+	speed_powerup_multiplier = SPEED_UP_MULTIPLIER
+	_recalculate_speed()
 	_update_trail_appearance()
 
 func apply_slow_down_effect():
-	"""Decrease ball speed to 350 for 12 seconds"""
-	current_speed = SLOW_DOWN_VALUE
-	# Update velocity magnitude immediately if ball is moving
-	if not is_attached_to_paddle:
-		velocity = velocity.normalized() * current_speed
-
-	# Change trail color to blue for slow speed (if trail enabled)
+	"""Decrease ball speed by a percentage of base speed."""
+	speed_powerup_multiplier = SLOW_DOWN_MULTIPLIER
+	_recalculate_speed()
 	_update_trail_appearance()
 
 func reset_ball_speed():
 	"""Reset ball speed to normal (with difficulty multiplier applied)"""
-	base_speed = BASE_SPEED * DifficultyManager.get_speed_multiplier()
-	current_speed = base_speed
-	# Update velocity magnitude immediately if ball is moving
-	if not is_attached_to_paddle:
-		velocity = velocity.normalized() * current_speed
-
-	# Reset trail color to default (if trail enabled)
+	speed_powerup_multiplier = 1.0
+	_recalculate_speed()
 	_update_trail_appearance()
+
+func set_external_speed_multiplier(multiplier: float) -> void:
+	external_speed_multiplier = max(0.1, multiplier)
+	_recalculate_speed()
+	_update_trail_appearance()
+
+func get_external_speed_multiplier() -> float:
+	return external_speed_multiplier
+
+func _recalculate_speed() -> void:
+	base_speed = BASE_SPEED * DifficultyManager.get_speed_multiplier() * external_speed_multiplier
+	current_speed = base_speed * speed_powerup_multiplier
+	if not is_attached_to_paddle and velocity.length_squared() > 0.0001:
+		velocity = velocity.normalized() * current_speed
 
 func _update_trail_appearance() -> void:
 	if not trail_node:

@@ -1,7 +1,7 @@
 # ZepBall - System Architecture
 
 ## Overview
-ZepBall is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 40 built-in levels across 4 official packs, a pack-run mode (legacy UI name: "Set Mode"), challenge variants (Normal / Iron Ball / One Life), difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
+ZepBall is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 40 built-in levels across 4 official packs, a pack-run mode (legacy UI name: "Set Mode"), challenge variants (Normal / Iron Ball / One Life / Time Attack), a standalone Survival mode, difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
 
 ## Project Structure
 ```
@@ -27,6 +27,7 @@ zepball/
 │       └── settings.tscn      # Game settings configuration
 ├── scripts/
 │   ├── main.gd                # Main gameplay controller
+│   ├── survival_generator.gd  # Procedural survival wave generator (utility class)
 │   ├── main_background_manager.gd # Background setup + viewport-fit helper for main scene
 │   ├── main_power_up_handler.gd # Power-up effect dispatch helper for main scene
 │   ├── game_manager.gd        # Game state and scoring (scene node in main.tscn)
@@ -96,7 +97,7 @@ Main (Node2D) [scripts/main.gd]
 │   └── BrickContainer (Node2D) [dynamically populated from pack level data]
 └── UI (CanvasLayer)
     └── HUD (Control) [scripts/hud.gd]
-        ├── TopBar (Score/Logo/Lives labels)
+        ├── TopBar (Score/Logo/Lives with center mode/detail text in Time Attack and Survival)
         ├── PowerUpIndicators (VBoxContainer, top-right)
         ├── MultiplierLabel (Label, top-left) - Shows active score bonuses
         ├── ComboLabel (Label, center) - Shows combo counter
@@ -126,6 +127,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 
 **Responsibilities**:
 - Loads level data from MenuController pack refs and instantiates bricks via PackLoader
+- Loads procedurally generated Survival waves via `survival_generator.gd` when survival mode is active
 - Connects signals between ball, GameManager, HUD, and bricks
 - Tracks `remaining_breakable_bricks` for level completion detection (excludes UNBREAKABLE/FORCE_ARROW/POWERUP_BRICK/block bricks)
 - Maintains cached lists for `get_cached_level_bricks()` and `get_cached_force_arrows()` used by ball runtime
@@ -136,9 +138,13 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Delegates random background selection/CanvasLayer setup to `main_background_manager.gd`
 - Delegates collected power-up effect dispatch to `main_power_up_handler.gd`
 - Triggers camera shake on brick breaks (intensity scales with combo)
+- Handles Survival wave transitions (freeze + countdown + respawn + speed step application)
 
 **Key Methods**:
 - `load_level_ref(pack_id, level_index)` - Loads a pack-native level reference and spawns bricks
+- `_load_survival_wave(wave_number, show_intro)` - Generates/loads one survival wave
+- `_on_survival_wave_complete()` - Runs wave transition countdown and loads next wave
+- `_apply_survival_speed_step()` - Applies wave-based speed scaling to active balls
 - `_on_ball_lost(ball)` - Checks if main ball, handles life loss
 - `_on_brick_broken(score_value, brick_ref)` - Awards points, tracks progress, checks completion using brick type
 - `spawn_additional_balls_with_retry()` - Creates extra balls with retry logic
@@ -162,6 +168,8 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - `is_perfect_clear` - True if no lives lost this level (2x bonus)
 - `had_continue` - Pack-run continue flag; disables perfect-run bonus (legacy label: perfect set)
 - `current_pack_id` / `current_level_index` / `current_level_key` - Pack-native level identity (legacy `current_level` int retained for compatibility)
+- `current_wave` - Current survival wave number
+- `time_attack_elapsed` / `time_attack_running` - Time Attack timer state (seconds + active state)
 
 **Scoring System**:
 ```gdscript
@@ -181,6 +189,8 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - `combo_milestone(combo_value)` - Every 5 hits (5, 10, 15...)
 - `no_miss_streak_changed(hits)` - Updated on every hit
 - `level_complete()` / `game_over()` / `state_changed(new_state)`
+- `time_attack_timer_updated(elapsed_seconds)` - Emitted when displayed Time Attack timer value changes
+- `survival_wave_changed(new_wave)` - Emitted on survival wave transitions
 
 ### 3. Paddle System (`scripts/paddle.gd` + `scenes/gameplay/paddle.tscn`)
 **Purpose**: Player-controlled vertical paddle with power-up effects.
@@ -258,9 +268,9 @@ This convention is now the default for optimization-pass Section 2.4 and should 
   - Now properly collected when ball has brick-through active or penetrating spin
 
 **Power-Up Effects**:
-- `apply_speed_up_effect()` - 500 → 650 speed (12s)
-- `apply_slow_down_effect()` - 500 → 350 speed (12s)
-- `reset_ball_speed()` - Back to base × difficulty
+- `apply_speed_up_effect()` - +30% speed multiplier on current base speed (12s)
+- `apply_slow_down_effect()` - -30% speed multiplier on current base speed (12s)
+- `reset_ball_speed()` - Back to base × difficulty × external multiplier
 - `apply_big_ball_effect()` - 2.0x ball size (12s)
 - `apply_small_ball_effect()` - 0.5x ball size (12s)
 - `reset_ball_size()` - Back to base size
@@ -304,11 +314,11 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 |------|--------|----------|
 | EXPAND | Paddle height 130 → 180 | 15s |
 | CONTRACT | Paddle height 130 → 80 | 10s |
-| SPEED_UP | Ball speed 500 → 650 | 12s |
+| SPEED_UP | Ball speed +30% (multiplicative) | 12s |
 | TRIPLE_BALL | Spawns 2 extra balls | Instant |
 | BIG_BALL | Ball size 2.0x | 12s |
 | SMALL_BALL | Ball size 0.5x | 12s |
-| SLOW_DOWN | Ball speed 500 → 350 | 12s |
+| SLOW_DOWN | Ball speed -30% (multiplicative) | 12s |
 | EXTRA_LIFE | +1 life | Instant |
 | GRAB | Paddle grabs ball on contact | 15s |
 | BRICK_THROUGH | Ball passes through bricks | 12s |
@@ -350,12 +360,15 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 
 **Runtime Behavior**:
 - Main Menu → Pack Select (`set_select.tscn`) → Play Pack or View Levels
-- Pack Select includes a Challenge Mode panel (`Normal`, `Iron Ball`, `One Life`) and disables `LEVELS` when challenge mode is non-Normal (pack-run only)
+- Pack Select includes a Challenge Mode panel (`Normal`, `Iron Ball`, `One Life`, `Time Attack`) and disables `LEVELS` when challenge mode is non-Normal (pack-run only)
 - Pack play carries score/lives/combo/streak across levels
 - Level completion saves interim state in MenuController and restores in `main.gd`
 - Pack completion applies **Perfect Set** bonus (3x) if all lives intact and no continues (One Life uses 1-life perfect condition)
 - Game Over in pack mode allows **Continue Set** (legacy UI label; marks `had_continue`) except in One Life mode
-- Challenge runs also write challenge-specific pack leaderboards (`iron_ball_set_high_scores`, `one_life_set_high_scores`) while still updating the normal pack leaderboard
+- Challenge runs also write challenge-specific pack leaderboards (`iron_ball_set_high_scores`, `one_life_set_high_scores`, `time_attack_set_high_scores`) while still updating the normal pack leaderboard
+- Set completion status flags (`was_new_personal_best`, `was_new_machine_best`) are calculated per active mode metric:
+  - Normal / Iron Ball / One Life: higher score is better
+  - Time Attack: lower completion time is better
 
 ### 8. Menu System (`scripts/ui/menu_controller.gd` + menu scenes)
 **Purpose**: Scene transitions and game flow orchestration.
@@ -363,6 +376,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 **Menu Screens**:
 1. **Main Menu** (`scenes/ui/main_menu.tscn`)
    - Play button → Set Select
+   - Survival button → Starts standalone survival run
    - Difficulty selector (Easy/Normal/Hard)
    - Stats button → Statistics screen
    - High Scores button → High Scores screen
@@ -373,7 +387,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - Cards for built-in and user packs (source badge + author + progress + stars + best score), shown in a left content pane
    - Filter: ALL / OFFICIAL / CUSTOM
    - Sort: BY ORDER (custom A-Z, official legacy order) / BY PROGRESSION (completion %)
-   - Right challenge panel with dropdown + mode description (`Normal`, `Iron Ball`, `One Life`)
+   - Right challenge panel with dropdown + mode description (`Normal`, `Iron Ball`, `One Life`, `Time Attack`)
    - `LEVELS` buttons disabled in non-Normal challenge modes (challenge modes are pack-run only)
    - Play Pack → starts pack-run mode
    - View Levels → opens Level Select scoped to selected pack
@@ -397,30 +411,34 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 5. **Game Over** (`scenes/ui/game_over.tscn`)
    - Final score display
    - High score comparison
-   - Retry level button
+   - Retry level button (`PLAY AGAIN` in Survival)
+   - Survival context displays wave reached + personal/machine best run comparison
    - Continue Set button (only in pack mode; hidden in One Life challenge mode)
    - Back to Main Menu button
 
 6. **Level Complete** (`scenes/ui/level_complete.tscn`)
    - Final score display
-   - Score breakdown (base + bonuses + time)
+   - Score breakdown (base + bonuses + time), with challenge-mode heading in pack challenge runs
+   - Time Attack level completion shows cumulative run time (not only per-level split)
    - High score notification if beaten
    - “Perfect Clear” bonus message (2x)
    - Continue Set (pack mode; legacy label retained) or Next Level (individual mode)
 
 7. **Set Complete** (`scenes/ui/set_complete.tscn`)
    - Cumulative score
-   - Score breakdown (base + bonuses + pack time)
+   - Score breakdown (base + bonuses + pack time) with challenge-mode heading in challenge runs
+   - Time Attack set completion shows final run time (`MM:SS`)
    - Perfect set bonus message (3x)
-   - Set high score display
+   - Set high score display uses active mode leaderboard (normal/challenge/time-attack)
 
 8. **Statistics** (`scenes/ui/stats.tscn`)
    - Global statistics display
    - Achievement list with progress bars
 
 9. **High Scores** (`scenes/ui/high_scores.tscn`)
-   - Cross-profile leaderboard tabs: Overall / Sets / Levels
-   - Set challenge tabs: Normal / Iron Ball / One Life
+   - Cross-profile leaderboard tabs: Overall / Sets / Levels / Survival
+   - Set challenge tabs: Normal / Iron Ball / One Life / Time Attack
+   - Survival tab: top 10 runs (`Wave`, `Score`, `Date`)
 
 10. **Settings** (`scenes/ui/settings.tscn`)
    - Screen shake intensity (Off/Low/Medium/High)
@@ -442,13 +460,14 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - `show_main_menu()` / `show_set_select()` / `show_level_select()` / `show_stats()` / `show_high_scores()` / `show_settings()` / `resume_last_level()`
 - `show_editor()` / `show_editor_for_pack(pack_id)` for editor entry flow
 - `start_editor_test(pack_data, level_index)` / `return_to_editor_from_test()` for editor gameplay test loop
+- `start_survival()` / `show_survival_over(final_score, wave)` for standalone survival flow
 - `start_level(level_id)` - Loads gameplay scene with specified level
 - `start_set(set_id)` - Starts pack-run mode and first level (legacy API name retained)
 - `show_game_over(final_score)` - Shows game over screen, saves high score
 - `show_level_complete(final_score)` - Shows level complete, unlocks next level, checks perfect clear
 - `show_set_complete(final_score)` - Shows pack summary and pack high score (legacy API name retained)
 - `restart_current_level()` - Reloads current level
-- `set_challenge_mode(mode)` / `get_challenge_mode()` - Challenge mode persistence and runtime access
+- `set_challenge_mode(mode)` / `get_challenge_mode()` - Challenge mode persistence and runtime access (`normal`, `iron_ball`, `one_life`, `time_attack`)
 - Difficulty locking: Unlocked in menus, locked during gameplay
 
 ### 9. Save System (`scripts/save_manager.gd`)
@@ -458,7 +477,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 Note: some keys retain legacy "set" names for backward compatibility.
 ```json
 {
-  "version": 3,
+  "version": 4,
   "profile": {
     "player_name": "Player",
     "total_score": 0
@@ -482,10 +501,16 @@ Note: some keys retain legacy "set" names for backward compatibility.
     "classic-challenge": 10250
   },
   "one_life_set_high_scores": {},
+  "time_attack_set_high_scores": {
+    "classic-challenge": 412
+  },
+  "survival_top_runs": [
+    { "score": 32400, "wave": 15, "date": "2026-02-24T13:42:10" }
+  ],
   "last_played": {
     "level_id": 6,
     "set_id": -1,
-    "mode": "individual",
+    "mode": "survival",
     "challenge_mode": "normal",
     "in_progress": false
   },
@@ -578,13 +603,13 @@ Note: some keys retain legacy "set" names for backward compatibility.
 **Purpose**: In-game UI overlay with dynamic elements.
 
 **HUD Elements**:
-- **TopBar**: Score, Logo, Lives (always visible)
+- **TopBar**: Score, Logo, Lives (always visible), with center mode/detail text in Time Attack (`TIME ATTACK` + timer) and Survival (`SURVIVAL` + `WAVE N`)
 - **Difficulty Label**: "DIFFICULTY: NORMAL" (top-left, below score)
 - **Multiplier Display**: Shows active score bonuses (top-left, below difficulty)
 - **Combo Counter**: "COMBO x12!" (center, visible when combo >= 3)
 - **Power-Up Timers**: Active effects with countdown (top-right)
 - **Launch Aim Indicator**: Right-mouse hold locks paddle and shows a launch arrow for the main ball's first shot per life
-- **Pause Menu**: Enhanced pause screen with level info, resume, restart, settings, level select, main menu
+- **Pause Menu**: Enhanced pause screen with run info, resume, restart, settings, level select, main menu (shows `SURVIVAL: WAVE N` in survival mode)
 - **Level Intro**: Fade in/out display of level name and description (2.0s total: 0.5s fade in + 1.0s hold + 0.5s fade out)
   - Space/Click during intro skips it immediately
 - **Debug Overlay**: FPS, ball count, velocity, speed, combo (backtick ` key)

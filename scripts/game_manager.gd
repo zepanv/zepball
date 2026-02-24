@@ -24,10 +24,15 @@ var current_level: int = 1
 var current_pack_id: String = "classic-challenge"
 var current_level_index: int = 0
 var current_level_key: String = "classic-challenge:0"
+var current_wave: int = 1
 var combo: int = 0  # Consecutive brick hits
 var no_miss_hits: int = 0  # Consecutive hits without losing ball
 var is_perfect_clear: bool = true  # True if no lives lost this level
 var had_continue: bool = false  # True if player used continue in set mode
+var time_attack_elapsed: float = 0.0
+var time_attack_running: bool = false
+var time_attack_started: bool = false
+var _time_attack_last_display_seconds: int = -1
 
 # Playtime tracking
 const PLAYTIME_FLUSH_INTERVAL = 5.0  # seconds
@@ -66,11 +71,28 @@ signal no_miss_streak_changed(hits: int)  # Emitted when no-miss streak changes
 signal level_complete()
 signal game_over()
 signal state_changed(new_state: GameState)
+signal time_attack_timer_updated(elapsed_seconds: int)
+signal survival_wave_changed(new_wave: int)
 
 func _ready():
 	# Set this node to always process, even when paused (so pause toggle works)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_apply_challenge_mode_defaults()
+	if MenuController and MenuController.is_survival_mode:
+		current_wave = max(1, int(MenuController.get_survival_wave_reached()))
+	else:
+		current_wave = 1
+	survival_wave_changed.emit(current_wave)
+	if _is_time_attack_mode():
+		time_attack_elapsed = max(0.0, float(MenuController.get_time_attack_elapsed_base_seconds()))
+		time_attack_started = time_attack_elapsed > 0.0
+		time_attack_running = false
+		_emit_time_attack_timer_if_changed(true)
+	else:
+		time_attack_elapsed = 0.0
+		time_attack_started = false
+		time_attack_running = false
+		_time_attack_last_display_seconds = -1
 	_reset_level_breakdown()
 	_apply_mouse_mode_for_state(game_state)
 
@@ -97,12 +119,21 @@ func _process(_delta):
 		if playtime_since_flush >= PLAYTIME_FLUSH_INTERVAL:
 			_flush_playtime()
 
+	if time_attack_running:
+		time_attack_elapsed += _delta
+		_emit_time_attack_timer_if_changed()
+
 ## Set game state and emit signal
 func set_state(new_state: GameState):
 	if game_state != new_state:
 		if new_state == GameState.PAUSED:
 			last_state_before_pause = game_state
 		game_state = new_state
+		if _is_time_attack_mode():
+			if new_state == GameState.PLAYING and time_attack_started:
+				time_attack_running = true
+			elif new_state == GameState.READY or new_state == GameState.PAUSED or new_state == GameState.LEVEL_COMPLETE or new_state == GameState.GAME_OVER:
+				time_attack_running = false
 		state_changed.emit(new_state)
 
 		# Use Godot's built-in pause system
@@ -230,6 +261,8 @@ func complete_level():
 ## Start playing (ball launched)
 func start_playing():
 	set_state(GameState.PLAYING)
+	if _is_time_attack_mode():
+		start_time_attack_timer()
 
 func check_perfect_clear() -> bool:
 	"""Check if player achieved a perfect clear (all lives intact)"""
@@ -258,6 +291,36 @@ func _flush_playtime():
 	SaveManager.increment_stat("total_playtime", playtime_accumulator)
 	playtime_accumulator = 0.0
 	playtime_since_flush = 0.0
+
+func start_time_attack_timer() -> void:
+	if not _is_time_attack_mode():
+		return
+	time_attack_started = true
+	time_attack_running = true
+	_emit_time_attack_timer_if_changed(true)
+
+func pause_time_attack_timer() -> void:
+	time_attack_running = false
+
+func stop_time_attack_timer() -> int:
+	time_attack_running = false
+	return get_time_attack_elapsed_seconds()
+
+func get_time_attack_elapsed_seconds() -> int:
+	return int(floor(max(time_attack_elapsed, 0.0)))
+
+func set_survival_wave(new_wave: int) -> void:
+	current_wave = max(1, new_wave)
+	survival_wave_changed.emit(current_wave)
+
+func _is_time_attack_mode() -> bool:
+	return MenuController and MenuController.has_method("get_challenge_mode") and str(MenuController.get_challenge_mode()) == "time_attack"
+
+func _emit_time_attack_timer_if_changed(force: bool = false) -> void:
+	var elapsed_seconds := get_time_attack_elapsed_seconds()
+	if force or elapsed_seconds != _time_attack_last_display_seconds:
+		_time_attack_last_display_seconds = elapsed_seconds
+		time_attack_timer_updated.emit(elapsed_seconds)
 
 func _exit_tree():
 	"""Flush any remaining playtime on scene exit"""

@@ -24,6 +24,7 @@ const BRICK_SCENE = preload("res://scenes/gameplay/brick.tscn")
 const BALL_SCENE = preload("res://scenes/gameplay/ball.tscn")
 const BACKGROUND_MANAGER_SCRIPT: GDScript = preload("res://scripts/main_background_manager.gd")
 const POWER_UP_HANDLER_SCRIPT: GDScript = preload("res://scripts/main_power_up_handler.gd")
+const SURVIVAL_GENERATOR_SCRIPT: GDScript = preload("res://scripts/survival_generator.gd")
 const BASE_RESOLUTION = Vector2i(1280, 720)
 
 # Level layout constants
@@ -77,6 +78,8 @@ const BRICK_TYPE_POWERUP_BRICK = 15
 # Boundary constants
 const RIGHT_BOUNDARY = 1300   # Past paddle (ball lost)
 const POWER_UP_MISS_X = 1300  # X position where power-ups despawn
+const SURVIVAL_PACK_ID = "__survival__"
+const SURVIVAL_BASE_BALL_SPEED = 500.0
 
 # Track only breakable bricks so level completion is deterministic
 var remaining_breakable_bricks: int = 0
@@ -84,6 +87,10 @@ var cached_level_bricks: Array[Node] = []
 var cached_force_arrows: Array[Node] = []
 var background_manager: RefCounted = null
 var power_up_handler: RefCounted = null
+var is_survival_mode: bool = false
+var current_wave: int = 1
+var survival_speed_multiplier: float = 1.0
+var survival_transition_in_progress: bool = false
 
 func _enter_tree() -> void:
 	add_to_group("main_controller")
@@ -111,20 +118,24 @@ func _ready() -> void:
 		game_manager.score_changed.emit(game_manager.score)
 		game_manager.lives_changed.emit(game_manager.lives)
 
-	# Load level from MenuController using pack-native addressing.
-	var level_ref := MenuController.get_current_level_ref()
-	load_level_ref(str(level_ref.get("pack_id", "classic-challenge")), int(level_ref.get("level_index", 0)))
+	is_survival_mode = MenuController.is_survival_mode
+	if is_survival_mode:
+		_start_survival_run()
+	else:
+		# Load level from MenuController using pack-native addressing.
+		var level_ref := MenuController.get_current_level_ref()
+		load_level_ref(str(level_ref.get("pack_id", "classic-challenge")), int(level_ref.get("level_index", 0)))
 
-	# Restore state if in set mode (deferred to ensure HUD is ready)
-	if MenuController.current_play_mode == MenuController.PlayMode.SET and MenuController.set_current_index > 0:
-		# Not the first level in the set - restore saved state from MenuController
-		call_deferred("_restore_set_state",
-			MenuController.set_saved_score,
-			MenuController.set_saved_lives,
-			MenuController.set_saved_perfect)
+		# Restore state if in set mode (deferred to ensure HUD is ready)
+		if MenuController.current_play_mode == MenuController.PlayMode.SET and MenuController.set_current_index > 0:
+			# Not the first level in the set - restore saved state from MenuController
+			call_deferred("_restore_set_state",
+				MenuController.set_saved_score,
+				MenuController.set_saved_lives,
+				MenuController.set_saved_perfect)
 
-	# Connect existing bricks
-	connect_brick_signals()
+		# Connect existing bricks
+		connect_brick_signals()
 
 func _restore_set_state(saved_score: int, saved_lives: int, saved_perfect: bool) -> void:
 	"""Restore game state when continuing a set (called deferred to ensure HUD is ready)"""
@@ -192,12 +203,104 @@ func load_level_ref(pack_id: String, level_index: int):
 		push_error("Failed to load level %s:%d - falling back to test level" % [pack_id, level_index])
 		create_test_level()
 
+func _start_survival_run() -> void:
+	current_wave = max(1, int(MenuController.get_survival_wave_reached()))
+	survival_transition_in_progress = false
+	_load_survival_wave(current_wave, true)
+
+func _load_survival_wave(wave_number: int, show_intro: bool) -> void:
+	var wave: int = wave_number if wave_number > 1 else 1
+	var level_data: Dictionary = SURVIVAL_GENERATOR_SCRIPT.generate_wave(wave)
+	var level_result := _instantiate_level_from_data(level_data, SURVIVAL_PACK_ID, wave - 1)
+	if not level_result.get("success", false):
+		push_error("Failed to load survival wave %d" % wave)
+		return
+
+	current_wave = wave
+	MenuController.survival_wave_reached = current_wave
+	if game_manager:
+		game_manager.current_level = current_wave
+		game_manager.current_pack_id = SURVIVAL_PACK_ID
+		game_manager.current_level_index = current_wave - 1
+		game_manager.current_level_key = "%s:%d" % [SURVIVAL_PACK_ID, current_wave]
+		if game_manager.has_method("set_survival_wave"):
+			game_manager.set_survival_wave(current_wave)
+		game_manager.set_state(game_manager.GameState.READY)
+
+	connect_brick_signals()
+
+	if ball and is_instance_valid(ball) and ball.has_method("reset_ball"):
+		ball.reset_ball()
+	_apply_survival_speed_step()
+
+	if show_intro and hud and hud.has_method("show_survival_wave_intro"):
+		hud.show_survival_wave_intro(current_wave)
+
+func _on_survival_wave_complete() -> void:
+	if not is_survival_mode or survival_transition_in_progress:
+		return
+	survival_transition_in_progress = true
+	current_wave += 1
+
+	_clear_non_main_balls()
+	_clear_active_powerups()
+	if ball and is_instance_valid(ball) and ball.has_method("reset_ball"):
+		ball.reset_ball()
+	if game_manager:
+		game_manager.set_state(game_manager.GameState.READY)
+
+	if hud and hud.has_method("show_survival_wave_countdown"):
+		await hud.show_survival_wave_countdown(current_wave)
+	_load_survival_wave(current_wave, false)
+	survival_transition_in_progress = false
+
+func _clear_non_main_balls() -> void:
+	var active_balls := _get_active_balls()
+	for existing_ball in active_balls:
+		if not is_instance_valid(existing_ball):
+			continue
+		if existing_ball == ball:
+			continue
+		existing_ball.queue_free()
+
+func _clear_active_powerups() -> void:
+	if not play_area:
+		return
+	for child in play_area.get_children():
+		if not is_instance_valid(child):
+			continue
+		var child_script: Variant = child.get_script()
+		if child_script and child_script.resource_path == "res://scripts/power_up.gd":
+			child.queue_free()
+
+func _apply_survival_speed_step() -> void:
+	if not is_survival_mode:
+		return
+	var wave_one_speed := SURVIVAL_BASE_BALL_SPEED * DifficultyManager.get_speed_multiplier()
+	var target_speed: float = float(SURVIVAL_GENERATOR_SCRIPT.get_speed_for_wave(current_wave, wave_one_speed))
+	survival_speed_multiplier = target_speed / wave_one_speed if wave_one_speed > 0.0 else 1.0
+
+	for active_ball in _get_active_balls():
+		if not is_instance_valid(active_ball):
+			continue
+		if active_ball.has_method("set_external_speed_multiplier"):
+			active_ball.set_external_speed_multiplier(survival_speed_multiplier)
+		else:
+			var base_speed_value: Variant = active_ball.get("base_speed")
+			if base_speed_value == null:
+				continue
+			active_ball.base_speed = target_speed
+			active_ball.current_speed = target_speed
+
 func _instantiate_level_from_data(level_data: Dictionary, pack_id: String, level_index: int) -> Dictionary:
 	"""Instantiate a level directly from provided data (used for editor test mode)."""
 	if level_data.is_empty():
 		return {"success": false, "breakable_count": 0}
 
 	for child in brick_container.get_children():
+		if not is_instance_valid(child):
+			continue
+		brick_container.remove_child(child)
 		child.queue_free()
 
 	var grid: Dictionary = level_data.get("grid", {})
@@ -269,12 +372,20 @@ func connect_brick_signals():
 	cached_level_bricks.clear()
 	cached_force_arrows.clear()
 	for brick in brick_container.get_children():
+		if not is_instance_valid(brick) or brick.is_queued_for_deletion():
+			continue
 		if brick.has_signal("brick_broken"):
-			brick.brick_broken.connect(_on_brick_broken.bind(brick))
+			var brick_broken_callable: Callable = _on_brick_broken.bind(brick)
+			if not brick.brick_broken.is_connected(brick_broken_callable):
+				brick.brick_broken.connect(brick_broken_callable)
 		if brick.has_signal("power_up_spawned"):
-			brick.power_up_spawned.connect(_on_power_up_spawned)
+			var power_up_spawned_callable: Callable = _on_power_up_spawned
+			if not brick.power_up_spawned.is_connected(power_up_spawned_callable):
+				brick.power_up_spawned.connect(power_up_spawned_callable)
 		if brick.has_signal("powerup_collected"):
-			brick.powerup_collected.connect(_on_power_up_collected)
+			var powerup_collected_callable: Callable = _on_power_up_collected
+			if not brick.powerup_collected.is_connected(powerup_collected_callable):
+				brick.powerup_collected.connect(powerup_collected_callable)
 		cached_level_bricks.append(brick)
 		if int(brick.brick_type) == BRICK_TYPE_FORCE_ARROW:
 			cached_force_arrows.append(brick)
@@ -323,7 +434,10 @@ func _is_completion_brick(brick_type_int: int) -> bool:
 func check_level_complete():
 	"""Check if all bricks have been destroyed"""
 	if remaining_breakable_bricks == 0:
-		game_manager.complete_level()
+		if is_survival_mode:
+			call_deferred("_on_survival_wave_complete")
+		else:
+			game_manager.complete_level()
 
 func _on_ball_lost(lost_ball):
 	"""Handle ball loss - only lose life if this is the last ball in play"""
@@ -383,6 +497,9 @@ func _on_level_complete():
 
 func _on_game_over():
 	"""Handle game over - transition to game over screen"""
+	if is_survival_mode:
+		MenuController.show_survival_over(game_manager.score, current_wave)
+		return
 	# Show game over screen with final score
 	MenuController.show_game_over(game_manager.score)
 
@@ -635,6 +752,8 @@ func spawn_additional_balls(source_ball):
 	# Spawn 2 additional balls
 	for i in range(TRIPLE_BALL_ADDITIONAL_COUNT):
 		var new_ball = BALL_SCENE.instantiate()
+		if is_survival_mode and new_ball.has_method("set_external_speed_multiplier"):
+			new_ball.set_external_speed_multiplier(survival_speed_multiplier)
 
 		# Mark as extra ball (won't count as life loss)
 		if new_ball.has_method("set_is_main_ball"):

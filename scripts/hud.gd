@@ -10,6 +10,8 @@ const POWERUP_HELPER_SCRIPT = preload("res://scripts/hud_power_up_timers_helper.
 
 @onready var score_label: Label = $TopBar/ScoreLabel
 @onready var lives_label: Label = $TopBar/LivesLabel
+@onready var topbar_left_label: Label = $TopBar/TopBarLeft
+@onready var topbar_right_label: Label = $TopBar/TopBarRight
 @onready var logo_label: Label = $TopBar/LogoVBox/LogoLabel
 @onready var player_name_label: Label = $TopBar/LogoVBox/PlayerNameLabel
 @onready var powerup_container: VBoxContainer = $PowerUpIndicators
@@ -31,6 +33,7 @@ var pause_helper: RefCounted = null
 var debug_helper: RefCounted = null
 var intro_helper: RefCounted = null
 var powerup_helper: RefCounted = null
+var default_player_name_text: String = "CURRENT PLAYER"
 
 func _ready() -> void:
 	# Allow UI to process even when game is paused
@@ -80,8 +83,9 @@ func _ready() -> void:
 		debug_helper.debug_overlay.visible = debug_visible
 	
 	if player_name_label:
-		player_name_label.text = "CURRENT PLAYER: " + SaveManager.get_current_profile_name().to_upper()
-	_update_logo_for_challenge_mode()
+		default_player_name_text = "CURRENT PLAYER: " + SaveManager.get_current_profile_name().to_upper()
+		player_name_label.text = default_player_name_text
+	_configure_topbar_mode()
 
 	_init_dynamic_elements()
 	_refresh_processing_state()
@@ -95,6 +99,7 @@ func apply_settings_from_save() -> void:
 	if debug_helper and debug_helper.debug_overlay:
 		debug_helper.debug_overlay.visible = debug_visible
 	_init_dynamic_elements()
+	_configure_topbar_mode()
 	_refresh_processing_state()
 
 func _init_dynamic_elements() -> void:
@@ -175,6 +180,15 @@ func _init_dynamic_elements() -> void:
 			game_manager.combo_milestone.connect(_on_combo_milestone)
 		if not game_manager.no_miss_streak_changed.is_connected(_on_streak_changed):
 			game_manager.no_miss_streak_changed.connect(_on_streak_changed)
+		if game_manager.has_signal("time_attack_timer_updated") and not game_manager.time_attack_timer_updated.is_connected(_on_time_attack_timer_updated):
+			game_manager.time_attack_timer_updated.connect(_on_time_attack_timer_updated)
+		if game_manager.has_signal("survival_wave_changed") and not game_manager.survival_wave_changed.is_connected(_on_survival_wave_changed):
+			game_manager.survival_wave_changed.connect(_on_survival_wave_changed)
+		if game_manager.has_method("get_time_attack_elapsed_seconds"):
+			_on_time_attack_timer_updated(game_manager.get_time_attack_elapsed_seconds())
+		var wave_value: Variant = game_manager.get("current_wave")
+		if wave_value != null:
+			_on_survival_wave_changed(int(wave_value))
 
 func _on_game_state_changed(new_state: int) -> void:
 	"""Show/hide overlays based on game state"""
@@ -245,7 +259,35 @@ func _on_effect_expired(type: int) -> void:
 
 func show_level_intro(level_id: int, level_name: String, level_description: String):
 	"""Show level intro with fade in/out animation"""
+	if MenuController and MenuController.is_survival_mode:
+		return
 	intro_helper.show(self, level_id, level_name, level_description, skip_level_intro)
+
+func show_survival_wave_intro(wave_number: int) -> void:
+	if not intro_helper or not intro_helper.level_intro:
+		return
+	_configure_topbar_mode()
+	intro_helper.show(self, wave_number, "WAVE %d" % wave_number, "Survive as long as possible.", false)
+
+func show_survival_wave_countdown(next_wave_number: int) -> void:
+	if not intro_helper or not intro_helper.level_intro:
+		await get_tree().create_timer(3.0).timeout
+		return
+
+	intro_helper.skip_intro()
+	intro_helper.level_intro.visible = true
+	intro_helper.level_intro.modulate.a = 1.0
+	if intro_helper.level_intro_num_label:
+		intro_helper.level_intro_num_label.text = "WAVE %d INCOMING" % next_wave_number
+	if intro_helper.level_intro_desc_label:
+		intro_helper.level_intro_desc_label.text = ""
+
+	for count in [3, 2, 1]:
+		if intro_helper.level_intro_name_label:
+			intro_helper.level_intro_name_label.text = "%d..." % count
+		await get_tree().create_timer(1.0).timeout
+
+	intro_helper.level_intro.visible = false
 
 func _unhandled_input(event: InputEvent) -> void:
 	if intro_helper and intro_helper.is_showing() and event.is_action_pressed("launch_ball"):
@@ -301,21 +343,91 @@ func _on_streak_changed(_new_streak: int) -> void:
 	"""Update multiplier display when streak changes"""
 	_update_multiplier_display()
 
-func _update_logo_for_challenge_mode() -> void:
+func _configure_topbar_mode() -> void:
 	if not logo_label:
+		return
+
+	if MenuController and MenuController.is_survival_mode:
+		_show_center_mode_with_detail("SURVIVAL", "WAVE %d" % max(1, int(MenuController.get_survival_wave_reached())))
 		return
 
 	var challenge_mode := "normal"
 	if MenuController and MenuController.has_method("get_challenge_mode"):
 		challenge_mode = str(MenuController.get_challenge_mode())
 
+	if challenge_mode == "time_attack":
+		_show_center_mode_with_detail("TIME ATTACK", _format_time_mm_ss(0))
+		return
+
+	if score_label:
+		score_label.visible = true
+	if lives_label:
+		lives_label.visible = true
+	if topbar_left_label:
+		topbar_left_label.visible = false
+	if topbar_right_label:
+		topbar_right_label.visible = false
+
 	match challenge_mode:
 		"iron_ball":
 			logo_label.text = "IRON BALL"
+			if player_name_label:
+				player_name_label.text = default_player_name_text
 		"one_life":
 			logo_label.text = "ONE LIFE"
+			if player_name_label:
+				player_name_label.text = default_player_name_text
 		_:
 			logo_label.text = "ZepBall"
+			if player_name_label:
+				player_name_label.text = default_player_name_text
+
+func _show_center_mode_with_detail(mode_text: String, detail_text: String) -> void:
+	if score_label:
+		score_label.visible = true
+	if lives_label:
+		lives_label.visible = true
+	if topbar_left_label:
+		topbar_left_label.visible = false
+	if topbar_right_label:
+		topbar_right_label.visible = false
+	if logo_label:
+		logo_label.text = mode_text
+	if player_name_label:
+		player_name_label.text = detail_text
+
+func _show_special_topbar(left_text: String, right_text: String) -> void:
+	logo_label.text = "ZepBall"
+	if score_label:
+		score_label.visible = false
+	if lives_label:
+		lives_label.visible = false
+	if topbar_left_label:
+		topbar_left_label.visible = true
+		topbar_left_label.text = left_text
+	if topbar_right_label:
+		topbar_right_label.visible = true
+		topbar_right_label.text = right_text
+
+func _on_time_attack_timer_updated(elapsed_seconds: int) -> void:
+	if not player_name_label:
+		return
+	var challenge_mode := "normal"
+	if MenuController and MenuController.has_method("get_challenge_mode"):
+		challenge_mode = str(MenuController.get_challenge_mode())
+	if challenge_mode != "time_attack":
+		return
+	_show_center_mode_with_detail("TIME ATTACK", _format_time_mm_ss(max(0, elapsed_seconds)))
+
+func _on_survival_wave_changed(new_wave: int) -> void:
+	if not MenuController or not MenuController.is_survival_mode:
+		return
+	_show_center_mode_with_detail("SURVIVAL", "WAVE %d" % max(1, new_wave))
+
+func _format_time_mm_ss(total_seconds: int) -> String:
+	var minutes: int = int(floor(float(total_seconds) / 60.0))
+	var seconds := int(total_seconds % 60)
+	return "%02d:%02d" % [minutes, seconds]
 
 func _update_multiplier_display() -> void:
 	"""Update the multiplier display with all active bonuses"""

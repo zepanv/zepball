@@ -9,11 +9,13 @@ enum SortMode { BY_ORDER, BY_PROGRESSION }
 const CHALLENGE_MODE_NORMAL = "normal"
 const CHALLENGE_MODE_IRON_BALL = "iron_ball"
 const CHALLENGE_MODE_ONE_LIFE = "one_life"
+const CHALLENGE_MODE_TIME_ATTACK = "time_attack"
 
 const CHALLENGE_MODE_DESCRIPTIONS: Dictionary = {
 	CHALLENGE_MODE_NORMAL: "Standard gameplay with all power-ups active.",
 	CHALLENGE_MODE_IRON_BALL: "No power-ups spawn. Pure skill and precision only.",
-	CHALLENGE_MODE_ONE_LIFE: "One life. No continues. Complete the pack or start over."
+	CHALLENGE_MODE_ONE_LIFE: "One life. No continues. Complete the pack or start over.",
+	CHALLENGE_MODE_TIME_ATTACK: "Complete the pack as fast as possible. Time is the only ranked metric."
 }
 
 var current_filter_mode: FilterMode = FilterMode.ALL
@@ -288,6 +290,8 @@ func _challenge_mode_from_index(index: int) -> String:
 			return CHALLENGE_MODE_IRON_BALL
 		2:
 			return CHALLENGE_MODE_ONE_LIFE
+		3:
+			return CHALLENGE_MODE_TIME_ATTACK
 		_:
 			return CHALLENGE_MODE_NORMAL
 
@@ -297,6 +301,8 @@ func _challenge_mode_to_index(mode: String) -> int:
 			return 1
 		CHALLENGE_MODE_ONE_LIFE:
 			return 2
+		CHALLENGE_MODE_TIME_ATTACK:
+			return 3
 		_:
 			return 0
 
@@ -306,6 +312,8 @@ func _normalize_challenge_mode(mode: String) -> String:
 		return CHALLENGE_MODE_IRON_BALL
 	if normalized == CHALLENGE_MODE_ONE_LIFE:
 		return CHALLENGE_MODE_ONE_LIFE
+	if normalized == CHALLENGE_MODE_TIME_ATTACK:
+		return CHALLENGE_MODE_TIME_ATTACK
 	return CHALLENGE_MODE_NORMAL
 
 func _is_challenge_mode_active() -> bool:

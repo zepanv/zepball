@@ -36,9 +36,21 @@ func _ready():
 	var breakdown = MenuController.get_set_breakdown()
 	var set_time = MenuController.get_set_total_time_seconds()
 	var set_bonus = MenuController.get_set_perfect_bonus()
+	var challenge_mode := _get_active_challenge_mode()
+	var challenge_mode_label := _get_challenge_mode_label(challenge_mode)
+	var is_challenge_set_run := _is_challenge_set_run(challenge_mode)
+	var displayed_time_seconds := int(floor(max(set_time, 0.0)))
+	if challenge_mode == "time_attack":
+		displayed_time_seconds = int(MenuController.get_time_attack_elapsed_base_seconds())
+		if displayed_time_seconds < 0:
+			displayed_time_seconds = 0
+		if displayed_time_seconds <= 0:
+			displayed_time_seconds = int(floor(max(set_time, 0.0)))
 
 	# Display set name
 	set_name_label.text = set_display_name.to_upper()
+	if is_challenge_set_run:
+		set_name_label.text += " - " + challenge_mode_label
 
 	# Display final score
 	score_label.text = "Final Score: " + str(final_score)
@@ -59,6 +71,8 @@ func _ready():
 	var perfect_clear_bonus = int(breakdown.get("perfect_clear_bonus", 0))
 
 	breakdown_title_label.text = "SET SCORE BREAKDOWN"
+	if is_challenge_set_run:
+		breakdown_title_label.text = challenge_mode_label + " SET BREAKDOWN"
 	base_score_label.text = "Base Score: " + str(base_points)
 	difficulty_bonus_label.text = "Difficulty Bonus: " + _format_bonus(difficulty_bonus)
 	combo_bonus_label.text = "Combo Bonus: " + _format_bonus(combo_bonus)
@@ -67,15 +81,40 @@ func _ready():
 	perfect_clear_bonus_label.text = "Perfect Clear Bonus: " + _format_bonus(perfect_clear_bonus)
 	perfect_set_bonus_label.text = "Perfect Set Bonus: " + _format_bonus(set_bonus)
 	total_score_label.text = "Total: " + str(final_score)
-	time_label.text = "Set Time: " + _format_time(set_time)
+	if challenge_mode == "time_attack":
+		time_label.text = "Time Attack Time: " + _format_time(float(displayed_time_seconds))
+	else:
+		time_label.text = "Set Time: " + _format_time(set_time)
 
 	# Check if this was a set high score
-	if MenuController.was_new_machine_best:
-		set_high_score_label.text = "NEW MACHINE SET RECORD!"
-		set_high_score_label.set("theme_override_colors/font_color", Color(0, 1, 1, 1)) # Cyan
-	elif MenuController.was_new_personal_best:
-		set_high_score_label.text = "NEW PERSONAL SET BEST!"
-		set_high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1)) # Yellow
+	if challenge_mode == "time_attack":
+		if MenuController.was_new_machine_best:
+			set_high_score_label.text = "NEW MACHINE TIME ATTACK RECORD!"
+			set_high_score_label.set("theme_override_colors/font_color", Color(0, 1, 1, 1)) # Cyan
+		elif MenuController.was_new_personal_best:
+			set_high_score_label.text = "NEW PERSONAL TIME ATTACK BEST!"
+			set_high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1)) # Yellow
+		else:
+			var best_time = SaveManager.get_time_attack_set_high_score(pack_id)
+			if best_time > 0:
+				set_high_score_label.text = "Time Attack Best: " + _format_time(float(best_time))
+				set_high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+			else:
+				set_high_score_label.text = ""
+	elif is_challenge_set_run:
+		if MenuController.was_new_machine_best:
+			set_high_score_label.text = "NEW MACHINE %s RECORD!" % challenge_mode_label
+			set_high_score_label.set("theme_override_colors/font_color", Color(0, 1, 1, 1)) # Cyan
+		elif MenuController.was_new_personal_best:
+			set_high_score_label.text = "NEW PERSONAL %s BEST!" % challenge_mode_label
+			set_high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1)) # Yellow
+		else:
+			var challenge_personal_best = SaveManager.get_challenge_set_high_score(pack_id, challenge_mode)
+			if challenge_personal_best > 0:
+				set_high_score_label.text = "%s Best: %d" % [challenge_mode_label, challenge_personal_best]
+				set_high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+			else:
+				set_high_score_label.text = ""
 	else:
 		var personal_best = SaveManager.get_set_pack_high_score(pack_id)
 		if personal_best > 0:
@@ -123,6 +162,25 @@ func _format_bonus(value: int) -> String:
 
 func _format_time(seconds: float) -> String:
 	var total_seconds = int(seconds)
-	var minutes = int(total_seconds / 60.0)
-	var secs = int(total_seconds % 60)
+	var minutes: int = int(floor(float(total_seconds) / 60.0))
+	var secs: int = int(total_seconds % 60)
 	return "%02d:%02d" % [minutes, secs]
+
+func _get_active_challenge_mode() -> String:
+	if MenuController and MenuController.has_method("get_challenge_mode"):
+		return str(MenuController.get_challenge_mode())
+	return "normal"
+
+func _is_challenge_set_run(challenge_mode: String) -> bool:
+	return MenuController.current_play_mode == MenuController.PlayMode.SET and challenge_mode != "normal"
+
+func _get_challenge_mode_label(challenge_mode: String) -> String:
+	match challenge_mode:
+		"iron_ball":
+			return "IRON BALL"
+		"one_life":
+			return "ONE LIFE"
+		"time_attack":
+			return "TIME ATTACK"
+		_:
+			return "NORMAL"

@@ -184,6 +184,10 @@ func _on_editor_button_pressed():
 	"""Handle Editor button - open pack editor"""
 	MenuController.show_editor_from_main_menu()
 
+func _on_survival_button_pressed():
+	"""Handle Survival button - start endless survival mode"""
+	MenuController.start_survival()
+
 func _on_settings_button_pressed():
 	"""Handle Settings button - show settings screen"""
 	MenuController.show_settings()
@@ -201,7 +205,8 @@ func _update_return_button():
 	"""Show return button if a level is in progress"""
 	var last_played = SaveManager.get_last_played()
 	var in_progress = last_played.get("in_progress", false)
-	return_button.visible = in_progress
+	var mode = str(last_played.get("mode", ""))
+	return_button.visible = in_progress and mode != "survival"
 
 func _on_update_button_pressed() -> void:
 	"""Check for update, or open release page if one was already found"""

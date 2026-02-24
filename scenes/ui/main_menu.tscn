@@ -135,6 +135,14 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 15)
 layout_mode = 2
 
+[node name="SurvivalButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.55, 0.2, 1)
+theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "SURVIVAL"
+
 [node name="EditorButton" type="Button" parent="VBoxContainer" unique_id=893158771]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
@@ -247,6 +255,7 @@ select_all_on_focus = true
 [connection signal="pressed" from="VBoxContainer/DifficultyButtons/EasyButton" to="." method="_on_easy_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/DifficultyButtons/NormalButton" to="." method="_on_normal_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/DifficultyButtons/HardButton" to="." method="_on_hard_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/SurvivalButton" to="." method="_on_survival_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/EditorButton" to="." method="_on_editor_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/StatsHBox/StatsButton" to="." method="_on_stats_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/StatsHBox/HighScoresButton" to="." method="_on_high_scores_button_pressed"]

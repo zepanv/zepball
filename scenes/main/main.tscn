@@ -112,6 +112,14 @@ theme_override_font_sizes/font_size = 20
 text = "SCORE: 0"
 vertical_alignment = 1
 
+[node name="TopBarLeft" type="Label" parent="UI/HUD/TopBar"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "TIME ATTACK"
+vertical_alignment = 1
+
 [node name="LogoVBox" type="VBoxContainer" parent="UI/HUD/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -131,6 +139,15 @@ theme_override_colors/font_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 14
 text = "PLAYER"
 horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TopBarRight" type="Label" parent="UI/HUD/TopBar"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 20
+text = "00:00"
+horizontal_alignment = 2
 vertical_alignment = 1
 
 [node name="LivesLabel" type="Label" parent="UI/HUD/TopBar" unique_id=909154586]

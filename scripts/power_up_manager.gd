@@ -132,8 +132,22 @@ func remove_effect(type: PowerUpType):
 			_refresh_processing_state()
 			return
 		PowerUpType.SPEED_UP, PowerUpType.SLOW_DOWN:
-			if target and target.has_method("reset_ball_speed"):
-				target.reset_ball_speed()
+			active_effects.erase(type)
+			var speed_target: Node = target
+			if speed_target and not is_instance_valid(speed_target):
+				speed_target = null
+			if not speed_target:
+				speed_target = _get_speed_target()
+			if speed_target:
+				if active_effects.has(PowerUpType.SPEED_UP) and speed_target.has_method("apply_speed_up_effect"):
+					speed_target.apply_speed_up_effect()
+				elif active_effects.has(PowerUpType.SLOW_DOWN) and speed_target.has_method("apply_slow_down_effect"):
+					speed_target.apply_slow_down_effect()
+				elif speed_target.has_method("reset_ball_speed"):
+					speed_target.reset_ball_speed()
+			effect_expired.emit(type)
+			_refresh_processing_state()
+			return
 		PowerUpType.BIG_BALL, PowerUpType.SMALL_BALL:
 			active_effects.erase(type)
 			var ball_target = _get_ball_target()
@@ -210,6 +224,20 @@ func _get_ball_target() -> Node:
 	if small_target:
 		_cached_ball = small_target
 		return small_target
+	var fallback = _get_cached_ball()
+	if fallback:
+		return fallback
+	return null
+
+func _get_speed_target() -> Node:
+	var speed_up_target = _get_effect_target(PowerUpType.SPEED_UP)
+	if speed_up_target:
+		_cached_ball = speed_up_target
+		return speed_up_target
+	var slow_down_target = _get_effect_target(PowerUpType.SLOW_DOWN)
+	if slow_down_target:
+		_cached_ball = slow_down_target
+		return slow_down_target
 	var fallback = _get_cached_ball()
 	if fallback:
 		return fallback

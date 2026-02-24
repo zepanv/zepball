@@ -7,15 +7,17 @@ extends Node
 const METADATA_PATH = "user://metadata.json"
 const PROFILES_DIR = "user://profiles/"
 const LEGACY_SAVE_PATH = "user://save_data.json"
-const SAVE_VERSION = 3
+const SAVE_VERSION = 4
 const TOTAL_LEVELS = 30
 const CHALLENGE_MODE_NORMAL = "normal"
 const CHALLENGE_MODE_IRON_BALL = "iron_ball"
 const CHALLENGE_MODE_ONE_LIFE = "one_life"
+const CHALLENGE_MODE_TIME_ATTACK = "time_attack"
 const CHALLENGE_MODES = [
 	CHALLENGE_MODE_NORMAL,
 	CHALLENGE_MODE_IRON_BALL,
-	CHALLENGE_MODE_ONE_LIFE
+	CHALLENGE_MODE_ONE_LIFE,
+	CHALLENGE_MODE_TIME_ATTACK
 ]
 
 const SETTINGS_HELPER_SCRIPT = preload("res://scripts/save_settings_helper.gd")
@@ -62,12 +64,15 @@ var save_data = {
 	"set_high_scores": {},
 	"iron_ball_set_high_scores": {},
 	"one_life_set_high_scores": {},
+	"time_attack_set_high_scores": {},
 	"pack_set_progression": {
 		"packs_completed": []
 	},
 	"pack_set_high_scores": {},
 	"iron_ball_set_high_score_timestamps": {},
 	"one_life_set_high_score_timestamps": {},
+	"time_attack_set_high_score_timestamps": {},
+	"survival_top_runs": [],
 	"last_played": {
 		"level_id": 0,
 		"pack_id": "classic-challenge",
@@ -339,6 +344,8 @@ func _perform_migrations() -> void:
 		did_migrate = _migrate_to_v2_pack_data() or did_migrate
 	if loaded_version < 3:
 		did_migrate = _migrate_to_v3_challenge_data() or did_migrate
+	if loaded_version < 4:
+		did_migrate = _migrate_to_v4_new_game_modes() or did_migrate
 	if loaded_version < SAVE_VERSION:
 		save_data["version"] = SAVE_VERSION
 		did_migrate = true
@@ -448,6 +455,23 @@ func _perform_migrations() -> void:
 	if not save_data.has("one_life_set_high_score_timestamps"):
 		save_data["one_life_set_high_score_timestamps"] = {}
 		did_migrate = true
+	if not save_data.has("time_attack_set_high_scores"):
+		save_data["time_attack_set_high_scores"] = {}
+		did_migrate = true
+	if not save_data.has("time_attack_set_high_score_timestamps"):
+		save_data["time_attack_set_high_score_timestamps"] = {}
+		did_migrate = true
+	if not save_data.has("survival_top_runs"):
+		save_data["survival_top_runs"] = []
+		did_migrate = true
+	elif not (save_data["survival_top_runs"] is Array):
+		save_data["survival_top_runs"] = []
+		did_migrate = true
+	else:
+		var normalized_survival_runs := _sanitize_survival_runs(save_data["survival_top_runs"])
+		if normalized_survival_runs != save_data["survival_top_runs"]:
+			save_data["survival_top_runs"] = normalized_survival_runs
+			did_migrate = true
 
 	_ensure_pack_progression_defaults()
 	
@@ -544,12 +568,15 @@ func create_default_save() -> void:
 		"set_high_scores": {},
 		"iron_ball_set_high_scores": {},
 		"one_life_set_high_scores": {},
+		"time_attack_set_high_scores": {},
 		"pack_set_progression": {
 			"packs_completed": []
 		},
 		"pack_set_high_scores": {},
 		"iron_ball_set_high_score_timestamps": {},
 		"one_life_set_high_score_timestamps": {},
+		"time_attack_set_high_score_timestamps": {},
+		"survival_top_runs": [],
 		"last_played": {
 			"level_id": 0,
 			"pack_id": "classic-challenge",
@@ -626,10 +653,20 @@ func _ensure_pack_progression_defaults() -> void:
 		save_data["iron_ball_set_high_scores"] = {}
 	if not save_data.has("one_life_set_high_scores"):
 		save_data["one_life_set_high_scores"] = {}
+	if not save_data.has("time_attack_set_high_scores"):
+		save_data["time_attack_set_high_scores"] = {}
 	if not save_data.has("iron_ball_set_high_score_timestamps"):
 		save_data["iron_ball_set_high_score_timestamps"] = {}
 	if not save_data.has("one_life_set_high_score_timestamps"):
 		save_data["one_life_set_high_score_timestamps"] = {}
+	if not save_data.has("time_attack_set_high_score_timestamps"):
+		save_data["time_attack_set_high_score_timestamps"] = {}
+	if not save_data.has("survival_top_runs"):
+		save_data["survival_top_runs"] = []
+	elif not (save_data["survival_top_runs"] is Array):
+		save_data["survival_top_runs"] = []
+	else:
+		save_data["survival_top_runs"] = _sanitize_survival_runs(save_data["survival_top_runs"])
 	if not save_data.has("last_played"):
 		save_data["last_played"] = {
 			"level_id": 0,
@@ -781,11 +818,67 @@ func _migrate_to_v3_challenge_data() -> bool:
 
 	return did_change
 
+func _migrate_to_v4_new_game_modes() -> bool:
+	var did_change := false
+
+	if not save_data.has("time_attack_set_high_scores"):
+		save_data["time_attack_set_high_scores"] = {}
+		did_change = true
+	if not save_data.has("time_attack_set_high_score_timestamps"):
+		save_data["time_attack_set_high_score_timestamps"] = {}
+		did_change = true
+	if not save_data.has("survival_top_runs"):
+		save_data["survival_top_runs"] = []
+		did_change = true
+
+	if not (save_data.get("survival_top_runs", []) is Array):
+		save_data["survival_top_runs"] = []
+		did_change = true
+	else:
+		var normalized_runs := _sanitize_survival_runs(save_data["survival_top_runs"])
+		if normalized_runs != save_data["survival_top_runs"]:
+			save_data["survival_top_runs"] = normalized_runs
+			did_change = true
+
+	return did_change
+
 func _normalize_challenge_mode(mode: String) -> String:
 	var normalized := mode.strip_edges().to_lower()
 	if CHALLENGE_MODES.has(normalized):
 		return normalized
 	return CHALLENGE_MODE_NORMAL
+
+func _sanitize_survival_runs(raw_runs: Variant) -> Array:
+	var sanitized: Array = []
+	if raw_runs is Array:
+		for run_variant in raw_runs:
+			if not (run_variant is Dictionary):
+				continue
+			var run: Dictionary = run_variant
+			sanitized.append({
+				"score": max(0, int(run.get("score", 0))),
+				"wave": max(1, int(run.get("wave", 1))),
+				"date": str(run.get("date", "Unknown"))
+			})
+
+	sanitized.sort_custom(func(a, b):
+		var score_a := int(a.get("score", 0))
+		var score_b := int(b.get("score", 0))
+		if score_a != score_b:
+			return score_a > score_b
+		var wave_a := int(a.get("wave", 0))
+		var wave_b := int(b.get("wave", 0))
+		if wave_a != wave_b:
+			return wave_a > wave_b
+		var date_a := str(a.get("date", "9999-12-31T23:59:59"))
+		var date_b := str(b.get("date", "9999-12-31T23:59:59"))
+		if date_a != date_b:
+			return date_a < date_b
+		return str(a.get("name", "")) < str(b.get("name", ""))
+	)
+	if sanitized.size() > 10:
+		sanitized = sanitized.slice(0, 10)
+	return sanitized
 
 func _parse_level_key(level_key: String) -> Dictionary:
 	var parts := level_key.split(":")
@@ -1003,7 +1096,9 @@ func get_all_leaderboards(use_cache: bool = true) -> Dictionary:
 		"levels": {}, # level_key: [ {name, score, date}, ... ]
 		"sets": {},   # pack_id: [ {name, score, date}, ... ]
 		"iron_ball_sets": {},
-		"one_life_sets": {}
+		"one_life_sets": {},
+		"time_attack_sets": {},
+		"survival_runs": []
 	}
 	
 	var profiles = get_profile_list()
@@ -1074,6 +1169,31 @@ func get_all_leaderboards(use_cache: bool = true) -> Dictionary:
 				"score": int(p_one_life_scores[pack_id]),
 				"date": str(p_one_life_times.get(pack_id, "Unknown"))
 			})
+
+		# Process Time Attack set best times (lower is better)
+		var p_time_attack_scores = p_data.get("time_attack_set_high_scores", {})
+		var p_time_attack_times = p_data.get("time_attack_set_high_score_timestamps", {})
+		for pack_id in p_time_attack_scores.keys():
+			if not leaderboards["time_attack_sets"].has(pack_id):
+				leaderboards["time_attack_sets"][pack_id] = []
+			leaderboards["time_attack_sets"][pack_id].append({
+				"name": p_name,
+				"score": int(p_time_attack_scores[pack_id]),
+				"date": str(p_time_attack_times.get(pack_id, "Unknown"))
+			})
+
+		# Process Survival runs (keep all, then trim global top 10)
+		var p_survival_runs := _sanitize_survival_runs(p_data.get("survival_top_runs", []))
+		for run_variant in p_survival_runs:
+			if not (run_variant is Dictionary):
+				continue
+			var run: Dictionary = run_variant
+			leaderboards["survival_runs"].append({
+				"name": p_name,
+				"score": int(run.get("score", 0)),
+				"wave": int(run.get("wave", 1)),
+				"date": str(run.get("date", "Unknown"))
+			})
 			
 	# Sort all lists by score descending
 	for l_key in leaderboards["levels"].keys():
@@ -1095,6 +1215,38 @@ func get_all_leaderboards(use_cache: bool = true) -> Dictionary:
 		leaderboards["one_life_sets"][pack_id].sort_custom(func(a, b): return a["score"] > b["score"])
 		if leaderboards["one_life_sets"][pack_id].size() > 10:
 			leaderboards["one_life_sets"][pack_id] = leaderboards["one_life_sets"][pack_id].slice(0, 10)
+	for pack_id in leaderboards["time_attack_sets"].keys():
+		leaderboards["time_attack_sets"][pack_id].sort_custom(func(a, b):
+			var score_a := int(a.get("score", 0))
+			var score_b := int(b.get("score", 0))
+			if score_a != score_b:
+				return score_a < score_b
+			var date_a := str(a.get("date", "9999-12-31T23:59:59"))
+			var date_b := str(b.get("date", "9999-12-31T23:59:59"))
+			if date_a != date_b:
+				return date_a < date_b
+			return str(a.get("name", "")) < str(b.get("name", ""))
+		)
+		if leaderboards["time_attack_sets"][pack_id].size() > 10:
+			leaderboards["time_attack_sets"][pack_id] = leaderboards["time_attack_sets"][pack_id].slice(0, 10)
+
+	leaderboards["survival_runs"].sort_custom(func(a, b):
+		var score_a := int(a.get("score", 0))
+		var score_b := int(b.get("score", 0))
+		if score_a != score_b:
+			return score_a > score_b
+		var wave_a := int(a.get("wave", 0))
+		var wave_b := int(b.get("wave", 0))
+		if wave_a != wave_b:
+			return wave_a > wave_b
+		var date_a := str(a.get("date", "9999-12-31T23:59:59"))
+		var date_b := str(b.get("date", "9999-12-31T23:59:59"))
+		if date_a != date_b:
+			return date_a < date_b
+		return str(a.get("name", "")) < str(b.get("name", ""))
+	)
+	if leaderboards["survival_runs"].size() > 10:
+		leaderboards["survival_runs"] = leaderboards["survival_runs"].slice(0, 10)
 
 	# Cache the result
 	_leaderboard_cache = leaderboards.duplicate(true)
@@ -1117,6 +1269,31 @@ func get_global_set_high_score(pack_id: String) -> int:
 	if scores.is_empty():
 		return 0
 	return int(scores[0]["score"])
+
+func get_global_challenge_set_high_score(pack_id: String, challenge_mode: String) -> int:
+	"""Find the highest score for a challenge set/pack across all profiles."""
+	var leaderboard_key := ""
+	match _normalize_challenge_mode(challenge_mode):
+		CHALLENGE_MODE_IRON_BALL:
+			leaderboard_key = "iron_ball_sets"
+		CHALLENGE_MODE_ONE_LIFE:
+			leaderboard_key = "one_life_sets"
+		_:
+			return 0
+
+	var leaderboards = get_all_leaderboards()
+	var scores = leaderboards.get(leaderboard_key, {}).get(pack_id, [])
+	if scores.is_empty():
+		return 0
+	return int(scores[0].get("score", 0))
+
+func get_global_time_attack_set_best_time(pack_id: String) -> int:
+	"""Find the fastest Time Attack completion for a set/pack across all profiles."""
+	var leaderboards = get_all_leaderboards()
+	var scores = leaderboards.get("time_attack_sets", {}).get(pack_id, [])
+	if scores.is_empty():
+		return 0
+	return int(scores[0].get("score", 0))
 
 func update_level_key_stars(level_key: String, stars_value: int) -> bool:
 	var parsed := _parse_level_key(level_key)
@@ -1188,8 +1365,11 @@ func reset_progress_data() -> void:
 	save_data["pack_set_high_scores"] = {}
 	save_data["iron_ball_set_high_scores"] = {}
 	save_data["one_life_set_high_scores"] = {}
+	save_data["time_attack_set_high_scores"] = {}
 	save_data["iron_ball_set_high_score_timestamps"] = {}
 	save_data["one_life_set_high_score_timestamps"] = {}
+	save_data["time_attack_set_high_score_timestamps"] = {}
+	save_data["survival_top_runs"] = []
 	save_data["last_played"] = {
 		"level_id": 0,
 		"pack_id": "classic-challenge",
@@ -1261,6 +1441,20 @@ func set_last_played_in_progress(in_progress: bool) -> void:
 
 func get_last_played() -> Dictionary:
 	return save_data["last_played"].duplicate()
+
+func set_last_played_survival() -> void:
+	if not save_data.has("last_played"):
+		save_data["last_played"] = {}
+	save_data["last_played"]["level_id"] = 0
+	save_data["last_played"]["pack_id"] = "classic-challenge"
+	save_data["last_played"]["level_index"] = 0
+	save_data["last_played"]["level_key"] = "classic-challenge:0"
+	save_data["last_played"]["mode"] = "survival"
+	save_data["last_played"]["set_id"] = -1
+	save_data["last_played"]["set_pack_id"] = ""
+	save_data["last_played"]["challenge_mode"] = CHALLENGE_MODE_NORMAL
+	save_data["last_played"]["in_progress"] = false
+	save_to_disk()
 
 func set_last_challenge_mode(challenge_mode: String) -> void:
 	save_data["last_played"]["challenge_mode"] = _normalize_challenge_mode(challenge_mode)
@@ -1347,6 +1541,46 @@ func save_challenge_set_high_score(pack_id: String, challenge_mode: String, scor
 	save_data[timestamps_key][pack_id] = Time.get_datetime_string_from_system()
 	save_to_disk()
 	return true
+
+func get_time_attack_set_high_score(pack_id: String) -> int:
+	return int(save_data.get("time_attack_set_high_scores", {}).get(pack_id, 0))
+
+func save_time_attack_set_high_score(pack_id: String, time_seconds: int) -> bool:
+	if time_seconds <= 0:
+		return false
+
+	var current_best := get_time_attack_set_high_score(pack_id)
+	if current_best > 0 and time_seconds >= current_best:
+		return false
+
+	if not save_data.has("time_attack_set_high_scores"):
+		save_data["time_attack_set_high_scores"] = {}
+	if not save_data.has("time_attack_set_high_score_timestamps"):
+		save_data["time_attack_set_high_score_timestamps"] = {}
+
+	save_data["time_attack_set_high_scores"][pack_id] = time_seconds
+	save_data["time_attack_set_high_score_timestamps"][pack_id] = Time.get_datetime_string_from_system()
+	save_to_disk()
+	return true
+
+func get_survival_top_runs() -> Array:
+	if not save_data.has("survival_top_runs"):
+		save_data["survival_top_runs"] = []
+		save_to_disk()
+	return _sanitize_survival_runs(save_data.get("survival_top_runs", []))
+
+func save_survival_run(score: int, wave: int) -> void:
+	if not save_data.has("survival_top_runs"):
+		save_data["survival_top_runs"] = []
+
+	var runs := _sanitize_survival_runs(save_data.get("survival_top_runs", []))
+	runs.append({
+		"score": max(0, score),
+		"wave": max(1, wave),
+		"date": Time.get_datetime_string_from_system()
+	})
+	save_data["survival_top_runs"] = _sanitize_survival_runs(runs)
+	save_to_disk()
 
 func update_set_pack_high_score(pack_id: String, score: int) -> bool:
 	var current_high_score := get_set_pack_high_score(pack_id)

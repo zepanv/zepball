@@ -9,8 +9,8 @@ extends Control
 @onready var challenge_tabs = $Panel/VBoxContainer/ChallengeTabs
 
 var leaderboards: Dictionary = {}
-var current_filter: String = "overall" # overall | sets | levels
-var current_set_challenge_filter: String = "normal" # normal | iron_ball | one_life
+var current_filter: String = "overall" # overall | sets | levels | survival
+var current_set_challenge_filter: String = "normal" # normal | iron_ball | one_life | time_attack
 
 func _ready():
 	leaderboards = SaveManager.get_all_leaderboards()
@@ -38,6 +38,7 @@ func _on_filter_changed(tab_index: int):
 		0: current_filter = "overall"
 		1: current_filter = "sets"
 		2: current_filter = "levels"
+		3: current_filter = "survival"
 	challenge_tabs.visible = current_filter == "sets"
 	_refresh_display()
 
@@ -47,6 +48,8 @@ func _on_challenge_filter_changed(tab_index: int):
 			current_set_challenge_filter = "iron_ball"
 		2:
 			current_set_challenge_filter = "one_life"
+		3:
+			current_set_challenge_filter = "time_attack"
 		_:
 			current_set_challenge_filter = "normal"
 	if current_filter == "sets":
@@ -66,6 +69,8 @@ func _refresh_display():
 			_display_sets()
 		"levels":
 			_display_levels()
+		"survival":
+			_display_survival()
 
 func _display_overall():
 	_add_header("TOP SCORES (ANY LEVEL)")
@@ -95,9 +100,22 @@ func _display_sets():
 		for entry in selected_leaderboard[s_id]:
 			var new_entry = entry.duplicate()
 			new_entry["context"] = _get_set_name(s_id)
+			new_entry["is_time_attack"] = current_set_challenge_filter == "time_attack"
 			all_sets.append(new_entry)
-			
-	all_sets.sort_custom(func(a, b): return a["score"] > b["score"])
+	if current_set_challenge_filter == "time_attack":
+		all_sets.sort_custom(func(a, b):
+			var score_a := int(a.get("score", 0))
+			var score_b := int(b.get("score", 0))
+			if score_a != score_b:
+				return score_a < score_b
+			var date_a := str(a.get("date", "9999-12-31T23:59:59"))
+			var date_b := str(b.get("date", "9999-12-31T23:59:59"))
+			if date_a != date_b:
+				return date_a < date_b
+			return str(a.get("name", "")) < str(b.get("name", ""))
+		)
+	else:
+		all_sets.sort_custom(func(a, b): return int(a.get("score", 0)) > int(b.get("score", 0)))
 	
 	for i in range(all_sets.size()):
 		_add_score_entry(all_sets[i], i + 1)
@@ -105,6 +123,16 @@ func _display_sets():
 	if all_sets.is_empty() and current_set_challenge_filter == "normal":
 		_add_empty_message("No sets completed yet.")
 	elif all_sets.is_empty():
+		_add_empty_message("No runs yet.")
+
+func _display_survival():
+	_add_header("SURVIVAL TOP RUNS")
+	var survival_runs: Array = leaderboards.get("survival_runs", [])
+	for i in range(survival_runs.size()):
+		var run_entry: Dictionary = survival_runs[i].duplicate()
+		run_entry["context"] = "Wave %d" % int(run_entry.get("wave", 1))
+		_add_score_entry(run_entry, i + 1)
+	if survival_runs.is_empty():
 		_add_empty_message("No runs yet.")
 
 func _display_levels():
@@ -138,10 +166,12 @@ func _add_column_headers():
 	hbox.add_child(name_h)
 	
 	var context_h = Label.new()
-	if current_filter != "levels":
-		context_h.text = "LEVEL/SET"
-	else:
+	if current_filter == "levels":
 		context_h.text = ""
+	elif current_filter == "survival":
+		context_h.text = "WAVE"
+	else:
+		context_h.text = "LEVEL/SET"
 	context_h.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	context_h.add_theme_font_size_override("font_size", 12)
 	context_h.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
@@ -149,7 +179,7 @@ func _add_column_headers():
 	hbox.add_child(context_h)
 	
 	var score_h = Label.new()
-	score_h.text = "SCORE"
+	score_h.text = "BEST TIME" if current_filter == "sets" and current_set_challenge_filter == "time_attack" else "SCORE"
 	score_h.custom_minimum_size = Vector2(120, 0)
 	score_h.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	score_h.add_theme_font_size_override("font_size", 12)
@@ -214,7 +244,11 @@ func _add_score_entry(entry: Dictionary, rank: int):
 		hbox.add_child(context_label)
 	
 	var score_label = Label.new()
-	score_label.text = str(entry["score"])
+	var is_time_attack_entry = bool(entry.get("is_time_attack", false))
+	if is_time_attack_entry:
+		score_label.text = _format_time(int(entry.get("score", 0)))
+	else:
+		score_label.text = str(entry["score"])
 	score_label.custom_minimum_size = Vector2(120, 0)
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	score_label.add_theme_color_override("font_color", Color(1, 0.9, 0.3))
@@ -271,6 +305,8 @@ func _add_empty_message(text: String):
 				hint.text = "Finish a challenge run to appear here."
 		"levels":
 			hint.text = "Play individual levels to see scores grouped by level."
+		"survival":
+			hint.text = "Start a Survival run to appear here."
 
 	vbox.add_child(hint)
 	scores_container.add_child(vbox)
@@ -291,6 +327,8 @@ func _get_selected_set_leaderboard() -> Dictionary:
 			return leaderboards.get("iron_ball_sets", {})
 		"one_life":
 			return leaderboards.get("one_life_sets", {})
+		"time_attack":
+			return leaderboards.get("time_attack_sets", {})
 		_:
 			return leaderboards.get("sets", {})
 
@@ -300,5 +338,12 @@ func _get_selected_set_header() -> String:
 			return "IRON BALL SET RECORDS"
 		"one_life":
 			return "ONE LIFE SET RECORDS"
+		"time_attack":
+			return "TIME ATTACK SET RECORDS"
 		_:
 			return "SET COMPLETION RECORDS"
+
+func _format_time(total_seconds: int) -> String:
+	var minutes: int = int(floor(float(total_seconds) / 60.0))
+	var seconds: int = int(total_seconds % 60)
+	return "%02d:%02d" % [minutes, seconds]

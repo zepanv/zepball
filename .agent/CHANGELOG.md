@@ -6,7 +6,23 @@ For current game state, see `README.md`. For full system architecture, see `Syst
 
 ---
 
-## 2026-02-24 (Latest) - Challenge Modes (Iron Ball + One Life)
+## 2026-02-24 (Latest) - Time Attack + Survival Modes
+- ✅ **Time Attack Challenge Mode**: Added `Time Attack` as a fourth pack-run challenge option with launch/pause-aware timer behavior and HUD `MM:SS` display.
+- ✅ **Survival Mode**: Added standalone `SURVIVAL` entry from Main Menu using procedural wave generation, wave countdown transitions, and endless play-until-game-over flow.
+- ✅ **Save v4 Migration**: Added `time_attack_set_high_scores`, `time_attack_set_high_score_timestamps`, and `survival_top_runs` with automatic migration for existing profiles.
+- ✅ **Leaderboard Expansion**: High Scores now supports Time Attack set tabs (ascending best-time ranking) plus a dedicated Survival tab for top runs (Wave/Score/Date).
+- ✅ **Survival Game Over Context**: Game Over now supports survival-specific output (`PLAY AGAIN`, wave reached, personal best + machine best comparison).
+- ✅ **Main Menu + Resume Guardrails**: Added Main Menu `SURVIVAL` button and blocked "RETURN TO LAST LEVEL" when the last run mode was survival.
+- ✅ **TopBar Mode Variants**: HUD TopBar now supports center mode/detail text for `TIME ATTACK` and `SURVIVAL` while keeping score/lives visible.
+- ✅ **Challenge Completion Screen Context**: Level/Set complete screens now show challenge-mode-specific breakdown headings, and Time Attack completion now displays run time on both level and set completion screens.
+- ✅ **Challenge Record Messaging Fix**: Set-complete new-record messaging now checks challenge-specific leaderboards (Iron Ball / One Life / Time Attack) instead of normal-set values.
+- ✅ **Strict Warning Cleanup**: Fixed integer-division warning in `scripts/ui/high_scores.gd` time formatting under warnings-as-errors settings.
+- ✅ **Strict Typing Parse Fix (Completion Screens)**: Fixed Variant type-inference warnings in Time Attack completion timer assignments (`level_complete.gd`, `set_complete.gd`) so warnings-as-errors builds load cleanly.
+- ✅ **Survival HUD/Paused Context Fix**: Survival now uses center HUD mode text (`SURVIVAL` + `WAVE N`) without hiding score/lives, and pause menu now shows `SURVIVAL: WAVE N` instead of `Level 1: Unknown`.
+- ✅ **Survival Wave Signal Fix**: Prevented repeated `brick_broken`/`power_up_spawned` duplicate-connect errors during wave transitions by cleaning brick container membership before respawn and adding connection guards.
+- ✅ **Survival Speed Stack Fix**: Speed Up/Slow Down now apply as percentage multipliers (+30%/-30%) over current base speed, persist through Survival wave speed-step increases, and resolve correctly when overlapping speed effects expire.
+
+## 2026-02-24 - Challenge Modes (Iron Ball + One Life)
 - ✅ **Challenge Mode System**: Added per-profile challenge selection and gameplay routing for `normal`, `iron_ball`, and `one_life` set runs.
 - ✅ **Save v3 Migration**: Added challenge leaderboards (`iron_ball_set_high_scores`, `one_life_set_high_scores`) and `last_played.challenge_mode` persistence with migration support.
 - ✅ **Set Select UI Split Layout**: Added right-side challenge panel with descriptions; `LEVELS` buttons now disable in non-Normal challenge modes.

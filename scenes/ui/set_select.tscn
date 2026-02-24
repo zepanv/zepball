@@ -98,7 +98,7 @@ text = "CHALLENGE MODE"
 
 [node name="ChallengeDropdown" type="OptionButton" parent="VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox"]
 layout_mode = 2
-item_count = 3
+item_count = 4
 selected = 0
 popup/item_0/text = "Normal"
 popup/item_0/id = 0
@@ -106,6 +106,8 @@ popup/item_1/text = "Iron Ball"
 popup/item_1/id = 1
 popup/item_2/text = "One Life"
 popup/item_2/id = 2
+popup/item_3/text = "Time Attack"
+popup/item_3/id = 3
 
 [node name="ChallengeDescription" type="Label" parent="VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox"]
 custom_minimum_size = Vector2(0, 72)

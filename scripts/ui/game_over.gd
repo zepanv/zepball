@@ -5,6 +5,7 @@ extends Control
 
 @onready var score_label = $VBoxContainer/ScoreLabel
 @onready var high_score_label = $VBoxContainer/HighScoreLabel
+@onready var survival_label = $VBoxContainer/SurvivalLabel
 @onready var retry_button = $VBoxContainer/RetryButton
 @onready var menu_button = $VBoxContainer/MenuButton
 @onready var vbox_container = $VBoxContainer
@@ -18,24 +19,36 @@ func _ready():
 	# Get score from MenuController
 	var final_score = MenuController.get_current_score()
 	var level_key = MenuController.get_current_level_key()
+	var in_survival = MenuController.is_survival_mode
 
 	# Display final score
 	score_label.text = "Final Score: " + str(final_score)
 
-	# Check if this was a high score
-	var high_score = SaveManager.get_level_key_high_score(level_key)
-	if high_score > 0:
-		if final_score >= high_score:
-			high_score_label.text = "NEW HIGH SCORE!"
-			high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1))
-		else:
-			high_score_label.text = "High Score: " + str(high_score)
-			high_score_label.set("theme_override_colors/font_color", Color(0.5, 1, 0.5, 1))
+	if in_survival:
+		retry_button.text = "PLAY AGAIN"
+		if survival_label:
+			survival_label.visible = true
+			survival_label.text = "Wave Reached: " + str(max(1, int(MenuController.get_survival_wave_reached())))
+		high_score_label.text = "SURVIVAL RUN COMPLETE"
+		high_score_label.set("theme_override_colors/font_color", Color(0.9, 0.8, 0.35, 1))
+		_show_survival_comparison()
 	else:
-		high_score_label.text = ""
+		if survival_label:
+			survival_label.visible = false
+		# Check if this was a high score
+		var high_score = SaveManager.get_level_key_high_score(level_key)
+		if high_score > 0:
+			if final_score >= high_score:
+				high_score_label.text = "NEW HIGH SCORE!"
+				high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1))
+			else:
+				high_score_label.text = "High Score: " + str(high_score)
+				high_score_label.set("theme_override_colors/font_color", Color(0.5, 1, 0.5, 1))
+		else:
+			high_score_label.text = ""
 
 	# Add "Continue Set" button if in set mode (hidden for One Life challenge runs)
-	if MenuController.current_play_mode == MenuController.PlayMode.SET and MenuController.get_challenge_mode() != "one_life":
+	if not in_survival and MenuController.current_play_mode == MenuController.PlayMode.SET and MenuController.get_challenge_mode() != "one_life":
 		add_continue_set_button()
 
 	if MenuController.is_editor_test_mode:
@@ -79,6 +92,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_retry_button_pressed():
 	"""Restart the same level"""
+	if MenuController.is_survival_mode:
+		MenuController.start_survival()
+		return
 	MenuController.restart_current_level()
 
 func _on_continue_set_button_pressed():
@@ -103,3 +119,25 @@ func _on_menu_button_pressed():
 		MenuController.return_to_editor_from_test()
 		return
 	MenuController.show_main_menu()
+
+func _show_survival_comparison() -> void:
+	var personal_runs: Array = SaveManager.get_survival_top_runs()
+	var machine_runs: Array = SaveManager.get_all_leaderboards().get("survival_runs", [])
+
+	var personal_line := "Your best: No runs yet"
+	if not personal_runs.is_empty():
+		var best_personal: Dictionary = personal_runs[0]
+		personal_line = "Your best: " + _format_survival_run(best_personal)
+
+	var machine_line := "Machine best: No runs yet"
+	if not machine_runs.is_empty():
+		var best_machine: Dictionary = machine_runs[0]
+		machine_line = "Machine best: " + _format_survival_run(best_machine)
+
+	if survival_label:
+		survival_label.text += "\n" + personal_line + "\n" + machine_line
+
+func _format_survival_run(run: Dictionary) -> String:
+	var wave := int(run.get("wave", 1))
+	var score := int(run.get("score", 0))
+	return "Wave %d, %d pts" % [wave, score]

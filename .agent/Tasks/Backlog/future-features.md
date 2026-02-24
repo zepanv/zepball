@@ -11,8 +11,7 @@ Last Updated: 2026-02-24
 ## Game Modes
 
 ### Time Attack Mode & Survival Mode
-> **Extracted to dedicated task**: See `Tasks/Backlog/new-game-modes.md` for full design spec and implementation plan.
-> Covers: Time Attack as a fourth challenge dropdown variant (pack-run only, MM:SS timer, time-keyed leaderboard), Survival as a standalone main menu mode (procedural wave generation, brick tier progression, speed scaling, top-10 run leaderboard), shared save migration v3, and Stats screen additions.
+> **Implemented**: See `Tasks/Completed/new-game-modes.md` for implementation details and verification notes.
 
 ### Iron Ball Mode & One Life Mode
 > **Implemented**: See `Tasks/Completed/challenge-modes.md` for implementation details and verification notes.
@@ -67,7 +66,7 @@ Last Updated: 2026-02-24
 
 **High Priority:**
 1. Advanced Tile Elements → see `Tasks/Backlog/advanced-tile-elements.md`
-2. Time Attack Mode + Survival Mode → see `Tasks/Backlog/new-game-modes.md`
+2. Time Attack Mode + Survival Mode → completed (`Tasks/Completed/new-game-modes.md`)
 
 **Medium Priority:**
 3. Ball Speed Zones (simple mechanic, strategic depth)
@@ -75,7 +74,7 @@ Last Updated: 2026-02-24
 **Low Priority:**
 5. Paddle Abilities (complex, needs careful balancing)
 6. Brick Chains (nice to have, not essential)
-7. New Game Modes (Time Attack, Survival) → see `Tasks/Backlog/new-game-modes.md`
+7. New Game Modes (Time Attack, Survival) → completed (`Tasks/Completed/new-game-modes.md`)
 
 ---
 

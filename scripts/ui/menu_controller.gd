@@ -19,6 +19,11 @@ const HIGH_SCORES_SCENE = "res://scenes/ui/high_scores.tscn"
 # Play mode enum
 enum PlayMode { INDIVIDUAL, SET }
 enum EditorReturnTarget { MAIN_MENU, SET_SELECT }
+const CHALLENGE_MODE_NORMAL = "normal"
+const CHALLENGE_MODE_IRON_BALL = "iron_ball"
+const CHALLENGE_MODE_ONE_LIFE = "one_life"
+const CHALLENGE_MODE_TIME_ATTACK = "time_attack"
+const LAST_PLAYED_MODE_SURVIVAL = "survival"
 
 # Current state
 var current_level_id: int = 1
@@ -28,6 +33,10 @@ var current_browse_pack_id: String = ""
 var current_challenge_mode: String = "normal"
 var current_score: int = 0
 var is_in_gameplay: bool = false
+var is_survival_mode: bool = false
+var survival_wave_reached: int = 1
+var time_attack_elapsed_base_seconds: int = 0
+var time_attack_final_seconds: int = 0
 var was_perfect_clear: bool = false
 var was_new_personal_best: bool = false
 var was_new_machine_best: bool = false
@@ -83,6 +92,7 @@ func _notification(what: int) -> void:
 func show_main_menu() -> void:
 	"""Load and show the main menu"""
 	is_in_gameplay = false
+	is_survival_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Unlock difficulty for selection
@@ -95,6 +105,7 @@ func show_main_menu() -> void:
 func show_level_select() -> void:
 	"""Load and show the level selection screen"""
 	is_in_gameplay = false
+	is_survival_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Difficulty should remain unlocked in menus
@@ -106,6 +117,7 @@ func show_level_select() -> void:
 func show_set_select() -> void:
 	"""Load and show the set selection screen"""
 	is_in_gameplay = false
+	is_survival_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Reset set mode state when entering set select
@@ -126,6 +138,7 @@ func show_set_select() -> void:
 func show_stats() -> void:
 	"""Load and show the stats screen"""
 	is_in_gameplay = false
+	is_survival_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Difficulty should remain unlocked in menus
@@ -137,6 +150,7 @@ func show_stats() -> void:
 func show_high_scores() -> void:
 	"""Load and show the high scores screen"""
 	is_in_gameplay = false
+	is_survival_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	DifficultyManager.unlock_difficulty()
@@ -147,6 +161,7 @@ func show_high_scores() -> void:
 func show_settings(from_pause: bool = false) -> void:
 	"""Load and show the settings screen"""
 	is_in_gameplay = false
+	is_survival_mode = false
 	settings_opened_from_pause = from_pause
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -163,6 +178,7 @@ func show_editor() -> void:
 func show_editor_from_main_menu() -> void:
 	"""Open the level editor for creating a new user pack from Main Menu."""
 	is_in_gameplay = false
+	is_survival_mode = false
 	is_editor_test_mode = false
 	current_editor_pack_id = ""
 	editor_return_target = EditorReturnTarget.MAIN_MENU
@@ -174,6 +190,7 @@ func show_editor_from_main_menu() -> void:
 func show_editor_from_set_select() -> void:
 	"""Open the level editor for creating a new user pack from Pack Select."""
 	is_in_gameplay = false
+	is_survival_mode = false
 	is_editor_test_mode = false
 	current_editor_pack_id = ""
 	editor_return_target = EditorReturnTarget.SET_SELECT
@@ -185,6 +202,7 @@ func show_editor_from_set_select() -> void:
 func show_editor_for_pack(pack_id: String) -> void:
 	"""Open the level editor with an existing pack loaded."""
 	is_in_gameplay = false
+	is_survival_mode = false
 	is_editor_test_mode = false
 	current_editor_pack_id = pack_id
 	editor_return_target = EditorReturnTarget.SET_SELECT
@@ -313,6 +331,7 @@ func start_level_ref(pack_id: String, level_index: int) -> void:
 
 	current_pack_id = pack_id
 	current_level_index = level_index
+	is_survival_mode = false
 	var legacy_level_id := PackLoader.get_legacy_level_id(pack_id, level_index)
 	current_level_id = legacy_level_id if legacy_level_id != -1 else 0
 	is_in_gameplay = true
@@ -362,6 +381,8 @@ func start_set(set_id: int) -> void:
 	set_saved_combo = 0
 	set_saved_no_miss = 0
 	set_saved_perfect = true
+	time_attack_elapsed_base_seconds = 0
+	time_attack_final_seconds = 0
 	_reset_set_breakdown()
 
 	# Start first level in the set
@@ -396,6 +417,8 @@ func start_pack(pack_id: String) -> void:
 	set_saved_combo = 0
 	set_saved_no_miss = 0
 	set_saved_perfect = true
+	time_attack_elapsed_base_seconds = 0
+	time_attack_final_seconds = 0
 	_reset_set_breakdown()
 
 	if set_level_refs.is_empty():
@@ -429,9 +452,47 @@ func continue_set_from_ref(pack_id: String, level_index: int) -> void:
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
 	if game_manager:
 		game_manager.had_continue = true
+	if get_challenge_mode() == CHALLENGE_MODE_TIME_ATTACK:
+		time_attack_elapsed_base_seconds = 0
+		time_attack_final_seconds = 0
 
 	# Start the level (score and lives will be reset by GameManager)
 	start_level_ref(pack_id, level_index)
+
+func start_survival() -> void:
+	"""Start a standalone survival run."""
+	current_play_mode = PlayMode.INDIVIDUAL
+	current_set_id = -1
+	current_set_pack_id = ""
+	current_browse_pack_id = ""
+	set_current_index = 0
+	set_level_ids = []
+	set_level_refs = []
+	_reset_set_breakdown()
+	time_attack_elapsed_base_seconds = 0
+	time_attack_final_seconds = 0
+
+	is_survival_mode = true
+	survival_wave_reached = 1
+	current_score = 0
+	current_pack_id = ""
+	current_level_index = 0
+	current_level_id = 0
+	is_in_gameplay = true
+	was_perfect_clear = false
+	was_new_personal_best = false
+	was_new_machine_best = false
+	if SaveManager and SaveManager.has_method("set_last_played_survival"):
+		SaveManager.set_last_played_survival()
+	else:
+		SaveManager.set_last_played_in_progress(false)
+
+	SaveManager.increment_stat("total_games_played")
+	DifficultyManager.lock_difficulty()
+	PowerUpManager.clear_all_effects()
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	get_tree().change_scene_to_file(GAMEPLAY_SCENE)
+	scene_changed.emit(GAMEPLAY_SCENE)
 
 func restart_current_level() -> void:
 	"""Restart the current level"""
@@ -442,11 +503,17 @@ func restart_current_level() -> void:
 
 func show_game_over(final_score: int) -> void:
 	"""Show game over screen with final score"""
+	if is_survival_mode:
+		show_survival_over(final_score, survival_wave_reached)
+		return
 	current_score = final_score
 	is_in_gameplay = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	if not is_editor_test_mode:
 		SaveManager.set_last_played_in_progress(false)
+	if current_play_mode == PlayMode.SET and get_challenge_mode() == CHALLENGE_MODE_TIME_ATTACK:
+		time_attack_elapsed_base_seconds = 0
+		time_attack_final_seconds = 0
 
 	# Unlock difficulty when leaving gameplay
 	DifficultyManager.unlock_difficulty()
@@ -454,6 +521,24 @@ func show_game_over(final_score: int) -> void:
 	# Try to update high score
 	if not is_editor_test_mode:
 		SaveManager.update_level_key_high_score(get_current_level_key(), final_score)
+
+	get_tree().change_scene_to_file(GAME_OVER_SCENE)
+	scene_changed.emit(GAME_OVER_SCENE)
+
+func show_survival_over(final_score: int, wave: int) -> void:
+	"""Show game over screen for Survival mode and persist the run."""
+	current_score = final_score
+	survival_wave_reached = max(1, wave)
+	is_in_gameplay = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	DifficultyManager.unlock_difficulty()
+	if SaveManager:
+		if SaveManager.has_method("set_last_played_survival"):
+			SaveManager.set_last_played_survival()
+		else:
+			SaveManager.set_last_played_in_progress(false)
+		if not is_editor_test_mode and SaveManager.has_method("save_survival_run"):
+			SaveManager.save_survival_run(final_score, survival_wave_reached)
 
 	get_tree().change_scene_to_file(GAME_OVER_SCENE)
 	scene_changed.emit(GAME_OVER_SCENE)
@@ -481,6 +566,10 @@ func show_level_complete(final_score: int) -> void:
 
 	# Capture per-level breakdown before leaving gameplay
 	_capture_level_breakdown(game_manager)
+	if current_play_mode == PlayMode.SET and get_challenge_mode() == CHALLENGE_MODE_TIME_ATTACK and game_manager and game_manager.has_method("stop_time_attack_timer"):
+		time_attack_elapsed_base_seconds = int(game_manager.stop_time_attack_timer())
+		if set_current_index >= (set_level_refs.size() - 1):
+			time_attack_final_seconds = time_attack_elapsed_base_seconds
 
 	if is_editor_test_mode:
 		get_tree().change_scene_to_file(LEVEL_COMPLETE_SCENE)
@@ -558,7 +647,7 @@ func continue_to_next_level() -> void:
 func show_set_complete(final_score: int) -> void:
 	"""Show set complete screen with cumulative score and bonuses"""
 	var challenge_mode := get_challenge_mode()
-	var expected_perfect_lives := 1 if challenge_mode == "one_life" else 3
+	var expected_perfect_lives := 1 if challenge_mode == CHALLENGE_MODE_ONE_LIFE else 3
 
 	# Check for perfect set clear (3x bonus if all lives intact and no continues used)
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -570,16 +659,38 @@ func show_set_complete(final_score: int) -> void:
 	else:
 		current_score = final_score
 
+	var completion_time_seconds: int = 0
+	if challenge_mode == CHALLENGE_MODE_TIME_ATTACK:
+		completion_time_seconds = int(max(time_attack_final_seconds, time_attack_elapsed_base_seconds))
+		if completion_time_seconds <= 0:
+			completion_time_seconds = int(floor(max(set_total_time_seconds, 0.0)))
+
 	# Determine high score status BEFORE saving
-	var prev_pb = SaveManager.get_set_pack_high_score(current_set_pack_id)
-	var prev_global = SaveManager.get_global_set_high_score(current_set_pack_id)
-	
-	was_new_personal_best = (current_score > prev_pb) or (prev_pb == 0 and current_score > 0)
-	was_new_machine_best = (current_score > prev_global) or (prev_global == 0 and current_score > 0)
+	was_new_personal_best = false
+	was_new_machine_best = false
+	if challenge_mode == CHALLENGE_MODE_TIME_ATTACK:
+		var prev_pb_time := SaveManager.get_time_attack_set_high_score(current_set_pack_id)
+		var prev_global_time := SaveManager.get_global_time_attack_set_best_time(current_set_pack_id)
+		if completion_time_seconds > 0:
+			was_new_personal_best = (prev_pb_time == 0) or (completion_time_seconds < prev_pb_time)
+			was_new_machine_best = (prev_global_time == 0) or (completion_time_seconds < prev_global_time)
+	elif challenge_mode != CHALLENGE_MODE_NORMAL:
+		var prev_pb_challenge := SaveManager.get_challenge_set_high_score(current_set_pack_id, challenge_mode)
+		var prev_global_challenge := SaveManager.get_global_challenge_set_high_score(current_set_pack_id, challenge_mode)
+		was_new_personal_best = (current_score > prev_pb_challenge) or (prev_pb_challenge == 0 and current_score > 0)
+		was_new_machine_best = (current_score > prev_global_challenge) or (prev_global_challenge == 0 and current_score > 0)
+	else:
+		var prev_pb := SaveManager.get_set_pack_high_score(current_set_pack_id)
+		var prev_global := SaveManager.get_global_set_high_score(current_set_pack_id)
+		was_new_personal_best = (current_score > prev_pb) or (prev_pb == 0 and current_score > 0)
+		was_new_machine_best = (current_score > prev_global) or (prev_global == 0 and current_score > 0)
 
 	# Update set high score
 	SaveManager.update_set_pack_high_score(current_set_pack_id, current_score)
-	if challenge_mode != "normal":
+	if challenge_mode == CHALLENGE_MODE_TIME_ATTACK:
+		if completion_time_seconds > 0:
+			SaveManager.save_time_attack_set_high_score(current_set_pack_id, completion_time_seconds)
+	elif challenge_mode != CHALLENGE_MODE_NORMAL:
 		SaveManager.save_challenge_set_high_score(current_set_pack_id, challenge_mode, current_score)
 
 	# Mark set as completed
@@ -600,6 +711,8 @@ func resume_last_level() -> void:
 	"""Resume the last played level if it was left in progress"""
 	var last_played = SaveManager.get_last_played()
 	if not last_played.get("in_progress", false):
+		return
+	if str(last_played.get("mode", "")) == LAST_PLAYED_MODE_SURVIVAL:
 		return
 	var pack_id := str(last_played.get("pack_id", ""))
 	var level_index := int(last_played.get("level_index", -1))
@@ -672,6 +785,12 @@ func get_next_level_ref() -> Dictionary:
 func get_current_score() -> int:
 	"""Get the current/final score"""
 	return current_score
+
+func get_survival_wave_reached() -> int:
+	return survival_wave_reached
+
+func get_time_attack_elapsed_base_seconds() -> int:
+	return time_attack_elapsed_base_seconds
 
 func get_was_perfect_clear() -> bool:
 	"""Check if the last completed level was a perfect clear"""
@@ -812,14 +931,16 @@ func get_challenge_mode() -> String:
 
 func _normalize_challenge_mode(mode: String) -> String:
 	var normalized := mode.strip_edges().to_lower()
-	if normalized == "iron_ball":
-		return "iron_ball"
-	if normalized == "one_life":
-		return "one_life"
-	return "normal"
+	if normalized == CHALLENGE_MODE_IRON_BALL:
+		return CHALLENGE_MODE_IRON_BALL
+	if normalized == CHALLENGE_MODE_ONE_LIFE:
+		return CHALLENGE_MODE_ONE_LIFE
+	if normalized == CHALLENGE_MODE_TIME_ATTACK:
+		return CHALLENGE_MODE_TIME_ATTACK
+	return CHALLENGE_MODE_NORMAL
 
 func _get_starting_lives_for_challenge() -> int:
-	return 1 if get_challenge_mode() == "one_life" else 3
+	return 1 if get_challenge_mode() == CHALLENGE_MODE_ONE_LIFE else 3
 
 func is_gameplay_active() -> bool:
 	"""Check if we're currently in a gameplay scene"""

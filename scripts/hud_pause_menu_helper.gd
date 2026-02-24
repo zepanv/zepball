@@ -161,12 +161,15 @@ func update_info(game_manager: Node) -> void:
 	if not game_manager:
 		return
 	if pause_level_info_label:
-		var pack_id: String = str(game_manager.current_pack_id)
-		var level_index: int = int(game_manager.current_level_index)
-		var level_info: Dictionary = PackLoader.get_level_info(pack_id, level_index)
-		var legacy_level_id: int = PackLoader.get_legacy_level_id(pack_id, level_index)
-		var display_label: String = "Level %d" % (legacy_level_id if legacy_level_id != -1 else level_index + 1)
-		pause_level_info_label.text = "%s: %s" % [display_label, str(level_info.get("name", "Unknown"))]
+		if MenuController and MenuController.is_survival_mode:
+			pause_level_info_label.text = "SURVIVAL: WAVE %d" % max(1, int(MenuController.get_survival_wave_reached()))
+		else:
+			var pack_id: String = str(game_manager.current_pack_id)
+			var level_index: int = int(game_manager.current_level_index)
+			var level_info: Dictionary = PackLoader.get_level_info(pack_id, level_index)
+			var legacy_level_id: int = PackLoader.get_legacy_level_id(pack_id, level_index)
+			var display_label: String = "Level %d" % (legacy_level_id if legacy_level_id != -1 else level_index + 1)
+			pause_level_info_label.text = "%s: %s" % [display_label, str(level_info.get("name", "Unknown"))]
 	if pause_score_info_label:
 		pause_score_info_label.text = "Score: " + str(game_manager.score)
 	if pause_lives_info_label:

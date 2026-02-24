@@ -36,6 +36,9 @@ func _ready():
 	var level_time = MenuController.get_last_level_time_seconds()
 	var level_score_raw = MenuController.get_last_level_score_raw()
 	var level_score_final = MenuController.get_last_level_score_final()
+	var challenge_mode := _get_active_challenge_mode()
+	var challenge_mode_label := _get_challenge_mode_label(challenge_mode)
+	var is_challenge_set_run := _is_challenge_set_run(challenge_mode)
 
 	# Display score
 	if MenuController.current_play_mode == MenuController.PlayMode.SET:
@@ -72,6 +75,8 @@ func _ready():
 	var perfect_bonus = int(breakdown.get("perfect_clear_bonus", 0))
 
 	breakdown_title_label.text = "SCORE BREAKDOWN"
+	if is_challenge_set_run:
+		breakdown_title_label.text = challenge_mode_label + " LEVEL BREAKDOWN"
 	base_score_label.text = "Base Score: " + str(base_points)
 	difficulty_bonus_label.text = "Difficulty Bonus: " + _format_bonus(difficulty_bonus)
 	combo_bonus_label.text = "Combo Bonus: " + _format_bonus(combo_bonus)
@@ -79,7 +84,16 @@ func _ready():
 	double_bonus_label.text = "Power-Up Bonus: " + _format_bonus(double_bonus)
 	perfect_bonus_label.text = "Perfect Clear Bonus: " + _format_bonus(perfect_bonus)
 	total_score_label.text = "Total: " + str(level_score_raw + perfect_bonus)
-	time_label.text = "Time: " + _format_time(level_time)
+	if challenge_mode == "time_attack" and is_challenge_set_run:
+		var run_time_seconds: int = int(MenuController.get_time_attack_elapsed_base_seconds())
+		if run_time_seconds < 0:
+			run_time_seconds = 0
+		if run_time_seconds > 0:
+			time_label.text = "Run Time: " + _format_time(float(run_time_seconds))
+		else:
+			time_label.text = "Run Time: " + _format_time(level_time)
+	else:
+		time_label.text = "Time: " + _format_time(level_time)
 
 	# Handle set mode vs individual mode
 	if MenuController.is_editor_test_mode:
@@ -93,7 +107,10 @@ func _ready():
 		play_again_button.text = "RETEST LEVEL"
 	elif MenuController.current_play_mode == MenuController.PlayMode.SET:
 		set_total_label.visible = true
-		set_total_label.text = "Set Total: " + str(final_score)
+		if is_challenge_set_run:
+			set_total_label.text = challenge_mode_label + " Total: " + str(final_score)
+		else:
+			set_total_label.text = "Set Total: " + str(final_score)
 		# In set mode, show continue button (no auto-advance - let player take a break)
 		next_level_button.text = "CONTINUE SET"
 		unlocked_label.text = "Ready for next level"
@@ -164,6 +181,25 @@ func _format_bonus(value: int) -> String:
 
 func _format_time(seconds: float) -> String:
 	var total_seconds = int(seconds)
-	var minutes = int(total_seconds / 60.0)
-	var secs = int(total_seconds % 60)
+	var minutes: int = int(floor(float(total_seconds) / 60.0))
+	var secs: int = int(total_seconds % 60)
 	return "%02d:%02d" % [minutes, secs]
+
+func _get_active_challenge_mode() -> String:
+	if MenuController and MenuController.has_method("get_challenge_mode"):
+		return str(MenuController.get_challenge_mode())
+	return "normal"
+
+func _is_challenge_set_run(challenge_mode: String) -> bool:
+	return MenuController.current_play_mode == MenuController.PlayMode.SET and challenge_mode != "normal"
+
+func _get_challenge_mode_label(challenge_mode: String) -> String:
+	match challenge_mode:
+		"iron_ball":
+			return "IRON BALL"
+		"one_life":
+			return "ONE LIFE"
+		"time_attack":
+			return "TIME ATTACK"
+		_:
+			return "NORMAL"
