@@ -41,12 +41,7 @@ Last Updated: 2026-02-24
 **Lives:** Standard 3 lives — no override.
 
 **HUD:**
-- Logo area replaced on game start (same pattern as Iron Ball / One Life)
-- > **TBD:** Exact logo area format. Options:
->   - `"TIME ATTACK"` static (time shown in a new TopBar label)
->   - `"TIME ATTACK\n01:23"` two-line (mode name + live timer in logo slot)
->   - `"01:23"` timer only (simplest, mode context from context)
->   Recommendation: two-line approach keeps all info in one zone without layout changes, but needs to fit the existing label size.
+- **Resolved:** TopBar shows a three-section layout for Time Attack — the center logo label remains `"ZEPBALL"` (unchanged), a left label reads `"TIME ATTACK"`, and a right label shows the live timer in `MM:SS` format. This means `hud.gd` must add/show left and right supplementary labels in the TopBar when in Time Attack mode (they are hidden in Normal / Iron Ball / One Life).
 
 **Stats tab:** Time Attack tab is added to the set high scores section of the Stats screen. Sort order is **ascending** (lower = better), and the column header reads "Best Time" rather than "High Score". Tab order: Normal | Iron Ball | One Life | Time Attack.
 
@@ -64,7 +59,7 @@ Survival is a standalone mode — it does not use pack data or level JSON. The e
 
 - **One wave = one screenful of bricks**
 - When all breakable bricks in a wave are cleared, a countdown plays: **"WAVE [N+1] INCOMING"** at 3… 2… 1…, then the next wave spawns
-- > **TBD:** Reuse the existing `LevelIntro` overlay in hud.gd for the countdown text, or add a dedicated wave transition label. LevelIntro is the natural fit (already handles fade + hold + fade out) but currently displays level name/description — needs a survival-mode branch.
+- **Resolved:** Reuse the existing `LevelIntro` overlay in `hud.gd` for the wave transition countdown. Add a survival-mode branch so it displays `"WAVE [N+1] INCOMING"` / `"3… 2… 1…"` instead of level name/description.
 
 - Wave number is tracked in GameManager (or a small survival state struct). There is no completion state — the run ends only when all lives are lost.
 
@@ -80,17 +75,17 @@ Survival is a standalone mode — it does not use pack data or level JSON. The e
 
 ### Brick Tier Progression
 
-> **Needs work** — The wave thresholds (X values) and exact brick mix per tier are tuning constants. They should be defined as exported or config variables, not hardcoded, so they can be adjusted without code changes after playtesting.
+Wave thresholds and exact brick mix are tuning constants. Define as exported variables in `SurvivalGenerator` so they can be adjusted without code changes after playtesting.
 
-Three candidate curves shown below. Tier transitions are cumulative (each tier adds to the previous pool).
+**Selected curve: Option B (Fast Ramp).** Tier transitions are cumulative (each tier adds to the previous pool).
 
-| Tier | **Option A** (Gradual) | **Option B** (Fast Ramp) | **Option C** (Slow Burn) |
-|------|------------------------|--------------------------|--------------------------|
-| **0** Waves 1–? | NORMAL, RED, BLUE, GREEN — simple grid layouts | Same | Same |
-| **1** | 2-hit bricks (STRONG, PURPLE) + diamond / polygon shapes + denser layouts | Waves 3–4 | Waves 6–9 |
-| **2** | GOLD, ORANGE (high-value) + POWERUP_BRICKs + shaped formations | Waves 5–8 | Waves 10–14 |
-| **3** | BOMB bricks + glossy diamond/polygon (DIAMOND_GLOSSY, POLYGON_GLOSSY = 2-hit shaped) | Waves 9–12 | Waves 15–19 |
-| **4** | Full pool mix — all types in rotation | Wave 13+ | Wave 20+ |
+| Tier | Waves (Option B) | Brick types introduced |
+|------|-----------------|------------------------|
+| **0** | Waves 1–2 | NORMAL, RED, BLUE, GREEN — simple sparse layouts |
+| **1** | Waves 3–4 | 2-hit bricks (STRONG, PURPLE) + diamond/polygon shapes + denser layouts |
+| **2** | Waves 5–8 | GOLD, ORANGE (high-value) + POWERUP_BRICKs + shaped formations |
+| **3** | Waves 9–12 | BOMB bricks + glossy shapes (DIAMOND_GLOSSY, POLYGON_GLOSSY = 2-hit) |
+| **4** | Wave 13+ | Full pool mix — all types in rotation |
 
 **Indestructibles:** First appear at **wave 5** — 1 to 2 bricks only. Count can scale up every few tiers (exact cadence TBD).
 
@@ -98,18 +93,12 @@ Three candidate curves shown below. Tier transitions are cumulative (each tier a
 
 ### Difficulty Scaling (Ball Speed)
 
-- Ball speed increases by a fixed step every **Y waves** (Y = TBD tuning constant)
-- Speed is capped at **3× the wave-1 starting speed**
-- > **Design note:** Wave-1 speed is `500 × difficulty_multiplier`. On Hard that is 600; 3× = 1800, which may be physically unpleasant. Consider whether the survival speed cap should be **absolute** (e.g., always cap at 1500 regardless of difficulty) rather than relative. Flag for playtesting.
+- Ball speed increases by a fixed step every **Y waves** (Y = tuning constant, define as exported var in `SurvivalGenerator`)
+- Speed is capped at **3× the wave-1 starting speed** (relative cap — intentional; flag for playtesting if Hard feels too fast at 1800)
 
 ### HUD
 
-- Logo area replaced at game start
-- > **TBD:** Exact format for logo replacement:
->   - `"WAVE 3"` — updates each wave transition (clean, minimal)
->   - `"SURVIVAL • WAVE 3"` — more descriptive
->   - `"SURVIVAL"` static + wave number shown elsewhere
->   Recommendation: `"WAVE 3"` updating each wave, consistent with the LevelIntro countdown.
+- **Resolved:** Same three-section layout as Time Attack — center logo label remains `"ZEPBALL"`, left label reads `"SURVIVAL"`, right label shows `"WAVE N"` (updated on each wave transition). Reuses the same TopBar supplementary label mechanism introduced for Time Attack.
 
 ### Game Over Screen
 
@@ -210,8 +199,7 @@ Follow `.agent/SOP/critical-workflows.md`. Challenge modes handles 1 → 2. This
 - Expose `get_challenge_mode() -> String` already planned in challenge-modes.md; Time Attack adds `"time_attack"` as a fourth valid value
 
 #### 3. `scripts/ui/main_menu.gd` + `scenes/ui/main_menu.tscn` — Survival Button
-- Add **SURVIVAL** button to main menu
-- > **TBD:** Exact placement in menu button order (currently: PLAY, STATS, SETTINGS, QUIT). Likely between PLAY and STATS.
+- Add **SURVIVAL** button to main menu, positioned **above the EDITOR button**
 - On press: `MenuController.start_survival()`
 
 #### 4. `scripts/survival_generator.gd` — New Script
@@ -234,11 +222,13 @@ Follow `.agent/SOP/critical-workflows.md`. Challenge modes handles 1 → 2. This
 - `var current_wave: int` (for survival, incremented by main.gd)
 
 #### 7. `scripts/hud.gd` — Timer + Wave Display
-- On game start, check `MenuController.get_challenge_mode()`
-  - `"time_attack"` → replace logo with Time Attack display (format TBD, see above)
-  - `"normal"` / `"iron_ball"` / `"one_life"` → existing behavior (challenge-modes.md)
-- For survival: check `MenuController.is_survival_mode` → replace logo with wave display (format TBD)
-- Connect to `GameManager` timer signal (or poll `time_attack_elapsed`) to update timer label each frame
+- Add two supplementary labels to the TopBar: `TopBarLeft` and `TopBarRight` (hidden by default)
+- On game start, check `MenuController.get_challenge_mode()` and `MenuController.is_survival_mode`:
+  - `"normal"` / `"iron_ball"` / `"one_life"` → existing behavior (challenge-modes.md); supplementary labels stay hidden
+  - `"time_attack"` → show `TopBarLeft = "TIME ATTACK"`, center logo = `"ZEPBALL"` (unchanged), `TopBarRight = "MM:SS"` (live timer)
+  - survival → show `TopBarLeft = "SURVIVAL"`, center logo = `"ZEPBALL"` (unchanged), `TopBarRight = "WAVE N"` (updated on each wave transition)
+- Connect to `GameManager` timer signal (or poll `time_attack_elapsed`) to update `TopBarRight` each frame in Time Attack
+- Update `TopBarRight` on each wave transition signal in Survival
 
 #### 8. `scripts/ui/game_over.gd` — Survival Modifications
 - If survival context:
@@ -276,29 +266,22 @@ Work in this order to avoid depending on unfinished pieces:
 
 ---
 
-## TBD / Needs Decision Before Implementation
+## Remaining Tuning Constants (Pre-Playtesting)
 
-| Item | Options | Notes |
-|------|---------|-------|
-| Time Attack HUD format | Two-line logo (`TIME ATTACK\n01:23`) vs separate label | Two-line keeps layout changes minimal |
-| Survival HUD format | `WAVE 3` (updating) vs `SURVIVAL • WAVE 3` | `WAVE 3` updating is cleanest |
-| Wave transition UI | Reuse LevelIntro overlay vs new label | LevelIntro already handles fade + hold + fade out |
-| Survival speed cap | Relative (3× start speed) vs absolute ceiling | Relative may be too fast on Hard; flag for playtesting |
-| Survival speed step interval (Y) | Tuning constant | Define in SurvivalGenerator config |
-| Brick tier unlock waves (X) | Tuning constant (see tier table options A/B/C) | Option A (Gradual) is recommended starting point |
-| Indestructible scale curve | 1–2 at wave 5, +1 per tier? | TBD, define in SurvivalGenerator config |
-| Main menu button order | PLAY / SURVIVAL / STATS / SETTINGS / QUIT | TBD |
-| Save migration single-step | 1→3 if implementing alongside challenge-modes | Coordinate with challenge-modes.md v2 migration |
+These are implementation-ready as exported vars in `SurvivalGenerator` — exact values to be tuned after first playtest:
+
+| Constant | Starting value | Notes |
+|----------|---------------|-------|
+| Speed step interval (Y) | Every 3 waves | Increase ball speed by fixed step |
+| Indestructible scale curve | 1 at wave 5, +1 per 4 waves | Cap suggested at ~6 |
+| Speed step size | 50 units/step | Relative to wave-1 base; cap at 3× |
+
+**`SurvivalGenerator`:** Implemented as a stateless `class_name` utility (no autoload). `main.gd` calls `SurvivalGenerator.generate_wave(wave_number)` directly.
 
 ---
 
 ## Out of Scope (Future)
 
-- Time Attack per-level best times (pack-level only for now)
-- Time Attack for individual level play
-- Survival mid-run save/resume
-- Survival seeded runs (reproducible layouts)
-- Stacking Time Attack + other challenge modes
 - Survival difficulty selector (always Normal-equivalent rules for now)
 - Survival achievements (e.g., "Reach wave 20")
 

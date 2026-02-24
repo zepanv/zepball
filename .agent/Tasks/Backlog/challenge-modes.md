@@ -98,7 +98,7 @@ Last Updated: 2026-02-24
   ```gdscript
   if MenuController.get_challenge_mode() == "iron_ball":
       # skip grant, just break the brick
-      emit_signal("brick_broken", 10)  # score like a normal brick
+      emit_signal("brick_broken", <normal_brick_score>)  # use same score value as a standard brick break (check existing brick.gd for the default value)
       queue_free()
       return
   ```
@@ -215,8 +215,6 @@ Work in this order to avoid depending on unfinished pieces:
 
 - Challenge mode per-level high scores (pack-level only for now)
 - Challenge mode achievements/badges (e.g., "Complete a pack in One Life")
-- Stacking Iron Ball + One Life simultaneously
-- Challenge mode support for individual level play
 - Additional challenge modes (Time Attack, Survival) → see `Tasks/Backlog/new-game-modes.md`
 
 ---
