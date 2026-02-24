@@ -23,4 +23,4 @@ Core brick types and particle effects are implemented. Advanced tile mechanics (
 ## Related Docs
 - `Tasks/Backlog/advanced-tile-elements.md`
 - `Tasks/Backlog/future-features.md`
-- `Tasks/Completed/level-system.md`
+- `Tasks/Completed/Archive/level-system.md`

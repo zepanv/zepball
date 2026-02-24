@@ -60,6 +60,6 @@ Supports all brick types from `brick.gd`:
   - Next level can be launched directly from `level_complete.tscn`.
 
 ## Related Docs
-- `Tasks/Completed/tile-system.md`
-- `Tasks/Completed/ui-system.md`
+- `Tasks/Completed/Archive/tile-system.md`
+- `Tasks/Completed/Archive/ui-system.md`
 - `System/architecture.md`

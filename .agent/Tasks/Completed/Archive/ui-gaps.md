@@ -20,6 +20,6 @@ Implemented a new right-click aim mode for the main ball launch. The launch indi
 - Launch uses indicator direction and still triggers normal play state transition
 
 ## Related Docs
-- `Tasks/Completed/ui-system.md`
+- `Tasks/Completed/Archive/ui-system.md`
 - `System/architecture.md`
 - `Tasks/Backlog/future-features.md`

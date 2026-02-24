@@ -2,38 +2,47 @@
 
 Use this file as the entry point for implementation work in ZepBall.
 
-## Start Here
-1. Read `.agent/README.md` for documentation boundaries and source-of-truth rules.
-2. Read `.agent/QUICK-REF.md` for task routing.
-3. Read `.agent/System/architecture.md` before changing runtime behavior.
+## Progressive Disclosure
+Start with the shallowest layer that answers the task, then go deeper only when needed.
 
-## Three Non-Negotiables
-1. Save data changes require migration logic.
-2. Asset adds/removals require asset doc updates.
-3. Commits must follow the required commit format.
+| Layer | Goal | Read |
+|------|------|------|
+| Layer 0 (mandatory) | Entry rules and guardrails | `.agent/AGENTS.md` |
+| Layer 1 (routing) | Find the right canonical doc quickly | `.agent/README.md`, `.agent/QUICK-REF.md` |
+| Layer 2 (canonical) | Source of truth for behavior/procedures | `.agent/System/architecture.md`, `.agent/System/tech-stack.md`, `.agent/SOP/critical-workflows.md` |
+| Layer 3 (deep/historical) | Long-form background and change history | `.agent/System/architecture-details.md`, `.agent/SOP/godot-workflow.md`, `.agent/Tasks/Completed/INDEX.md`, `.agent/CHANGELOG.md` |
 
-Details for all three are canonical in `.agent/SOP/critical-workflows.md`.
+## Non-Negotiables
+1. Save data structure changes require migration logic.
+2. Asset usage changes require asset documentation updates.
+3. Commits must follow the required project format.
 
-## Before You Code
-- Changing save structure: read `.agent/SOP/critical-workflows.md` (Save System Compatibility)
-- Adding/removing assets: read `.agent/SOP/critical-workflows.md` (Asset Documentation)
-- Preparing a commit: read `.agent/SOP/critical-workflows.md` (Commit Message Format)
-- Bumping public version: read `.agent/SOP/critical-workflows.md` (SemVer + Git tags; no auto-bumps)
+Canonical source for all three: `.agent/SOP/critical-workflows.md`.
 
-## Documentation Responsibilities
-Update docs with code changes, but avoid duplicate content:
-- Runtime behavior: update `.agent/System/architecture.md`
-- Project settings/config/input/autoloads: update `.agent/System/tech-stack.md`
-- User-visible release notes: update `.agent/CHANGELOG.md`
-- Asset usage: update `.agent/System/used-assets.md` and `.agent/System/unused-assets.md`
-- Task lifecycle: move items between `.agent/Tasks/Backlog/` and `.agent/Tasks/Completed/`
+## Task Routing
+- Runtime/gameplay behavior changes: `.agent/System/architecture.md`
+- Engine settings/input/autoload changes: `.agent/System/tech-stack.md`
+- Save, asset, commit, release workflow: `.agent/SOP/critical-workflows.md`
+- Day-to-day Godot workflow help: `.agent/SOP/godot-workflow.md`
 
-## Where To Look
-- Quick operational lookup: `.agent/QUICK-REF.md`
-- Mandatory procedures: `.agent/SOP/critical-workflows.md`
-- Extended Godot reference: `.agent/SOP/godot-workflow.md`
-- Runtime architecture: `.agent/System/architecture.md`
-- Historical changes: `.agent/CHANGELOG.md`
-- Future planning: `.agent/Tasks/Backlog/future-features.md`
+## Documentation Update Rules
+Update canonical docs when behavior changes. Avoid repeating the same detail in index docs.
 
-**Last Updated:** 2026-02-15
+- Runtime behavior: `.agent/System/architecture.md`
+- Config/input/autoload/project settings: `.agent/System/tech-stack.md`
+- Save/asset/release procedure changes: `.agent/SOP/critical-workflows.md`
+- Asset inventory: `.agent/System/used-assets.md` and `.agent/System/unused-assets.md`
+- Task lifecycle: `.agent/Tasks/Backlog/` and `.agent/Tasks/Completed/`
+- User-visible release history: `.agent/CHANGELOG.md`
+
+## Pre-Commit Doc Gate
+- Run `.agent` docs lint after doc updates:
+  - `scripts/check_agent_docs.sh`
+
+## Anti-Bloat Rules
+- Keep one canonical source per topic.
+- Keep index docs short and link-heavy.
+- Remove stale references instead of documenting legacy behavior in multiple places.
+- Do not document facts that are trivial to discover from code, scenes, or `project.godot` unless they are part of a fragile contract.
+
+**Last Updated:** 2026-02-24

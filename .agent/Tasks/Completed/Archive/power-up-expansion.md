@@ -49,5 +49,5 @@ Completed implementation for additional power-ups:
 - ✅ No save system changes required (power-ups are transient)
 
 ## Related Docs
-- `Tasks/Completed/power-ups.md`
+- `Tasks/Completed/Archive/power-ups.md`
 - `System/architecture.md`

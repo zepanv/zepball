@@ -34,5 +34,5 @@ The UI system manages menus, HUD, and overlays. Scene transitions are handled by
 
 ## Related Docs
 - `Tasks/Backlog/audio-system.md`
-- `Tasks/Completed/ui-gaps.md`
+- `Tasks/Completed/Archive/ui-gaps.md`
 - `System/architecture.md`

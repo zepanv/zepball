@@ -62,5 +62,5 @@ All planned power-ups are implemented.
 See `Tasks/Backlog/power-up-expansion.md` for details.
 
 ## Related Docs
-- `Tasks/Completed/power-up-expansion.md`
+- `Tasks/Completed/Archive/power-up-expansion.md`
 - `System/architecture.md`

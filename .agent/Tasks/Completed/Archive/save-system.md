@@ -62,7 +62,7 @@ SaveManager handles persistent player data: progression, per-level high scores, 
 - `total_games_played` increments per level start.
 
 ## Related Docs
-- `Tasks/Completed/ui-system.md`
-- `Tasks/Completed/tile-system.md`
+- `Tasks/Completed/Archive/ui-system.md`
+- `Tasks/Completed/Archive/tile-system.md`
 - `Tasks/Backlog/audio-system.md`
 - `System/architecture.md`

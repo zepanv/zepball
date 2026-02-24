@@ -1,48 +1,41 @@
 # ZepBall Agent Docs Index
 
-This folder is for internal agent/developer documentation only.
+This folder contains implementation-facing docs for contributors and agents.
 
-## Read Order
-1. `AGENTS.md` - Entry point and required behavior for agents
-2. `QUICK-REF.md` - Fast lookup for common tasks
-3. `SOP/critical-workflows.md` - Mandatory procedures (save migrations, asset docs, commits)
-4. `System/architecture.md` - Source of truth for runtime systems and behavior
+## Progressive Disclosure Read Path
+1. `AGENTS.md` - Entry rules and non-negotiables
+2. `QUICK-REF.md` - Fast task-to-doc routing
+3. Canonical docs for the active change
+4. Deep/historical docs only when needed
 
-## Documentation Map
-| Path | Purpose | Update When |
-|------|---------|-------------|
-| `AGENTS.md` | Agent onboarding and execution rules | Agent workflow expectations change |
-| `QUICK-REF.md` | Short operational lookup | Frequently needed task routing changes |
-| `SOP/critical-workflows.md` | Mandatory project procedures | Save, asset, or commit process changes |
-| `SOP/godot-workflow.md` | Extended Godot guidance | General workflow guidance changes |
-| `System/architecture.md` | Runtime architecture and system behavior | Systems, flows, or game behavior changes |
-| `System/tech-stack.md` | Engine/config/input/autoload facts | Project settings or runtime config changes |
-| `System/used-assets.md` | Assets currently in use | Assets are added or references move |
-| `System/unused-assets.md` | Assets not currently used | Assets are retired/replaced |
-| `Tasks/Completed/` | Implemented feature records | Backlog items are completed |
-| `Tasks/Backlog/` | Planned future work | New ideas or priorities are added |
-| `CHANGELOG.md` | Chronological changes | User-visible releases/changes occur |
+## Canonical Sources (Layer 2)
+| Topic | Canonical Doc |
+|------|------|
+| Runtime architecture and behavior | `System/architecture.md` |
+| Runtime subsystem internals (deep reference) | `System/architecture-details.md` |
+| Engine/config/input/autoload facts | `System/tech-stack.md` |
+| Required procedures (save/assets/commit/release) | `SOP/critical-workflows.md` |
+| Asset usage inventory | `System/used-assets.md`, `System/unused-assets.md` |
 
-## Boundary: Agent Docs vs User README
-- `../README.md` is player-facing only.
-- `.agent/*` is implementation-facing only.
-- Do not duplicate technical internals in `../README.md`.
+## Deep/Historical References (Layer 3)
+| Doc | Purpose |
+|------|------|
+| `SOP/godot-workflow.md` | Supplemental Godot workflow notes (non-canonical) |
+| `Tasks/Backlog/` | Planned work |
+| `Tasks/Completed/INDEX.md` | Entry point for completed work history (active + archive) |
+| `CHANGELOG.md` | User-facing chronological change history |
+
+## Boundary Rules
+- `../README.md` is player-facing.
+- `.agent/*` is implementation-facing.
+- Do not duplicate implementation internals in `../README.md`.
 - Do not duplicate player-facing controls/licensing content in `.agent/*`.
 
-## Anti-Duplication Rules
-- Keep one source of truth per topic:
-  - Runtime behavior: `System/architecture.md`
-  - Process/procedures: `SOP/critical-workflows.md`
-  - Chronological history: `CHANGELOG.md`
-- In index files (`AGENTS.md`, `README.md`, `QUICK-REF.md`), prefer links over copied detail.
-- Avoid repeating volatile counts (packs/levels/autoload count) in multiple files.
+## Maintenance Rules
+- Update canonical docs when behavior/process changes.
+- Keep index docs concise; prefer links over repeated instructions.
+- Remove stale path/version claims when no longer true.
+- Prefer documenting non-obvious contracts over easily discoverable file inventories.
+- Run docs lint after `.agent` doc edits: `scripts/check_agent_docs.sh`
 
-## Maintenance Checklist
-Before committing a feature:
-- Update code
-- Update canonical docs only
-- Update index/reference docs only if routing changed
-- Verify stale paths were not reintroduced (for example old `data/level_sets.json`)
-- If version bump was requested: update main menu SemVer display + release docs together, then tag (`vMAJOR.MINOR.PATCH`)
-
-**Last Updated:** 2026-02-15
+**Last Updated:** 2026-02-24

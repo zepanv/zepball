@@ -38,5 +38,5 @@ Add sound effects and background music to improve game feel. Core playback is no
 - [x] Export-safe music track discovery (ResourceLoader list + DirAccess fallback).
 
 ## Related Docs
-- `Tasks/Completed/ui-system.md`
+- `Tasks/Completed/Archive/ui-system.md`
 - `System/architecture.md`

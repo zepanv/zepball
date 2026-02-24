@@ -1,40 +1,34 @@
 # Quick Reference
 
-Use this for fast task routing. Keep detail in canonical docs.
+Use this file for routing only. Canonical details live in Layer 2 docs.
 
-## I Need To...
+## If You Need To...
 | Task | Read |
 |------|------|
-| Understand doc boundaries | `.agent/README.md` |
 | Understand runtime behavior | `.agent/System/architecture.md` |
-| Check engine/config/input/autoloads | `.agent/System/tech-stack.md` |
-| Change save data safely | `.agent/SOP/critical-workflows.md` |
+| Deep-dive subsystem internals | `.agent/System/architecture-details.md` |
+| Check project settings/input/autoloads | `.agent/System/tech-stack.md` |
+| Change save structure safely | `.agent/SOP/critical-workflows.md` |
 | Add/remove assets correctly | `.agent/SOP/critical-workflows.md` |
-| Prepare a commit | `.agent/SOP/critical-workflows.md` |
-| Bump public version / release tag | `.agent/SOP/critical-workflows.md` |
-| Find historical changes | `.agent/CHANGELOG.md` |
-| See future plans | `.agent/Tasks/Backlog/future-features.md` |
+| Prepare commit or release/version bump | `.agent/SOP/critical-workflows.md` |
+| Review user-facing change history | `.agent/CHANGELOG.md` |
+| Find planned work | `.agent/Tasks/Backlog/future-features.md` |
+| Find completed work history | `.agent/Tasks/Completed/INDEX.md` |
 
-## Non-Negotiables
-1. Save schema changes require migration logic.
-2. Asset changes require updates to asset documentation.
-3. Commit messages must follow the project format.
-
-Canonical source: `.agent/SOP/critical-workflows.md`.
-
-## Common Change Paths
-- New gameplay/system behavior:
-  - Code + `.agent/System/architecture.md`
-- New/changed settings, input, autoloads:
-  - Code + `.agent/System/tech-stack.md`
-- User-visible release impact:
-  - Code + `.agent/CHANGELOG.md`
-- Asset add/remove:
-  - Code + `.agent/System/used-assets.md` + `.agent/System/unused-assets.md`
+## Fast Change Impact Map
+- Gameplay behavior changes:
+  - Update code + `.agent/System/architecture.md`
+- Settings/input/autoload changes:
+  - Update code + `.agent/System/tech-stack.md`
+- Save schema or asset usage changes:
+  - Update code + `.agent/SOP/critical-workflows.md` and relevant asset docs
+- User-visible release change:
+  - Update `.agent/CHANGELOG.md`
 
 ## Guardrails
-- Prefer links over copied detail in index/reference docs.
-- Avoid duplicating volatile counts across multiple files.
-- Treat old `data/level_sets.json` and `levels/level_XX.json` runtime references as stale.
+1. Keep one source of truth per topic.
+2. Prefer links in index docs over copied detail.
+3. Remove stale legacy references when found.
+4. Run `scripts/check_agent_docs.sh` after `.agent` doc edits.
 
-**Last Updated:** 2026-02-15
+**Last Updated:** 2026-02-24
