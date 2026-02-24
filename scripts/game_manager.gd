@@ -70,8 +70,16 @@ signal state_changed(new_state: GameState)
 func _ready():
 	# Set this node to always process, even when paused (so pause toggle works)
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_apply_challenge_mode_defaults()
 	_reset_level_breakdown()
 	_apply_mouse_mode_for_state(game_state)
+
+func _apply_challenge_mode_defaults() -> void:
+	var challenge_mode := "normal"
+	if MenuController and MenuController.has_method("get_challenge_mode"):
+		challenge_mode = str(MenuController.get_challenge_mode())
+	lives = 1 if challenge_mode == "one_life" else 3
+	is_perfect_clear = true
 
 func _process(_delta):
 	# Debug: Press Escape to toggle pause (when implemented)

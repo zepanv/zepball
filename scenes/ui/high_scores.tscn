@@ -66,6 +66,16 @@ tab_0/title = "OVERALL"
 tab_1/title = "SETS"
 tab_2/title = "LEVELS"
 
+[node name="ChallengeTabs" type="TabBar" parent="Panel/VBoxContainer"]
+visible = false
+layout_mode = 2
+focus_mode = 2
+tab_count = 3
+tab_alignment = 1
+tab_0/title = "NORMAL"
+tab_1/title = "IRON BALL"
+tab_2/title = "ONE LIFE"
+
 [node name="ScrollContainer" type="ScrollContainer" parent="Panel/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3

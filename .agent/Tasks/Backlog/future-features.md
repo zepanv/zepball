@@ -4,7 +4,7 @@
 
 Features that have been designed but not yet implemented.
 
-Last Updated: 2026-02-12
+Last Updated: 2026-02-24
 
 ---
 
@@ -15,8 +15,7 @@ Last Updated: 2026-02-12
 > Covers: Time Attack as a fourth challenge dropdown variant (pack-run only, MM:SS timer, time-keyed leaderboard), Survival as a standalone main menu mode (procedural wave generation, brick tier progression, speed scaling, top-10 run leaderboard), shared save migration v3, and Stats screen additions.
 
 ### Iron Ball Mode & One Life Mode
-> **Extracted to dedicated task**: See `Tasks/Backlog/challenge-modes.md` for full design spec and implementation plan.
-> Covers: Set Select UI restructure, challenge mode dropdown, Iron Ball power-up suppression, One Life lives override, separate leaderboards, HUD logo replacement, stats screen tabs, and save migration.
+> **Implemented**: See `Tasks/Completed/challenge-modes.md` for implementation details and verification notes.
 
 ## Advanced Gameplay Features
 
@@ -76,8 +75,7 @@ Last Updated: 2026-02-12
 **Low Priority:**
 5. Paddle Abilities (complex, needs careful balancing)
 6. Brick Chains (nice to have, not essential)
-7. Challenge Modes (Iron Ball, One Life) → see `Tasks/Backlog/challenge-modes.md`
-8. New Game Modes (Time Attack, Survival) → see `Tasks/Backlog/new-game-modes.md`
+7. New Game Modes (Time Attack, Survival) → see `Tasks/Backlog/new-game-modes.md`
 
 ---
 

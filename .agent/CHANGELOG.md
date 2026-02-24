@@ -6,7 +6,16 @@ For current game state, see `README.md`. For full system architecture, see `Syst
 
 ---
 
-## 2026-02-18 (Latest) - v0.5.1 Release Prep + Stability Fixes
+## 2026-02-24 (Latest) - Challenge Modes (Iron Ball + One Life)
+- ✅ **Challenge Mode System**: Added per-profile challenge selection and gameplay routing for `normal`, `iron_ball`, and `one_life` set runs.
+- ✅ **Save v3 Migration**: Added challenge leaderboards (`iron_ball_set_high_scores`, `one_life_set_high_scores`) and `last_played.challenge_mode` persistence with migration support.
+- ✅ **Set Select UI Split Layout**: Added right-side challenge panel with descriptions; `LEVELS` buttons now disable in non-Normal challenge modes.
+- ✅ **Iron Ball Rules**: Suppressed random power-up drops and converted POWERUP_BRICK collection into normal-brick scoring without granting effects.
+- ✅ **One Life Rules**: Set-run starts with one life, `EXTRA_LIFE` grant is blocked, and Game Over hides `CONTINUE SET`.
+- ✅ **Leaderboard Tabs**: High Scores screen now includes set challenge tabs (`NORMAL`, `IRON BALL`, `ONE LIFE`) backed by cross-profile leaderboard aggregation.
+- ✅ **HUD Branding Update**: Gameplay center logo now shows `ZepBall`, `IRON BALL`, or `ONE LIFE` based on active mode.
+
+## 2026-02-18 - v0.5.1 Release Prep + Stability Fixes
 - ✅ **Dev Builtin Pack Editing**: Added debug-only `EDIT [DEV]` entry on official packs and save path support for builtin pack edits in debug builds.
 - ✅ **Editor Save Intent Fix**: Preserved builtin-edit intent through test round-trips and corrected save status text to reflect actual save target.
 - ✅ **Shutdown Leak Fix**: Added graceful audio teardown during quit flow, removing persistent ObjectDB/resource leak warnings at exit.
@@ -259,4 +268,4 @@ For current game state, see `README.md`. For full system architecture, see `Syst
 
 ---
 
-**Last Updated**: 2026-02-18
+**Last Updated**: 2026-02-24

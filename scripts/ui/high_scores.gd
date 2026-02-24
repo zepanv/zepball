@@ -6,15 +6,18 @@ extends Control
 @onready var scores_container = $Panel/VBoxContainer/ScrollContainer/ScoresContainer
 @onready var back_button = $BackButton
 @onready var filter_tabs = $Panel/VBoxContainer/FilterTabs
+@onready var challenge_tabs = $Panel/VBoxContainer/ChallengeTabs
 
 var leaderboards: Dictionary = {}
 var current_filter: String = "overall" # overall | sets | levels
+var current_set_challenge_filter: String = "normal" # normal | iron_ball | one_life
 
 func _ready():
 	leaderboards = SaveManager.get_all_leaderboards()
 	
 	back_button.pressed.connect(_on_back_pressed)
 	filter_tabs.tab_changed.connect(_on_filter_changed)
+	challenge_tabs.tab_changed.connect(_on_challenge_filter_changed)
 	
 	_refresh_display()
 	
@@ -35,7 +38,19 @@ func _on_filter_changed(tab_index: int):
 		0: current_filter = "overall"
 		1: current_filter = "sets"
 		2: current_filter = "levels"
+	challenge_tabs.visible = current_filter == "sets"
 	_refresh_display()
+
+func _on_challenge_filter_changed(tab_index: int):
+	match tab_index:
+		1:
+			current_set_challenge_filter = "iron_ball"
+		2:
+			current_set_challenge_filter = "one_life"
+		_:
+			current_set_challenge_filter = "normal"
+	if current_filter == "sets":
+		_refresh_display()
 
 func _refresh_display():
 	# Clear current items
@@ -72,11 +87,12 @@ func _display_overall():
 		_add_empty_message("No high scores recorded yet.")
 
 func _display_sets():
-	_add_header("SET COMPLETION RECORDS")
+	var selected_leaderboard := _get_selected_set_leaderboard()
+	_add_header(_get_selected_set_header())
 	
 	var all_sets = []
-	for s_id in leaderboards["sets"].keys():
-		for entry in leaderboards["sets"][s_id]:
+	for s_id in selected_leaderboard.keys():
+		for entry in selected_leaderboard[s_id]:
 			var new_entry = entry.duplicate()
 			new_entry["context"] = _get_set_name(s_id)
 			all_sets.append(new_entry)
@@ -86,8 +102,10 @@ func _display_sets():
 	for i in range(all_sets.size()):
 		_add_score_entry(all_sets[i], i + 1)
 		
-	if all_sets.is_empty():
+	if all_sets.is_empty() and current_set_challenge_filter == "normal":
 		_add_empty_message("No sets completed yet.")
+	elif all_sets.is_empty():
+		_add_empty_message("No runs yet.")
 
 func _display_levels():
 	# Grouped by level
@@ -247,7 +265,10 @@ func _add_empty_message(text: String):
 		"overall":
 			hint.text = "Complete any level to start building your leaderboard!"
 		"sets":
-			hint.text = "Complete a full set run to appear here."
+			if current_set_challenge_filter == "normal":
+				hint.text = "Complete a full set run to appear here."
+			else:
+				hint.text = "Finish a challenge run to appear here."
 		"levels":
 			hint.text = "Play individual levels to see scores grouped by level."
 
@@ -263,3 +284,21 @@ func _get_level_name(level_key: String) -> String:
 func _get_set_name(pack_id: String) -> String:
 	var pack = PackLoader.get_pack(pack_id)
 	return str(pack.get("name", pack_id))
+
+func _get_selected_set_leaderboard() -> Dictionary:
+	match current_set_challenge_filter:
+		"iron_ball":
+			return leaderboards.get("iron_ball_sets", {})
+		"one_life":
+			return leaderboards.get("one_life_sets", {})
+		_:
+			return leaderboards.get("sets", {})
+
+func _get_selected_set_header() -> String:
+	match current_set_challenge_filter:
+		"iron_ball":
+			return "IRON BALL SET RECORDS"
+		"one_life":
+			return "ONE LIFE SET RECORDS"
+		_:
+			return "SET COMPLETION RECORDS"

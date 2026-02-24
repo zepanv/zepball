@@ -6,21 +6,49 @@ extends Control
 enum FilterMode { ALL, OFFICIAL, CUSTOM }
 enum SortMode { BY_ORDER, BY_PROGRESSION }
 
+const CHALLENGE_MODE_NORMAL = "normal"
+const CHALLENGE_MODE_IRON_BALL = "iron_ball"
+const CHALLENGE_MODE_ONE_LIFE = "one_life"
+
+const CHALLENGE_MODE_DESCRIPTIONS: Dictionary = {
+	CHALLENGE_MODE_NORMAL: "Standard gameplay with all power-ups active.",
+	CHALLENGE_MODE_IRON_BALL: "No power-ups spawn. Pure skill and precision only.",
+	CHALLENGE_MODE_ONE_LIFE: "One life. No continues. Complete the pack or start over."
+}
+
 var current_filter_mode: FilterMode = FilterMode.ALL
 var current_sort_mode: SortMode = SortMode.BY_ORDER
+var level_buttons: Array[Button] = []
 
-@onready var sets_container = $VBoxContainer/ScrollContainer/SetsContainer
-@onready var title_label = $VBoxContainer/TitleLabel
-@onready var toolbar_container = $VBoxContainer/ToolbarContainer
+@onready var sets_container: VBoxContainer = $VBoxContainer/ContentContainer/PackListContainer/ScrollContainer/SetsContainer
+@onready var title_label: Label = $VBoxContainer/TitleLabel
+@onready var toolbar_container: MarginContainer = $VBoxContainer/ToolbarContainer
+@onready var challenge_dropdown: OptionButton = $VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox/ChallengeDropdown
+@onready var challenge_description_label: Label = $VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox/ChallengeDescription
+@onready var challenge_mode_note_label: Label = $VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox/ChallengeModeNote
 
 func _ready() -> void:
 	title_label.text = "SELECT PACK"
 	_create_toolbar()
+	_initialize_challenge_mode_controls()
 	populate_packs()
 
 	# Grab focus on first button for controller navigation
 	await get_tree().process_frame
 	_grab_first_button_focus()
+
+func _initialize_challenge_mode_controls() -> void:
+	if challenge_dropdown and not challenge_dropdown.item_selected.is_connected(_on_challenge_dropdown_item_selected):
+		challenge_dropdown.item_selected.connect(_on_challenge_dropdown_item_selected)
+
+	var initial_mode := _normalize_challenge_mode(MenuController.current_challenge_mode)
+	if SaveManager and SaveManager.has_method("get_last_challenge_mode"):
+		initial_mode = _normalize_challenge_mode(str(SaveManager.get_last_challenge_mode()))
+	MenuController.set_challenge_mode(initial_mode)
+
+	if challenge_dropdown:
+		challenge_dropdown.select(_challenge_mode_to_index(initial_mode))
+	_update_challenge_mode_ui(initial_mode)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
@@ -30,6 +58,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func populate_packs() -> void:
 	for child in sets_container.get_children():
 		child.queue_free()
+	level_buttons.clear()
 
 	var packs: Array[Dictionary] = PackLoader.get_all_packs()
 
@@ -42,6 +71,7 @@ func populate_packs() -> void:
 	for pack_data in packs:
 		create_pack_card(pack_data)
 	_create_new_pack_card()
+	_apply_challenge_mode_to_level_buttons()
 
 func create_pack_card(pack_data: Dictionary) -> void:
 	var pack_id := str(pack_data.get("pack_id", ""))
@@ -58,7 +88,7 @@ func create_pack_card(pack_data: Dictionary) -> void:
 	var set_high_score := SaveManager.get_set_pack_high_score(pack_id)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(950, 115)
+	panel.custom_minimum_size = Vector2(780, 115)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
@@ -151,7 +181,7 @@ func create_pack_card(pack_data: Dictionary) -> void:
 
 	var play_button := Button.new()
 	play_button.text = "PLAY"
-	play_button.custom_minimum_size = Vector2(140, 32)
+	play_button.custom_minimum_size = Vector2(124, 32)
 	play_button.add_theme_font_size_override("font_size", 18)
 	play_button.add_theme_color_override("font_color", Color(0, 0.9, 1, 1))
 	play_button.pressed.connect(_on_play_pack_pressed.bind(pack_id))
@@ -159,16 +189,17 @@ func create_pack_card(pack_data: Dictionary) -> void:
 
 	var view_button := Button.new()
 	view_button.text = "LEVELS"
-	view_button.custom_minimum_size = Vector2(140, 32)
+	view_button.custom_minimum_size = Vector2(124, 32)
 	view_button.add_theme_font_size_override("font_size", 16)
 	view_button.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75, 1))
 	view_button.pressed.connect(_on_view_levels_pressed.bind(pack_id))
 	button_vbox.add_child(view_button)
+	level_buttons.append(view_button)
 
 	if not is_official:
 		var edit_button := Button.new()
 		edit_button.text = "EDIT"
-		edit_button.custom_minimum_size = Vector2(140, 26)
+		edit_button.custom_minimum_size = Vector2(124, 26)
 		edit_button.add_theme_font_size_override("font_size", 15)
 		edit_button.add_theme_color_override("font_color", Color(1.0, 0.75, 0.25, 1))
 		edit_button.pressed.connect(_on_edit_pack_pressed.bind(pack_id))
@@ -176,7 +207,7 @@ func create_pack_card(pack_data: Dictionary) -> void:
 	elif OS.is_debug_build():
 		var edit_button := Button.new()
 		edit_button.text = "EDIT [DEV]"
-		edit_button.custom_minimum_size = Vector2(140, 26)
+		edit_button.custom_minimum_size = Vector2(124, 26)
 		edit_button.add_theme_font_size_override("font_size", 14)
 		edit_button.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4, 1))
 		edit_button.pressed.connect(_on_edit_pack_pressed.bind(pack_id))
@@ -186,7 +217,7 @@ func create_pack_card(pack_data: Dictionary) -> void:
 
 func _create_new_pack_card() -> void:
 	var panel: PanelContainer = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(950, 60)
+	panel.custom_minimum_size = Vector2(780, 60)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
@@ -215,6 +246,8 @@ func _on_play_pack_pressed(pack_id: String) -> void:
 	MenuController.start_pack(pack_id)
 
 func _on_view_levels_pressed(pack_id: String) -> void:
+	if _is_challenge_mode_active():
+		return
 	MenuController.current_browse_pack_id = pack_id
 	MenuController.show_level_select()
 
@@ -226,6 +259,57 @@ func _on_create_pack_pressed() -> void:
 
 func _on_back_button_pressed() -> void:
 	MenuController.show_main_menu()
+
+func _on_challenge_dropdown_item_selected(index: int) -> void:
+	var mode := _challenge_mode_from_index(index)
+	MenuController.set_challenge_mode(mode)
+	_update_challenge_mode_ui(mode)
+	_apply_challenge_mode_to_level_buttons()
+	_grab_first_button_focus()
+
+func _update_challenge_mode_ui(mode: String) -> void:
+	var normalized_mode := _normalize_challenge_mode(mode)
+	if challenge_description_label:
+		challenge_description_label.text = str(CHALLENGE_MODE_DESCRIPTIONS.get(normalized_mode, CHALLENGE_MODE_DESCRIPTIONS[CHALLENGE_MODE_NORMAL]))
+	if challenge_mode_note_label:
+		challenge_mode_note_label.visible = normalized_mode != CHALLENGE_MODE_NORMAL
+
+func _apply_challenge_mode_to_level_buttons() -> void:
+	var challenge_enabled := _is_challenge_mode_active()
+	for view_button in level_buttons:
+		if not is_instance_valid(view_button):
+			continue
+		view_button.disabled = challenge_enabled
+		view_button.tooltip_text = "Challenge modes are pack-run only." if challenge_enabled else ""
+
+func _challenge_mode_from_index(index: int) -> String:
+	match index:
+		1:
+			return CHALLENGE_MODE_IRON_BALL
+		2:
+			return CHALLENGE_MODE_ONE_LIFE
+		_:
+			return CHALLENGE_MODE_NORMAL
+
+func _challenge_mode_to_index(mode: String) -> int:
+	match _normalize_challenge_mode(mode):
+		CHALLENGE_MODE_IRON_BALL:
+			return 1
+		CHALLENGE_MODE_ONE_LIFE:
+			return 2
+		_:
+			return 0
+
+func _normalize_challenge_mode(mode: String) -> String:
+	var normalized := mode.strip_edges().to_lower()
+	if normalized == CHALLENGE_MODE_IRON_BALL:
+		return CHALLENGE_MODE_IRON_BALL
+	if normalized == CHALLENGE_MODE_ONE_LIFE:
+		return CHALLENGE_MODE_ONE_LIFE
+	return CHALLENGE_MODE_NORMAL
+
+func _is_challenge_mode_active() -> bool:
+	return _normalize_challenge_mode(MenuController.current_challenge_mode) != CHALLENGE_MODE_NORMAL
 
 func _create_toolbar() -> void:
 	"""Create the filter and sort toolbar"""

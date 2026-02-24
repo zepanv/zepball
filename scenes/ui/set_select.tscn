@@ -27,9 +27,9 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -500.0
+offset_left = -560.0
 offset_top = -350.0
-offset_right = 500.0
+offset_right = 560.0
 offset_bottom = 350.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -53,16 +53,78 @@ theme_override_constants/margin_top = 0
 theme_override_constants/margin_right = 0
 theme_override_constants/margin_bottom = 10
 
-[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer"]
+[node name="ContentContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="PackListContainer" type="VBoxContainer" parent="VBoxContainer/ContentContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_horizontal = 3
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer/ContentContainer/PackListContainer"]
 custom_minimum_size = Vector2(0, 450)
 layout_mode = 2
 size_flags_vertical = 3
+size_flags_horizontal = 3
 
-[node name="SetsContainer" type="VBoxContainer" parent="VBoxContainer/ScrollContainer"]
+[node name="SetsContainer" type="VBoxContainer" parent="VBoxContainer/ContentContainer/PackListContainer/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 15
+
+[node name="ChallengePanel" type="PanelContainer" parent="VBoxContainer/ContentContainer"]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 2
+
+[node name="ChallengeMargin" type="MarginContainer" parent="VBoxContainer/ContentContainer/ChallengePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
+
+[node name="ChallengeVBox" type="VBoxContainer" parent="VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ChallengeLabel" type="Label" parent="VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 16
+text = "CHALLENGE MODE"
+
+[node name="ChallengeDropdown" type="OptionButton" parent="VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox"]
+layout_mode = 2
+item_count = 3
+selected = 0
+popup/item_0/text = "Normal"
+popup/item_0/id = 0
+popup/item_1/text = "Iron Ball"
+popup/item_1/id = 1
+popup/item_2/text = "One Life"
+popup/item_2/id = 2
+
+[node name="ChallengeDescription" type="Label" parent="VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox"]
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.82, 0.82, 0.82, 1)
+theme_override_font_sizes/font_size = 14
+text = "Standard gameplay with all power-ups active."
+autowrap_mode = 3
+
+[node name="ChallengeModeNote" type="Label" parent="VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
+theme_override_font_sizes/font_size = 13
+text = "Challenge modes are pack-run only."
+autowrap_mode = 3
+
+[node name="ChallengeSpacer" type="Control" parent="VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox"]
+layout_mode = 2
+size_flags_vertical = 3
 
 [node name="Spacer2" type="Control" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 10)

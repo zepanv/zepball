@@ -25,6 +25,7 @@ var current_level_id: int = 1
 var current_pack_id: String = "classic-challenge"
 var current_level_index: int = 0
 var current_browse_pack_id: String = ""
+var current_challenge_mode: String = "normal"
 var current_score: int = 0
 var is_in_gameplay: bool = false
 var was_perfect_clear: bool = false
@@ -72,6 +73,8 @@ signal scene_changed(scene_path: String)
 func _ready():
 	"""Initialize MenuController"""
 	get_tree().set_auto_accept_quit(false)
+	if SaveManager and SaveManager.has_method("get_last_challenge_mode"):
+		current_challenge_mode = _normalize_challenge_mode(str(SaveManager.get_last_challenge_mode()))
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
@@ -314,7 +317,7 @@ func start_level_ref(pack_id: String, level_index: int) -> void:
 	current_level_id = legacy_level_id if legacy_level_id != -1 else 0
 	is_in_gameplay = true
 	var mode_name = "set" if current_play_mode == PlayMode.SET else "individual"
-	SaveManager.set_last_played_ref(pack_id, level_index, mode_name, current_set_pack_id, true)
+	SaveManager.set_last_played_ref(pack_id, level_index, mode_name, current_set_pack_id, true, current_challenge_mode)
 
 	# Track gameplay sessions (counts each level start)
 	SaveManager.increment_stat("total_games_played")
@@ -355,7 +358,7 @@ func start_set(set_id: int) -> void:
 
 	# Reset saved state for new set
 	set_saved_score = 0
-	set_saved_lives = 3
+	set_saved_lives = _get_starting_lives_for_challenge()
 	set_saved_combo = 0
 	set_saved_no_miss = 0
 	set_saved_perfect = true
@@ -389,7 +392,7 @@ func start_pack(pack_id: String) -> void:
 
 	set_current_index = 0
 	set_saved_score = 0
-	set_saved_lives = 3
+	set_saved_lives = _get_starting_lives_for_challenge()
 	set_saved_combo = 0
 	set_saved_no_miss = 0
 	set_saved_perfect = true
@@ -554,11 +557,14 @@ func continue_to_next_level() -> void:
 
 func show_set_complete(final_score: int) -> void:
 	"""Show set complete screen with cumulative score and bonuses"""
+	var challenge_mode := get_challenge_mode()
+	var expected_perfect_lives := 1 if challenge_mode == "one_life" else 3
+
 	# Check for perfect set clear (3x bonus if all lives intact and no continues used)
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
 	set_score_before_bonus = final_score
 	set_perfect_bonus = 0
-	if game_manager and game_manager.lives == 3 and game_manager.is_perfect_clear and not game_manager.had_continue:
+	if game_manager and game_manager.lives == expected_perfect_lives and game_manager.is_perfect_clear and not game_manager.had_continue:
 		current_score = final_score * 3
 		set_perfect_bonus = current_score - final_score
 	else:
@@ -573,6 +579,8 @@ func show_set_complete(final_score: int) -> void:
 
 	# Update set high score
 	SaveManager.update_set_pack_high_score(current_set_pack_id, current_score)
+	if challenge_mode != "normal":
+		SaveManager.save_challenge_set_high_score(current_set_pack_id, challenge_mode, current_score)
 
 	# Mark set as completed
 	SaveManager.mark_set_pack_completed(current_set_pack_id)
@@ -606,9 +614,11 @@ func resume_last_level() -> void:
 		return
 	var mode = str(last_played.get("mode", "individual"))
 	var set_pack_id := str(last_played.get("set_pack_id", ""))
+	var challenge_mode := _normalize_challenge_mode(str(last_played.get("challenge_mode", "normal")))
 
 	if mode == "set" and not set_pack_id.is_empty():
 		current_play_mode = PlayMode.SET
+		current_challenge_mode = challenge_mode
 		current_set_pack_id = set_pack_id
 		current_set_id = _find_set_id_by_pack_id(set_pack_id)
 		set_level_ids = PackLoader.get_legacy_set_level_ids(current_set_id) if current_set_id != -1 else []
@@ -618,7 +628,7 @@ func resume_last_level() -> void:
 			set_level_refs.append({"pack_id": set_pack_id, "level_index": idx})
 		set_current_index = level_index
 		set_saved_score = 0
-		set_saved_lives = 3
+		set_saved_lives = _get_starting_lives_for_challenge()
 		set_saved_combo = 0
 		set_saved_no_miss = 0
 		set_saved_perfect = true
@@ -789,6 +799,27 @@ func _find_set_id_by_pack_id(pack_id: String) -> int:
 		if str(set_data.get("pack_id", "")) == pack_id:
 			return int(set_data.get("set_id", -1))
 	return -1
+
+func set_challenge_mode(mode: String) -> void:
+	current_challenge_mode = _normalize_challenge_mode(mode)
+	if SaveManager and SaveManager.has_method("set_last_challenge_mode"):
+		SaveManager.set_last_challenge_mode(current_challenge_mode)
+
+func get_challenge_mode() -> String:
+	if current_play_mode != PlayMode.SET:
+		return "normal"
+	return _normalize_challenge_mode(current_challenge_mode)
+
+func _normalize_challenge_mode(mode: String) -> String:
+	var normalized := mode.strip_edges().to_lower()
+	if normalized == "iron_ball":
+		return "iron_ball"
+	if normalized == "one_life":
+		return "one_life"
+	return "normal"
+
+func _get_starting_lives_for_challenge() -> int:
+	return 1 if get_challenge_mode() == "one_life" else 3
 
 func is_gameplay_active() -> bool:
 	"""Check if we're currently in a gameplay scene"""

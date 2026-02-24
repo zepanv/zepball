@@ -1,7 +1,7 @@
 # ZepBall - System Architecture
 
 ## Overview
-ZepBall is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 40 built-in levels across 4 official packs, a pack-run mode (legacy UI name: "Set Mode"), difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
+ZepBall is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 40 built-in levels across 4 official packs, a pack-run mode (legacy UI name: "Set Mode"), challenge variants (Normal / Iron Ball / One Life), difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
 
 ## Project Structure
 ```
@@ -23,6 +23,7 @@ zepball/
 │       ├── level_complete.tscn # Level victory screen
 │       ├── set_complete.tscn  # Set completion summary
 │       ├── stats.tscn         # Statistics and achievements viewer
+│       ├── high_scores.tscn   # Cross-profile leaderboard viewer
 │       └── settings.tscn      # Game settings configuration
 ├── scripts/
 │   ├── main.gd                # Main gameplay controller
@@ -50,6 +51,7 @@ zepball/
 │       ├── level_complete.gd  # Level complete screen logic
 │       ├── set_complete.gd    # Set complete screen logic
 │       ├── stats.gd           # Statistics display
+│       ├── high_scores.gd     # High scores display
 │       ├── settings.gd        # Settings screen logic
 │       └── audio_toast.gd     # Transient toast UI helper for audio hotkeys
 ├── packs/                     # Built-in pack definitions (.zeppack)
@@ -128,7 +130,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Tracks `remaining_breakable_bricks` for level completion detection (excludes UNBREAKABLE/FORCE_ARROW/POWERUP_BRICK/block bricks)
 - Maintains cached lists for `get_cached_level_bricks()` and `get_cached_force_arrows()` used by ball runtime
 - Handles ball loss logic (life loss only if last ball in play)
-- Spawns and manages power-ups with 20% drop chance
+- Spawns and manages power-ups with 20% drop chance (suppressed in Iron Ball challenge mode)
 - Manages multi-ball behavior from TRIPLE_BALL power-up
 - Restores pack-run state between levels (score/lives/combo/streak)
 - Delegates random background selection/CanvasLayer setup to `main_background_manager.gd`
@@ -154,7 +156,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 
 **Player Stats**:
 - `score` - Current score with multipliers applied
-- `lives` - Remaining lives (starts at 3)
+- `lives` - Remaining lives (starts at 3, or 1 in One Life challenge mode)
 - `combo` - Consecutive brick hits (combo multiplier)
 - `no_miss_hits` - Streak without losing ball (streak multiplier)
 - `is_perfect_clear` - True if no lives lost this level (2x bonus)
@@ -290,7 +292,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 
 **On Break**:
 1. Emits `brick_broken(score_value)` signal
-2. 20% chance to spawn random power-up
+2. 20% chance to spawn random power-up (disabled in Iron Ball challenge mode)
 3. Plays particle burst (color-matched to brick) if particles enabled
 4. Bomb bricks destroy nearby bricks within 75px radius (breaks normal/strong; block bricks ignored)
 5. Disables collision immediately
@@ -332,6 +334,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - Emits `effect_applied(type)` and `effect_expired(type)` signals
 - Powers HUD timer display in top-right corner
 - `power_up.gd` movement processing auto-disables when inactive (terminal game state or zero-speed) to avoid idle per-frame physics work
+- One Life challenge blocks `EXTRA_LIFE` grants while still consuming the pickup
 
 ### 7. Pack Run System (`scripts/pack_loader.gd` + pack UI)
 **Purpose**: Curated multi-level pack runs with cumulative scoring.
@@ -347,10 +350,12 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 
 **Runtime Behavior**:
 - Main Menu → Pack Select (`set_select.tscn`) → Play Pack or View Levels
+- Pack Select includes a Challenge Mode panel (`Normal`, `Iron Ball`, `One Life`) and disables `LEVELS` when challenge mode is non-Normal (pack-run only)
 - Pack play carries score/lives/combo/streak across levels
 - Level completion saves interim state in MenuController and restores in `main.gd`
-- Pack completion applies **Perfect Set** bonus (3x) if all lives intact and no continues
-- Game Over in pack mode allows **Continue Set** (legacy UI label; marks `had_continue`)
+- Pack completion applies **Perfect Set** bonus (3x) if all lives intact and no continues (One Life uses 1-life perfect condition)
+- Game Over in pack mode allows **Continue Set** (legacy UI label; marks `had_continue`) except in One Life mode
+- Challenge runs also write challenge-specific pack leaderboards (`iron_ball_set_high_scores`, `one_life_set_high_scores`) while still updating the normal pack leaderboard
 
 ### 8. Menu System (`scripts/ui/menu_controller.gd` + menu scenes)
 **Purpose**: Scene transitions and game flow orchestration.
@@ -360,13 +365,16 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - Play button → Set Select
    - Difficulty selector (Easy/Normal/Hard)
    - Stats button → Statistics screen
+   - High Scores button → High Scores screen
    - Settings button → Settings screen
    - Quit button
 
 2. **Set Select / Pack Select** (`scenes/ui/set_select.tscn`)
-   - Cards for built-in and user packs (source badge + author + progress + stars + best score)
+   - Cards for built-in and user packs (source badge + author + progress + stars + best score), shown in a left content pane
    - Filter: ALL / OFFICIAL / CUSTOM
    - Sort: BY ORDER (custom A-Z, official legacy order) / BY PROGRESSION (completion %)
+   - Right challenge panel with dropdown + mode description (`Normal`, `Iron Ball`, `One Life`)
+   - `LEVELS` buttons disabled in non-Normal challenge modes (challenge modes are pack-run only)
    - Play Pack → starts pack-run mode
    - View Levels → opens Level Select scoped to selected pack
 
@@ -390,7 +398,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - Final score display
    - High score comparison
    - Retry level button
-   - Continue Set button (only in pack mode; legacy label retained)
+   - Continue Set button (only in pack mode; hidden in One Life challenge mode)
    - Back to Main Menu button
 
 6. **Level Complete** (`scenes/ui/level_complete.tscn`)
@@ -410,7 +418,11 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - Global statistics display
    - Achievement list with progress bars
 
-9. **Settings** (`scenes/ui/settings.tscn`)
+9. **High Scores** (`scenes/ui/high_scores.tscn`)
+   - Cross-profile leaderboard tabs: Overall / Sets / Levels
+   - Set challenge tabs: Normal / Iron Ball / One Life
+
+10. **Settings** (`scenes/ui/settings.tscn`)
    - Screen shake intensity (Off/Low/Medium/High)
    - Particle effects toggle
    - Ball trail toggle
@@ -427,7 +439,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
    - All settings persist via SaveManager
 
 **MenuController Functions**:
-- `show_main_menu()` / `show_set_select()` / `show_level_select()` / `show_stats()` / `show_settings()` / `resume_last_level()`
+- `show_main_menu()` / `show_set_select()` / `show_level_select()` / `show_stats()` / `show_high_scores()` / `show_settings()` / `resume_last_level()`
 - `show_editor()` / `show_editor_for_pack(pack_id)` for editor entry flow
 - `start_editor_test(pack_data, level_index)` / `return_to_editor_from_test()` for editor gameplay test loop
 - `start_level(level_id)` - Loads gameplay scene with specified level
@@ -436,6 +448,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 - `show_level_complete(final_score)` - Shows level complete, unlocks next level, checks perfect clear
 - `show_set_complete(final_score)` - Shows pack summary and pack high score (legacy API name retained)
 - `restart_current_level()` - Reloads current level
+- `set_challenge_mode(mode)` / `get_challenge_mode()` - Challenge mode persistence and runtime access
 - Difficulty locking: Unlocked in menus, locked during gameplay
 
 ### 9. Save System (`scripts/save_manager.gd`)
@@ -445,7 +458,7 @@ This convention is now the default for optimization-pass Section 2.4 and should 
 Note: some keys retain legacy "set" names for backward compatibility.
 ```json
 {
-  "version": 1,
+  "version": 3,
   "profile": {
     "player_name": "Player",
     "total_score": 0
@@ -465,10 +478,15 @@ Note: some keys retain legacy "set" names for backward compatibility.
   "set_high_scores": {
     "1": 12000
   },
+  "iron_ball_set_high_scores": {
+    "classic-challenge": 10250
+  },
+  "one_life_set_high_scores": {},
   "last_played": {
     "level_id": 6,
     "set_id": -1,
     "mode": "individual",
+    "challenge_mode": "normal",
     "in_progress": false
   },
   "statistics": {
@@ -798,7 +816,7 @@ All settings auto-save and load:
 
 ---
 
-**Last Updated**: 2026-02-15
+**Last Updated**: 2026-02-24
 **Godot Version**: 4.6
 **Total Levels**: 40
 **Total Packs**: 4

@@ -52,6 +52,8 @@ func apply_collected_power_up(controller: Node, power_up_type: int) -> void:
 				ball_target.apply_slow_down_effect()
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SLOW_DOWN, ball_target)
 		TYPE_EXTRA_LIFE:
+			if MenuController and MenuController.has_method("get_challenge_mode") and str(MenuController.get_challenge_mode()) == "one_life":
+				return
 			var game_manager = _get_valid_node(controller.get("game_manager"))
 			if game_manager and game_manager.has_method("add_life"):
 				game_manager.add_life()

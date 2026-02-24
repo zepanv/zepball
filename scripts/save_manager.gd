@@ -7,8 +7,16 @@ extends Node
 const METADATA_PATH = "user://metadata.json"
 const PROFILES_DIR = "user://profiles/"
 const LEGACY_SAVE_PATH = "user://save_data.json"
-const SAVE_VERSION = 2
+const SAVE_VERSION = 3
 const TOTAL_LEVELS = 30
+const CHALLENGE_MODE_NORMAL = "normal"
+const CHALLENGE_MODE_IRON_BALL = "iron_ball"
+const CHALLENGE_MODE_ONE_LIFE = "one_life"
+const CHALLENGE_MODES = [
+	CHALLENGE_MODE_NORMAL,
+	CHALLENGE_MODE_IRON_BALL,
+	CHALLENGE_MODE_ONE_LIFE
+]
 
 const SETTINGS_HELPER_SCRIPT = preload("res://scripts/save_settings_helper.gd")
 const ACHIEVEMENTS_HELPER_SCRIPT = preload("res://scripts/save_achievements_helper.gd")
@@ -52,10 +60,14 @@ var save_data = {
 		"sets_completed": []
 	},
 	"set_high_scores": {},
+	"iron_ball_set_high_scores": {},
+	"one_life_set_high_scores": {},
 	"pack_set_progression": {
 		"packs_completed": []
 	},
 	"pack_set_high_scores": {},
+	"iron_ball_set_high_score_timestamps": {},
+	"one_life_set_high_score_timestamps": {},
 	"last_played": {
 		"level_id": 0,
 		"pack_id": "classic-challenge",
@@ -64,6 +76,7 @@ var save_data = {
 		"set_id": -1,
 		"set_pack_id": "",
 		"mode": "individual",
+		"challenge_mode": CHALLENGE_MODE_NORMAL,
 		"in_progress": false
 	},
 	"statistics": {
@@ -321,9 +334,14 @@ func _profile_name_exists(profile_name: String) -> bool:
 func _perform_migrations() -> void:
 	"""Consolidated migration logic for the currently loaded save_data"""
 	var did_migrate = false
-	if int(save_data.get("version", 0)) < SAVE_VERSION:
-		did_migrate = _migrate_to_v2_pack_data()
+	var loaded_version := int(save_data.get("version", 0))
+	if loaded_version < 2:
+		did_migrate = _migrate_to_v2_pack_data() or did_migrate
+	if loaded_version < 3:
+		did_migrate = _migrate_to_v3_challenge_data() or did_migrate
+	if loaded_version < SAVE_VERSION:
 		save_data["version"] = SAVE_VERSION
+		did_migrate = true
 
 	# Migrate old saves that don't have statistics
 	if not save_data.has("statistics"):
@@ -409,6 +427,26 @@ func _perform_migrations() -> void:
 		did_migrate = true
 	if not save_data["last_played"].has("set_pack_id"):
 		save_data["last_played"]["set_pack_id"] = ""
+		did_migrate = true
+	if not save_data["last_played"].has("challenge_mode"):
+		save_data["last_played"]["challenge_mode"] = CHALLENGE_MODE_NORMAL
+		did_migrate = true
+	var normalized_challenge := _normalize_challenge_mode(str(save_data["last_played"].get("challenge_mode", CHALLENGE_MODE_NORMAL)))
+	if normalized_challenge != str(save_data["last_played"].get("challenge_mode", "")):
+		save_data["last_played"]["challenge_mode"] = normalized_challenge
+		did_migrate = true
+
+	if not save_data.has("iron_ball_set_high_scores"):
+		save_data["iron_ball_set_high_scores"] = {}
+		did_migrate = true
+	if not save_data.has("one_life_set_high_scores"):
+		save_data["one_life_set_high_scores"] = {}
+		did_migrate = true
+	if not save_data.has("iron_ball_set_high_score_timestamps"):
+		save_data["iron_ball_set_high_score_timestamps"] = {}
+		did_migrate = true
+	if not save_data.has("one_life_set_high_score_timestamps"):
+		save_data["one_life_set_high_score_timestamps"] = {}
 		did_migrate = true
 
 	_ensure_pack_progression_defaults()
@@ -504,10 +542,14 @@ func create_default_save() -> void:
 			"sets_completed": []
 		},
 		"set_high_scores": {},
+		"iron_ball_set_high_scores": {},
+		"one_life_set_high_scores": {},
 		"pack_set_progression": {
 			"packs_completed": []
 		},
 		"pack_set_high_scores": {},
+		"iron_ball_set_high_score_timestamps": {},
+		"one_life_set_high_score_timestamps": {},
 		"last_played": {
 			"level_id": 0,
 			"pack_id": "classic-challenge",
@@ -516,6 +558,7 @@ func create_default_save() -> void:
 			"set_id": -1,
 			"set_pack_id": "",
 			"mode": "individual",
+			"challenge_mode": CHALLENGE_MODE_NORMAL,
 			"in_progress": false
 		},
 		"statistics": {
@@ -579,6 +622,30 @@ func _ensure_pack_progression_defaults() -> void:
 		save_data["pack_set_progression"] = {"packs_completed": []}
 	if not save_data.has("pack_set_high_scores"):
 		save_data["pack_set_high_scores"] = {}
+	if not save_data.has("iron_ball_set_high_scores"):
+		save_data["iron_ball_set_high_scores"] = {}
+	if not save_data.has("one_life_set_high_scores"):
+		save_data["one_life_set_high_scores"] = {}
+	if not save_data.has("iron_ball_set_high_score_timestamps"):
+		save_data["iron_ball_set_high_score_timestamps"] = {}
+	if not save_data.has("one_life_set_high_score_timestamps"):
+		save_data["one_life_set_high_score_timestamps"] = {}
+	if not save_data.has("last_played"):
+		save_data["last_played"] = {
+			"level_id": 0,
+			"pack_id": "classic-challenge",
+			"level_index": 0,
+			"level_key": "classic-challenge:0",
+			"set_id": -1,
+			"set_pack_id": "",
+			"mode": "individual",
+			"challenge_mode": CHALLENGE_MODE_NORMAL,
+			"in_progress": false
+		}
+	elif not save_data["last_played"].has("challenge_mode"):
+		save_data["last_played"]["challenge_mode"] = CHALLENGE_MODE_NORMAL
+	else:
+		save_data["last_played"]["challenge_mode"] = _normalize_challenge_mode(str(save_data["last_played"].get("challenge_mode", CHALLENGE_MODE_NORMAL)))
 
 func _migrate_to_v2_pack_data() -> bool:
 	var did_change := false
@@ -674,6 +741,51 @@ func _migrate_to_v2_pack_data() -> bool:
 
 	_ensure_pack_progression_defaults()
 	return did_change
+
+func _migrate_to_v3_challenge_data() -> bool:
+	var did_change := false
+
+	if not save_data.has("iron_ball_set_high_scores"):
+		save_data["iron_ball_set_high_scores"] = {}
+		did_change = true
+	if not save_data.has("one_life_set_high_scores"):
+		save_data["one_life_set_high_scores"] = {}
+		did_change = true
+	if not save_data.has("iron_ball_set_high_score_timestamps"):
+		save_data["iron_ball_set_high_score_timestamps"] = {}
+		did_change = true
+	if not save_data.has("one_life_set_high_score_timestamps"):
+		save_data["one_life_set_high_score_timestamps"] = {}
+		did_change = true
+	if not save_data.has("last_played"):
+		save_data["last_played"] = {
+			"level_id": 0,
+			"pack_id": "classic-challenge",
+			"level_index": 0,
+			"level_key": "classic-challenge:0",
+			"set_id": -1,
+			"set_pack_id": "",
+			"mode": "individual",
+			"challenge_mode": CHALLENGE_MODE_NORMAL,
+			"in_progress": false
+		}
+		did_change = true
+	elif not save_data["last_played"].has("challenge_mode"):
+		save_data["last_played"]["challenge_mode"] = CHALLENGE_MODE_NORMAL
+		did_change = true
+
+	var normalized_challenge := _normalize_challenge_mode(str(save_data["last_played"].get("challenge_mode", CHALLENGE_MODE_NORMAL)))
+	if normalized_challenge != str(save_data["last_played"].get("challenge_mode", "")):
+		save_data["last_played"]["challenge_mode"] = normalized_challenge
+		did_change = true
+
+	return did_change
+
+func _normalize_challenge_mode(mode: String) -> String:
+	var normalized := mode.strip_edges().to_lower()
+	if CHALLENGE_MODES.has(normalized):
+		return normalized
+	return CHALLENGE_MODE_NORMAL
 
 func _parse_level_key(level_key: String) -> Dictionary:
 	var parts := level_key.split(":")
@@ -889,7 +1001,9 @@ func get_all_leaderboards(use_cache: bool = true) -> Dictionary:
 
 	var leaderboards = {
 		"levels": {}, # level_key: [ {name, score, date}, ... ]
-		"sets": {}    # pack_id: [ {name, score, date}, ... ]
+		"sets": {},   # pack_id: [ {name, score, date}, ... ]
+		"iron_ball_sets": {},
+		"one_life_sets": {}
 	}
 	
 	var profiles = get_profile_list()
@@ -930,11 +1044,35 @@ func get_all_leaderboards(use_cache: bool = true) -> Dictionary:
 		for s_id in p_set_scores.keys():
 			if not leaderboards["sets"].has(s_id):
 				leaderboards["sets"][s_id] = []
-				
+
 			leaderboards["sets"][s_id].append({
 				"name": p_name,
 				"score": int(p_set_scores[s_id]),
 				"date": str(p_set_times.get(s_id, "Unknown"))
+			})
+
+		# Process Iron Ball set high scores
+		var p_iron_scores = p_data.get("iron_ball_set_high_scores", {})
+		var p_iron_times = p_data.get("iron_ball_set_high_score_timestamps", {})
+		for pack_id in p_iron_scores.keys():
+			if not leaderboards["iron_ball_sets"].has(pack_id):
+				leaderboards["iron_ball_sets"][pack_id] = []
+			leaderboards["iron_ball_sets"][pack_id].append({
+				"name": p_name,
+				"score": int(p_iron_scores[pack_id]),
+				"date": str(p_iron_times.get(pack_id, "Unknown"))
+			})
+
+		# Process One Life set high scores
+		var p_one_life_scores = p_data.get("one_life_set_high_scores", {})
+		var p_one_life_times = p_data.get("one_life_set_high_score_timestamps", {})
+		for pack_id in p_one_life_scores.keys():
+			if not leaderboards["one_life_sets"].has(pack_id):
+				leaderboards["one_life_sets"][pack_id] = []
+			leaderboards["one_life_sets"][pack_id].append({
+				"name": p_name,
+				"score": int(p_one_life_scores[pack_id]),
+				"date": str(p_one_life_times.get(pack_id, "Unknown"))
 			})
 			
 	# Sort all lists by score descending
@@ -949,6 +1087,14 @@ func get_all_leaderboards(use_cache: bool = true) -> Dictionary:
 		# Keep only top 10
 		if leaderboards["sets"][s_id].size() > 10:
 			leaderboards["sets"][s_id] = leaderboards["sets"][s_id].slice(0, 10)
+	for pack_id in leaderboards["iron_ball_sets"].keys():
+		leaderboards["iron_ball_sets"][pack_id].sort_custom(func(a, b): return a["score"] > b["score"])
+		if leaderboards["iron_ball_sets"][pack_id].size() > 10:
+			leaderboards["iron_ball_sets"][pack_id] = leaderboards["iron_ball_sets"][pack_id].slice(0, 10)
+	for pack_id in leaderboards["one_life_sets"].keys():
+		leaderboards["one_life_sets"][pack_id].sort_custom(func(a, b): return a["score"] > b["score"])
+		if leaderboards["one_life_sets"][pack_id].size() > 10:
+			leaderboards["one_life_sets"][pack_id] = leaderboards["one_life_sets"][pack_id].slice(0, 10)
 
 	# Cache the result
 	_leaderboard_cache = leaderboards.duplicate(true)
@@ -1040,6 +1186,10 @@ func reset_progress_data() -> void:
 	save_data["set_high_scores"] = {}
 	save_data["pack_set_progression"] = { "packs_completed": [] }
 	save_data["pack_set_high_scores"] = {}
+	save_data["iron_ball_set_high_scores"] = {}
+	save_data["one_life_set_high_scores"] = {}
+	save_data["iron_ball_set_high_score_timestamps"] = {}
+	save_data["one_life_set_high_score_timestamps"] = {}
 	save_data["last_played"] = {
 		"level_id": 0,
 		"pack_id": "classic-challenge",
@@ -1048,6 +1198,7 @@ func reset_progress_data() -> void:
 		"set_id": -1,
 		"set_pack_id": "",
 		"mode": "individual",
+		"challenge_mode": CHALLENGE_MODE_NORMAL,
 		"in_progress": false
 	}
 	save_data["statistics"] = {
@@ -1071,7 +1222,7 @@ func get_save_file_location() -> String:
 # LAST PLAYED TRACKING (stays inline - small)
 # ============================================================================
 
-func set_last_played(level_id: int, mode: String, set_id: int = -1, in_progress: bool = true) -> void:
+func set_last_played(level_id: int, mode: String, set_id: int = -1, in_progress: bool = true, challenge_mode: String = CHALLENGE_MODE_NORMAL) -> void:
 	var ref: Dictionary = _legacy_ref_for_level(level_id)
 	if ref.is_empty():
 		return
@@ -1080,13 +1231,14 @@ func set_last_played(level_id: int, mode: String, set_id: int = -1, in_progress:
 	var set_pack_id := ""
 	if set_id != -1:
 		set_pack_id = _legacy_set_pack_id(set_id)
-	set_last_played_ref(pack_id, level_index, mode, set_pack_id, in_progress)
+	set_last_played_ref(pack_id, level_index, mode, set_pack_id, in_progress, challenge_mode)
 
-func set_last_played_ref(pack_id: String, level_index: int, mode: String, set_pack_id: String = "", in_progress: bool = true) -> void:
+func set_last_played_ref(pack_id: String, level_index: int, mode: String, set_pack_id: String = "", in_progress: bool = true, challenge_mode: String = CHALLENGE_MODE_NORMAL) -> void:
 	var level_key := "%s:%d" % [pack_id, level_index]
 	var legacy_level_id := _legacy_level_id_for(pack_id, level_index)
 	if legacy_level_id == -1:
 		legacy_level_id = 0
+	var normalized_challenge := _normalize_challenge_mode(challenge_mode)
 
 	var legacy_set_id := -1
 	if not set_pack_id.is_empty():
@@ -1099,6 +1251,7 @@ func set_last_played_ref(pack_id: String, level_index: int, mode: String, set_pa
 	save_data["last_played"]["mode"] = mode
 	save_data["last_played"]["set_id"] = legacy_set_id
 	save_data["last_played"]["set_pack_id"] = set_pack_id
+	save_data["last_played"]["challenge_mode"] = normalized_challenge
 	save_data["last_played"]["in_progress"] = in_progress
 	save_to_disk()
 
@@ -1108,6 +1261,14 @@ func set_last_played_in_progress(in_progress: bool) -> void:
 
 func get_last_played() -> Dictionary:
 	return save_data["last_played"].duplicate()
+
+func set_last_challenge_mode(challenge_mode: String) -> void:
+	save_data["last_played"]["challenge_mode"] = _normalize_challenge_mode(challenge_mode)
+	save_to_disk()
+
+func get_last_challenge_mode() -> String:
+	var last_played: Dictionary = save_data.get("last_played", {})
+	return _normalize_challenge_mode(str(last_played.get("challenge_mode", CHALLENGE_MODE_NORMAL)))
 
 # ============================================================================
 # SET SYSTEM (stays inline - small)
@@ -1142,6 +1303,50 @@ func is_set_completed(set_id: int) -> bool:
 
 func get_set_pack_high_score(pack_id: String) -> int:
 	return int(save_data.get("pack_set_high_scores", {}).get(pack_id, 0))
+
+func _get_challenge_set_scores_key(challenge_mode: String) -> String:
+	match _normalize_challenge_mode(challenge_mode):
+		CHALLENGE_MODE_IRON_BALL:
+			return "iron_ball_set_high_scores"
+		CHALLENGE_MODE_ONE_LIFE:
+			return "one_life_set_high_scores"
+		_:
+			return ""
+
+func _get_challenge_set_timestamps_key(challenge_mode: String) -> String:
+	match _normalize_challenge_mode(challenge_mode):
+		CHALLENGE_MODE_IRON_BALL:
+			return "iron_ball_set_high_score_timestamps"
+		CHALLENGE_MODE_ONE_LIFE:
+			return "one_life_set_high_score_timestamps"
+		_:
+			return ""
+
+func get_challenge_set_high_score(pack_id: String, challenge_mode: String) -> int:
+	var scores_key := _get_challenge_set_scores_key(challenge_mode)
+	if scores_key.is_empty():
+		return 0
+	return int(save_data.get(scores_key, {}).get(pack_id, 0))
+
+func save_challenge_set_high_score(pack_id: String, challenge_mode: String, score: int) -> bool:
+	var scores_key := _get_challenge_set_scores_key(challenge_mode)
+	var timestamps_key := _get_challenge_set_timestamps_key(challenge_mode)
+	if scores_key.is_empty() or timestamps_key.is_empty():
+		return false
+
+	var current_high_score := get_challenge_set_high_score(pack_id, challenge_mode)
+	if score <= current_high_score:
+		return false
+
+	if not save_data.has(scores_key):
+		save_data[scores_key] = {}
+	if not save_data.has(timestamps_key):
+		save_data[timestamps_key] = {}
+
+	save_data[scores_key][pack_id] = score
+	save_data[timestamps_key][pack_id] = Time.get_datetime_string_from_system()
+	save_to_disk()
+	return true
 
 func update_set_pack_high_score(pack_id: String, score: int) -> bool:
 	var current_high_score := get_set_pack_high_score(pack_id)

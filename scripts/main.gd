@@ -108,6 +108,8 @@ func _ready() -> void:
 		game_manager.lives_changed.connect(hud._on_lives_changed)
 		game_manager.level_complete.connect(_on_level_complete)
 		game_manager.game_over.connect(_on_game_over)
+		game_manager.score_changed.emit(game_manager.score)
+		game_manager.lives_changed.emit(game_manager.lives)
 
 	# Load level from MenuController using pack-native addressing.
 	var level_ref := MenuController.get_current_level_ref()
@@ -552,6 +554,11 @@ func _hit_all_bricks():
 
 func _on_power_up_spawned(power_up_node):
 	"""Handle power-up spawning from broken brick"""
+	if MenuController.get_challenge_mode() == "iron_ball":
+		if power_up_node and is_instance_valid(power_up_node):
+			power_up_node.queue_free()
+		return
+
 	# Add power-up to PlayArea
 	play_area.add_child(power_up_node)
 

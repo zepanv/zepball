@@ -167,7 +167,7 @@ The key divergence points from normal gameplay:
 
 ### Save Migration Versioning
 
-Follow `.agent/SOP/critical-workflows.md`. If challenge modes are delivered first, this phase handles `3 → 4`. If implemented together, use one consolidated `2 → 4` migration.
+Follow `.agent/SOP/critical-workflows.md`. Since challenge modes are already implemented, this phase should handle save migration `3 → 4`.
 
 **Version guard (standalone phase):** `if data.get("version", 0) < 4`
 
@@ -214,7 +214,7 @@ Follow `.agent/SOP/critical-workflows.md`. If challenge modes are delivered firs
 - `start_survival()` — sets survival flag, loads main.tscn
 - `show_survival_over(final_score, wave)` — calls SaveManager to record run, shows game over scene in survival context
 - `show_set_complete()` — when Time Attack mode active, call `SaveManager.save_time_attack_set_high_score(pack_id, elapsed_time)` before showing set complete screen
-- Expose `get_challenge_mode() -> String` already planned in challenge-modes.md; Time Attack adds `"time_attack"` as a fourth valid value
+- Expose `get_challenge_mode() -> String` already implemented in `Tasks/Completed/challenge-modes.md`; Time Attack adds `"time_attack"` as a fourth valid value
 - Ensure `last_played` in-progress resume is disabled for Survival and main-menu return button is hidden for Survival runs
 
 #### 3. `scripts/ui/main_menu.gd` + `scenes/ui/main_menu.tscn` — Survival Button
@@ -243,7 +243,7 @@ Follow `.agent/SOP/critical-workflows.md`. If challenge modes are delivered firs
 #### 7. `scripts/hud.gd` — Timer + Wave Display
 - Add two supplementary labels to the TopBar: `TopBarLeft` and `TopBarRight` (hidden by default)
 - On game start, check `MenuController.get_challenge_mode()` and `MenuController.is_survival_mode`:
-  - `"normal"` / `"iron_ball"` / `"one_life"` → existing behavior (challenge-modes.md); supplementary labels stay hidden
+  - `"normal"` / `"iron_ball"` / `"one_life"` → existing behavior (`Tasks/Completed/challenge-modes.md`); supplementary labels stay hidden
   - `"time_attack"` → show `TopBarLeft = "TIME ATTACK"`, center logo = `"ZepBall"` (unchanged), `TopBarRight = "MM:SS"` (live timer)
   - survival → show `TopBarLeft = "SURVIVAL"`, center logo = `"ZepBall"` (unchanged), `TopBarRight = "WAVE N"` (updated on each wave transition)
 - Connect to `GameManager` timer signal (or poll `time_attack_elapsed`) to update `TopBarRight` each frame in Time Attack
@@ -307,7 +307,7 @@ These are implementation-ready as exported vars in `SurvivalGenerator` — exact
 ---
 
 ## Related Docs
-- `challenge-modes.md` — Iron Ball & One Life (shares dropdown, leaderboard infrastructure, save migration chain)
+- `Tasks/Completed/challenge-modes.md` — Iron Ball & One Life (shares dropdown, leaderboard infrastructure, save migration chain)
 - `future-features.md` — parent backlog (Time Attack, Survival entries)
 - `System/architecture.md` — GameManager, main.gd, HUD, save system details
 - `SOP/critical-workflows.md` — save migration SOP, commit format

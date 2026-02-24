@@ -1,10 +1,29 @@
 # Challenge Modes: Iron Ball & One Life
 
-## Status: 📋 BACKLOG
+## Status: ✅ COMPLETED
 
 Adds two hardcore challenge variants accessible from the Select Pack screen. Both modes are pack-run only, not stackable with each other, and maintain separate challenge leaderboards while still updating the normal pack leaderboard.
 
+Completed Date: 2026-02-24
 Last Updated: 2026-02-24
+
+---
+
+## Implementation Summary
+
+- Save migration bumped to version `3` with challenge score namespaces and `last_played.challenge_mode`.
+- `MenuController` now tracks/persists `current_challenge_mode`, resumes it from `last_played`, and writes challenge pack highs on set completion.
+- Set Select now includes a right-side Challenge panel (`Normal`, `Iron Ball`, `One Life`) and disables `LEVELS` buttons for non-Normal selections.
+- One Life gameplay rules shipped:
+  - Set-run starts at 1 life.
+  - `EXTRA_LIFE` pickup is consumed but grant is blocked.
+  - `Continue Set` button is hidden on Game Over.
+  - Perfect set bonus still applies using a 1-life perfect condition.
+- Iron Ball gameplay rules shipped:
+  - Power-up drops suppressed at brick source plus defensive suppression in `main.gd`.
+  - `POWERUP_BRICK` grants normal-brick score without granting a power-up.
+- HUD center branding now reflects challenge mode (`ZepBall`, `IRON BALL`, `ONE LIFE`).
+- High Scores screen now includes set leaderboard challenge tabs (`NORMAL`, `IRON BALL`, `ONE LIFE`) backed by cross-profile save namespaces.
 
 ---
 

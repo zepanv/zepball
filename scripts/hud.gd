@@ -81,6 +81,7 @@ func _ready() -> void:
 	
 	if player_name_label:
 		player_name_label.text = "CURRENT PLAYER: " + SaveManager.get_current_profile_name().to_upper()
+	_update_logo_for_challenge_mode()
 
 	_init_dynamic_elements()
 	_refresh_processing_state()
@@ -299,6 +300,22 @@ func _play_combo_flash() -> void:
 func _on_streak_changed(_new_streak: int) -> void:
 	"""Update multiplier display when streak changes"""
 	_update_multiplier_display()
+
+func _update_logo_for_challenge_mode() -> void:
+	if not logo_label:
+		return
+
+	var challenge_mode := "normal"
+	if MenuController and MenuController.has_method("get_challenge_mode"):
+		challenge_mode = str(MenuController.get_challenge_mode())
+
+	match challenge_mode:
+		"iron_ball":
+			logo_label.text = "IRON BALL"
+		"one_life":
+			logo_label.text = "ONE LIFE"
+		_:
+			logo_label.text = "ZepBall"
 
 func _update_multiplier_display() -> void:
 	"""Update the multiplier display with all active bonuses"""

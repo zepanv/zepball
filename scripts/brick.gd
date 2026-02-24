@@ -34,6 +34,7 @@ const UNBREAKABLE_HITS = 999
 const BOMB_RADIUS = 75.0
 const BOMB_RADIUS_SQ = BOMB_RADIUS * BOMB_RADIUS
 const DEFAULT_POWER_UP_SPAWN_CHANCE = 0.20
+const NORMAL_BRICK_SCORE = 10
 const POWER_UP_SCENE = preload("res://scenes/gameplay/power_up.tscn")
 const POWER_UP_TYPES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 const FORCE_ARROW_TEXTURE_PATH = "res://assets/graphics/powerups/arrow_down_right.png"
@@ -351,7 +352,10 @@ func _get_brick_shape() -> String:
 func collect_powerup() -> void:
 	if is_breaking:
 		return
-	powerup_collected.emit(_resolve_powerup_type(powerup_type_name))
+	if _get_active_challenge_mode() == "iron_ball":
+		score_value = NORMAL_BRICK_SCORE
+	else:
+		powerup_collected.emit(_resolve_powerup_type(powerup_type_name))
 	break_brick(Vector2.ZERO)
 
 func hit(impact_direction: Vector2 = Vector2.ZERO):
@@ -430,6 +434,9 @@ func break_brick(impact_direction: Vector2 = Vector2.ZERO):
 
 func try_spawn_power_up():
 	"""Randomly spawn a power-up at this brick's position"""
+	if _get_active_challenge_mode() == "iron_ball":
+		return
+
 	# Skip if unbreakable, force arrow, or power-up brick (power-up bricks grant effect immediately via collect_powerup)
 	if brick_type == BrickType.UNBREAKABLE or brick_type == BrickType.FORCE_ARROW or brick_type == BrickType.POWERUP_BRICK:
 		return
@@ -498,6 +505,11 @@ func _cache_main_controller_ref() -> void:
 	var candidate = get_tree().get_first_node_in_group("main_controller")
 	if candidate and is_instance_valid(candidate):
 		main_controller_ref = candidate
+
+func _get_active_challenge_mode() -> String:
+	if MenuController and MenuController.has_method("get_challenge_mode"):
+		return str(MenuController.get_challenge_mode())
+	return "normal"
 
 func _normalize_direction(raw_direction: int) -> int:
 	match raw_direction:
