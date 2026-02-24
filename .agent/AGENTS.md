@@ -1,6 +1,6 @@
 # Agent Instructions
 
-Use this file as the entry point for implementation work in Zep Ball.
+Use this file as the entry point for implementation work in ZepBall.
 
 ## Start Here
 1. Read `.agent/README.md` for documentation boundaries and source-of-truth rules.

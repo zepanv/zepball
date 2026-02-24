@@ -19,7 +19,7 @@ The active runtime level format is `.zeppack` loaded by `PackLoader`:
   "zeppack_version": 1,
   "pack_id": "classic-challenge",
   "name": "Classic Challenge",
-  "author": "Zep Ball Team",
+  "author": "ZepBall Team",
   "description": "Master the basics across 10 progressive levels",
   "created_at": "2026-02-10T12:00:00Z",
   "updated_at": "2026-02-10T12:00:00Z",

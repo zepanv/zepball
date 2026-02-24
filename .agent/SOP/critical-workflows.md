@@ -1,4 +1,4 @@
-# Critical Workflows - Zep Ball
+# Critical Workflows - ZepBall
 
 **⚠️ MANDATORY PROCEDURES - Read before making any code changes**
 
@@ -356,7 +356,7 @@ Use a consistent release page structure. Keep changes summarized in a short list
 
 Template:
 ```text
-## Zep Ball vX.Y.Z
+## ZepBall vX.Y.Z
 
 <One short sentence describing this release focus.>
 

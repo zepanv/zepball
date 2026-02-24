@@ -1,4 +1,4 @@
-# Zep Ball - Tech Stack and Settings
+# ZepBall - Tech Stack and Settings
 
 ## Core Technologies
 - **Engine**: Godot 4.6 (project config features include "4.6" and Forward Plus).

@@ -1,4 +1,4 @@
-# Zep Ball
+# ZepBall
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
@@ -137,7 +137,7 @@ sha256sum -c SHA256SUMS.txt
 ## Credits & Licensing
 
 ### Software
-The source code for Zep Ball is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
+The source code for ZepBall is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
 
 ### Audio
 - **Music**: Generated with Suno AI (Basic Plan). Music provided by [Suno.com](https://suno.com).

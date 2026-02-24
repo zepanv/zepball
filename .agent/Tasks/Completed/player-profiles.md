@@ -41,7 +41,7 @@ Implement a robust player profile system that allows multiple users to have thei
 - **UI**: Clear table showing Profile Name, Score, and Date achieved.
 
 ### 5. HUD Update
-- **Display**: Show the active profile name on the HUD, positioned either under or next to the "ZEP BALL" logo.
+- **Display**: Show the active profile name on the HUD, positioned either under or next to the "ZepBall" logo.
 
 ---
 

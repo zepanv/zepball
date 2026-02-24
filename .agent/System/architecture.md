@@ -1,7 +1,7 @@
-# Zep Ball - System Architecture
+# ZepBall - System Architecture
 
 ## Overview
-Zep Ball is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 40 built-in levels across 4 official packs, a pack-run mode (legacy UI name: "Set Mode"), difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
+ZepBall is a 2D breakout/arkanoid-style game built with Godot 4.6. The paddle sits on the right side of the playfield, and the ball travels leftward to break bricks. The game features a complete menu system, 40 built-in levels across 4 official packs, a pack-run mode (legacy UI name: "Set Mode"), difficulty modes, combo/streak score multipliers, statistics tracking, achievements, and customizable settings.
 
 ## Project Structure
 ```

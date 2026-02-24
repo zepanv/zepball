@@ -2,7 +2,7 @@
 
 ## Status: 📋 BACKLOG
 
-Adds **Time Attack** as a third challenge mode variant in the Set Select dropdown, and **Survival** as a standalone mode accessible from the Main Menu. Both modes share a single save migration (version 3) and new Stats screen tabs.
+Adds **Time Attack** as a fourth challenge mode variant in the Set Select dropdown, and **Survival** as a standalone mode accessible from the Main Menu. Both modes share migration/leaderboard infrastructure and new High Scores tabs.
 
 Last Updated: 2026-02-24
 
@@ -14,6 +14,21 @@ Last Updated: 2026-02-24
 |------|------------|-------------|
 | **Time Attack** | Set Select → Challenge dropdown | Complete a pack as fast as possible. Timer is the only ranked metric. |
 | **Survival** | Main Menu → SURVIVAL button | Endless procedurally-generated waves with increasing difficulty. Play until all lives lost. |
+
+---
+
+## Resolved Clarifications (2026-02-24)
+
+- Time Attack and other challenge runs still update normal pack high scores
+- Time Attack keeps existing perfect set bonus behavior
+- Survival uses normal difficulty multipliers (speed/score behavior remains difficulty-aware)
+- Survival wave transitions freeze gameplay and reattach the ball to the paddle before countdown/spawn
+- Survival is one-shot: no `last_played` resume, and main-menu "RETURN TO LAST LEVEL" is hidden when last run was Survival
+- Leaderboards for challenge/survival are surfaced in the High Scores screen via tabs
+- Survival Game Over shows both personal-best and machine-best comparisons
+- Tie handling is deterministic with reasonable fallback ordering (score/time primary, then date)
+- Applies to official and custom packs
+- Brand text standardized to `ZepBall` everywhere
 
 ---
 
@@ -37,13 +52,14 @@ Last Updated: 2026-02-24
 - Normal score accumulates throughout the run and **can update the regular `set_high_scores` namespace** as usual — a Time Attack run is not excluded from the normal leaderboard
 - The challenge leaderboard is time-based only (fastest pack completion time)
 - Time is only recorded on full pack completion
+- Perfect set bonus rules remain unchanged and still apply to normal score flow
 
 **Lives:** Standard 3 lives — no override.
 
 **HUD:**
-- **Resolved:** TopBar shows a three-section layout for Time Attack — the center logo label remains `"ZEPBALL"` (unchanged), a left label reads `"TIME ATTACK"`, and a right label shows the live timer in `MM:SS` format. This means `hud.gd` must add/show left and right supplementary labels in the TopBar when in Time Attack mode (they are hidden in Normal / Iron Ball / One Life).
+- **Resolved:** TopBar shows a three-section layout for Time Attack — the center logo label remains `"ZepBall"` (unchanged), a left label reads `"TIME ATTACK"`, and a right label shows the live timer in `MM:SS` format. This means `hud.gd` must add/show left and right supplementary labels in the TopBar when in Time Attack mode (they are hidden in Normal / Iron Ball / One Life).
 
-**Stats tab:** Time Attack tab is added to the set high scores section of the Stats screen. Sort order is **ascending** (lower = better), and the column header reads "Best Time" rather than "High Score". Tab order: Normal | Iron Ball | One Life | Time Attack.
+**High Scores tab:** Time Attack tab is added to the set high scores section of the High Scores screen. Sort order is **ascending** (lower = better), and the column header reads "Best Time" rather than "High Score". Tab order: Normal | Iron Ball | One Life | Time Attack.
 
 **High scores:** Separate namespace `time_attack_set_high_scores` in save data, keyed by `pack_id`.
 
@@ -60,6 +76,7 @@ Survival is a standalone mode — it does not use pack data or level JSON. The e
 - **One wave = one screenful of bricks**
 - When all breakable bricks in a wave are cleared, a countdown plays: **"WAVE [N+1] INCOMING"** at 3… 2… 1…, then the next wave spawns
 - **Resolved:** Reuse the existing `LevelIntro` overlay in `hud.gd` for the wave transition countdown. Add a survival-mode branch so it displays `"WAVE [N+1] INCOMING"` / `"3… 2… 1…"` instead of level name/description.
+- During wave transitions, gameplay is frozen and the ball is reattached to the paddle before the countdown starts, then relaunched by player input for the next wave.
 
 - Wave number is tracked in GameManager (or a small survival state struct). There is no completion state — the run ends only when all lives are lost.
 
@@ -98,14 +115,14 @@ Wave thresholds and exact brick mix are tuning constants. Define as exported var
 
 ### HUD
 
-- **Resolved:** Same three-section layout as Time Attack — center logo label remains `"ZEPBALL"`, left label reads `"SURVIVAL"`, right label shows `"WAVE N"` (updated on each wave transition). Reuses the same TopBar supplementary label mechanism introduced for Time Attack.
+- **Resolved:** Same three-section layout as Time Attack — center logo label remains `"ZepBall"`, left label reads `"SURVIVAL"`, right label shows `"WAVE N"` (updated on each wave transition). Reuses the same TopBar supplementary label mechanism introduced for Time Attack.
 
 ### Game Over Screen
 
 When all lives are lost in Survival, the existing `game_over.tscn` is reused with survival-specific modifications:
 - Wave reached displayed prominently (new label)
 - Final score displayed as usual
-- Top-run comparison shown (e.g., "Your best: Wave 15, 32,400 pts")
+- Top-run comparison shown for both personal and machine bests (e.g., "Your best: Wave 15, 32,400 pts" + machine best line)
 - **"Continue Set"** button hidden (nothing to continue)
 - **"Retry"** button relabeled **"Play Again"** (restarts survival from wave 1)
 - **"Main Menu"** button unchanged
@@ -114,7 +131,7 @@ When all lives are lost in Survival, the existing `game_over.tscn` is reused wit
 
 - Top **10 runs** stored, sorted by score descending
 - Each entry: `{ score, wave, date }`
-- Shown in a dedicated **Survival tab** on the Stats screen
+- Shown in a dedicated **Survival tab** on the High Scores screen
 - If no runs yet: "No runs yet" placeholder
 
 ### Scene Architecture
@@ -148,11 +165,11 @@ The key divergence points from normal gameplay:
 
 ## Shared Infrastructure
 
-### Save Migration (Version 2 → 3)
+### Save Migration Versioning
 
-Follow `.agent/SOP/critical-workflows.md`. Challenge modes handles 1 → 2. This migration handles 2 → 3.
+Follow `.agent/SOP/critical-workflows.md`. If challenge modes are delivered first, this phase handles `3 → 4`. If implemented together, use one consolidated `2 → 4` migration.
 
-**Version guard:** `if data.get("version", 0) < 3`
+**Version guard (standalone phase):** `if data.get("version", 0) < 4`
 
 **New fields to inject with defaults:**
 ```json
@@ -166,7 +183,7 @@ Follow `.agent/SOP/critical-workflows.md`. Challenge modes handles 1 → 2. This
 - `get_survival_top_runs() -> Array` — returns array of `{score, wave, date}`, max 10
 - `save_survival_run(score: int, wave: int)` — inserts, sorts by score desc, trims to 10
 
-### Stats Screen Tabs
+### High Scores Screen Tabs
 
 **Set high scores section** gains a fourth tab: **Normal | Iron Ball | One Life | Time Attack**
 - Time Attack tab: ascending sort, "Best Time" header, MM:SS display format
@@ -187,8 +204,9 @@ Follow `.agent/SOP/critical-workflows.md`. Challenge modes handles 1 → 2. This
 ### Modified Files
 
 #### 1. `scripts/save_manager.gd` — Save Migration (REQUIRED FIRST)
-- Bump save version: `2` → `3`
-  - Note: challenge-modes.md handles `1` → `2`; if implementing both together, a single migration from `1` → `3` is acceptable
+- Bump save version:
+  - Standalone phase: `3` → `4`
+  - Combined delivery with challenge modes: single `2` → `4`
 - Add migration logic for new fields (see above)
 - New helper methods for time attack + survival (see above)
 
@@ -197,6 +215,7 @@ Follow `.agent/SOP/critical-workflows.md`. Challenge modes handles 1 → 2. This
 - `show_survival_over(final_score, wave)` — calls SaveManager to record run, shows game over scene in survival context
 - `show_set_complete()` — when Time Attack mode active, call `SaveManager.save_time_attack_set_high_score(pack_id, elapsed_time)` before showing set complete screen
 - Expose `get_challenge_mode() -> String` already planned in challenge-modes.md; Time Attack adds `"time_attack"` as a fourth valid value
+- Ensure `last_played` in-progress resume is disabled for Survival and main-menu return button is hidden for Survival runs
 
 #### 3. `scripts/ui/main_menu.gd` + `scenes/ui/main_menu.tscn` — Survival Button
 - Add **SURVIVAL** button to main menu, positioned **above the EDITOR button**
@@ -211,7 +230,7 @@ Follow `.agent/SOP/critical-workflows.md`. Challenge modes handles 1 → 2. This
 - `var current_wave: int`
 - `var survival_speed_multiplier: float = 1.0`
 - Override level-load path when `is_survival_mode == true`
-- Wave completion detection and transition logic
+- Wave completion detection and transition logic (freeze + reattach ball during inter-wave countdown)
 - Speed step application on wave transitions
 
 #### 6. `scripts/game_manager.gd` — Time Attack Timer + Wave Tracking
@@ -225,8 +244,8 @@ Follow `.agent/SOP/critical-workflows.md`. Challenge modes handles 1 → 2. This
 - Add two supplementary labels to the TopBar: `TopBarLeft` and `TopBarRight` (hidden by default)
 - On game start, check `MenuController.get_challenge_mode()` and `MenuController.is_survival_mode`:
   - `"normal"` / `"iron_ball"` / `"one_life"` → existing behavior (challenge-modes.md); supplementary labels stay hidden
-  - `"time_attack"` → show `TopBarLeft = "TIME ATTACK"`, center logo = `"ZEPBALL"` (unchanged), `TopBarRight = "MM:SS"` (live timer)
-  - survival → show `TopBarLeft = "SURVIVAL"`, center logo = `"ZEPBALL"` (unchanged), `TopBarRight = "WAVE N"` (updated on each wave transition)
+  - `"time_attack"` → show `TopBarLeft = "TIME ATTACK"`, center logo = `"ZepBall"` (unchanged), `TopBarRight = "MM:SS"` (live timer)
+  - survival → show `TopBarLeft = "SURVIVAL"`, center logo = `"ZepBall"` (unchanged), `TopBarRight = "WAVE N"` (updated on each wave transition)
 - Connect to `GameManager` timer signal (or poll `time_attack_elapsed`) to update `TopBarRight` each frame in Time Attack
 - Update `TopBarRight` on each wave transition signal in Survival
 
@@ -237,7 +256,7 @@ Follow `.agent/SOP/critical-workflows.md`. Challenge modes handles 1 → 2. This
   - Hide "Continue Set" button
   - Show top-run comparison from SaveManager
 
-#### 9. `scenes/ui/stats.tscn` + `scripts/ui/stats.gd` — New Tabs
+#### 9. `scenes/ui/high_scores.tscn` + `scripts/ui/high_scores.gd` — New Tabs
 - Add Time Attack tab to set high scores section (4th tab, ascending sort, MM:SS display)
 - Add Survival section below set scores (independent, top 10 runs: wave + score + date)
 
@@ -262,7 +281,7 @@ Work in this order to avoid depending on unfinished pieces:
 7. **set_select** — Time Attack dropdown option
 8. **hud.gd** — timer display + wave display
 9. **game_over.gd** — survival summary modifications
-10. **stats** — Time Attack tab + Survival section
+10. **high_scores** — Time Attack tab + Survival section
 
 ---
 

@@ -2,7 +2,7 @@
 
 ## Status: ✅ COMPLETE
 
-Implementation of the fundamental gameplay mechanics for Zep Ball.
+Implementation of the fundamental gameplay mechanics for ZepBall.
 
 ## Objectives
 
@@ -137,7 +137,7 @@ PLAYING → (all bricks broken) → LEVEL_COMPLETE
 **Features Implemented:**
 - Top bar with three sections:
   - Left: Score display
-  - Center: "ZEP BALL" logo
+  - Center: "ZepBall" logo
   - Right: Lives display
 - Signal-based updates (reactive to GameManager)
 - Canvas layer (always on top of gameplay)

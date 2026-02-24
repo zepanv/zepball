@@ -2,7 +2,7 @@
 
 ## Status: 📋 BACKLOG
 
-Adds two hardcore challenge variants accessible from the Select Pack screen. Both modes are pack-run only, not stackable with each other, and maintain separate leaderboards from Normal play.
+Adds two hardcore challenge variants accessible from the Select Pack screen. Both modes are pack-run only, not stackable with each other, and maintain separate challenge leaderboards while still updating the normal pack leaderboard.
 
 Last Updated: 2026-02-24
 
@@ -19,9 +19,22 @@ Last Updated: 2026-02-24
 **Shared constraints:**
 - Pack-run only (the Challenge dropdown is exclusive to the Select Pack screen)
 - Modes are not stackable
-- Each mode has its own pack-level high score leaderboard
+- Each mode has its own pack-level challenge leaderboard and also updates normal pack high scores
 - HUD logo replaced with mode name during challenge play
 - Mode is persisted in `last_played` so "Return to Last Level" resumes the correct mode
+- Applies to both official and custom packs
+
+---
+
+## Resolved Clarifications (2026-02-24)
+
+- Challenge runs update both challenge-specific and normal pack leaderboards
+- Perfect set bonus behavior remains unchanged (applies normally)
+- Challenge mode selection persistence is per profile
+- Challenge mode resume is supported via `last_played`
+- Iron Ball `POWERUP_BRICK` awards the same base score as a normal brick (then normal score multipliers apply)
+- Challenge leaderboards are shown on the High Scores screen (tabbed), not the Stats screen
+- Brand text standardized to `ZepBall` everywhere
 
 ---
 
@@ -29,9 +42,9 @@ Last Updated: 2026-02-24
 
 ### Iron Ball Mode
 
-**Power-up drops:** Skip the 20% drop chance in `main.gd → _on_brick_broken()`. No power-up pickups spawn from brick breaks.
+**Power-up drops:** Suppress random drops at the brick source (`brick.gd → try_spawn_power_up()`) when challenge mode is Iron Ball. No power-up pickups spawn from brick breaks.
 
-**POWERUP_BRICK tiles:** On contact, destroy the brick (emit `brick_broken`, queue_free) without granting the power-up. Keep pass-through behavior — no collision shape changes needed. This is a single mode-flag check in the existing contact handler.
+**POWERUP_BRICK tiles:** On contact, destroy the brick without granting the power-up. Keep pass-through behavior — no collision shape changes needed. Award the same base score as a normal brick break before multipliers.
 
 **MYSTERY power-up:** Moot — drops are suppressed at the source.
 
@@ -52,7 +65,7 @@ Last Updated: 2026-02-24
 ## Files to Change
 
 ### 1. `scripts/save_manager.gd` — Save Migration (REQUIRED FIRST)
-- Bump save version: `1` → `2`
+- Bump save version: `2` → `3` (when implemented as a standalone phase)
 - Add migration logic to inject new fields with defaults for existing saves
 - New fields:
   ```json
@@ -113,7 +126,7 @@ Last Updated: 2026-02-24
 ### 7. `scripts/hud.gd` — Logo Replacement
 - On game start, check `MenuController.get_challenge_mode()`
 - Replace the center TopBar logo label text:
-  - `"normal"` → `"ZEP BALL"` (unchanged)
+  - `"normal"` → `"ZepBall"` (brand standard)
   - `"iron_ball"` → `"IRON BALL"`
   - `"one_life"` → `"ONE LIFE"`
 - Font color and size should remain the same as current logo
@@ -167,7 +180,7 @@ Last Updated: 2026-02-24
   - Set `MenuController.current_challenge_mode`
 - On `_ready()`: set dropdown to index matching `MenuController.current_challenge_mode` (preserves selection if returning from a run)
 
-### 10. `scenes/ui/stats.tscn` + `scripts/ui/stats.gd` — Challenge Leaderboard Tabs
+### 10. `scenes/ui/high_scores.tscn` + `scripts/ui/high_scores.gd` — Challenge Leaderboard Tabs
 
 **Change:** Add a `TabBar` (or `TabContainer`) above the existing set high scores section with three tabs:
 - `Normal` | `Iron Ball` | `One Life`
@@ -184,13 +197,13 @@ Iron Ball and One Life tabs show "No runs yet" placeholder if the namespace is e
 ## Save Migration Notes
 
 Follow the save migration SOP in `.agent/SOP/critical-workflows.md`. Summary:
-- Version guard: `if data.get("version", 0) < 2`
+- Version guard: `if data.get("version", 0) < 3`
 - Inject `iron_ball_set_high_scores: {}` and `one_life_set_high_scores: {}` if missing
 - Inject `challenge_mode: "normal"` into `last_played` if missing
-- After migration, write version `2`
+- After migration, write version `3`
 - Existing player progress, scores, and settings are fully preserved
 
-> **Coordination note:** `new-game-modes.md` (Time Attack + Survival) bumps save to version `3`. If both tasks are implemented together, a single migration from `1` → `3` is acceptable — consolidate all new fields into one migration block rather than chaining two separate guards.
+> **Coordination note:** `new-game-modes.md` (Time Attack + Survival) uses the next migration step. If both tasks are implemented together, use one consolidated migration from `2` → `4` instead of chained `2` → `3` then `3` → `4`.
 
 ---
 
@@ -207,7 +220,7 @@ Work in this order to avoid depending on unfinished pieces:
 7. **main_power_up_handler.gd** — One Life EXTRA_LIFE block
 8. **game_over.gd** — One Life Continue Set hide
 9. **hud.gd** — Logo replacement
-10. **stats** — Leaderboard tabs
+10. **high_scores** — Leaderboard tabs
 
 ---
 
@@ -221,6 +234,6 @@ Work in this order to avoid depending on unfinished pieces:
 
 ## Related Docs
 - `future-features.md` — parent backlog (Iron Ball, One Life entries)
-- `Tasks/Backlog/new-game-modes.md` — Time Attack & Survival spec; shares save migration chain (v2→3), Stats screen tabs, and `get_challenge_mode()` extension
+- `Tasks/Backlog/new-game-modes.md` — Time Attack & Survival spec; shares save migration chain and `get_challenge_mode()` extension
 - `System/architecture.md` — GameManager, main.gd, power-up system details
 - `SOP/critical-workflows.md` — save migration SOP, commit format

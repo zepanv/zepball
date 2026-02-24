@@ -128,7 +128,7 @@ Replace individual level JSON files and `level_sets.json` with a single-file pac
   "zeppack_version": 1,
   "pack_id": "classic-challenge",
   "name": "Classic Challenge",
-  "author": "Zep Ball Team",
+  "author": "ZepBall Team",
   "description": "Master the basics across 10 progressive levels",
   "created_at": "2026-02-10T12:00:00Z",
   "updated_at": "2026-02-10T12:00:00Z",
@@ -167,9 +167,9 @@ Replace individual level JSON files and `level_sets.json` with a single-file pac
 ### Discovery and Loading
 - **Built-in packs**: `res://packs/` (read-only in exports)
 - **User packs**: `user://packs/` (created on first launch if missing)
-  - Linux: `~/.local/share/godot/app_userdata/Zep Ball/packs/`
-  - macOS: `~/Library/Application Support/Godot/app_userdata/Zep Ball/packs/`
-  - Windows: `%APPDATA%/Godot/app_userdata/Zep Ball/packs/`
+  - Linux: `~/.local/share/godot/app_userdata/ZepBall/packs/`
+  - macOS: `~/Library/Application Support/Godot/app_userdata/ZepBall/packs/`
+  - Windows: `%APPDATA%/Godot/app_userdata/ZepBall/packs/`
 - **Load order**: Built-in first, then user packs alphabetically by name
 - **Duplicate `pack_id`**: User pack skipped if it collides with a built-in pack
 

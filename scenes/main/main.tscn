@@ -121,7 +121,7 @@ alignment = 1
 [node name="LogoLabel" type="Label" parent="UI/HUD/TopBar/LogoVBox" unique_id=681007208]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "ZEP BALL"
+text = "ZepBall"
 horizontal_alignment = 1
 vertical_alignment = 1
 

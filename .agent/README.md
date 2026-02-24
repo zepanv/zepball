@@ -1,4 +1,4 @@
-# Zep Ball Agent Docs Index
+# ZepBall Agent Docs Index
 
 This folder is for internal agent/developer documentation only.
 

@@ -1,4 +1,4 @@
-# Zep Ball - Changelog
+# ZepBall - Changelog
 
 **Recent development history and feature updates.**
 
