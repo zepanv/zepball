@@ -3,6 +3,7 @@ extends Control
 ## Main Menu - Entry point for the game
 ## Allows player to start game, select difficulty, and quit
 const PUBLIC_VERSION: String = "0.5.1"
+const GITHUB_RELEASES_API = "https://api.github.com/repos/zepanv/zepball/releases/latest"
 
 @onready var current_difficulty_label = $VBoxContainer/CurrentDifficultyLabel
 @onready var easy_button = $VBoxContainer/DifficultyButtons/EasyButton
@@ -11,13 +12,20 @@ const PUBLIC_VERSION: String = "0.5.1"
 @onready var play_button = $VBoxContainer/PlayButton
 @onready var return_button = $VBoxContainer/ReturnButton
 @onready var profile_dropdown = $VBoxContainer/ProfileContainer/ProfileDropdown
-@onready var version_label = $VersionLabel
+@onready var version_label = $VersionContainer/VersionLabel
+@onready var update_button = $VersionContainer/UpdateButton
 @onready var new_profile_dialog = $NewProfileDialog
 @onready var profile_name_input = $NewProfileDialog/VBoxContainer/ProfileNameInput
+
+var _update_http: HTTPRequest
+var _pending_update_url: String = ""
 
 func _ready():
 	"""Initialize main menu"""
 	version_label.text = "v%s" % PUBLIC_VERSION
+	_update_http = HTTPRequest.new()
+	add_child(_update_http)
+	_update_http.request_completed.connect(_on_update_check_completed)
 
 	# Unlock difficulty selection
 	DifficultyManager.unlock_difficulty()
@@ -194,3 +202,45 @@ func _update_return_button():
 	var last_played = SaveManager.get_last_played()
 	var in_progress = last_played.get("in_progress", false)
 	return_button.visible = in_progress
+
+func _on_update_button_pressed() -> void:
+	"""Check for update, or open release page if one was already found"""
+	if _pending_update_url != "":
+		OS.shell_open(_pending_update_url)
+		return
+	update_button.disabled = true
+	update_button.text = "..."
+	_update_http.request(GITHUB_RELEASES_API)
+
+func _on_update_check_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	"""Handle GitHub API response"""
+	update_button.disabled = false
+	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		_flash_update_button("✕", Color(0.9, 0.3, 0.4, 1))
+		return
+	var json := JSON.new()
+	if json.parse(body.get_string_from_utf8()) != OK:
+		_flash_update_button("✕", Color(0.9, 0.3, 0.4, 1))
+		return
+	var data: Dictionary = json.get_data()
+	var tag: String = data.get("tag_name", "")
+	var remote_version: String = tag.lstrip("v")
+	if remote_version.is_empty() or remote_version == PUBLIC_VERSION:
+		_flash_update_button("✓", Color(0.5, 1, 0.5, 1))
+	else:
+		_pending_update_url = data.get("html_url", "")
+		update_button.text = "↑ v%s" % remote_version
+		update_button.add_theme_color_override("font_color", Color(0, 0.9, 1, 1))
+
+func _flash_update_button(label: String, color: Color) -> void:
+	"""Show a temporary status on the update button, then reset"""
+	update_button.text = label
+	update_button.add_theme_color_override("font_color", color)
+	await get_tree().create_timer(2.0).timeout
+	if is_instance_valid(update_button):
+		_reset_update_button()
+
+func _reset_update_button() -> void:
+	_pending_update_url = ""
+	update_button.text = "↻"
+	update_button.remove_theme_color_override("font_color")

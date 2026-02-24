@@ -36,28 +36,9 @@ Last Updated: 2026-02-12
   - Add difficulty scaling system
   - New game mode state in GameManager
 
-### Iron Ball Mode
-- **Description**: No power-ups challenge
-- **Features**:
-  - Power-ups don't spawn
-  - Pure skill-based gameplay
-  - Separate high scores for Iron Ball mode
-  - Unlockable after completing all 10 levels
-- **Implementation**:
-  - Add mode flag to disable power-up spawning
-  - Separate leaderboard in stats
-
-### One Life Mode
-- **Description**: Single life hardcore challenge
-- **Features**:
-  - Start with only 1 life
-  - No extra life power-ups
-  - Track highest level reached
-  - Ultimate challenge for skilled players
-- **Implementation**:
-  - Override starting lives in GameManager
-  - Disable extra life mechanics
-  - Special badge for completing game in One Life mode
+### Iron Ball Mode & One Life Mode
+> **Extracted to dedicated task**: See `Tasks/Backlog/challenge-modes.md` for full design spec and implementation plan.
+> Covers: Set Select UI restructure, challenge mode dropdown, Iron Ball power-up suppression, One Life lives override, separate leaderboards, HUD logo replacement, stats screen tabs, and save migration.
 
 ## Advanced Gameplay Features
 
@@ -118,7 +99,7 @@ Last Updated: 2026-02-12
 **Low Priority:**
 5. Paddle Abilities (complex, needs careful balancing)
 6. Brick Chains (nice to have, not essential)
-7. Hardcore modes (Iron Ball, One Life - for skilled players only)
+7. Challenge Modes (Iron Ball, One Life) → see `Tasks/Backlog/challenge-modes.md`
 
 ---
 
