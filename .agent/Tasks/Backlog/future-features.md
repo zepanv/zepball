@@ -10,31 +10,9 @@ Last Updated: 2026-02-12
 
 ## Game Modes
 
-### Time Attack Mode
-- **Description**: Complete levels as fast as possible
-- **Features**:
-  - Timer starts when ball launches
-  - Stops when level completes
-  - Track best times per level
-  - Leaderboard showing fastest clears
-  - Time bonus points for fast completion
-- **Implementation**:
-  - Add timer to GameManager
-  - Show timer in HUD
-  - Save best times in SaveManager
-  - Add mode selector to main menu
-
-### Survival Mode
-- **Description**: Endless gameplay with increasing difficulty
-- **Features**:
-  - Randomly generated brick patterns
-  - Difficulty increases over time (speed, brick toughness)
-  - Track highest wave/score reached
-  - No level completion - play until all lives lost
-- **Implementation**:
-  - Create endless level generator
-  - Add difficulty scaling system
-  - New game mode state in GameManager
+### Time Attack Mode & Survival Mode
+> **Extracted to dedicated task**: See `Tasks/Backlog/new-game-modes.md` for full design spec and implementation plan.
+> Covers: Time Attack as a fourth challenge dropdown variant (pack-run only, MM:SS timer, time-keyed leaderboard), Survival as a standalone main menu mode (procedural wave generation, brick tier progression, speed scaling, top-10 run leaderboard), shared save migration v3, and Stats screen additions.
 
 ### Iron Ball Mode & One Life Mode
 > **Extracted to dedicated task**: See `Tasks/Backlog/challenge-modes.md` for full design spec and implementation plan.
@@ -90,16 +68,16 @@ Last Updated: 2026-02-12
 
 **High Priority:**
 1. Advanced Tile Elements → see `Tasks/Backlog/advanced-tile-elements.md`
-2. Time Attack Mode (easy to add, good replayability)
+2. Time Attack Mode + Survival Mode → see `Tasks/Backlog/new-game-modes.md`
 
 **Medium Priority:**
-3. Survival Mode (endless gameplay mode)
-4. Ball Speed Zones (simple mechanic, strategic depth)
+3. Ball Speed Zones (simple mechanic, strategic depth)
 
 **Low Priority:**
 5. Paddle Abilities (complex, needs careful balancing)
 6. Brick Chains (nice to have, not essential)
 7. Challenge Modes (Iron Ball, One Life) → see `Tasks/Backlog/challenge-modes.md`
+8. New Game Modes (Time Attack, Survival) → see `Tasks/Backlog/new-game-modes.md`
 
 ---
 

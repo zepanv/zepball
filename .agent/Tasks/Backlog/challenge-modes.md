@@ -190,6 +190,8 @@ Follow the save migration SOP in `.agent/SOP/critical-workflows.md`. Summary:
 - After migration, write version `2`
 - Existing player progress, scores, and settings are fully preserved
 
+> **Coordination note:** `new-game-modes.md` (Time Attack + Survival) bumps save to version `3`. If both tasks are implemented together, a single migration from `1` → `3` is acceptable — consolidate all new fields into one migration block rather than chaining two separate guards.
+
 ---
 
 ## Implementation Order
@@ -215,11 +217,12 @@ Work in this order to avoid depending on unfinished pieces:
 - Challenge mode achievements/badges (e.g., "Complete a pack in One Life")
 - Stacking Iron Ball + One Life simultaneously
 - Challenge mode support for individual level play
-- Additional challenge modes (Time Attack, Survival, etc. — see `future-features.md`)
+- Additional challenge modes (Time Attack, Survival) → see `Tasks/Backlog/new-game-modes.md`
 
 ---
 
 ## Related Docs
 - `future-features.md` — parent backlog (Iron Ball, One Life entries)
+- `Tasks/Backlog/new-game-modes.md` — Time Attack & Survival spec; shares save migration chain (v2→3), Stats screen tabs, and `get_challenge_mode()` extension
 - `System/architecture.md` — GameManager, main.gd, power-up system details
 - `SOP/critical-workflows.md` — save migration SOP, commit format
