@@ -43,12 +43,6 @@ var was_new_machine_best: bool = false
 var settings_opened_from_pause: bool = false
 var current_editor_pack_id: String = ""
 var editor_return_target: EditorReturnTarget = EditorReturnTarget.SET_SELECT
-var is_editor_test_mode: bool = false
-var editor_test_pack_data: Dictionary = {}
-var editor_test_level_index: int = 0
-var editor_draft_pack_data: Dictionary = {}
-var editor_draft_level_index: int = 0
-var editor_draft_is_builtin_edit: bool = false
 var _quit_requested: bool = false
 
 # Set mode state
@@ -76,10 +70,14 @@ var set_total_time_seconds: float = 0.0
 var set_score_before_bonus: int = 0
 var set_perfect_bonus: int = 0
 
+const MENU_EDITOR_TEST_HELPER_SCRIPT = preload("res://scripts/ui/menu_editor_test_helper.gd")
+var editor_test_helper: RefCounted = null
+
 # Signals
 signal scene_changed(scene_path: String)
 
 func _ready():
+	editor_test_helper = MENU_EDITOR_TEST_HELPER_SCRIPT.new()
 	"""Initialize MenuController"""
 	get_tree().set_auto_accept_quit(false)
 	if SaveManager and SaveManager.has_method("get_last_challenge_mode"):
@@ -179,7 +177,7 @@ func show_editor_from_main_menu() -> void:
 	"""Open the level editor for creating a new user pack from Main Menu."""
 	is_in_gameplay = false
 	is_survival_mode = false
-	is_editor_test_mode = false
+	editor_test_helper.is_editor_test_mode = false
 	current_editor_pack_id = ""
 	editor_return_target = EditorReturnTarget.MAIN_MENU
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -191,7 +189,7 @@ func show_editor_from_set_select() -> void:
 	"""Open the level editor for creating a new user pack from Pack Select."""
 	is_in_gameplay = false
 	is_survival_mode = false
-	is_editor_test_mode = false
+	editor_test_helper.is_editor_test_mode = false
 	current_editor_pack_id = ""
 	editor_return_target = EditorReturnTarget.SET_SELECT
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -203,7 +201,7 @@ func show_editor_for_pack(pack_id: String) -> void:
 	"""Open the level editor with an existing pack loaded."""
 	is_in_gameplay = false
 	is_survival_mode = false
-	is_editor_test_mode = false
+	editor_test_helper.is_editor_test_mode = false
 	current_editor_pack_id = pack_id
 	editor_return_target = EditorReturnTarget.SET_SELECT
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -219,95 +217,53 @@ func should_editor_return_to_main_menu() -> bool:
 
 func return_from_editor() -> void:
 	"""Return to the correct menu based on where editor was opened from."""
-	editor_draft_pack_data = {}
-	editor_draft_level_index = 0
-	editor_draft_is_builtin_edit = false
+	editor_test_helper.editor_draft_pack_data = {}
+	editor_test_helper.editor_draft_level_index = 0
+	editor_test_helper.editor_draft_is_builtin_edit = false
 	if editor_return_target == EditorReturnTarget.MAIN_MENU:
 		show_main_menu()
 		return
 	show_set_select()
 
 func start_editor_test(pack_data: Dictionary, level_index: int, draft_is_builtin_edit: bool = false) -> void:
-	"""Start a one-level editor test run without progression/high-score side effects."""
-	if not (pack_data.get("levels", []) is Array):
-		push_error("Editor test failed: pack has invalid levels")
-		return
-	var levels: Array = pack_data.get("levels", [])
-	if levels.is_empty():
-		push_error("Editor test failed: pack has no levels")
-		return
-	var clamped_level_index: int = clampi(level_index, 0, levels.size() - 1)
+	editor_test_helper.start_editor_test(self, pack_data, level_index, draft_is_builtin_edit)
 
-	editor_draft_pack_data = pack_data.duplicate(true)
-	editor_draft_level_index = clamped_level_index
-	editor_draft_is_builtin_edit = draft_is_builtin_edit
-	editor_test_pack_data = pack_data.duplicate(true)
-	editor_test_level_index = clamped_level_index
-	is_editor_test_mode = true
-
-	current_play_mode = PlayMode.INDIVIDUAL
-	current_set_id = -1
-	current_set_pack_id = ""
-	set_current_index = 0
-	set_level_ids = []
-	set_level_refs = []
-	_reset_set_breakdown()
-
-	current_pack_id = "__editor_test__"
-	current_level_index = clamped_level_index
-	current_level_id = clamped_level_index + 1
-	is_in_gameplay = true
-	current_score = 0
-	was_perfect_clear = false
-
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	DifficultyManager.lock_difficulty()
-	get_tree().change_scene_to_file(GAMEPLAY_SCENE)
-	scene_changed.emit(GAMEPLAY_SCENE)
 
 func has_editor_test_data() -> bool:
-	return is_editor_test_mode and not editor_test_pack_data.is_empty()
+	return editor_test_helper.has_editor_test_data()
+
 
 func get_editor_test_level_data() -> Dictionary:
-	if not has_editor_test_data():
-		return {}
-	var levels: Array = editor_test_pack_data.get("levels", [])
-	if editor_test_level_index < 0 or editor_test_level_index >= levels.size():
-		return {}
-	if not (levels[editor_test_level_index] is Dictionary):
-		return {}
-	return (levels[editor_test_level_index] as Dictionary).duplicate(true)
+	return editor_test_helper.get_editor_test_level_data()
+
 
 func get_editor_test_level_name() -> String:
-	var level_data: Dictionary = get_editor_test_level_data()
-	return str(level_data.get("name", "Editor Test"))
+	return editor_test_helper.get_editor_test_level_name()
+
 
 func get_editor_test_level_description() -> String:
-	var level_data: Dictionary = get_editor_test_level_data()
-	return str(level_data.get("description", ""))
+	return editor_test_helper.get_editor_test_level_description()
+
 
 func get_editor_draft_pack() -> Dictionary:
-	return editor_draft_pack_data.duplicate(true)
+	return editor_test_helper.get_editor_draft_pack()
+
 
 func get_editor_draft_level_index() -> int:
-	return editor_draft_level_index
+	return editor_test_helper.get_editor_draft_level_index()
+
 
 func get_editor_draft_is_builtin_edit() -> bool:
-	return editor_draft_is_builtin_edit
+	return editor_test_helper.get_editor_draft_is_builtin_edit()
+
 
 func clear_editor_test_state() -> void:
-	is_editor_test_mode = false
-	editor_test_pack_data = {}
-	editor_test_level_index = 0
+	editor_test_helper.clear_editor_test_state()
+
 
 func return_to_editor_from_test() -> void:
-	"""Exit editor test flow and return to editor with draft restored."""
-	is_in_gameplay = false
-	clear_editor_test_state()
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	DifficultyManager.unlock_difficulty()
-	get_tree().change_scene_to_file(LEVEL_EDITOR_SCENE)
-	scene_changed.emit(LEVEL_EDITOR_SCENE)
+	editor_test_helper.return_to_editor_from_test(self)
+
 
 func start_level(level_id: int) -> void:
 	"""Start playing a specific level (individual mode by default)"""
@@ -496,8 +452,8 @@ func start_survival() -> void:
 
 func restart_current_level() -> void:
 	"""Restart the current level"""
-	if is_editor_test_mode:
-		start_editor_test(editor_draft_pack_data, editor_draft_level_index, editor_draft_is_builtin_edit)
+	if editor_test_helper.is_editor_test_mode:
+		start_editor_test(editor_test_helper.editor_draft_pack_data, editor_test_helper.editor_draft_level_index, editor_test_helper.editor_draft_is_builtin_edit)
 		return
 	start_level_ref(current_pack_id, current_level_index)
 
@@ -509,7 +465,7 @@ func show_game_over(final_score: int) -> void:
 	current_score = final_score
 	is_in_gameplay = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	if not is_editor_test_mode:
+	if not editor_test_helper.is_editor_test_mode:
 		SaveManager.set_last_played_in_progress(false)
 	if current_play_mode == PlayMode.SET and get_challenge_mode() == CHALLENGE_MODE_TIME_ATTACK:
 		time_attack_elapsed_base_seconds = 0
@@ -519,7 +475,7 @@ func show_game_over(final_score: int) -> void:
 	DifficultyManager.unlock_difficulty()
 
 	# Try to update high score
-	if not is_editor_test_mode:
+	if not editor_test_helper.is_editor_test_mode:
 		SaveManager.update_level_key_high_score(get_current_level_key(), final_score)
 
 	get_tree().change_scene_to_file(GAME_OVER_SCENE)
@@ -537,7 +493,7 @@ func show_survival_over(final_score: int, wave: int) -> void:
 			SaveManager.set_last_played_survival()
 		else:
 			SaveManager.set_last_played_in_progress(false)
-		if not is_editor_test_mode and SaveManager.has_method("save_survival_run"):
+		if not editor_test_helper.is_editor_test_mode and SaveManager.has_method("save_survival_run"):
 			SaveManager.save_survival_run(final_score, survival_wave_reached)
 
 	get_tree().change_scene_to_file(GAME_OVER_SCENE)
@@ -548,7 +504,7 @@ func show_level_complete(final_score: int) -> void:
 	current_score = final_score
 	is_in_gameplay = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	if not is_editor_test_mode:
+	if not editor_test_helper.is_editor_test_mode:
 		SaveManager.set_last_played_in_progress(false)
 
 	# Unlock difficulty when leaving gameplay
@@ -571,7 +527,7 @@ func show_level_complete(final_score: int) -> void:
 		if set_current_index >= (set_level_refs.size() - 1):
 			time_attack_final_seconds = time_attack_elapsed_base_seconds
 
-	if is_editor_test_mode:
+	if editor_test_helper.is_editor_test_mode:
 		get_tree().change_scene_to_file(LEVEL_COMPLETE_SCENE)
 		scene_changed.emit(LEVEL_COMPLETE_SCENE)
 		return
@@ -623,7 +579,7 @@ func show_level_complete(final_score: int) -> void:
 
 func continue_to_next_level() -> void:
 	"""Load the next level after completion (handles both individual and set mode)"""
-	if is_editor_test_mode:
+	if editor_test_helper.is_editor_test_mode:
 		return_to_editor_from_test()
 		return
 	if current_play_mode == PlayMode.SET:
