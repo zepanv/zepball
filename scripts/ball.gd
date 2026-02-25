@@ -57,6 +57,10 @@ const TRAIL_LARGE = preload("res://assets/graphics/particles/particleCartoonStar
 const AIR_BALL_HELPER_SCRIPT = preload("res://scripts/ball_air_ball_helper.gd")
 const AIM_HELPER_SCRIPT = preload("res://scripts/ball_aim_indicator_helper.gd")
 const STUCK_HELPER_SCRIPT = preload("res://scripts/ball_stuck_detection_helper.gd")
+const BALL_COLLISION_HELPER_SCRIPT = preload("res://scripts/ball_collision_helper.gd")
+var collision_helper: RefCounted = null
+const BALL_VISUAL_HELPER_SCRIPT = preload("res://scripts/ball_visual_helper.gd")
+var visual_helper: RefCounted = null
 const TRAIL_COLOR_NORMAL = Color(0.3, 0.6, 0.95, 0.7)
 const TRAIL_COLOR_FAST = Color(1.0, 0.8, 0.2, 0.7)
 const TRAIL_COLOR_SLOW = Color(0.2, 0.6, 1.0, 0.7)
@@ -131,6 +135,8 @@ func _ready():
 	aim_helper.create_indicator(self)
 	aim_helper.virtual_mouse_pos = viewport_ref.get_mouse_position()
 	stuck_helper = STUCK_HELPER_SCRIPT.new()
+	collision_helper = BALL_COLLISION_HELPER_SCRIPT.new()
+	visual_helper = BALL_VISUAL_HELPER_SCRIPT.new()
 	set_process_unhandled_input(is_main_ball)
 
 	if collision_shape_node and collision_shape_node.shape is CircleShape2D:
@@ -294,159 +300,8 @@ func launch_ball():
 	aim_helper.aim_available = false
 
 func handle_collision(collision: KinematicCollision2D):
-	"""Handle ball collision with walls, paddle, or bricks"""
-	var collider = collision.get_collider()
-	var normal = collision.get_normal()
+	collision_helper.handle_collision(self, collision)
 
-	# Ignore ball-to-ball collisions entirely (prevents physics pausing)
-	if collider.is_in_group("ball"):
-		return
-
-	# Check what we hit
-	if collider.is_in_group("paddle"):
-		if paddle_reference == null and collider is Node2D:
-			paddle_reference = collider as Node2D
-		var hit_y = position.y
-		# Special case: Allow ball to pass through paddle if stuck near walls and moving left
-		# This prevents the ball from getting wedged between paddle and walls
-		if position.y < TOP_ESCAPE_ZONE_Y and velocity.x < 0:
-			# Ball is near top wall and moving left - let it pass through paddle
-			return
-		elif position.y > BOTTOM_ESCAPE_ZONE_Y and velocity.x < 0:
-			# Ball is near bottom wall and moving left - let it pass through paddle
-			return
-
-		# Check if grab is enabled and ball is not immune to grab
-		if frame_grab_active and grab_immunity_timer <= 0.0:
-			# Attach ball to paddle (grab mode) at the exact contact point
-			is_attached_to_paddle = true
-			velocity = Vector2.ZERO
-			# Store the current offset from paddle so ball sticks where it was grabbed
-			if paddle_reference:
-				paddle_offset = position - paddle_reference.position
-				# Ensure ball is on the front (left) side of paddle, not the back (right)
-				# Paddle is vertical on the right side, so negative X offset = front/left = good
-				# Positive X offset = back/right = bad (ball would be lost immediately)
-				if paddle_offset.x > 0:
-					# Ball grabbed on back side - move it to front side at same Y position
-					paddle_offset.x = -abs(paddle_offset.x)
-		else:
-			# Paddle collision: reflect + add spin
-			velocity = velocity.bounce(normal)
-
-			# Add paddle spin influence
-			if paddle_reference and paddle_reference.has_method("get_velocity_for_spin"):
-				var paddle_velocity = paddle_reference.get_velocity_for_spin()
-				spin_amount = clampf(paddle_velocity * SPIN_IMPART_FACTOR, -SPIN_MAX, SPIN_MAX)
-
-			# Prevent pure vertical motion
-			if abs(velocity.x) < current_speed * (1.0 - MAX_VERTICAL_ANGLE):
-				velocity.x = sign(velocity.x) * current_speed * (1.0 - MAX_VERTICAL_ANGLE)
-
-			# Prevent paddle-bottom wall wedge by nudging ball upward at the boundary
-			var min_y = TOP_WALL_Y + ball_radius
-			var max_y = BOTTOM_WALL_Y - ball_radius
-			if position.y < min_y:
-				position.y = min_y
-				velocity.y = abs(velocity.y)
-			elif position.y > max_y:
-				position.y = max_y
-				velocity.y = -abs(velocity.y)
-
-			if frame_air_ball_active:
-				_jump_to_level_center_x(hit_y)
-				return
-		AudioManager.play_sfx("hit_paddle")
-
-	elif collider.is_in_group("brick"):
-		# Brick collision: reflect + notify brick
-		var old_velocity = velocity  # Store for particle direction
-		var hit_brick_position = collider.global_position  # Store for bomb effect
-		var is_unbreakable = false
-		var is_powerup_brick = false
-		if "brick_type" in collider:
-			is_unbreakable = collider.brick_type == BRICK_TYPE_UNBREAKABLE
-			is_powerup_brick = collider.brick_type == BRICK_TYPE_POWERUP_BRICK
-
-		var is_block_brick = collider.is_in_group("block_brick")
-		if is_block_brick and (velocity.x < 0.0 or grab_immunity_timer > 0.0 or block_pass_timer > 0.0):
-			# Allow held/just-launched balls to pass block bricks when moving left
-			position += velocity * last_physics_delta
-			return
-
-		if is_powerup_brick:
-			brick_hit.emit(collider)
-			if collider.has_method("collect_powerup"):
-				collider.collect_powerup()
-			position += velocity * last_physics_delta
-			AudioManager.play_sfx("power_up")
-			return
-
-		# Check if brick through is enabled (block + unbreakable bricks always behave normally)
-		var has_penetrating_spin = absf(spin_amount) >= PENETRATING_SPIN_THRESHOLD
-		var can_pass_through = not is_block_brick and not is_unbreakable and (frame_brick_through_active or has_penetrating_spin)
-		if can_pass_through:
-			# Don't bounce, just pass through and notify brick
-			brick_hit.emit(collider)
-			if is_powerup_brick and collider.has_method("collect_powerup"):
-				collider.collect_powerup()
-				AudioManager.play_sfx("power_up")
-			elif collider.has_method("hit"):
-				collider.hit(old_velocity.normalized())
-			else:
-				collider.break_brick(Vector2(-1, 0))
-			if not is_powerup_brick:
-				spin_amount *= SPIN_ON_HIT_DECAY
-			position += velocity * last_physics_delta
-		else:
-			var bounce_normal = normal
-			var brick_shape = "square"
-			if collider.has_method("_get_brick_shape"):
-				brick_shape = collider._get_brick_shape()
-
-			if brick_shape == "square":
-				var hit_pos = collision.get_position()
-				var offset = hit_pos - collider.global_position
-				if abs(offset.x) > abs(offset.y):
-					var x_sign = sign(offset.x)
-					if x_sign != 0:
-						bounce_normal = Vector2(x_sign, 0)
-				elif abs(offset.y) > abs(offset.x):
-					var y_sign = sign(offset.y)
-					if y_sign != 0:
-						bounce_normal = Vector2(0, y_sign)
-
-			# Normal bounce behavior
-			velocity = velocity.bounce(bounce_normal)
-			normal = bounce_normal
-
-			# Push ball away from brick to prevent rapid re-collision
-			# This is especially important for polygon/diamond shapes with angled faces
-			if is_unbreakable:
-				# Add a small random deflection to avoid edge hugging
-				velocity = velocity.rotated(deg_to_rad(randf_range(-12.0, 12.0)))
-				position += bounce_normal * (ball_radius * 0.6)
-			elif brick_shape in ["polygon", "diamond"]:
-				# For polygon/diamond bricks, add slight separation to prevent stuck loops
-				position += bounce_normal * (ball_radius * 0.3)
-
-			brick_hit.emit(collider)
-			if collider.has_method("hit"):
-				collider.hit(old_velocity.normalized())
-			spin_amount *= SPIN_ON_HIT_DECAY
-		AudioManager.play_sfx("hit_brick")
-
-		# Check if bomb ball is active - destroy surrounding bricks (skip block bricks)
-		if not is_block_brick and frame_bomb_ball_active:
-			destroy_surrounding_bricks(hit_brick_position)
-
-	else:
-		# Wall collision: simple reflection
-		AudioManager.play_sfx("hit_wall")
-		velocity = velocity.bounce(normal)
-
-	if collider != null:
-		stuck_helper.record_collision(normal, collider)
 
 func reset_ball():
 	"""Reset ball to paddle after losing a life"""
@@ -498,33 +353,12 @@ func _recalculate_speed() -> void:
 		velocity = velocity.normalized() * current_speed
 
 func _update_trail_appearance() -> void:
-	if not trail_node:
-		return
-	if not SaveManager.get_ball_trail():
-		return
-	var new_texture = TRAIL_SMALL
-	if absf(spin_amount) >= HIGH_SPIN_THRESHOLD:
-		new_texture = TRAIL_LARGE
-	elif current_speed >= base_speed * FAST_SPEED_MULTIPLIER:
-		new_texture = TRAIL_MEDIUM
-	if trail_node.texture != new_texture:
-		trail_node.texture = new_texture
-	var new_color = _get_trail_color()
-	if trail_node.color != new_color:
-		trail_node.color = new_color
+	visual_helper._update_trail_appearance(self)
+
 
 func _get_trail_color() -> Color:
-	if visual_node:
-		var visual_color = visual_node.modulate
-		if visual_color != Color(1.0, 1.0, 1.0, 1.0):
-			return visual_color
-	if absf(spin_amount) >= HIGH_SPIN_THRESHOLD:
-		return TRAIL_COLOR_HIGH_SPIN
-	if current_speed >= base_speed * FAST_SPEED_MULTIPLIER:
-		return TRAIL_COLOR_FAST
-	if current_speed <= base_speed * SLOW_SPEED_MULTIPLIER:
-		return TRAIL_COLOR_SLOW
-	return TRAIL_COLOR_NORMAL
+	return visual_helper._get_trail_color(self)
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_main_ball:
@@ -774,11 +608,8 @@ func _refresh_effect_flags() -> void:
 		_apply_bomb_ball_visual(frame_bomb_ball_active)
 
 func _apply_bomb_ball_visual(active: bool) -> void:
-	bomb_visual_active = active
-	if visual_node:
-		# Orange-red while bomb-ball is active, white otherwise.
-		visual_node.modulate = Color(1.0, 0.4, 0.1, 1.0) if active else Color(1.0, 1.0, 1.0, 1.0)
-	_update_trail_appearance()
+	visual_helper._apply_bomb_ball_visual(self, active)
+
 
 func _jump_to_level_center_x(hit_y: float):
 	var landing_data = _get_air_ball_landing_data()
@@ -944,74 +775,44 @@ func _cache_main_controller_ref() -> void:
 		main_controller_ref = candidate
 
 func destroy_surrounding_bricks(impact_position: Vector2):
-	"""Destroy bricks in a radius around the impact point (bomb ball effect)"""
-	var bomb_radius_sq = BOMB_BALL_RADIUS * BOMB_BALL_RADIUS
+	collision_helper.destroy_surrounding_bricks(self, impact_position)
 
-	var all_bricks = _get_cached_level_bricks()
-
-	for brick in all_bricks:
-		if not is_instance_valid(brick):
-			continue
-		if brick.is_in_group("block_brick"):
-			continue
-		if "brick_type" in brick and brick.brick_type == BRICK_TYPE_UNBREAKABLE:
-			continue
-
-		# Check distance from impact point using squared values (avoid sqrt in hot path)
-		var dist_sq = brick.global_position.distance_squared_to(impact_position)
-		if dist_sq <= bomb_radius_sq:
-			# For power-up bricks, grant the effect immediately (not a falling power-up)
-			if "brick_type" in brick and brick.brick_type == BRICK_TYPE_POWERUP_BRICK:
-				if brick.has_method("collect_powerup"):
-					brick.collect_powerup()
-				else:
-					brick.break_brick(Vector2(-1, 0))
-			# For regular bricks, break normally
-			elif brick.has_method("break_brick"):
-				brick.break_brick(Vector2(-1, 0))  # Use left direction for consistency
-			elif brick.has_method("hit"):
-				brick.hit(Vector2(-1, 0))  # Fallback for safety
-
-	_update_trail_appearance()
 
 func apply_big_ball_effect():
-	"""Double ball size for power-up duration"""
-	_set_ball_radius(BASE_RADIUS * 2.0)
+	visual_helper.apply_big_ball_effect(self)
+
 
 func apply_small_ball_effect():
-	"""Half ball size for power-up duration"""
-	_set_ball_radius(BASE_RADIUS * 0.5)
+	visual_helper.apply_small_ball_effect(self)
+
 
 func reset_ball_size():
-	"""Reset ball to base size"""
-	_set_ball_radius(BASE_RADIUS)
+	visual_helper.reset_ball_size(self)
+
 
 func get_ball_radius() -> float:
-	return ball_radius
+	return visual_helper.get_ball_radius(self)
+
 
 func set_ball_radius(new_radius: float):
-	_set_ball_radius(new_radius)
+	visual_helper.set_ball_radius(self, new_radius)
+
 
 func get_base_radius() -> float:
-	return BASE_RADIUS
+	return visual_helper.get_base_radius(self)
+
 
 func set_ball_size_multiplier(multiplier: float):
-	_set_ball_radius(BASE_RADIUS * multiplier)
+	visual_helper.set_ball_size_multiplier(self, multiplier)
+
 
 func _set_ball_radius(new_radius: float):
-	ball_radius = new_radius
-	if collision_shape_node and collision_shape_node.shape is CircleShape2D:
-		collision_shape_node.shape.radius = new_radius
-	if visual_node:
-		var scale_factor = new_radius / BASE_RADIUS
-		visual_node.scale = BASE_VISUAL_SCALE * scale_factor
-	_update_trail_appearance()
+	visual_helper._set_ball_radius(self, new_radius)
+
 
 func refresh_trail_state() -> void:
-	if not trail_node:
-		return
-	trail_node.emitting = SaveManager.get_ball_trail() and not is_attached_to_paddle
-	_update_trail_appearance()
+	visual_helper.refresh_trail_state(self)
+
 
 func enable_collision_immunity(_duration: float = 0.5):
 	"""No longer needed - ball-to-ball collisions disabled at physics layer"""
