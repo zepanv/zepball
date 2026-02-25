@@ -6,16 +6,11 @@ extends Control
 enum FilterMode { ALL, OFFICIAL, CUSTOM }
 enum SortMode { BY_ORDER, BY_PROGRESSION }
 
-const CHALLENGE_MODE_NORMAL = "normal"
-const CHALLENGE_MODE_IRON_BALL = "iron_ball"
-const CHALLENGE_MODE_ONE_LIFE = "one_life"
-const CHALLENGE_MODE_TIME_ATTACK = "time_attack"
-
 const CHALLENGE_MODE_DESCRIPTIONS: Dictionary = {
-	CHALLENGE_MODE_NORMAL: "Standard gameplay with all power-ups active.",
-	CHALLENGE_MODE_IRON_BALL: "No power-ups spawn. Pure skill and precision only.",
-	CHALLENGE_MODE_ONE_LIFE: "One life. No continues. Complete the pack or start over.",
-	CHALLENGE_MODE_TIME_ATTACK: "Complete the pack as fast as possible. Time is the only ranked metric."
+	"normal": "Standard gameplay with all power-ups active.",
+	"iron_ball": "No power-ups spawn. Pure skill and precision only.",
+	"one_life": "One life. No continues. Complete the pack or start over.",
+	"time_attack": "Complete the pack as fast as possible. Time is the only ranked metric."
 }
 
 var current_filter_mode: FilterMode = FilterMode.ALL
@@ -43,9 +38,8 @@ func _initialize_challenge_mode_controls() -> void:
 	if challenge_dropdown and not challenge_dropdown.item_selected.is_connected(_on_challenge_dropdown_item_selected):
 		challenge_dropdown.item_selected.connect(_on_challenge_dropdown_item_selected)
 
-	var initial_mode := _normalize_challenge_mode(MenuController.current_challenge_mode)
-	if SaveManager and SaveManager.has_method("get_last_challenge_mode"):
-		initial_mode = _normalize_challenge_mode(str(SaveManager.get_last_challenge_mode()))
+	# MenuController already loaded the last challenge mode from SaveManager in _ready()
+	var initial_mode := MenuController.normalize_challenge_mode(MenuController.current_challenge_mode)
 	MenuController.set_challenge_mode(initial_mode)
 
 	if challenge_dropdown:
@@ -270,11 +264,11 @@ func _on_challenge_dropdown_item_selected(index: int) -> void:
 	_grab_first_button_focus()
 
 func _update_challenge_mode_ui(mode: String) -> void:
-	var normalized_mode := _normalize_challenge_mode(mode)
+	var normalized_mode := MenuController.normalize_challenge_mode(mode)
 	if challenge_description_label:
-		challenge_description_label.text = str(CHALLENGE_MODE_DESCRIPTIONS.get(normalized_mode, CHALLENGE_MODE_DESCRIPTIONS[CHALLENGE_MODE_NORMAL]))
+		challenge_description_label.text = str(CHALLENGE_MODE_DESCRIPTIONS.get(normalized_mode, CHALLENGE_MODE_DESCRIPTIONS[MenuController.CHALLENGE_MODE_NORMAL]))
 	if challenge_mode_note_label:
-		challenge_mode_note_label.visible = normalized_mode != CHALLENGE_MODE_NORMAL
+		challenge_mode_note_label.visible = normalized_mode != MenuController.CHALLENGE_MODE_NORMAL
 
 func _apply_challenge_mode_to_level_buttons() -> void:
 	var challenge_enabled := _is_challenge_mode_active()
@@ -287,37 +281,27 @@ func _apply_challenge_mode_to_level_buttons() -> void:
 func _challenge_mode_from_index(index: int) -> String:
 	match index:
 		1:
-			return CHALLENGE_MODE_IRON_BALL
+			return MenuController.CHALLENGE_MODE_IRON_BALL
 		2:
-			return CHALLENGE_MODE_ONE_LIFE
+			return MenuController.CHALLENGE_MODE_ONE_LIFE
 		3:
-			return CHALLENGE_MODE_TIME_ATTACK
+			return MenuController.CHALLENGE_MODE_TIME_ATTACK
 		_:
-			return CHALLENGE_MODE_NORMAL
+			return MenuController.CHALLENGE_MODE_NORMAL
 
 func _challenge_mode_to_index(mode: String) -> int:
-	match _normalize_challenge_mode(mode):
-		CHALLENGE_MODE_IRON_BALL:
+	match MenuController.normalize_challenge_mode(mode):
+		MenuController.CHALLENGE_MODE_IRON_BALL:
 			return 1
-		CHALLENGE_MODE_ONE_LIFE:
+		MenuController.CHALLENGE_MODE_ONE_LIFE:
 			return 2
-		CHALLENGE_MODE_TIME_ATTACK:
+		MenuController.CHALLENGE_MODE_TIME_ATTACK:
 			return 3
 		_:
 			return 0
 
-func _normalize_challenge_mode(mode: String) -> String:
-	var normalized := mode.strip_edges().to_lower()
-	if normalized == CHALLENGE_MODE_IRON_BALL:
-		return CHALLENGE_MODE_IRON_BALL
-	if normalized == CHALLENGE_MODE_ONE_LIFE:
-		return CHALLENGE_MODE_ONE_LIFE
-	if normalized == CHALLENGE_MODE_TIME_ATTACK:
-		return CHALLENGE_MODE_TIME_ATTACK
-	return CHALLENGE_MODE_NORMAL
-
 func _is_challenge_mode_active() -> bool:
-	return _normalize_challenge_mode(MenuController.current_challenge_mode) != CHALLENGE_MODE_NORMAL
+	return MenuController.current_challenge_mode != MenuController.CHALLENGE_MODE_NORMAL
 
 func _create_toolbar() -> void:
 	"""Create the filter and sort toolbar"""

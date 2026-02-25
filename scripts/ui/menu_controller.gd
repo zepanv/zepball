@@ -83,7 +83,7 @@ func _ready():
 	"""Initialize MenuController"""
 	get_tree().set_auto_accept_quit(false)
 	if SaveManager and SaveManager.has_method("get_last_challenge_mode"):
-		current_challenge_mode = _normalize_challenge_mode(str(SaveManager.get_last_challenge_mode()))
+		current_challenge_mode = normalize_challenge_mode(str(SaveManager.get_last_challenge_mode()))
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
@@ -589,6 +589,8 @@ func show_level_complete(final_score: int) -> void:
 		set_saved_score = current_score
 		set_saved_lives = game_manager.lives
 		set_saved_perfect = game_manager.is_perfect_clear
+		set_saved_combo = game_manager.combo
+		set_saved_no_miss = game_manager.no_miss_hits
 
 	# Mark level as completed
 	SaveManager.mark_level_key_completed(get_current_level_key())
@@ -727,7 +729,7 @@ func resume_last_level() -> void:
 		return
 	var mode = str(last_played.get("mode", "individual"))
 	var set_pack_id := str(last_played.get("set_pack_id", ""))
-	var challenge_mode := _normalize_challenge_mode(str(last_played.get("challenge_mode", "normal")))
+	var challenge_mode := normalize_challenge_mode(str(last_played.get("challenge_mode", "normal")))
 
 	if mode == "set" and not set_pack_id.is_empty():
 		current_play_mode = PlayMode.SET
@@ -920,16 +922,16 @@ func _find_set_id_by_pack_id(pack_id: String) -> int:
 	return -1
 
 func set_challenge_mode(mode: String) -> void:
-	current_challenge_mode = _normalize_challenge_mode(mode)
+	current_challenge_mode = normalize_challenge_mode(mode)
 	if SaveManager and SaveManager.has_method("set_last_challenge_mode"):
 		SaveManager.set_last_challenge_mode(current_challenge_mode)
 
 func get_challenge_mode() -> String:
 	if current_play_mode != PlayMode.SET:
 		return "normal"
-	return _normalize_challenge_mode(current_challenge_mode)
+	return normalize_challenge_mode(current_challenge_mode)
 
-func _normalize_challenge_mode(mode: String) -> String:
+func normalize_challenge_mode(mode: String) -> String:
 	var normalized := mode.strip_edges().to_lower()
 	if normalized == CHALLENGE_MODE_IRON_BALL:
 		return CHALLENGE_MODE_IRON_BALL

@@ -132,20 +132,26 @@ func _ready() -> void:
 			call_deferred("_restore_set_state",
 				MenuController.set_saved_score,
 				MenuController.set_saved_lives,
-				MenuController.set_saved_perfect)
+				MenuController.set_saved_perfect,
+				MenuController.set_saved_combo,
+				MenuController.set_saved_no_miss)
 
 		# Connect existing bricks
 		connect_brick_signals()
 
-func _restore_set_state(saved_score: int, saved_lives: int, saved_perfect: bool) -> void:
+func _restore_set_state(saved_score: int, saved_lives: int, saved_perfect: bool, saved_combo: int, saved_no_miss: int) -> void:
 	"""Restore game state when continuing a set (called deferred to ensure HUD is ready)"""
 	game_manager.score = saved_score
 	game_manager.lives = saved_lives
 	game_manager.is_perfect_clear = saved_perfect
+	game_manager.combo = saved_combo
+	game_manager.no_miss_hits = saved_no_miss
 
 	# Emit signals to update HUD
 	game_manager.score_changed.emit(game_manager.score)
 	game_manager.lives_changed.emit(game_manager.lives)
+	game_manager.combo_changed.emit(game_manager.combo)
+	game_manager.no_miss_streak_changed.emit(game_manager.no_miss_hits)
 
 func setup_background() -> void:
 	"""Load and configure a random background image."""
@@ -671,7 +677,7 @@ func _hit_all_bricks():
 
 func _on_power_up_spawned(power_up_node):
 	"""Handle power-up spawning from broken brick"""
-	if MenuController.get_challenge_mode() == "iron_ball":
+	if MenuController.get_challenge_mode() == MenuController.CHALLENGE_MODE_IRON_BALL:
 		if power_up_node and is_instance_valid(power_up_node):
 			power_up_node.queue_free()
 		return

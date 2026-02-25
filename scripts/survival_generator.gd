@@ -35,7 +35,7 @@ const POWERUP_BRICK_TYPES := [
 static func generate_wave(wave_number: int) -> Dictionary:
 	var wave: int = wave_number if wave_number > 1 else 1
 	var rng := RandomNumberGenerator.new()
-	rng.seed = int(Time.get_ticks_usec()) ^ (wave * 2654435761)
+	rng.randomize()
 
 	var tier := _tier_for_wave(wave)
 	var target_breakables: int = min(WAVE_ONE_BRICK_COUNT + ((wave - 1) * BRICK_COUNT_STEP), MAX_BREAKABLE_BRICKS)

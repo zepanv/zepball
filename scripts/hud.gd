@@ -3,6 +3,7 @@ extends Control
 ## HUD - Heads-Up Display for score, lives, and game info
 ## Updates in response to GameManager signals
 
+const _GameManagerScript = preload("res://scripts/game_manager.gd")
 const PAUSE_HELPER_SCRIPT = preload("res://scripts/hud_pause_menu_helper.gd")
 const DEBUG_HELPER_SCRIPT = preload("res://scripts/hud_debug_overlay_helper.gd")
 const INTRO_HELPER_SCRIPT = preload("res://scripts/hud_level_intro_helper.gd")
@@ -193,13 +194,13 @@ func _init_dynamic_elements() -> void:
 func _on_game_state_changed(new_state: int) -> void:
 	"""Show/hide overlays based on game state"""
 	if pause_helper.pause_menu:
-		pause_helper.pause_menu.visible = (new_state == 3)  # 3 = PAUSED
-		if new_state == 3:
+		pause_helper.pause_menu.visible = (new_state == _GameManagerScript.GameState.PAUSED)
+		if new_state == _GameManagerScript.GameState.PAUSED:
 			pause_helper.update_info(_get_game_manager())
 	if game_over_label:
-		game_over_label.visible = (new_state == 5)  # 5 = GAME_OVER
+		game_over_label.visible = (new_state == _GameManagerScript.GameState.GAME_OVER)
 	if level_complete_label:
-		level_complete_label.visible = (new_state == 4)  # 4 = LEVEL_COMPLETE
+		level_complete_label.visible = (new_state == _GameManagerScript.GameState.LEVEL_COMPLETE)
 	_refresh_processing_state()
 
 func _on_difficulty_changed(_new_difficulty: int) -> void:
@@ -355,7 +356,7 @@ func _configure_topbar_mode() -> void:
 	if MenuController and MenuController.has_method("get_challenge_mode"):
 		challenge_mode = str(MenuController.get_challenge_mode())
 
-	if challenge_mode == "time_attack":
+	if challenge_mode == MenuController.CHALLENGE_MODE_TIME_ATTACK:
 		_show_center_mode_with_detail("TIME ATTACK", _format_time_mm_ss(0))
 		return
 
@@ -369,18 +370,14 @@ func _configure_topbar_mode() -> void:
 		topbar_right_label.visible = false
 
 	match challenge_mode:
-		"iron_ball":
+		MenuController.CHALLENGE_MODE_IRON_BALL:
 			logo_label.text = "IRON BALL"
-			if player_name_label:
-				player_name_label.text = default_player_name_text
-		"one_life":
+		MenuController.CHALLENGE_MODE_ONE_LIFE:
 			logo_label.text = "ONE LIFE"
-			if player_name_label:
-				player_name_label.text = default_player_name_text
 		_:
 			logo_label.text = "ZepBall"
-			if player_name_label:
-				player_name_label.text = default_player_name_text
+	if player_name_label:
+		player_name_label.text = default_player_name_text
 
 func _show_center_mode_with_detail(mode_text: String, detail_text: String) -> void:
 	if score_label:
@@ -392,9 +389,9 @@ func _show_center_mode_with_detail(mode_text: String, detail_text: String) -> vo
 	if topbar_right_label:
 		topbar_right_label.visible = false
 	if logo_label:
-		logo_label.text = mode_text
+		logo_label.text = "%s  %s" % [mode_text, detail_text]
 	if player_name_label:
-		player_name_label.text = detail_text
+		player_name_label.text = default_player_name_text
 
 func _show_special_topbar(left_text: String, right_text: String) -> void:
 	logo_label.text = "ZepBall"
@@ -410,12 +407,12 @@ func _show_special_topbar(left_text: String, right_text: String) -> void:
 		topbar_right_label.text = right_text
 
 func _on_time_attack_timer_updated(elapsed_seconds: int) -> void:
-	if not player_name_label:
+	if not logo_label:
 		return
 	var challenge_mode := "normal"
 	if MenuController and MenuController.has_method("get_challenge_mode"):
 		challenge_mode = str(MenuController.get_challenge_mode())
-	if challenge_mode != "time_attack":
+	if challenge_mode != MenuController.CHALLENGE_MODE_TIME_ATTACK:
 		return
 	_show_center_mode_with_detail("TIME ATTACK", _format_time_mm_ss(max(0, elapsed_seconds)))
 

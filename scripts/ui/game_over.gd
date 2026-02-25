@@ -47,8 +47,11 @@ func _ready():
 		else:
 			high_score_label.text = ""
 
-	# Add "Continue Set" button if in set mode (hidden for One Life challenge runs)
-	if not in_survival and MenuController.current_play_mode == MenuController.PlayMode.SET and MenuController.get_challenge_mode() != "one_life":
+	# Add "Continue Set" button if in set mode (hidden for One Life and Time Attack)
+	var challenge_mode := MenuController.get_challenge_mode()
+	if not in_survival and MenuController.current_play_mode == MenuController.PlayMode.SET \
+			and challenge_mode != MenuController.CHALLENGE_MODE_ONE_LIFE \
+			and challenge_mode != MenuController.CHALLENGE_MODE_TIME_ATTACK:
 		add_continue_set_button()
 
 	if MenuController.is_editor_test_mode:

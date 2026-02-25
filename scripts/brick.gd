@@ -352,7 +352,7 @@ func _get_brick_shape() -> String:
 func collect_powerup() -> void:
 	if is_breaking:
 		return
-	if _get_active_challenge_mode() == "iron_ball":
+	if _get_active_challenge_mode() == MenuController.CHALLENGE_MODE_IRON_BALL:
 		score_value = NORMAL_BRICK_SCORE
 	else:
 		powerup_collected.emit(_resolve_powerup_type(powerup_type_name))
@@ -434,7 +434,7 @@ func break_brick(impact_direction: Vector2 = Vector2.ZERO):
 
 func try_spawn_power_up():
 	"""Randomly spawn a power-up at this brick's position"""
-	if _get_active_challenge_mode() == "iron_ball":
+	if _get_active_challenge_mode() == MenuController.CHALLENGE_MODE_IRON_BALL:
 		return
 
 	# Skip if unbreakable, force arrow, or power-up brick (power-up bricks grant effect immediately via collect_powerup)
