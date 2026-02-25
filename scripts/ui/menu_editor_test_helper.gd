@@ -28,9 +28,9 @@ func start_editor_test(parent: Node, pack_data: Dictionary, level_index: int, dr
 	parent.current_play_mode = parent.PlayMode.INDIVIDUAL
 	parent.current_set_id = -1
 	parent.current_set_pack_id = ""
-	parent.set_current_index = 0
-	parent.set_level_ids = []
-	parent.set_level_refs = []
+	parent.set_mode_helper.set_current_index = 0
+	parent.set_mode_helper.set_level_ids.clear()
+	parent.set_mode_helper.set_level_refs.clear()
 	parent._reset_set_breakdown()
 
 	parent.current_pack_id = "__editor_test__"

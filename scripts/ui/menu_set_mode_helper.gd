@@ -20,8 +20,8 @@ func start_set(parent: Node, set_id: int) -> void:
 	parent.current_set_id = set_id
 	parent.current_set_pack_id = PackLoader.get_legacy_set_pack_id(set_id)
 	set_level_ids = PackLoader.get_legacy_set_level_ids(set_id)
-	set_level_refs = []
-	var level_count := PackLoader.get_level_count(parent.current_set_pack_id)
+	set_level_refs.clear()
+	var level_count = PackLoader.get_level_count(parent.current_set_pack_id)
 	for level_index in range(level_count):
 		set_level_refs.append({
 			"pack_id": parent.current_set_pack_id,
@@ -52,13 +52,13 @@ func start_pack(parent: Node, pack_id: String) -> void:
 	parent.current_set_pack_id = pack_id
 	parent.current_set_id = _find_set_id_by_pack_id(pack_id)
 	parent.current_browse_pack_id = pack_id
-	set_level_ids = []
-	set_level_refs = []
+	set_level_ids.clear()
+	set_level_refs.clear()
 
-	var level_count := PackLoader.get_level_count(pack_id)
+	var level_count = PackLoader.get_level_count(pack_id)
 	for level_index in range(level_count):
 		set_level_refs.append({"pack_id": pack_id, "level_index": level_index})
-		var legacy_level_id := PackLoader.get_legacy_level_id(pack_id, level_index)
+		var legacy_level_id = PackLoader.get_legacy_level_id(pack_id, level_index)
 		if legacy_level_id != -1:
 			set_level_ids.append(legacy_level_id)
 
@@ -85,7 +85,7 @@ func continue_set_from_level(parent: Node, level_id: int) -> void:
 	continue_set_from_ref(parent, str(ref.get("pack_id", "")), int(ref.get("level_index", -1)))
 
 func continue_set_from_ref(parent: Node, pack_id: String, level_index: int) -> void:
-	var found_index := -1
+	var found_index = -1
 	for i in range(set_level_refs.size()):
 		var level_ref: Dictionary = set_level_refs[i]
 		if str(level_ref.get("pack_id", "")) == pack_id and int(level_ref.get("level_index", -1)) == level_index:
@@ -107,8 +107,8 @@ func continue_set_from_ref(parent: Node, pack_id: String, level_index: int) -> v
 	parent.start_level_ref(pack_id, level_index)
 
 func show_set_complete(parent: Node, final_score: int) -> void:
-	var challenge_mode := parent.get_challenge_mode()
-	var expected_perfect_lives := 1 if challenge_mode == parent.CHALLENGE_MODE_ONE_LIFE else 3
+	var challenge_mode = parent.get_challenge_mode()
+	var expected_perfect_lives = 1 if challenge_mode == parent.CHALLENGE_MODE_ONE_LIFE else 3
 
 	var game_manager = parent.get_tree().get_first_node_in_group("game_manager")
 	parent.score_breakdown_helper.set_score_before_bonus = final_score
@@ -128,19 +128,19 @@ func show_set_complete(parent: Node, final_score: int) -> void:
 	parent.was_new_personal_best = false
 	parent.was_new_machine_best = false
 	if challenge_mode == parent.CHALLENGE_MODE_TIME_ATTACK:
-		var prev_pb_time := SaveManager.get_time_attack_set_high_score(parent.current_set_pack_id)
-		var prev_global_time := SaveManager.get_global_time_attack_set_best_time(parent.current_set_pack_id)
+		var prev_pb_time = SaveManager.get_time_attack_set_high_score(parent.current_set_pack_id)
+		var prev_global_time = SaveManager.get_global_time_attack_set_best_time(parent.current_set_pack_id)
 		if completion_time_seconds > 0:
 			parent.was_new_personal_best = (prev_pb_time == 0) or (completion_time_seconds < prev_pb_time)
 			parent.was_new_machine_best = (prev_global_time == 0) or (completion_time_seconds < prev_global_time)
 	elif challenge_mode != parent.CHALLENGE_MODE_NORMAL:
-		var prev_pb_challenge := SaveManager.get_challenge_set_high_score(parent.current_set_pack_id, challenge_mode)
-		var prev_global_challenge := SaveManager.get_global_challenge_set_high_score(parent.current_set_pack_id, challenge_mode)
+		var prev_pb_challenge = SaveManager.get_challenge_set_high_score(parent.current_set_pack_id, challenge_mode)
+		var prev_global_challenge = SaveManager.get_global_challenge_set_high_score(parent.current_set_pack_id, challenge_mode)
 		parent.was_new_personal_best = (parent.current_score > prev_pb_challenge) or (prev_pb_challenge == 0 and parent.current_score > 0)
 		parent.was_new_machine_best = (parent.current_score > prev_global_challenge) or (prev_global_challenge == 0 and parent.current_score > 0)
 	else:
-		var prev_pb := SaveManager.get_set_pack_high_score(parent.current_set_pack_id)
-		var prev_global := SaveManager.get_global_set_high_score(parent.current_set_pack_id)
+		var prev_pb = SaveManager.get_set_pack_high_score(parent.current_set_pack_id)
+		var prev_global = SaveManager.get_global_set_high_score(parent.current_set_pack_id)
 		parent.was_new_personal_best = (parent.current_score > prev_pb) or (prev_pb == 0 and parent.current_score > 0)
 		parent.was_new_machine_best = (parent.current_score > prev_global) or (prev_global == 0 and parent.current_score > 0)
 
@@ -179,7 +179,7 @@ func _get_next_level_ref(parent: Node) -> Dictionary:
 			"level_index": next_level_index
 		}
 
-	var current_legacy_id := PackLoader.get_legacy_level_id(parent.current_pack_id, parent.current_level_index)
+	var current_legacy_id = PackLoader.get_legacy_level_id(parent.current_pack_id, parent.current_level_index)
 	if current_legacy_id == -1:
 		return {}
 
