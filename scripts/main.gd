@@ -132,14 +132,14 @@ func _ready() -> void:
 		load_level_ref(str(level_ref.get("pack_id", "classic-challenge")), int(level_ref.get("level_index", 0)))
 
 		# Restore state if in set mode (deferred to ensure HUD is ready)
-		if MenuController.current_play_mode == MenuController.PlayMode.SET and MenuController.set_current_index > 0:
+		if MenuController.current_play_mode == MenuController.PlayMode.SET and MenuController.set_mode_helper.set_current_index > 0:
 			# Not the first level in the set - restore saved state from MenuController
 			call_deferred("_restore_set_state",
-				MenuController.set_saved_score,
-				MenuController.set_saved_lives,
-				MenuController.set_saved_perfect,
-				MenuController.set_saved_combo,
-				MenuController.set_saved_no_miss)
+				MenuController.set_mode_helper.set_saved_score,
+				MenuController.set_mode_helper.set_saved_lives,
+				MenuController.set_mode_helper.set_saved_perfect,
+				MenuController.set_mode_helper.set_saved_combo,
+				MenuController.set_mode_helper.set_saved_no_miss)
 
 		# Connect existing bricks
 		connect_brick_signals()
