@@ -91,8 +91,15 @@ const LEGACY_PACK_ORDER: Array[String] = ["classic-challenge", "prism-showcase",
 var _packs_by_id: Dictionary = {}
 var _builtin_pack_ids: Array[String] = []
 var _user_pack_ids: Array[String] = []
+const PACK_LEGACY_HELPER_SCRIPT = preload("res://scripts/pack_legacy_helper.gd")
+var legacy_helper: RefCounted = null
+
+const PACK_PREVIEW_HELPER_SCRIPT = preload("res://scripts/pack_preview_helper.gd")
+var preview_helper: RefCounted = null
 
 func _ready() -> void:
+	legacy_helper = PACK_LEGACY_HELPER_SCRIPT.new()
+	preview_helper = PACK_PREVIEW_HELPER_SCRIPT.new()
 	ensure_packs_directory()
 	reload_packs()
 
@@ -420,41 +427,8 @@ func get_level_max_base_score(pack_id: String, level_index: int) -> int:
 	return total
 
 func generate_level_preview(pack_id: String, level_index: int, width: int = 120, height: int = 80) -> Texture2D:
-	var level_data: Dictionary = get_level_data(pack_id, level_index)
-	if level_data.is_empty():
-		return null
+	return preview_helper.generate_level_preview(self, pack_id, level_index, width, height)
 
-	var image: Image = Image.create(width, height, false, Image.FORMAT_RGBA8)
-	image.fill(Color(0.06, 0.07, 0.1, 1.0))
-
-	var grid: Dictionary = level_data.get("grid", {})
-	var rows: int = max(1, int(grid.get("rows", 1)))
-	var cols: int = max(1, int(grid.get("cols", 1)))
-	var margin: int = 4
-	var draw_w: int = max(1, width - margin * 2)
-	var draw_h: int = max(1, height - margin * 2)
-	var cell_w: float = max(1.0, float(draw_w) / float(cols))
-	var cell_h: float = max(1.0, float(draw_h) / float(rows))
-
-	var bricks: Array = level_data.get("bricks", [])
-	for brick_variant in bricks:
-		if not (brick_variant is Dictionary):
-			continue
-		var brick_def: Dictionary = brick_variant
-		var row: int = int(brick_def.get("row", -1))
-		var col: int = int(brick_def.get("col", -1))
-		if row < 0 or col < 0 or row >= rows or col >= cols:
-			continue
-		var brick_type: String = str(brick_def.get("type", "NORMAL"))
-		var color: Color = BRICK_PREVIEW_COLOR_MAP.get(brick_type, Color.WHITE)
-		var x: int = margin + int(col * cell_w)
-		var y: int = margin + int(row * cell_h)
-		var w: int = max(1, int(cell_w) - 1)
-		var h: int = max(1, int(cell_h) - 1)
-		image.fill_rect(Rect2i(x, y, w, h), color)
-
-	var texture: ImageTexture = ImageTexture.create_from_image(image)
-	return texture
 
 func save_user_pack(pack_data: Dictionary) -> bool:
 	var to_save: Dictionary = pack_data.duplicate(true)
@@ -535,99 +509,48 @@ func delete_user_pack(pack_id: String) -> bool:
 	return true
 
 func get_legacy_level_ref(level_id: int) -> Dictionary:
-	if level_id <= 0:
-		return {}
+	return legacy_helper.get_legacy_level_ref(self, level_id)
 
-	var running_start: int = 1
-	for legacy_pack_id in LEGACY_PACK_ORDER:
-		var count: int = get_level_count(legacy_pack_id)
-		if count <= 0:
-			continue
-		var running_end: int = running_start + count - 1
-		if level_id >= running_start and level_id <= running_end:
-			return {
-				"pack_id": legacy_pack_id,
-				"level_index": level_id - running_start
-			}
-		running_start = running_end + 1
-
-	return {}
 
 func get_legacy_total_level_count() -> int:
-	var total: int = 0
-	for legacy_pack_id in LEGACY_PACK_ORDER:
-		total += get_level_count(legacy_pack_id)
-	return total
+	return legacy_helper.get_legacy_total_level_count(self)
+
 
 func get_legacy_level_id(pack_id: String, level_index: int) -> int:
-	var running_start: int = 1
-	for legacy_pack_id in LEGACY_PACK_ORDER:
-		var count: int = get_level_count(legacy_pack_id)
-		if legacy_pack_id == pack_id:
-			if level_index < 0 or level_index >= count:
-				return -1
-			return running_start + level_index
-		running_start += count
-	return -1
+	return legacy_helper.get_legacy_level_id(self, pack_id, level_index)
+
 
 func get_all_legacy_sets() -> Array[Dictionary]:
-	var sets: Array[Dictionary] = []
-	for idx in range(LEGACY_PACK_ORDER.size()):
-		var set_id: int = idx + 1
-		var set_data: Dictionary = get_legacy_set_data(set_id)
-		if not set_data.is_empty():
-			sets.append(set_data)
-	return sets
+	return legacy_helper.get_all_legacy_sets(self)
+
 
 func get_legacy_set_data(set_id: int) -> Dictionary:
-	if set_id <= 0 or set_id > LEGACY_PACK_ORDER.size():
-		return {}
-	var pack_id: String = LEGACY_PACK_ORDER[set_id - 1]
-	if not pack_exists(pack_id):
-		return {}
-	var pack: Dictionary = get_pack(pack_id)
-	return {
-		"set_id": set_id,
-		"pack_id": pack_id,
-		"name": str(pack.get("name", "Unknown Set")),
-		"description": str(pack.get("description", "")),
-		"level_ids": get_legacy_set_level_ids(set_id),
-		"unlock_condition": "default"
-	}
+	return legacy_helper.get_legacy_set_data(self, set_id)
+
 
 func legacy_set_exists(set_id: int) -> bool:
-	return not get_legacy_set_data(set_id).is_empty()
+	return legacy_helper.legacy_set_exists(self, set_id)
+
 
 func get_legacy_set_pack_id(set_id: int) -> String:
-	if set_id <= 0 or set_id > LEGACY_PACK_ORDER.size():
-		return ""
-	return LEGACY_PACK_ORDER[set_id - 1]
+	return legacy_helper.get_legacy_set_pack_id(self, set_id)
+
 
 func get_legacy_set_level_ids(set_id: int) -> Array:
-	var pack_id: String = get_legacy_set_pack_id(set_id)
-	if pack_id.is_empty():
-		return []
-	var ids: Array[int] = []
-	var level_count: int = get_level_count(pack_id)
-	for level_index in range(level_count):
-		var legacy_level_id: int = get_legacy_level_id(pack_id, level_index)
-		if legacy_level_id != -1:
-			ids.append(legacy_level_id)
-	return ids
+	return legacy_helper.get_legacy_set_level_ids(self, set_id)
+
 
 func get_legacy_set_name(set_id: int) -> String:
-	var set_data: Dictionary = get_legacy_set_data(set_id)
-	return str(set_data.get("name", "Unknown Set"))
+	return legacy_helper.get_legacy_set_name(self, set_id)
+
 
 func get_legacy_set_description(set_id: int) -> String:
-	var set_data: Dictionary = get_legacy_set_data(set_id)
-	return str(set_data.get("description", ""))
+	return legacy_helper.get_legacy_set_description(self, set_id)
+
 
 func get_legacy_set_id_for_pack(pack_id: String) -> int:
-	for idx in range(LEGACY_PACK_ORDER.size()):
-		if LEGACY_PACK_ORDER[idx] == pack_id:
-			return idx + 1
-	return -1
+	return legacy_helper.get_legacy_set_id_for_pack(self, pack_id)
+
 
 func _get_pack_name(pack_id: String) -> String:
 	var pack_data: Dictionary = _packs_by_id.get(pack_id, {})
