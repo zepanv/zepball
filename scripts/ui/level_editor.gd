@@ -78,10 +78,13 @@ const MAX_PLAYABLE_ROWS: int = 12
 const MAX_PLAYABLE_COLS: int = 19
 
 const EDITOR_UNDO_HELPER_SCRIPT = preload("res://scripts/ui/editor_undo_helper.gd")
+const EDITOR_GRID_HELPER_SCRIPT = preload("res://scripts/ui/editor_grid_helper.gd")
 var undo_helper: RefCounted = null
+var grid_helper: RefCounted = null
 
 func _ready() -> void:
 	undo_helper = EDITOR_UNDO_HELPER_SCRIPT.new()
+	grid_helper = EDITOR_GRID_HELPER_SCRIPT.new()
 	_update_back_button_text()
 	_initialize_palette()
 	_initialize_editor_pack()
@@ -193,12 +196,8 @@ func _push_undo_state() -> void:
 	undo_helper._push_undo_state(self)
 
 func _reindex_levels(levels: Array) -> void:
-	for idx in range(levels.size()):
-		if not (levels[idx] is Dictionary):
-			continue
-		var level_data: Dictionary = levels[idx]
-		level_data["level_index"] = idx
-		levels[idx] = level_data
+	grid_helper._reindex_levels(levels)
+
 
 func _refresh_all_ui() -> void:
 	_refresh_metadata_fields()
@@ -217,72 +216,16 @@ func _refresh_special_picker_visibility() -> void:
 	powerup_type_select.visible = is_powerup_brick
 
 func _get_direction_label(direction: int) -> String:
-	match direction:
-		0:
-			return "Right (0)"
-		45:
-			return "Down-Right (45)"
-		90:
-			return "Down (90)"
-		135:
-			return "Down-Left (135)"
-		180:
-			return "Left (180)"
-		225:
-			return "Up-Left (225)"
-		270:
-			return "Up (270)"
-		315:
-			return "Up-Right (315)"
-		_:
-			return "Right (0)"
+	return grid_helper._get_direction_label(direction)
+
 
 func _get_direction_marker(direction: int) -> String:
-	match direction:
-		0:
-			return "R"
-		45:
-			return "DR"
-		90:
-			return "D"
-		135:
-			return "DL"
-		180:
-			return "L"
-		225:
-			return "UL"
-		270:
-			return "U"
-		315:
-			return "UR"
-		_:
-			return "R"
+	return grid_helper._get_direction_marker(direction)
+
 
 func _get_powerup_abbreviation(powerup_type: String) -> String:
-	var normalized: String = powerup_type.strip_edges().to_upper()
-	match normalized:
-		"TRIPLE_BALL":
-			return "TB"
-		"EXTRA_LIFE":
-			return "XL"
-		"SPEED_UP":
-			return "SU"
-		"SLOW_DOWN":
-			return "SD"
-		"BIG_BALL":
-			return "BB"
-		"SMALL_BALL":
-			return "SB"
-		"BRICK_THROUGH":
-			return "BT"
-		"DOUBLE_SCORE":
-			return "DS"
-		"BOMB_BALL":
-			return "BO"
-		"AIR_BALL":
-			return "AB"
-		_:
-			return normalized.substr(0, min(2, normalized.length()))
+	return grid_helper._get_powerup_abbreviation(powerup_type)
+
 
 func _refresh_metadata_fields() -> void:
 	is_refreshing_ui = true
@@ -343,47 +286,12 @@ func _set_current_level(level_data: Dictionary) -> void:
 	current_pack["levels"] = levels
 
 func _get_grid_limits_for_play_area(_grid: Dictionary) -> Dictionary:
-	return {
-		"max_rows": MAX_PLAYABLE_ROWS,
-		"max_cols": MAX_PLAYABLE_COLS
-	}
+	return grid_helper._get_grid_limits_for_play_area(self, _grid)
+
 
 func _normalize_level_to_play_area(level_data: Dictionary) -> Dictionary:
-	if level_data.is_empty():
-		return level_data
-	var output: Dictionary = level_data.duplicate(true)
-	var grid: Dictionary = output.get("grid", {}).duplicate(true)
-	var max_rows: int = MAX_PLAYABLE_ROWS
-	var max_cols: int = MAX_PLAYABLE_COLS
-	var rows: int = clampi(int(grid.get("rows", DEFAULT_ROWS)), 1, max_rows)
-	var cols: int = clampi(int(grid.get("cols", DEFAULT_COLS)), 1, max_cols)
-	grid["rows"] = rows
-	grid["cols"] = cols
-	output["grid"] = grid
+	return grid_helper._normalize_level_to_play_area(self, level_data)
 
-	var bricks: Array = output.get("bricks", [])
-	var filtered: Array = []
-	for brick_variant in bricks:
-		if not (brick_variant is Dictionary):
-			continue
-		var brick_data: Dictionary = brick_variant
-		var row: int = int(brick_data.get("row", -1))
-		var col: int = int(brick_data.get("col", -1))
-		if row >= 0 and row < rows and col >= 0 and col < cols:
-			var normalized_brick: Dictionary = {
-				"row": row,
-				"col": col,
-				"type": str(brick_data.get("type", "NORMAL"))
-			}
-			if normalized_brick["type"] == "FORCE_ARROW":
-				var direction: int = int(brick_data.get("direction", 45))
-				normalized_brick["direction"] = direction if FORCE_ARROW_DIRECTIONS.has(direction) else 45
-			elif normalized_brick["type"] == "POWERUP_BRICK":
-				var powerup_type: String = str(brick_data.get("powerup_type", "MYSTERY")).strip_edges().to_upper()
-				normalized_brick["powerup_type"] = powerup_type if POWERUP_TYPE_OPTIONS.has(powerup_type) else "MYSTERY"
-			filtered.append(normalized_brick)
-	output["bricks"] = filtered
-	return output
 
 func _can_delete_current_pack() -> bool:
 	var pack_id: String = str(current_pack.get("pack_id", "")).strip_edges()
@@ -400,108 +308,32 @@ func _update_delete_button_state() -> void:
 	delete_button.disabled = not _can_delete_current_pack()
 
 func _refresh_grid() -> void:
-	for child in grid_container.get_children():
-		child.queue_free()
+	grid_helper._refresh_grid(self)
 
-	var level_data: Dictionary = _get_current_level()
-	var grid: Dictionary = level_data.get("grid", {})
-	var rows: int = int(grid.get("rows", DEFAULT_ROWS))
-	var cols: int = int(grid.get("cols", DEFAULT_COLS))
-	grid_container.columns = cols
-
-	for row in range(rows):
-		for col in range(cols):
-			var button: Button = Button.new()
-			button.custom_minimum_size = Vector2(32, 22)
-			button.text = _get_cell_short_text(row, col)
-			button.modulate = _get_cell_color(row, col)
-			button.pressed.connect(_on_grid_cell_pressed.bind(row, col))
-			button.gui_input.connect(_on_grid_cell_gui_input.bind(row, col))
-			grid_container.add_child(button)
-
-	status_label.text = "Level %d | Grid %dx%d | Bricks %d" % [
-		selected_level_index + 1,
-		rows,
-		cols,
-		_get_brick_count(level_data)
-	]
 
 func _get_brick_count(level_data: Dictionary) -> int:
-	var bricks: Array = level_data.get("bricks", [])
-	return bricks.size()
+	return grid_helper._get_brick_count(level_data)
+
 
 func _get_cell_short_text(row: int, col: int) -> String:
-	var brick_data: Dictionary = _get_brick_data_at(row, col)
-	var brick_type: String = str(brick_data.get("type", ""))
-	if brick_type.is_empty():
-		return ""
-	if brick_type == "FORCE_ARROW":
-		return _get_direction_marker(int(brick_data.get("direction", 45)))
-	if brick_type == "POWERUP_BRICK":
-		return _get_powerup_abbreviation(str(brick_data.get("powerup_type", "MYSTERY")))
-	return brick_type.substr(0, 1)
+	return grid_helper._get_cell_short_text(self, row, col)
+
 
 func _get_cell_color(row: int, col: int) -> Color:
-	var brick_type: String = _get_brick_type_at(row, col)
-	if brick_type.is_empty():
-		return Color(0.16, 0.16, 0.2, 1.0)
-	return BRICK_COLORS.get(brick_type, Color.WHITE)
+	return grid_helper._get_cell_color(self, row, col)
+
 
 func _get_brick_type_at(row: int, col: int) -> String:
-	var brick_data: Dictionary = _get_brick_data_at(row, col)
-	return str(brick_data.get("type", ""))
+	return grid_helper._get_brick_type_at(self, row, col)
+
 
 func _get_brick_data_at(row: int, col: int) -> Dictionary:
-	var level_data: Dictionary = _get_current_level()
-	var bricks: Array = level_data.get("bricks", [])
-	for brick_variant in bricks:
-		if not (brick_variant is Dictionary):
-			continue
-		var brick_data: Dictionary = brick_variant
-		if int(brick_data.get("row", -1)) == row and int(brick_data.get("col", -1)) == col:
-			return brick_data
-	return {}
+	return grid_helper._get_brick_data_at(self, row, col)
+
 
 func _set_brick_type_at(row: int, col: int, brick_type: String) -> bool:
-	var level_data: Dictionary = _get_current_level()
-	var bricks: Array = level_data.get("bricks", [])
-	var index: int = -1
+	return grid_helper._set_brick_type_at(self, row, col, brick_type)
 
-	for idx in range(bricks.size()):
-		var brick_variant = bricks[idx]
-		if not (brick_variant is Dictionary):
-			continue
-		var brick_data: Dictionary = brick_variant
-		if int(brick_data.get("row", -1)) == row and int(brick_data.get("col", -1)) == col:
-			index = idx
-			break
-
-	if brick_type.is_empty():
-		if index != -1:
-			bricks.remove_at(index)
-		else:
-			return false
-	else:
-		var entry: Dictionary = {
-			"row": row,
-			"col": col,
-			"type": brick_type
-		}
-		if brick_type == "FORCE_ARROW":
-			entry["direction"] = selected_direction
-		elif brick_type == "POWERUP_BRICK":
-			entry["powerup_type"] = selected_powerup_type
-		if index == -1:
-			bricks.append(entry)
-		else:
-			var existing: Dictionary = bricks[index]
-			if existing == entry:
-				return false
-			bricks[index] = entry
-
-	level_data["bricks"] = bricks
-	_set_current_level(level_data)
-	return true
 
 func _sanitize_pack_id(raw_id: String) -> String:
 	var value: String = raw_id.strip_edges().to_lower()
@@ -670,34 +502,8 @@ func _on_cols_input_value_changed(value: float) -> void:
 	_update_grid_size(int(rows_input.value), int(value))
 
 func _update_grid_size(rows: int, cols: int) -> void:
-	var level_data: Dictionary = _get_current_level()
-	var grid: Dictionary = level_data.get("grid", {})
-	var limits: Dictionary = _get_grid_limits_for_play_area(grid)
-	rows = clampi(rows, 1, int(limits.get("max_rows", 1)))
-	cols = clampi(cols, 1, int(limits.get("max_cols", 1)))
-	var current_rows: int = int(grid.get("rows", DEFAULT_ROWS))
-	var current_cols: int = int(grid.get("cols", DEFAULT_COLS))
-	if current_rows == rows and current_cols == cols:
-		return
-	_push_undo_state()
-	grid["rows"] = rows
-	grid["cols"] = cols
-	level_data["grid"] = grid
+	grid_helper._update_grid_size(self, rows, cols)
 
-	var bricks: Array = level_data.get("bricks", [])
-	var filtered: Array = []
-	for brick_variant in bricks:
-		if not (brick_variant is Dictionary):
-			continue
-		var brick_data: Dictionary = brick_variant
-		var row: int = int(brick_data.get("row", -1))
-		var col: int = int(brick_data.get("col", -1))
-		if row >= 0 and row < rows and col >= 0 and col < cols:
-			filtered.append(brick_data)
-	level_data["bricks"] = filtered
-	_set_current_level(level_data)
-	_refresh_grid()
-	status_label.text = "Resized grid to %dx%d" % [rows, cols]
 
 func _on_save_button_pressed() -> void:
 	var normalized_pack_id: String = _sanitize_pack_id(pack_id_input.text)
