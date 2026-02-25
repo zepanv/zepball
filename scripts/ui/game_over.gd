@@ -48,13 +48,13 @@ func _ready():
 			high_score_label.text = ""
 
 	# Add "Continue Set" button if in set mode (hidden for One Life and Time Attack)
-	var challenge_mode := MenuController.get_challenge_mode()
+	var challenge_mode = MenuController.get_challenge_mode()
 	if not in_survival and MenuController.current_play_mode == MenuController.PlayMode.SET \
 			and challenge_mode != MenuController.CHALLENGE_MODE_ONE_LIFE \
 			and challenge_mode != MenuController.CHALLENGE_MODE_TIME_ATTACK:
 		add_continue_set_button()
 
-	if MenuController.is_editor_test_mode:
+	if MenuController.editor_test_helper.is_editor_test_mode:
 		high_score_label.text = "EDITOR TEST"
 		high_score_label.set("theme_override_colors/font_color", Color(0.75, 0.9, 1.0, 1))
 		retry_button.text = "RETEST LEVEL"
@@ -118,7 +118,7 @@ func _on_continue_set_button_pressed():
 
 func _on_menu_button_pressed():
 	"""Return to main menu"""
-	if MenuController.is_editor_test_mode:
+	if MenuController.editor_test_helper.is_editor_test_mode:
 		MenuController.return_to_editor_from_test()
 		return
 	MenuController.show_main_menu()
@@ -127,12 +127,12 @@ func _show_survival_comparison() -> void:
 	var personal_runs: Array = SaveManager.get_survival_top_runs()
 	var machine_runs: Array = SaveManager.get_all_leaderboards().get("survival_runs", [])
 
-	var personal_line := "Your best: No runs yet"
+	var personal_line = "Your best: No runs yet"
 	if not personal_runs.is_empty():
 		var best_personal: Dictionary = personal_runs[0]
 		personal_line = "Your best: " + _format_survival_run(best_personal)
 
-	var machine_line := "Machine best: No runs yet"
+	var machine_line = "Machine best: No runs yet"
 	if not machine_runs.is_empty():
 		var best_machine: Dictionary = machine_runs[0]
 		machine_line = "Machine best: " + _format_survival_run(best_machine)
@@ -141,6 +141,6 @@ func _show_survival_comparison() -> void:
 		survival_label.text += "\n" + personal_line + "\n" + machine_line
 
 func _format_survival_run(run: Dictionary) -> String:
-	var wave := int(run.get("wave", 1))
-	var score := int(run.get("score", 0))
+	var wave = int(run.get("wave", 1))
+	var score = int(run.get("score", 0))
 	return "Wave %d, %d pts" % [wave, score]

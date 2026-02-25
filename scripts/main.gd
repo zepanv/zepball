@@ -128,7 +128,7 @@ func _ready() -> void:
 		_start_survival_run()
 	else:
 		# Load level from MenuController using pack-native addressing.
-		var level_ref := MenuController.get_current_level_ref()
+		var level_ref = MenuController.get_current_level_ref()
 		load_level_ref(str(level_ref.get("pack_id", "classic-challenge")), int(level_ref.get("level_index", 0)))
 
 		# Restore state if in set mode (deferred to ensure HUD is ready)
@@ -179,7 +179,7 @@ func _configure_background_rect() -> void:
 
 func load_level(level_id: int):
 	"""Legacy helper for integer level IDs."""
-	var level_ref := PackLoader.get_legacy_level_ref(level_id)
+	var level_ref = PackLoader.get_legacy_level_ref(level_id)
 	if level_ref.is_empty():
 		push_error("Failed to map legacy level %d" % level_id)
 		create_test_level()
@@ -199,7 +199,7 @@ func load_level_ref(pack_id: String, level_index: int):
 		# Update game manager with level info
 		if game_manager:
 			var legacy_level_id: int = PackLoader.get_legacy_level_id(pack_id, level_index)
-			if MenuController.is_editor_test_mode:
+			if MenuController.editor_test_helper.is_editor_test_mode:
 				game_manager.current_level = level_index + 1
 			else:
 				game_manager.current_level = legacy_level_id if legacy_level_id != -1 else 1
@@ -358,7 +358,7 @@ func _on_brick_broken(score_value: int, brick_ref: Node):
 	game_manager.add_score(score_value)
 
 	# Track statistic
-	if not MenuController.is_editor_test_mode:
+	if not MenuController.editor_test_helper.is_editor_test_mode:
 		SaveManager.increment_stat("total_bricks_broken")
 
 	# Trigger screen shake (intensity scales with score and combo)

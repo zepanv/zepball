@@ -175,7 +175,7 @@ func update_info(game_manager: Node) -> void:
 	if pause_lives_info_label:
 		pause_lives_info_label.text = "Lives: " + str(game_manager.lives)
 	if return_editor_btn:
-		return_editor_btn.visible = MenuController.is_editor_test_mode
+		return_editor_btn.visible = MenuController.editor_test_helper.is_editor_test_mode
 
 func _on_resume_pressed() -> void:
 	var game_manager = _find_game_manager()

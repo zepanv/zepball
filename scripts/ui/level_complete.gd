@@ -36,9 +36,9 @@ func _ready():
 	var level_time = MenuController.get_last_level_time_seconds()
 	var level_score_raw = MenuController.get_last_level_score_raw()
 	var level_score_final = MenuController.get_last_level_score_final()
-	var challenge_mode := _get_active_challenge_mode()
-	var challenge_mode_label := _get_challenge_mode_label(challenge_mode)
-	var is_challenge_set_run := _is_challenge_set_run(challenge_mode)
+	var challenge_mode = _get_active_challenge_mode()
+	var challenge_mode_label = _get_challenge_mode_label(challenge_mode)
+	var is_challenge_set_run = _is_challenge_set_run(challenge_mode)
 
 	# Display score
 	if MenuController.current_play_mode == MenuController.PlayMode.SET:
@@ -96,7 +96,7 @@ func _ready():
 		time_label.text = "Time: " + _format_time(level_time)
 
 	# Handle set mode vs individual mode
-	if MenuController.is_editor_test_mode:
+	if MenuController.editor_test_helper.is_editor_test_mode:
 		set_total_label.visible = false
 		perfect_clear_label.visible = false
 		high_score_label.text = "EDITOR TEST RUN COMPLETE"
@@ -151,7 +151,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_next_level_button_pressed():
 	"""Continue to next level"""
-	if MenuController.is_editor_test_mode:
+	if MenuController.editor_test_helper.is_editor_test_mode:
 		MenuController.return_to_editor_from_test()
 		return
 	MenuController.continue_to_next_level()
@@ -162,14 +162,14 @@ func _on_play_again_button_pressed():
 
 func _on_level_select_button_pressed():
 	"""Return to level select"""
-	if MenuController.is_editor_test_mode:
+	if MenuController.editor_test_helper.is_editor_test_mode:
 		MenuController.return_to_editor_from_test()
 		return
 	MenuController.show_level_select()
 
 func _on_menu_button_pressed():
 	"""Return to main menu"""
-	if MenuController.is_editor_test_mode:
+	if MenuController.editor_test_helper.is_editor_test_mode:
 		MenuController.return_to_editor_from_test()
 		return
 	MenuController.show_main_menu()
