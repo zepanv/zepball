@@ -31,6 +31,13 @@ const ACHIEVEMENTS = SaveAchievementsHelper.ACHIEVEMENTS
 var settings_helper: RefCounted = null
 var achievements_helper: RefCounted = null
 var statistics_helper: RefCounted = null
+const PROGRESSION_HELPER_SCRIPT = preload("res://scripts/save_progression_helper.gd")
+const HIGH_SCORES_HELPER_SCRIPT = preload("res://scripts/save_high_scores_helper.gd")
+const PROFILE_HELPER_SCRIPT = preload("res://scripts/save_profile_helper.gd")
+
+var progression_helper: RefCounted = null
+var high_scores_helper: RefCounted = null
+var profile_helper: RefCounted = null
 
 # Metadata for tracking all profiles
 var metadata = {
@@ -39,9 +46,6 @@ var metadata = {
 }
 var current_profile_id: String = ""
 
-# Leaderboard cache for performance
-var _leaderboard_cache: Dictionary = {}
-var _leaderboard_cache_dirty: bool = true
 
 # Save data structure (Current Profile)
 var save_data = {
@@ -111,14 +115,16 @@ func _ready():
 	settings_helper = SETTINGS_HELPER_SCRIPT.new()
 	achievements_helper = ACHIEVEMENTS_HELPER_SCRIPT.new()
 	statistics_helper = STATISTICS_HELPER_SCRIPT.new()
+	progression_helper = PROGRESSION_HELPER_SCRIPT.new()
+	high_scores_helper = HIGH_SCORES_HELPER_SCRIPT.new()
+	profile_helper = PROFILE_HELPER_SCRIPT.new()
 	settings_helper.capture_default_keybindings()
 	
 	_ensure_dir_exists(PROFILES_DIR)
 	load_save()
 
 func _ensure_dir_exists(path: String) -> void:
-	if not DirAccess.dir_exists_absolute(path):
-		DirAccess.make_dir_recursive_absolute(path)
+	profile_helper._ensure_dir_exists(self, path)
 
 func load_save() -> void:
 	"""Load metadata and the current profile"""
@@ -142,346 +148,40 @@ func load_save() -> void:
 		load_profile(profile_id)
 
 func load_metadata() -> void:
-	"""Load profile metadata from disk"""
-	if not FileAccess.file_exists(METADATA_PATH):
-		metadata = {
-			"last_selected_id": "",
-			"profiles": {}
-		}
-		return
-
-	var file = FileAccess.open(METADATA_PATH, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
-		var json = JSON.new()
-		if json.parse(json_string) == OK:
-			metadata = json.data
-		else:
-			push_error("Failed to parse metadata JSON")
+	profile_helper.load_metadata(self)
 
 func save_metadata() -> void:
-	"""Save profile metadata to disk"""
-	var file = FileAccess.open(METADATA_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(metadata, "\t"))
-		file.close()
+	profile_helper.save_metadata(self)
 
 func _migrate_legacy_save() -> void:
-	"""Move legacy save_data.json to a new profile"""
-	print("Migrating legacy save data to Player 1 profile...")
-	
-	var file = FileAccess.open(LEGACY_SAVE_PATH, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
-		var json = JSON.new()
-		if json.parse(json_string) == OK:
-			var legacy_data = json.data
-			
-			# Create Player 1 profile with legacy data
-			var profile_id = "player_1"
-			metadata["profiles"][profile_id] = "Player 1"
-			metadata["last_selected_id"] = profile_id
-			save_metadata()
-			
-			current_profile_id = profile_id
-			save_data = legacy_data
-			save_to_disk()
-			
-			# Rename/Backup legacy file
-			var dir = DirAccess.open("user://")
-			dir.rename(LEGACY_SAVE_PATH, "user://save_data.json.bak")
-			print("Migration complete.")
-			save_loaded.emit()
-			return
-	
-	# If migration fails for some reason, just create a default
-	create_profile("Player 1")
+	profile_helper._migrate_legacy_save(self)
 
 func _invalidate_leaderboard_cache() -> void:
-	"""Mark leaderboard cache as dirty so it regenerates on next access"""
-	_leaderboard_cache_dirty = true
+	high_scores_helper._invalidate_leaderboard_cache(self)
 
 func create_profile(profile_name: String) -> String:
-	"""Create a new profile with the given name. Returns the profile_id."""
-	var sanitized_name = sanitize_name(profile_name)
-	if sanitized_name == "":
-		sanitized_name = "Player"
-
-	# Check for duplicate display names and auto-append counter
-	var final_name = profile_name
-	var name_counter = 2
-	while _profile_name_exists(final_name):
-		final_name = profile_name + " (" + str(name_counter) + ")"
-		name_counter += 1
-
-	# Generate a unique ID based on the sanitized name
-	var base_id = sanitized_name.to_lower().replace(" ", "_")
-	var profile_id = base_id
-	var id_counter = 1
-	while metadata["profiles"].has(profile_id) or FileAccess.file_exists(_get_profile_path(profile_id)):
-		profile_id = base_id + "_" + str(id_counter)
-		id_counter += 1
-	
-	# Create default data
-	create_default_save()
-	save_data["profile"]["player_name"] = final_name
-	
-	# Register in metadata
-	metadata["profiles"][profile_id] = final_name
-	metadata["last_selected_id"] = profile_id
-	save_metadata()
-	
-	current_profile_id = profile_id
-	save_to_disk()
-
-	_apply_profile_settings()
-	_invalidate_leaderboard_cache()
-	return profile_id
+	return profile_helper.create_profile(self, profile_name)
 
 func load_profile(profile_id: String) -> void:
-	"""Load a specific profile by ID"""
-	if not metadata["profiles"].has(profile_id):
-		push_error("Attempted to load non-existent profile: " + profile_id)
-		return
-		
-	var path = _get_profile_path(profile_id)
-	if not FileAccess.file_exists(path):
-		push_error("Profile file missing: " + path)
-		# Fallback: create default if file missing
-		create_default_save()
-		save_data["profile"]["player_name"] = metadata["profiles"][profile_id]
-		current_profile_id = profile_id
-		save_to_disk()
-		_apply_profile_settings()
-		return
-
-	var file = FileAccess.open(path, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
-		var json = JSON.new()
-		if json.parse(json_string) == OK:
-			save_data = json.data
-			current_profile_id = profile_id
-			metadata["last_selected_id"] = profile_id
-			save_metadata()
-			
-			# Perform migrations if needed
-			_perform_migrations()
-			
-			_apply_profile_settings()
-		else:
-			push_error("Failed to parse profile JSON: " + path)
+	profile_helper.load_profile(self, profile_id)
 
 func delete_profile(profile_id: String) -> void:
-	"""Delete a profile and its associated file"""
-	if not metadata["profiles"].has(profile_id):
-		return
-		
-	print("Deleting profile: ", profile_id)
-	# Delete the file
-	var path = _get_profile_path(profile_id)
-	if FileAccess.file_exists(path):
-		var err = DirAccess.remove_absolute(path)
-		if err != OK:
-			push_error("Failed to delete profile file: " + path)
-		else:
-			print("Deleted profile file: ", path)
-	
-	# Remove from metadata
-	metadata["profiles"].erase(profile_id)
-
-	# Invalidate cache since profile was deleted
-	_invalidate_leaderboard_cache()
-
-	if current_profile_id == profile_id:
-		print("Deleted active profile, reloading...")
-		current_profile_id = ""
-		metadata["last_selected_id"] = ""
-		save_metadata() # CRITICAL: Save to disk before reload
-		# Reload to catch a new profile or create default
-		load_save()
-	else:
-		save_metadata()
+	profile_helper.delete_profile(self, profile_id)
 
 func rename_current_profile(new_name: String) -> void:
-	"""Rename the currently active profile"""
-	if current_profile_id == "" or not metadata["profiles"].has(current_profile_id):
-		return
-
-	metadata["profiles"][current_profile_id] = new_name
-	save_metadata()
-
-	save_data["profile"]["player_name"] = new_name
-	save_to_disk()
-
-	# Invalidate cache since profile name changed
-	_invalidate_leaderboard_cache()
+	profile_helper.rename_current_profile(self, new_name)
 
 func _get_profile_path(profile_id: String) -> String:
-	return PROFILES_DIR + profile_id + ".json"
+	return profile_helper._get_profile_path(self, profile_id)
 
 func sanitize_name(profile_name: String) -> String:
-	"""Sanitize name to be safe for filenames (alphanumeric and spaces only)"""
-	var regex = RegEx.new()
-	regex.compile("[^a-zA-Z0-9 ]")
-	return regex.sub(profile_name, "", true).strip_edges()
+	return profile_helper.sanitize_name(self, profile_name)
 
 func _profile_name_exists(profile_name: String) -> bool:
-	"""Check if a profile with the given display name already exists"""
-	for existing_name in metadata["profiles"].values():
-		if existing_name == profile_name:
-			return true
-	return false
+	return profile_helper._profile_name_exists(self, profile_name)
 
 func _perform_migrations() -> void:
-	"""Consolidated migration logic for the currently loaded save_data"""
-	var did_migrate = false
-	var loaded_version := int(save_data.get("version", 0))
-	if loaded_version < 2:
-		did_migrate = _migrate_to_v2_pack_data() or did_migrate
-	if loaded_version < 3:
-		did_migrate = _migrate_to_v3_challenge_data() or did_migrate
-	if loaded_version < 4:
-		did_migrate = _migrate_to_v4_new_game_modes() or did_migrate
-	if loaded_version < SAVE_VERSION:
-		save_data["version"] = SAVE_VERSION
-		did_migrate = true
-
-	# Migrate old saves that don't have statistics
-	if not save_data.has("statistics"):
-		save_data["statistics"] = {
-			"total_bricks_broken": 0,
-			"total_power_ups_collected": 0,
-			"total_levels_completed": 0,
-			"total_playtime": 0.0,
-			"highest_combo": 0,
-			"highest_score": 0,
-			"total_games_played": 0,
-			"perfect_clears": 0
-		}
-		did_migrate = true
-
-	if not save_data.has("achievements"):
-		save_data["achievements"] = []
-		did_migrate = true
-
-	if not save_data.has("high_score_timestamps"):
-		save_data["high_score_timestamps"] = {}
-		# Set current time for migrated scores so they aren't "Unknown"
-		var now = Time.get_datetime_string_from_system()
-		for key in save_data.get("pack_high_scores", {}).keys():
-			save_data["high_score_timestamps"][key] = now
-		did_migrate = true
-	
-	if not save_data.has("set_high_score_timestamps"):
-		save_data["set_high_score_timestamps"] = {}
-		var now = Time.get_datetime_string_from_system()
-		for key in save_data.get("pack_set_high_scores", {}).keys():
-			save_data["set_high_score_timestamps"][key] = now
-		did_migrate = true
-
-	if not save_data.has("set_progression"):
-		save_data["set_progression"] = {
-			"highest_unlocked_set": 1,
-			"sets_completed": []
-		}
-		did_migrate = true
-
-	if not save_data.has("set_high_scores"):
-		save_data["set_high_scores"] = {}
-		did_migrate = true
-
-	if not save_data.has("pack_progression"):
-		save_data["pack_progression"] = {}
-		did_migrate = true
-
-	if not save_data.has("pack_high_scores"):
-		save_data["pack_high_scores"] = {}
-		did_migrate = true
-
-	if not save_data.has("pack_set_progression"):
-		save_data["pack_set_progression"] = {"packs_completed": []}
-		did_migrate = true
-
-	if not save_data.has("pack_set_high_scores"):
-		save_data["pack_set_high_scores"] = {}
-		did_migrate = true
-
-	if not save_data.has("last_played"):
-		save_data["last_played"] = {
-			"level_id": 0,
-			"pack_id": "classic-challenge",
-			"level_index": 0,
-			"level_key": "classic-challenge:0",
-			"set_id": -1,
-			"set_pack_id": "",
-			"mode": "individual",
-			"in_progress": false
-		}
-		did_migrate = true
-
-	if not save_data["last_played"].has("pack_id"):
-		save_data["last_played"]["pack_id"] = "classic-challenge"
-		did_migrate = true
-	if not save_data["last_played"].has("level_index"):
-		save_data["last_played"]["level_index"] = 0
-		did_migrate = true
-	if not save_data["last_played"].has("level_key"):
-		save_data["last_played"]["level_key"] = "classic-challenge:0"
-		did_migrate = true
-	if not save_data["last_played"].has("set_pack_id"):
-		save_data["last_played"]["set_pack_id"] = ""
-		did_migrate = true
-	if not save_data["last_played"].has("challenge_mode"):
-		save_data["last_played"]["challenge_mode"] = CHALLENGE_MODE_NORMAL
-		did_migrate = true
-	var normalized_challenge := _normalize_challenge_mode(str(save_data["last_played"].get("challenge_mode", CHALLENGE_MODE_NORMAL)))
-	if normalized_challenge != str(save_data["last_played"].get("challenge_mode", "")):
-		save_data["last_played"]["challenge_mode"] = normalized_challenge
-		did_migrate = true
-
-	if not save_data.has("iron_ball_set_high_scores"):
-		save_data["iron_ball_set_high_scores"] = {}
-		did_migrate = true
-	if not save_data.has("one_life_set_high_scores"):
-		save_data["one_life_set_high_scores"] = {}
-		did_migrate = true
-	if not save_data.has("iron_ball_set_high_score_timestamps"):
-		save_data["iron_ball_set_high_score_timestamps"] = {}
-		did_migrate = true
-	if not save_data.has("one_life_set_high_score_timestamps"):
-		save_data["one_life_set_high_score_timestamps"] = {}
-		did_migrate = true
-	if not save_data.has("time_attack_set_high_scores"):
-		save_data["time_attack_set_high_scores"] = {}
-		did_migrate = true
-	if not save_data.has("time_attack_set_high_score_timestamps"):
-		save_data["time_attack_set_high_score_timestamps"] = {}
-		did_migrate = true
-	if not save_data.has("survival_top_runs"):
-		save_data["survival_top_runs"] = []
-		did_migrate = true
-	elif not (save_data["survival_top_runs"] is Array):
-		save_data["survival_top_runs"] = []
-		did_migrate = true
-	else:
-		var normalized_survival_runs := _sanitize_survival_runs(save_data["survival_top_runs"])
-		if normalized_survival_runs != save_data["survival_top_runs"]:
-			save_data["survival_top_runs"] = normalized_survival_runs
-			did_migrate = true
-
-	_ensure_pack_progression_defaults()
-	
-	# Delegate migration to helpers
-	var _disk_cb = save_to_disk
-	statistics_helper.migrate_statistics(save_data, _disk_cb)
-	settings_helper.migrate_settings(save_data, _disk_cb)
-
-	if did_migrate:
-		save_to_disk()
+	progression_helper._perform_migrations(self)
 
 func save_to_disk() -> void:
 	"""Write current save data to its specific profile file"""
@@ -502,49 +202,22 @@ func save_to_disk() -> void:
 	_invalidate_leaderboard_cache()
 
 func get_profile_list() -> Dictionary:
-	"""Return the list of profiles (id: name)"""
-	return metadata["profiles"].duplicate()
+	return profile_helper.get_profile_list(self)
 
 func get_current_profile_id() -> String:
-	return current_profile_id
+	return profile_helper.get_current_profile_id(self)
 
 func get_current_profile_name() -> String:
-	if current_profile_id != "" and metadata["profiles"].has(current_profile_id):
-		return metadata["profiles"][current_profile_id]
-	return "Unknown"
+	return profile_helper.get_current_profile_name(self)
 
 func switch_profile(profile_id: String) -> void:
-	"""Switch to a different profile"""
-	if profile_id == current_profile_id:
-		return
-	load_profile(profile_id)
+	profile_helper.switch_profile(self, profile_id)
 
 func _apply_profile_settings() -> void:
-	"""Apply engine-level settings from the current save_data (Audio, Keybindings)"""
-	if settings_helper:
-		settings_helper.apply_saved_keybindings(save_data)
-	
-	if AudioManager and AudioManager.has_method("refresh_from_save"):
-		AudioManager.refresh_from_save()
-	
-	# Notify UI and game systems
-	save_loaded.emit()
+	profile_helper._apply_profile_settings(self)
 
 func get_next_default_name() -> String:
-	"""Get the next available default name like Player 1, Player 2, etc."""
-	var counter = 1
-	var base_name = "Player "
-	while true:
-		var name_candidate = base_name + str(counter)
-		var already_exists = false
-		for p_name in metadata["profiles"].values():
-			if p_name == name_candidate:
-				already_exists = true
-				break
-		if not already_exists:
-			return name_candidate
-		counter += 1
-	return "Player"
+	return profile_helper.get_next_default_name(self)
 
 func create_default_save() -> void:
 	"""Reset to default save data"""
@@ -606,742 +279,107 @@ func create_default_save() -> void:
 	_ensure_pack_progression_defaults()
 
 func _ensure_pack_progression_defaults() -> void:
-	if not save_data.has("pack_progression"):
-		save_data["pack_progression"] = {}
-
-	var pack_progression: Dictionary = save_data["pack_progression"]
-
-	# Dynamically initialize all available packs (built-in and user-created)
-	if PackLoader:
-		var all_packs: Array[Dictionary] = PackLoader.get_all_packs()
-		for pack in all_packs:
-			var pack_id := str(pack.get("pack_id", ""))
-			if pack_id.is_empty():
-				continue
-
-			# Determine default unlock state: classic-challenge starts with level 0 unlocked, others start locked
-			var default_unlock := -1
-			if pack_id == "classic-challenge":
-				default_unlock = 0
-
-			if not pack_progression.has(pack_id):
-				pack_progression[pack_id] = {
-					"highest_unlocked_level_index": default_unlock,
-					"levels_completed": [],
-					"stars": {}
-				}
-
-			# Ensure all required fields exist in the entry
-			var entry: Dictionary = pack_progression[pack_id]
-			if not entry.has("highest_unlocked_level_index"):
-				entry["highest_unlocked_level_index"] = default_unlock
-			if not entry.has("levels_completed"):
-				entry["levels_completed"] = []
-			if not entry.has("stars"):
-				entry["stars"] = {}
-			pack_progression[pack_id] = entry
-
-	save_data["pack_progression"] = pack_progression
-
-	if not save_data.has("pack_high_scores"):
-		save_data["pack_high_scores"] = {}
-	if not save_data.has("pack_set_progression"):
-		save_data["pack_set_progression"] = {"packs_completed": []}
-	if not save_data.has("pack_set_high_scores"):
-		save_data["pack_set_high_scores"] = {}
-	if not save_data.has("iron_ball_set_high_scores"):
-		save_data["iron_ball_set_high_scores"] = {}
-	if not save_data.has("one_life_set_high_scores"):
-		save_data["one_life_set_high_scores"] = {}
-	if not save_data.has("time_attack_set_high_scores"):
-		save_data["time_attack_set_high_scores"] = {}
-	if not save_data.has("iron_ball_set_high_score_timestamps"):
-		save_data["iron_ball_set_high_score_timestamps"] = {}
-	if not save_data.has("one_life_set_high_score_timestamps"):
-		save_data["one_life_set_high_score_timestamps"] = {}
-	if not save_data.has("time_attack_set_high_score_timestamps"):
-		save_data["time_attack_set_high_score_timestamps"] = {}
-	if not save_data.has("survival_top_runs"):
-		save_data["survival_top_runs"] = []
-	elif not (save_data["survival_top_runs"] is Array):
-		save_data["survival_top_runs"] = []
-	else:
-		save_data["survival_top_runs"] = _sanitize_survival_runs(save_data["survival_top_runs"])
-	if not save_data.has("last_played"):
-		save_data["last_played"] = {
-			"level_id": 0,
-			"pack_id": "classic-challenge",
-			"level_index": 0,
-			"level_key": "classic-challenge:0",
-			"set_id": -1,
-			"set_pack_id": "",
-			"mode": "individual",
-			"challenge_mode": CHALLENGE_MODE_NORMAL,
-			"in_progress": false
-		}
-	elif not save_data["last_played"].has("challenge_mode"):
-		save_data["last_played"]["challenge_mode"] = CHALLENGE_MODE_NORMAL
-	else:
-		save_data["last_played"]["challenge_mode"] = _normalize_challenge_mode(str(save_data["last_played"].get("challenge_mode", CHALLENGE_MODE_NORMAL)))
+	progression_helper._ensure_pack_progression_defaults(self)
 
 func _migrate_to_v2_pack_data() -> bool:
-	var did_change := false
-
-	if not save_data.has("pack_progression"):
-		save_data["pack_progression"] = {}
-	if not save_data.has("pack_high_scores"):
-		save_data["pack_high_scores"] = {}
-	if not save_data.has("pack_set_progression"):
-		save_data["pack_set_progression"] = {"packs_completed": []}
-	if not save_data.has("pack_set_high_scores"):
-		save_data["pack_set_high_scores"] = {}
-
-	var highest_legacy = int(save_data.get("progression", {}).get("highest_unlocked_level", 1))
-	var legacy_completed: Array = save_data.get("progression", {}).get("levels_completed", [])
-	var legacy_scores: Dictionary = save_data.get("high_scores", {})
-
-	for level_id in range(1, max(TOTAL_LEVELS, highest_legacy) + 1):
-		var level_ref: Dictionary = _legacy_ref_for_level(level_id)
-		if level_ref.is_empty():
-			continue
-		var pack_id := str(level_ref.get("pack_id", ""))
-		var level_index := int(level_ref.get("level_index", -1))
-		if pack_id.is_empty() or level_index < 0:
-			continue
-		var level_key := "%s:%d" % [pack_id, level_index]
-		var entry: Dictionary = save_data["pack_progression"].get(pack_id, {
-			"highest_unlocked_level_index": -1,
-			"levels_completed": [],
-			"stars": {}
-		})
-		var current_unlock = int(entry.get("highest_unlocked_level_index", -1))
-		if level_id <= highest_legacy and level_index > current_unlock:
-			entry["highest_unlocked_level_index"] = level_index
-			did_change = true
-		if level_id in legacy_completed:
-			var completed: Array = entry.get("levels_completed", [])
-			if not level_key in completed:
-				completed.append(level_key)
-				entry["levels_completed"] = completed
-				did_change = true
-		save_data["pack_progression"][pack_id] = entry
-
-		var legacy_key := str(level_id)
-		if legacy_scores.has(legacy_key):
-			var score = int(legacy_scores[legacy_key])
-			var current = int(save_data["pack_high_scores"].get(level_key, 0))
-			if score > current:
-				save_data["pack_high_scores"][level_key] = score
-				did_change = true
-
-	var set_scores: Dictionary = save_data.get("set_high_scores", {})
-	for set_id_variant in set_scores.keys():
-		var set_id := int(set_id_variant)
-		var pack_id := _legacy_set_pack_id(set_id)
-		if pack_id.is_empty():
-			continue
-		var new_score := int(set_scores[set_id_variant])
-		var current_score := int(save_data["pack_set_high_scores"].get(pack_id, 0))
-		if new_score > current_score:
-			save_data["pack_set_high_scores"][pack_id] = new_score
-			did_change = true
-
-	var sets_completed: Array = save_data.get("set_progression", {}).get("sets_completed", [])
-	var pack_sets_completed: Array = save_data["pack_set_progression"].get("packs_completed", [])
-	for set_id in sets_completed:
-		var pack_id := _legacy_set_pack_id(int(set_id))
-		if pack_id.is_empty():
-			continue
-		if not pack_id in pack_sets_completed:
-			pack_sets_completed.append(pack_id)
-			did_change = true
-	save_data["pack_set_progression"]["packs_completed"] = pack_sets_completed
-
-	var last_played: Dictionary = save_data.get("last_played", {})
-	var last_level_id := int(last_played.get("level_id", 0))
-	var last_played_ref: Dictionary = _legacy_ref_for_level(last_level_id)
-	if not last_played_ref.is_empty():
-		var pack_id := str(last_played_ref.get("pack_id", "classic-challenge"))
-		var level_index := int(last_played_ref.get("level_index", 0))
-		last_played["pack_id"] = pack_id
-		last_played["level_index"] = level_index
-		last_played["level_key"] = "%s:%d" % [pack_id, level_index]
-		did_change = true
-	if not last_played.has("set_pack_id"):
-		var set_id := int(last_played.get("set_id", -1))
-		if set_id != -1:
-			last_played["set_pack_id"] = _legacy_set_pack_id(set_id)
-		else:
-			last_played["set_pack_id"] = ""
-		did_change = true
-	save_data["last_played"] = last_played
-
-	_ensure_pack_progression_defaults()
-	return did_change
+	return progression_helper._migrate_to_v2_pack_data(self)
 
 func _migrate_to_v3_challenge_data() -> bool:
-	var did_change := false
-
-	if not save_data.has("iron_ball_set_high_scores"):
-		save_data["iron_ball_set_high_scores"] = {}
-		did_change = true
-	if not save_data.has("one_life_set_high_scores"):
-		save_data["one_life_set_high_scores"] = {}
-		did_change = true
-	if not save_data.has("iron_ball_set_high_score_timestamps"):
-		save_data["iron_ball_set_high_score_timestamps"] = {}
-		did_change = true
-	if not save_data.has("one_life_set_high_score_timestamps"):
-		save_data["one_life_set_high_score_timestamps"] = {}
-		did_change = true
-	if not save_data.has("last_played"):
-		save_data["last_played"] = {
-			"level_id": 0,
-			"pack_id": "classic-challenge",
-			"level_index": 0,
-			"level_key": "classic-challenge:0",
-			"set_id": -1,
-			"set_pack_id": "",
-			"mode": "individual",
-			"challenge_mode": CHALLENGE_MODE_NORMAL,
-			"in_progress": false
-		}
-		did_change = true
-	elif not save_data["last_played"].has("challenge_mode"):
-		save_data["last_played"]["challenge_mode"] = CHALLENGE_MODE_NORMAL
-		did_change = true
-
-	var normalized_challenge := _normalize_challenge_mode(str(save_data["last_played"].get("challenge_mode", CHALLENGE_MODE_NORMAL)))
-	if normalized_challenge != str(save_data["last_played"].get("challenge_mode", "")):
-		save_data["last_played"]["challenge_mode"] = normalized_challenge
-		did_change = true
-
-	return did_change
+	return progression_helper._migrate_to_v3_challenge_data(self)
 
 func _migrate_to_v4_new_game_modes() -> bool:
-	var did_change := false
-
-	if not save_data.has("time_attack_set_high_scores"):
-		save_data["time_attack_set_high_scores"] = {}
-		did_change = true
-	if not save_data.has("time_attack_set_high_score_timestamps"):
-		save_data["time_attack_set_high_score_timestamps"] = {}
-		did_change = true
-	if not save_data.has("survival_top_runs"):
-		save_data["survival_top_runs"] = []
-		did_change = true
-
-	if not (save_data.get("survival_top_runs", []) is Array):
-		save_data["survival_top_runs"] = []
-		did_change = true
-	else:
-		var normalized_runs := _sanitize_survival_runs(save_data["survival_top_runs"])
-		if normalized_runs != save_data["survival_top_runs"]:
-			save_data["survival_top_runs"] = normalized_runs
-			did_change = true
-
-	return did_change
+	return progression_helper._migrate_to_v4_new_game_modes(self)
 
 func _normalize_challenge_mode(mode: String) -> String:
-	var normalized := mode.strip_edges().to_lower()
-	if CHALLENGE_MODES.has(normalized):
-		return normalized
-	return CHALLENGE_MODE_NORMAL
+	return progression_helper._normalize_challenge_mode(self, mode)
 
 func _sanitize_survival_runs(raw_runs: Variant) -> Array:
-	var sanitized: Array = []
-	if raw_runs is Array:
-		for run_variant in raw_runs:
-			if not (run_variant is Dictionary):
-				continue
-			var run: Dictionary = run_variant
-			sanitized.append({
-				"score": max(0, int(run.get("score", 0))),
-				"wave": max(1, int(run.get("wave", 1))),
-				"date": str(run.get("date", "Unknown"))
-			})
-
-	sanitized.sort_custom(func(a, b):
-		var score_a := int(a.get("score", 0))
-		var score_b := int(b.get("score", 0))
-		if score_a != score_b:
-			return score_a > score_b
-		var wave_a := int(a.get("wave", 0))
-		var wave_b := int(b.get("wave", 0))
-		if wave_a != wave_b:
-			return wave_a > wave_b
-		var date_a := str(a.get("date", "9999-12-31T23:59:59"))
-		var date_b := str(b.get("date", "9999-12-31T23:59:59"))
-		if date_a != date_b:
-			return date_a < date_b
-		return str(a.get("name", "")) < str(b.get("name", ""))
-	)
-	if sanitized.size() > 10:
-		sanitized = sanitized.slice(0, 10)
-	return sanitized
+	return progression_helper._sanitize_survival_runs(self, raw_runs)
 
 func _parse_level_key(level_key: String) -> Dictionary:
-	var parts := level_key.split(":")
-	if parts.size() != 2:
-		return {}
-	var pack_id := parts[0]
-	if pack_id.is_empty():
-		return {}
-	var level_index := int(parts[1])
-	return {"pack_id": pack_id, "level_index": level_index}
+	return progression_helper._parse_level_key(self, level_key)
 
 func _legacy_ref_for_level(level_id: int) -> Dictionary:
-	if PackLoader and PackLoader.has_method("get_legacy_level_ref"):
-		var ref: Dictionary = PackLoader.get_legacy_level_ref(level_id)
-		if not ref.is_empty():
-			return ref
-	if level_id >= 1 and level_id <= 10:
-		return {"pack_id": "classic-challenge", "level_index": level_id - 1}
-	if level_id >= 11 and level_id <= 20:
-		return {"pack_id": "prism-showcase", "level_index": level_id - 11}
-	if level_id >= 21 and level_id <= 30:
-		return {"pack_id": "nebula-ascend", "level_index": level_id - 21}
-	return {}
+	return progression_helper._legacy_ref_for_level(self, level_id)
 
 func _legacy_level_id_for(pack_id: String, level_index: int) -> int:
-	if PackLoader and PackLoader.has_method("get_legacy_level_id"):
-		var level_id := PackLoader.get_legacy_level_id(pack_id, level_index)
-		if level_id != -1:
-			return level_id
-	if pack_id == "classic-challenge":
-		return level_index + 1
-	if pack_id == "prism-showcase":
-		return level_index + 11
-	if pack_id == "nebula-ascend":
-		return level_index + 21
-	return -1
+	return progression_helper._legacy_level_id_for(self, pack_id, level_index)
 
 func _legacy_set_pack_id(set_id: int) -> String:
-	if PackLoader and PackLoader.has_method("get_legacy_set_pack_id"):
-		var pack_id := PackLoader.get_legacy_set_pack_id(set_id)
-		if not pack_id.is_empty():
-			return pack_id
-	match set_id:
-		1:
-			return "classic-challenge"
-		2:
-			return "prism-showcase"
-		3:
-			return "nebula-ascend"
-	return ""
+	return progression_helper._legacy_set_pack_id(self, set_id)
 
 func _legacy_set_id_for_pack(pack_id: String) -> int:
-	if PackLoader and PackLoader.has_method("get_legacy_set_id_for_pack"):
-		var set_id: int = PackLoader.get_legacy_set_id_for_pack(pack_id)
-		if set_id != -1:
-			return set_id
-	if pack_id == "classic-challenge":
-		return 1
-	if pack_id == "prism-showcase":
-		return 2
-	if pack_id == "nebula-ascend":
-		return 3
-	return -1
+	return progression_helper._legacy_set_id_for_pack(self, pack_id)
 
 # ============================================================================
 # LEVEL PROGRESSION (stays inline - tightly coupled to signals)
 # ============================================================================
 
 func is_level_unlocked(level_id: int) -> bool:
-	var ref: Dictionary = _legacy_ref_for_level(level_id)
-	if ref.is_empty():
-		return false
-	return is_level_key_unlocked("%s:%d" % [str(ref.get("pack_id", "")), int(ref.get("level_index", -1))])
+	return progression_helper.is_level_unlocked(self, level_id)
 
 func is_level_completed(level_id: int) -> bool:
-	var ref: Dictionary = _legacy_ref_for_level(level_id)
-	if ref.is_empty():
-		return false
-	return is_level_key_completed("%s:%d" % [str(ref.get("pack_id", "")), int(ref.get("level_index", -1))])
+	return progression_helper.is_level_completed(self, level_id)
 
 func unlock_level(level_id: int) -> void:
-	var ref: Dictionary = _legacy_ref_for_level(level_id)
-	if ref.is_empty():
-		push_warning("Cannot unlock unknown legacy level %d" % level_id)
-		return
-	unlock_level_key("%s:%d" % [str(ref.get("pack_id", "")), int(ref.get("level_index", -1))])
+	progression_helper.unlock_level(self, level_id)
 
 func mark_level_completed(level_id: int) -> void:
-	var ref: Dictionary = _legacy_ref_for_level(level_id)
-	if ref.is_empty():
-		return
-	mark_level_key_completed("%s:%d" % [str(ref.get("pack_id", "")), int(ref.get("level_index", -1))])
+	progression_helper.mark_level_completed(self, level_id)
 
 func get_high_score(level_id: int) -> int:
-	var ref: Dictionary = _legacy_ref_for_level(level_id)
-	if ref.is_empty():
-		return 0
-	return get_level_key_high_score("%s:%d" % [str(ref.get("pack_id", "")), int(ref.get("level_index", -1))])
+	return progression_helper.get_high_score(self, level_id)
 
 func update_high_score(level_id: int, score: int) -> bool:
-	var ref: Dictionary = _legacy_ref_for_level(level_id)
-	if ref.is_empty():
-		return false
-	return update_level_key_high_score("%s:%d" % [str(ref.get("pack_id", "")), int(ref.get("level_index", -1))], score)
+	return progression_helper.update_high_score(self, level_id, score)
 
 func is_level_key_unlocked(level_key: String) -> bool:
-	var parsed := _parse_level_key(level_key)
-	if parsed.is_empty():
-		return false
-	var pack_id := str(parsed.get("pack_id", ""))
-	var level_index := int(parsed.get("level_index", -1))
-	if pack_id.is_empty() or level_index < 0:
-		return false
-
-	if level_index == 0:
-		return true
-
-	var entry: Dictionary = save_data.get("pack_progression", {}).get(pack_id, {})
-	var highest_unlocked := int(entry.get("highest_unlocked_level_index", -1))
-	return level_index <= highest_unlocked
+	return progression_helper.is_level_key_unlocked(self, level_key)
 
 func is_level_key_completed(level_key: String) -> bool:
-	var parsed := _parse_level_key(level_key)
-	if parsed.is_empty():
-		return false
-	var pack_id := str(parsed.get("pack_id", ""))
-	var entry: Dictionary = save_data.get("pack_progression", {}).get(pack_id, {})
-	var completed: Array = entry.get("levels_completed", [])
-	return level_key in completed
+	return progression_helper.is_level_key_completed(self, level_key)
 
 func unlock_level_key(level_key: String) -> void:
-	var parsed := _parse_level_key(level_key)
-	if parsed.is_empty():
-		return
-	var pack_id := str(parsed.get("pack_id", ""))
-	var level_index := int(parsed.get("level_index", -1))
-	var entry: Dictionary = save_data["pack_progression"].get(pack_id, {
-		"highest_unlocked_level_index": -1,
-		"levels_completed": [],
-		"stars": {}
-	})
-	var highest_unlocked := int(entry.get("highest_unlocked_level_index", -1))
-	if level_index > highest_unlocked:
-		entry["highest_unlocked_level_index"] = level_index
-		save_data["pack_progression"][pack_id] = entry
-		var legacy_level_id := _legacy_level_id_for(pack_id, level_index)
-		if legacy_level_id != -1 and legacy_level_id > int(save_data["progression"].get("highest_unlocked_level", 1)):
-			save_data["progression"]["highest_unlocked_level"] = legacy_level_id
-		save_to_disk()
-		if legacy_level_id != -1:
-			level_unlocked.emit(legacy_level_id)
+	progression_helper.unlock_level_key(self, level_key)
 
 func mark_level_key_completed(level_key: String) -> void:
-	var parsed := _parse_level_key(level_key)
-	if parsed.is_empty():
-		return
-	var pack_id := str(parsed.get("pack_id", ""))
-	var level_index := int(parsed.get("level_index", -1))
-	var entry: Dictionary = save_data["pack_progression"].get(pack_id, {
-		"highest_unlocked_level_index": -1,
-		"levels_completed": [],
-		"stars": {}
-	})
-	var completed: Array = entry.get("levels_completed", [])
-	if not level_key in completed:
-		completed.append(level_key)
-		entry["levels_completed"] = completed
-		save_data["pack_progression"][pack_id] = entry
-		var legacy_level_id := _legacy_level_id_for(pack_id, level_index)
-		if legacy_level_id != -1 and not legacy_level_id in save_data["progression"]["levels_completed"]:
-			save_data["progression"]["levels_completed"].append(legacy_level_id)
-		save_to_disk()
+	progression_helper.mark_level_key_completed(self, level_key)
 
 func get_level_key_high_score(level_key: String) -> int:
-	return int(save_data.get("pack_high_scores", {}).get(level_key, 0))
+	return high_scores_helper.get_level_key_high_score(self, level_key)
 
 func update_level_key_high_score(level_key: String, score: int) -> bool:
-	var current_high_score = get_level_key_high_score(level_key)
-	if score <= current_high_score:
-		return false
-
-	if not save_data.has("high_score_timestamps"):
-		save_data["high_score_timestamps"] = {}
-	
-	save_data["pack_high_scores"][level_key] = score
-	save_data["high_score_timestamps"][level_key] = Time.get_datetime_string_from_system()
-	
-	var parsed := _parse_level_key(level_key)
-	if not parsed.is_empty():
-		var pack_id := str(parsed.get("pack_id", ""))
-		var level_index := int(parsed.get("level_index", -1))
-		var legacy_level_id := _legacy_level_id_for(pack_id, level_index)
-		if legacy_level_id != -1:
-			save_data["high_scores"][str(legacy_level_id)] = score
-			high_score_updated.emit(legacy_level_id, score)
-	save_to_disk()
-	return true
+	return high_scores_helper.update_level_key_high_score(self, level_key, score)
 
 func get_level_key_stars(level_key: String) -> int:
-	var parsed := _parse_level_key(level_key)
-	if parsed.is_empty():
-		return 0
-	var pack_id := str(parsed.get("pack_id", ""))
-	var entry: Dictionary = save_data.get("pack_progression", {}).get(pack_id, {})
-	var stars: Dictionary = entry.get("stars", {})
-	return int(stars.get(level_key, 0))
+	return progression_helper.get_level_key_stars(self, level_key)
 
 func get_all_leaderboards(use_cache: bool = true) -> Dictionary:
-	"""Scan all profile files and return aggregated leaderboards with optional caching"""
-	# Return cached version if valid
-	if use_cache and not _leaderboard_cache_dirty and not _leaderboard_cache.is_empty():
-		return _leaderboard_cache.duplicate(true)
-
-	var leaderboards = {
-		"levels": {}, # level_key: [ {name, score, date}, ... ]
-		"sets": {},   # pack_id: [ {name, score, date}, ... ]
-		"iron_ball_sets": {},
-		"one_life_sets": {},
-		"time_attack_sets": {},
-		"survival_runs": []
-	}
-	
-	var profiles = get_profile_list()
-	for profile_id in profiles.keys():
-		var path = _get_profile_path(profile_id)
-		if not FileAccess.file_exists(path):
-			continue
-			
-		var file = FileAccess.open(path, FileAccess.READ)
-		if not file:
-			continue
-			
-		var json_string = file.get_as_text()
-		file.close()
-		var json = JSON.new()
-		if json.parse(json_string) != OK:
-			continue
-			
-		var p_data = json.data
-		var p_name = profiles[profile_id]
-		
-		# Process level high scores
-		var p_level_scores = p_data.get("pack_high_scores", {})
-		var p_level_times = p_data.get("high_score_timestamps", {})
-		for l_key in p_level_scores.keys():
-			if not leaderboards["levels"].has(l_key):
-				leaderboards["levels"][l_key] = []
-			
-			leaderboards["levels"][l_key].append({
-				"name": p_name,
-				"score": int(p_level_scores[l_key]),
-				"date": str(p_level_times.get(l_key, "Unknown"))
-			})
-			
-		# Process set high scores
-		var p_set_scores = p_data.get("pack_set_high_scores", {})
-		var p_set_times = p_data.get("set_high_score_timestamps", {})
-		for s_id in p_set_scores.keys():
-			if not leaderboards["sets"].has(s_id):
-				leaderboards["sets"][s_id] = []
-
-			leaderboards["sets"][s_id].append({
-				"name": p_name,
-				"score": int(p_set_scores[s_id]),
-				"date": str(p_set_times.get(s_id, "Unknown"))
-			})
-
-		# Process Iron Ball set high scores
-		var p_iron_scores = p_data.get("iron_ball_set_high_scores", {})
-		var p_iron_times = p_data.get("iron_ball_set_high_score_timestamps", {})
-		for pack_id in p_iron_scores.keys():
-			if not leaderboards["iron_ball_sets"].has(pack_id):
-				leaderboards["iron_ball_sets"][pack_id] = []
-			leaderboards["iron_ball_sets"][pack_id].append({
-				"name": p_name,
-				"score": int(p_iron_scores[pack_id]),
-				"date": str(p_iron_times.get(pack_id, "Unknown"))
-			})
-
-		# Process One Life set high scores
-		var p_one_life_scores = p_data.get("one_life_set_high_scores", {})
-		var p_one_life_times = p_data.get("one_life_set_high_score_timestamps", {})
-		for pack_id in p_one_life_scores.keys():
-			if not leaderboards["one_life_sets"].has(pack_id):
-				leaderboards["one_life_sets"][pack_id] = []
-			leaderboards["one_life_sets"][pack_id].append({
-				"name": p_name,
-				"score": int(p_one_life_scores[pack_id]),
-				"date": str(p_one_life_times.get(pack_id, "Unknown"))
-			})
-
-		# Process Time Attack set best times (lower is better)
-		var p_time_attack_scores = p_data.get("time_attack_set_high_scores", {})
-		var p_time_attack_times = p_data.get("time_attack_set_high_score_timestamps", {})
-		for pack_id in p_time_attack_scores.keys():
-			if not leaderboards["time_attack_sets"].has(pack_id):
-				leaderboards["time_attack_sets"][pack_id] = []
-			leaderboards["time_attack_sets"][pack_id].append({
-				"name": p_name,
-				"score": int(p_time_attack_scores[pack_id]),
-				"date": str(p_time_attack_times.get(pack_id, "Unknown"))
-			})
-
-		# Process Survival runs (keep all, then trim global top 10)
-		var p_survival_runs := _sanitize_survival_runs(p_data.get("survival_top_runs", []))
-		for run_variant in p_survival_runs:
-			if not (run_variant is Dictionary):
-				continue
-			var run: Dictionary = run_variant
-			leaderboards["survival_runs"].append({
-				"name": p_name,
-				"score": int(run.get("score", 0)),
-				"wave": int(run.get("wave", 1)),
-				"date": str(run.get("date", "Unknown"))
-			})
-			
-	# Sort all lists by score descending
-	for l_key in leaderboards["levels"].keys():
-		leaderboards["levels"][l_key].sort_custom(func(a, b): return a["score"] > b["score"])
-		# Keep only top 10
-		if leaderboards["levels"][l_key].size() > 10:
-			leaderboards["levels"][l_key] = leaderboards["levels"][l_key].slice(0, 10)
-			
-	for s_id in leaderboards["sets"].keys():
-		leaderboards["sets"][s_id].sort_custom(func(a, b): return a["score"] > b["score"])
-		# Keep only top 10
-		if leaderboards["sets"][s_id].size() > 10:
-			leaderboards["sets"][s_id] = leaderboards["sets"][s_id].slice(0, 10)
-	for pack_id in leaderboards["iron_ball_sets"].keys():
-		leaderboards["iron_ball_sets"][pack_id].sort_custom(func(a, b): return a["score"] > b["score"])
-		if leaderboards["iron_ball_sets"][pack_id].size() > 10:
-			leaderboards["iron_ball_sets"][pack_id] = leaderboards["iron_ball_sets"][pack_id].slice(0, 10)
-	for pack_id in leaderboards["one_life_sets"].keys():
-		leaderboards["one_life_sets"][pack_id].sort_custom(func(a, b): return a["score"] > b["score"])
-		if leaderboards["one_life_sets"][pack_id].size() > 10:
-			leaderboards["one_life_sets"][pack_id] = leaderboards["one_life_sets"][pack_id].slice(0, 10)
-	for pack_id in leaderboards["time_attack_sets"].keys():
-		leaderboards["time_attack_sets"][pack_id].sort_custom(func(a, b):
-			var score_a := int(a.get("score", 0))
-			var score_b := int(b.get("score", 0))
-			if score_a != score_b:
-				return score_a < score_b
-			var date_a := str(a.get("date", "9999-12-31T23:59:59"))
-			var date_b := str(b.get("date", "9999-12-31T23:59:59"))
-			if date_a != date_b:
-				return date_a < date_b
-			return str(a.get("name", "")) < str(b.get("name", ""))
-		)
-		if leaderboards["time_attack_sets"][pack_id].size() > 10:
-			leaderboards["time_attack_sets"][pack_id] = leaderboards["time_attack_sets"][pack_id].slice(0, 10)
-
-	leaderboards["survival_runs"].sort_custom(func(a, b):
-		var score_a := int(a.get("score", 0))
-		var score_b := int(b.get("score", 0))
-		if score_a != score_b:
-			return score_a > score_b
-		var wave_a := int(a.get("wave", 0))
-		var wave_b := int(b.get("wave", 0))
-		if wave_a != wave_b:
-			return wave_a > wave_b
-		var date_a := str(a.get("date", "9999-12-31T23:59:59"))
-		var date_b := str(b.get("date", "9999-12-31T23:59:59"))
-		if date_a != date_b:
-			return date_a < date_b
-		return str(a.get("name", "")) < str(b.get("name", ""))
-	)
-	if leaderboards["survival_runs"].size() > 10:
-		leaderboards["survival_runs"] = leaderboards["survival_runs"].slice(0, 10)
-
-	# Cache the result
-	_leaderboard_cache = leaderboards.duplicate(true)
-	_leaderboard_cache_dirty = false
-
-	return leaderboards
+	return high_scores_helper.get_all_leaderboards(self, use_cache)
 
 func get_global_high_score(level_key: String) -> int:
-	"""Find the highest score for a level across all profiles"""
-	var leaderboards = get_all_leaderboards()
-	var scores = leaderboards["levels"].get(level_key, [])
-	if scores.is_empty():
-		return 0
-	return int(scores[0]["score"])
+	return high_scores_helper.get_global_high_score(self, level_key)
 
 func get_global_set_high_score(pack_id: String) -> int:
-	"""Find the highest score for a set/pack across all profiles"""
-	var leaderboards = get_all_leaderboards()
-	var scores = leaderboards["sets"].get(pack_id, [])
-	if scores.is_empty():
-		return 0
-	return int(scores[0]["score"])
+	return high_scores_helper.get_global_set_high_score(self, pack_id)
 
 func get_global_challenge_set_high_score(pack_id: String, challenge_mode: String) -> int:
-	"""Find the highest score for a challenge set/pack across all profiles."""
-	var leaderboard_key := ""
-	match _normalize_challenge_mode(challenge_mode):
-		CHALLENGE_MODE_IRON_BALL:
-			leaderboard_key = "iron_ball_sets"
-		CHALLENGE_MODE_ONE_LIFE:
-			leaderboard_key = "one_life_sets"
-		_:
-			return 0
-
-	var leaderboards = get_all_leaderboards()
-	var scores = leaderboards.get(leaderboard_key, {}).get(pack_id, [])
-	if scores.is_empty():
-		return 0
-	return int(scores[0].get("score", 0))
+	return high_scores_helper.get_global_challenge_set_high_score(self, pack_id, challenge_mode)
 
 func get_global_time_attack_set_best_time(pack_id: String) -> int:
-	"""Find the fastest Time Attack completion for a set/pack across all profiles."""
-	var leaderboards = get_all_leaderboards()
-	var scores = leaderboards.get("time_attack_sets", {}).get(pack_id, [])
-	if scores.is_empty():
-		return 0
-	return int(scores[0].get("score", 0))
+	return high_scores_helper.get_global_time_attack_set_best_time(self, pack_id)
 
 func update_level_key_stars(level_key: String, stars_value: int) -> bool:
-	var parsed := _parse_level_key(level_key)
-	if parsed.is_empty():
-		return false
-	var pack_id := str(parsed.get("pack_id", ""))
-	var clamped_stars := clampi(stars_value, 0, 3)
-	var entry: Dictionary = save_data["pack_progression"].get(pack_id, {
-		"highest_unlocked_level_index": -1,
-		"levels_completed": [],
-		"stars": {}
-	})
-	var stars: Dictionary = entry.get("stars", {})
-	var current := int(stars.get(level_key, 0))
-	if clamped_stars <= current:
-		return false
-	stars[level_key] = clamped_stars
-	entry["stars"] = stars
-	save_data["pack_progression"][pack_id] = entry
-	save_to_disk()
-	return true
+	return progression_helper.update_level_key_stars(self, level_key, stars_value)
 
 func calculate_level_stars(level_key: String, final_score: int, perfect_clear: bool) -> int:
-	var parsed := _parse_level_key(level_key)
-	if parsed.is_empty():
-		return 0
-	var pack_id := str(parsed.get("pack_id", ""))
-	var level_index := int(parsed.get("level_index", -1))
-	var max_base_score := PackLoader.get_level_max_base_score(pack_id, level_index)
-	if max_base_score <= 0:
-		if final_score > 0:
-			return 1
-		return 0
-
-	var stars := 1
-	var silver_threshold := int(ceil(max_base_score * 0.5))
-	var gold_threshold := int(ceil(max_base_score * 0.8))
-	if final_score >= silver_threshold:
-		stars = max(stars, 2)
-	if final_score >= gold_threshold or perfect_clear:
-		stars = max(stars, 3)
-	return stars
+	return progression_helper.calculate_level_stars(self, level_key, final_score, perfect_clear)
 
 func get_unlocked_level_count() -> int:
-	return save_data["progression"]["highest_unlocked_level"]
+	return progression_helper.get_unlocked_level_count(self)
 
 func get_completed_level_count() -> int:
-	return save_data["progression"]["levels_completed"].size()
+	return progression_helper.get_completed_level_count(self)
 
 # ============================================================================
 # RESET
@@ -1469,166 +507,64 @@ func get_last_challenge_mode() -> String:
 # ============================================================================
 
 func get_set_high_score(set_id: int) -> int:
-	var pack_id := _legacy_set_pack_id(set_id)
-	if pack_id.is_empty():
-		return 0
-	return get_set_pack_high_score(pack_id)
+	return high_scores_helper.get_set_high_score(self, set_id)
 
 func update_set_high_score(set_id: int, score: int) -> bool:
-	var pack_id := _legacy_set_pack_id(set_id)
-	if pack_id.is_empty():
-		return false
-	return update_set_pack_high_score(pack_id, score)
+	return high_scores_helper.update_set_high_score(self, set_id, score)
 
 func mark_set_completed(set_id: int) -> void:
-	var pack_id := _legacy_set_pack_id(set_id)
-	if pack_id.is_empty():
-		return
-	mark_set_pack_completed(pack_id)
+	high_scores_helper.mark_set_completed(self, set_id)
 
 func is_set_unlocked(_set_id: int) -> bool:
-	return true
+	return high_scores_helper.is_set_unlocked(self, _set_id)
 
 func is_set_completed(set_id: int) -> bool:
-	var pack_id := _legacy_set_pack_id(set_id)
-	if pack_id.is_empty():
-		return false
-	return is_set_pack_completed(pack_id)
+	return high_scores_helper.is_set_completed(self, set_id)
 
 func get_set_pack_high_score(pack_id: String) -> int:
-	return int(save_data.get("pack_set_high_scores", {}).get(pack_id, 0))
+	return high_scores_helper.get_set_pack_high_score(self, pack_id)
 
 func _get_challenge_set_scores_key(challenge_mode: String) -> String:
-	match _normalize_challenge_mode(challenge_mode):
-		CHALLENGE_MODE_IRON_BALL:
-			return "iron_ball_set_high_scores"
-		CHALLENGE_MODE_ONE_LIFE:
-			return "one_life_set_high_scores"
-		_:
-			return ""
+	return high_scores_helper._get_challenge_set_scores_key(self, challenge_mode)
 
 func _get_challenge_set_timestamps_key(challenge_mode: String) -> String:
-	match _normalize_challenge_mode(challenge_mode):
-		CHALLENGE_MODE_IRON_BALL:
-			return "iron_ball_set_high_score_timestamps"
-		CHALLENGE_MODE_ONE_LIFE:
-			return "one_life_set_high_score_timestamps"
-		_:
-			return ""
+	return high_scores_helper._get_challenge_set_timestamps_key(self, challenge_mode)
 
 func get_challenge_set_high_score(pack_id: String, challenge_mode: String) -> int:
-	var scores_key := _get_challenge_set_scores_key(challenge_mode)
-	if scores_key.is_empty():
-		return 0
-	return int(save_data.get(scores_key, {}).get(pack_id, 0))
+	return high_scores_helper.get_challenge_set_high_score(self, pack_id, challenge_mode)
 
 func save_challenge_set_high_score(pack_id: String, challenge_mode: String, score: int) -> bool:
-	var scores_key := _get_challenge_set_scores_key(challenge_mode)
-	var timestamps_key := _get_challenge_set_timestamps_key(challenge_mode)
-	if scores_key.is_empty() or timestamps_key.is_empty():
-		return false
-
-	var current_high_score := get_challenge_set_high_score(pack_id, challenge_mode)
-	if score <= current_high_score:
-		return false
-
-	if not save_data.has(scores_key):
-		save_data[scores_key] = {}
-	if not save_data.has(timestamps_key):
-		save_data[timestamps_key] = {}
-
-	save_data[scores_key][pack_id] = score
-	save_data[timestamps_key][pack_id] = Time.get_datetime_string_from_system()
-	save_to_disk()
-	return true
+	return high_scores_helper.save_challenge_set_high_score(self, pack_id, challenge_mode, score)
 
 func get_time_attack_set_high_score(pack_id: String) -> int:
-	return int(save_data.get("time_attack_set_high_scores", {}).get(pack_id, 0))
+	return high_scores_helper.get_time_attack_set_high_score(self, pack_id)
 
 func save_time_attack_set_high_score(pack_id: String, time_seconds: int) -> bool:
-	if time_seconds <= 0:
-		return false
-
-	var current_best := get_time_attack_set_high_score(pack_id)
-	if current_best > 0 and time_seconds >= current_best:
-		return false
-
-	if not save_data.has("time_attack_set_high_scores"):
-		save_data["time_attack_set_high_scores"] = {}
-	if not save_data.has("time_attack_set_high_score_timestamps"):
-		save_data["time_attack_set_high_score_timestamps"] = {}
-
-	save_data["time_attack_set_high_scores"][pack_id] = time_seconds
-	save_data["time_attack_set_high_score_timestamps"][pack_id] = Time.get_datetime_string_from_system()
-	save_to_disk()
-	return true
+	return high_scores_helper.save_time_attack_set_high_score(self, pack_id, time_seconds)
 
 func get_survival_top_runs() -> Array:
-	if not save_data.has("survival_top_runs"):
-		save_data["survival_top_runs"] = []
-		save_to_disk()
-	return _sanitize_survival_runs(save_data.get("survival_top_runs", []))
+	return high_scores_helper.get_survival_top_runs(self)
 
 func save_survival_run(score: int, wave: int) -> void:
-	if not save_data.has("survival_top_runs"):
-		save_data["survival_top_runs"] = []
-
-	var runs := _sanitize_survival_runs(save_data.get("survival_top_runs", []))
-	runs.append({
-		"score": max(0, score),
-		"wave": max(1, wave),
-		"date": Time.get_datetime_string_from_system()
-	})
-	save_data["survival_top_runs"] = _sanitize_survival_runs(runs)
-	save_to_disk()
+	high_scores_helper.save_survival_run(self, score, wave)
 
 func update_set_pack_high_score(pack_id: String, score: int) -> bool:
-	var current_high_score := get_set_pack_high_score(pack_id)
-	if score <= current_high_score:
-		return false
-
-	if not save_data.has("set_high_score_timestamps"):
-		save_data["set_high_score_timestamps"] = {}
-
-	save_data["pack_set_high_scores"][pack_id] = score
-	save_data["set_high_score_timestamps"][pack_id] = Time.get_datetime_string_from_system()
-	
-	var set_id := _legacy_set_id_for_pack(pack_id)
-	if set_id != -1:
-		save_data["set_high_scores"][str(set_id)] = score
-	save_to_disk()
-	return true
+	return high_scores_helper.update_set_pack_high_score(self, pack_id, score)
 
 func mark_set_pack_completed(pack_id: String) -> void:
-	var completed_packs: Array = save_data.get("pack_set_progression", {}).get("packs_completed", [])
-	if not pack_id in completed_packs:
-		completed_packs.append(pack_id)
-		save_data["pack_set_progression"]["packs_completed"] = completed_packs
+	progression_helper.mark_set_pack_completed(self, pack_id)
 
-	var set_id := _legacy_set_id_for_pack(pack_id)
-	if set_id != -1 and not set_id in save_data["set_progression"]["sets_completed"]:
-		save_data["set_progression"]["sets_completed"].append(set_id)
-	save_to_disk()
-
-func is_set_pack_unlocked(_pack_id: String) -> bool:
-	return true
+func is_set_pack_unlocked(pack_id: String) -> bool:
+	return progression_helper.is_set_pack_unlocked(self, pack_id)
 
 func is_set_pack_completed(pack_id: String) -> bool:
-	var completed_packs: Array = save_data.get("pack_set_progression", {}).get("packs_completed", [])
-	return pack_id in completed_packs
+	return progression_helper.is_set_pack_completed(self, pack_id)
 
 func get_pack_completed_count(pack_id: String) -> int:
-	var entry: Dictionary = save_data.get("pack_progression", {}).get(pack_id, {})
-	var completed: Array = entry.get("levels_completed", [])
-	return completed.size()
+	return progression_helper.get_pack_completed_count(self, pack_id)
 
 func get_pack_total_stars(pack_id: String) -> int:
-	var total := 0
-	var entry: Dictionary = save_data.get("pack_progression", {}).get(pack_id, {})
-	var stars: Dictionary = entry.get("stars", {})
-	for key in stars.keys():
-		total += int(stars[key])
-	return total
+	return progression_helper.get_pack_total_stars(self, pack_id)
 
 # ============================================================================
 # SETTINGS FACADE - thin wrappers delegating to SaveSettingsHelper
