@@ -71,16 +71,17 @@ var selected_level_index: int = 0
 var selected_brick_type: String = "NORMAL"
 var selected_direction: int = 45
 var selected_powerup_type: String = "MYSTERY"
-var undo_stack: Array[Dictionary] = []
-var redo_stack: Array[Dictionary] = []
 var is_refreshing_ui: bool = false
 
-const MAX_UNDO_STATES: int = 50
 const EXPORTS_PATH: String = "user://exports/"
 const MAX_PLAYABLE_ROWS: int = 12
 const MAX_PLAYABLE_COLS: int = 19
 
+const EDITOR_UNDO_HELPER_SCRIPT = preload("res://scripts/ui/editor_undo_helper.gd")
+var undo_helper: RefCounted = null
+
 func _ready() -> void:
+	undo_helper = EDITOR_UNDO_HELPER_SCRIPT.new()
 	_update_back_button_text()
 	_initialize_palette()
 	_initialize_editor_pack()
@@ -188,26 +189,8 @@ func _create_default_level(level_index: int) -> Dictionary:
 		"bricks": []
 	}
 
-func _snapshot_state() -> Dictionary:
-	return {
-		"pack": current_pack.duplicate(true),
-		"selected_level_index": selected_level_index
-	}
-
 func _push_undo_state() -> void:
-	undo_stack.append(_snapshot_state())
-	if undo_stack.size() > MAX_UNDO_STATES:
-		undo_stack.remove_at(0)
-	redo_stack.clear()
-
-func _restore_snapshot(snapshot: Dictionary) -> void:
-	current_pack = snapshot.get("pack", {}).duplicate(true)
-	var levels: Array = current_pack.get("levels", [])
-	if levels.is_empty():
-		current_pack["levels"] = [_create_default_level(0)]
-		levels = current_pack.get("levels", [])
-	selected_level_index = clampi(int(snapshot.get("selected_level_index", 0)), 0, max(0, levels.size() - 1))
-	_refresh_all_ui()
+	undo_helper._push_undo_state(self)
 
 func _reindex_levels(levels: Array) -> void:
 	for idx in range(levels.size()):
@@ -539,8 +522,8 @@ func _on_grid_cell_pressed(row: int, col: int) -> void:
 	if _set_brick_type_at(row, col, target_type):
 		_refresh_grid()
 		return
-	if not undo_stack.is_empty():
-		undo_stack.remove_at(undo_stack.size() - 1)
+	if not undo_helper.undo_stack.is_empty():
+		undo_helper.undo_stack.remove_at(undo_helper.undo_stack.size() - 1)
 
 func _on_grid_cell_gui_input(event: InputEvent, row: int, col: int) -> void:
 	if not (event is InputEventMouseButton):
@@ -551,8 +534,8 @@ func _on_grid_cell_gui_input(event: InputEvent, row: int, col: int) -> void:
 		if _set_brick_type_at(row, col, ""):
 			_refresh_grid()
 			return
-		if not undo_stack.is_empty():
-			undo_stack.remove_at(undo_stack.size() - 1)
+		if not undo_helper.undo_stack.is_empty():
+			undo_helper.undo_stack.remove_at(undo_helper.undo_stack.size() - 1)
 
 func _on_level_list_item_selected(index: int) -> void:
 	selected_level_index = index
@@ -840,28 +823,10 @@ func _on_test_button_pressed() -> void:
 	MenuController.start_editor_test(test_pack, selected_level_index, _editing_builtin_pack)
 
 func _on_undo_button_pressed() -> void:
-	if undo_stack.is_empty():
-		status_label.text = "Nothing to undo"
-		return
-	redo_stack.append(_snapshot_state())
-	if redo_stack.size() > MAX_UNDO_STATES:
-		redo_stack.remove_at(0)
-	var snapshot: Dictionary = undo_stack[undo_stack.size() - 1]
-	undo_stack.remove_at(undo_stack.size() - 1)
-	_restore_snapshot(snapshot)
-	status_label.text = "Undo"
+	undo_helper._on_undo_button_pressed(self)
 
 func _on_redo_button_pressed() -> void:
-	if redo_stack.is_empty():
-		status_label.text = "Nothing to redo"
-		return
-	undo_stack.append(_snapshot_state())
-	if undo_stack.size() > MAX_UNDO_STATES:
-		undo_stack.remove_at(0)
-	var snapshot: Dictionary = redo_stack[redo_stack.size() - 1]
-	redo_stack.remove_at(redo_stack.size() - 1)
-	_restore_snapshot(snapshot)
-	status_label.text = "Redo"
+	undo_helper._on_redo_button_pressed(self)
 
 func _on_back_button_pressed() -> void:
 	MenuController.return_from_editor()
