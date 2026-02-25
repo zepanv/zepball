@@ -111,8 +111,8 @@ func show_set_select() -> void:
 	current_set_pack_id = ""
 	current_browse_pack_id = ""
 	set_mode_helper.set_current_index = 0
-	set_mode_helper.set_level_ids = []
-	set_mode_helper.set_level_refs = []
+	set_mode_helper.set_level_ids.clear()
+	set_mode_helper.set_level_refs.clear()
 
 	# Difficulty should remain unlocked in menus
 	DifficultyManager.unlock_difficulty()
@@ -263,11 +263,11 @@ func start_level(level_id: int) -> void:
 
 func start_level_ref(pack_id: String, level_index: int) -> void:
 	"""Start playing a specific level using pack-native addressing."""
-	var level_key := PackLoader.get_level_key(pack_id, level_index)
+	var level_key = PackLoader.get_level_key(pack_id, level_index)
 	if not SaveManager.is_level_key_unlocked(level_key):
 		return
 
-	var level_data := PackLoader.get_level_data(pack_id, level_index)
+	var level_data = PackLoader.get_level_data(pack_id, level_index)
 	if level_data.is_empty():
 		push_error("Level does not exist: %s:%d" % [pack_id, level_index])
 		return
@@ -275,7 +275,7 @@ func start_level_ref(pack_id: String, level_index: int) -> void:
 	current_pack_id = pack_id
 	current_level_index = level_index
 	is_survival_mode = false
-	var legacy_level_id := PackLoader.get_legacy_level_id(pack_id, level_index)
+	var legacy_level_id = PackLoader.get_legacy_level_id(pack_id, level_index)
 	current_level_id = legacy_level_id if legacy_level_id != -1 else 0
 	is_in_gameplay = true
 	var mode_name = "set" if current_play_mode == PlayMode.SET else "individual"
@@ -321,8 +321,8 @@ func start_survival() -> void:
 	current_set_pack_id = ""
 	current_browse_pack_id = ""
 	set_mode_helper.set_current_index = 0
-	set_mode_helper.set_level_ids = []
-	set_mode_helper.set_level_refs = []
+	set_mode_helper.set_level_ids.clear()
+	set_mode_helper.set_level_refs.clear()
 	_reset_set_breakdown()
 	time_attack_elapsed_base_seconds = 0
 	time_attack_final_seconds = 0
@@ -452,7 +452,7 @@ func show_level_complete(final_score: int) -> void:
 
 	# Update high score (with perfect clear bonus if applicable)
 	SaveManager.update_level_key_high_score(get_current_level_key(), current_score)
-	var earned_stars := SaveManager.calculate_level_stars(get_current_level_key(), current_score, was_perfect_clear)
+	var earned_stars = SaveManager.calculate_level_stars(get_current_level_key(), current_score, was_perfect_clear)
 	SaveManager.update_level_key_stars(get_current_level_key(), earned_stars)
 
 	# Track level completion statistic
@@ -466,7 +466,7 @@ func show_level_complete(final_score: int) -> void:
 	SaveManager.check_achievements()
 
 	# Unlock next level (works in both modes)
-	var next_level_ref := _get_next_level_ref()
+	var next_level_ref = _get_next_level_ref()
 	if not next_level_ref.is_empty():
 		SaveManager.unlock_level_key(PackLoader.get_level_key(
 			str(next_level_ref.get("pack_id", "")),
@@ -493,7 +493,7 @@ func continue_to_next_level() -> void:
 			show_set_complete(current_score)
 	else:
 		# In individual mode, advance via legacy ordered pack mapping.
-		var next_level_ref := _get_next_level_ref()
+		var next_level_ref = _get_next_level_ref()
 		if next_level_ref.is_empty():
 			show_level_select()
 			return
@@ -512,8 +512,8 @@ func resume_last_level() -> void:
 		return
 	if str(last_played.get("mode", "")) == LAST_PLAYED_MODE_SURVIVAL:
 		return
-	var pack_id := str(last_played.get("pack_id", ""))
-	var level_index := int(last_played.get("level_index", -1))
+	var pack_id = str(last_played.get("pack_id", ""))
+	var level_index = int(last_played.get("level_index", -1))
 	if pack_id.is_empty() or level_index < 0:
 		var legacy_level_id = int(last_played.get("level_id", 0))
 		var fallback_ref: Dictionary = PackLoader.get_legacy_level_ref(legacy_level_id)
@@ -524,8 +524,8 @@ func resume_last_level() -> void:
 	if pack_id.is_empty() or level_index < 0:
 		return
 	var mode = str(last_played.get("mode", "individual"))
-	var set_pack_id := str(last_played.get("set_pack_id", ""))
-	var challenge_mode := normalize_challenge_mode(str(last_played.get("challenge_mode", "normal")))
+	var set_pack_id = str(last_played.get("set_pack_id", ""))
+	var challenge_mode = normalize_challenge_mode(str(last_played.get("challenge_mode", "normal")))
 
 	if mode == "set" and not set_pack_id.is_empty():
 		current_play_mode = PlayMode.SET
@@ -533,8 +533,8 @@ func resume_last_level() -> void:
 		current_set_pack_id = set_pack_id
 		current_set_id = _find_set_id_by_pack_id(set_pack_id)
 		set_mode_helper.set_level_ids = PackLoader.get_legacy_set_level_ids(current_set_id) if current_set_id != -1 else []
-		set_mode_helper.set_level_refs = []
-		var level_count := PackLoader.get_level_count(set_pack_id)
+		set_mode_helper.set_level_refs.clear()
+		var level_count = PackLoader.get_level_count(set_pack_id)
 		for idx in range(level_count):
 			set_mode_helper.set_level_refs.append({"pack_id": set_pack_id, "level_index": idx})
 		set_mode_helper.set_current_index = level_index
@@ -548,8 +548,8 @@ func resume_last_level() -> void:
 		current_set_id = -1
 		current_set_pack_id = ""
 		set_mode_helper.set_current_index = 0
-		set_mode_helper.set_level_ids = []
-		set_mode_helper.set_level_refs = []
+		set_mode_helper.set_level_ids.clear()
+		set_mode_helper.set_level_refs.clear()
 
 	start_level_ref(pack_id, level_index)
 
@@ -663,7 +663,7 @@ func get_challenge_mode() -> String:
 	return normalize_challenge_mode(current_challenge_mode)
 
 func normalize_challenge_mode(mode: String) -> String:
-	var normalized := mode.strip_edges().to_lower()
+	var normalized = mode.strip_edges().to_lower()
 	if normalized == CHALLENGE_MODE_IRON_BALL:
 		return CHALLENGE_MODE_IRON_BALL
 	if normalized == CHALLENGE_MODE_ONE_LIFE:
