@@ -97,7 +97,7 @@ func _ready():
 	_apply_mouse_mode_for_state(game_state)
 
 func _apply_challenge_mode_defaults() -> void:
-	var challenge_mode := "normal"
+	var challenge_mode = "normal"
 	if MenuController and MenuController.has_method("get_challenge_mode"):
 		challenge_mode = str(MenuController.get_challenge_mode())
 	lives = 1 if challenge_mode == "one_life" else 3
@@ -317,7 +317,7 @@ func _is_time_attack_mode() -> bool:
 	return MenuController and MenuController.has_method("get_challenge_mode") and str(MenuController.get_challenge_mode()) == "time_attack"
 
 func _emit_time_attack_timer_if_changed(force: bool = false) -> void:
-	var elapsed_seconds := get_time_attack_elapsed_seconds()
+	var elapsed_seconds = get_time_attack_elapsed_seconds()
 	if force or elapsed_seconds != _time_attack_last_display_seconds:
 		_time_attack_last_display_seconds = elapsed_seconds
 		time_attack_timer_updated.emit(elapsed_seconds)

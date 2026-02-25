@@ -46,7 +46,7 @@ func _spawn_block_barrier(parent: Node, duration: float) -> void:
 	color_timer.timeout.connect(_update_block_barrier_color.bind(barrier))
 	color_timer.start()
 
-func _configure_block_brick(parent: Node, brick: Node, texture: Texture2D, segment_width: float, segment_height: float) -> void:
+func _configure_block_brick(_parent: Node, brick: Node, texture: Texture2D, segment_width: float, segment_height: float) -> void:
 	if not brick:
 		return
 

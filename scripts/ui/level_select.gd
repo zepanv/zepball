@@ -90,7 +90,7 @@ func populate_levels() -> void:
 
 func _build_level_entries() -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
-	var browse_pack_id := MenuController.current_browse_pack_id
+	var browse_pack_id = MenuController.current_browse_pack_id
 
 	if not browse_pack_id.is_empty():
 		_append_pack_entries(entries, browse_pack_id)
@@ -98,22 +98,22 @@ func _build_level_entries() -> Array[Dictionary]:
 
 	var packs: Array[Dictionary] = PackLoader.get_all_packs()
 	for pack in packs:
-		var pack_id := str(pack.get("pack_id", ""))
+		var pack_id = str(pack.get("pack_id", ""))
 		if pack_id.is_empty():
 			continue
 		_append_pack_entries(entries, pack_id)
 	return entries
 
 func _append_pack_entries(entries: Array[Dictionary], pack_id: String) -> void:
-	var level_count := PackLoader.get_level_count(pack_id)
+	var level_count = PackLoader.get_level_count(pack_id)
 	for level_index in range(level_count):
-		var level_key := PackLoader.get_level_key(pack_id, level_index)
-		var info := PackLoader.get_level_info(pack_id, level_index)
-		var legacy_level_id := PackLoader.get_legacy_level_id(pack_id, level_index)
-		var score := SaveManager.get_level_key_high_score(level_key)
-		var stars := SaveManager.get_level_key_stars(level_key)
-		var is_completed := SaveManager.is_level_key_completed(level_key)
-		var is_unlocked := SaveManager.is_level_key_unlocked(level_key)
+		var level_key = PackLoader.get_level_key(pack_id, level_index)
+		var info = PackLoader.get_level_info(pack_id, level_index)
+		var legacy_level_id = PackLoader.get_legacy_level_id(pack_id, level_index)
+		var score = SaveManager.get_level_key_high_score(level_key)
+		var stars = SaveManager.get_level_key_stars(level_key)
+		var is_completed = SaveManager.is_level_key_completed(level_key)
+		var is_unlocked = SaveManager.is_level_key_unlocked(level_key)
 		entries.append({
 			"pack_id": pack_id,
 			"level_index": level_index,
@@ -134,11 +134,11 @@ func _apply_filter(entries: Array[Dictionary]) -> Array[Dictionary]:
 
 	var filtered: Array[Dictionary] = []
 	for entry in entries:
-		var unlocked := bool(entry.get("is_unlocked", false))
-		var completed := bool(entry.get("is_completed", false))
-		var score := int(entry.get("score", 0))
+		var unlocked = bool(entry.get("is_unlocked", false))
+		var completed = bool(entry.get("is_completed", false))
+		var score = int(entry.get("score", 0))
 		# Match the same logic used in the card display (line 221)
-		var is_visually_completed := completed or score > 0
+		var is_visually_completed = completed or score > 0
 		if filter_mode == "completed" and is_visually_completed:
 			filtered.append(entry)
 		elif filter_mode == "locked" and not unlocked:
@@ -148,8 +148,8 @@ func _apply_filter(entries: Array[Dictionary]) -> Array[Dictionary]:
 func _apply_sort(entries: Array[Dictionary]) -> void:
 	if sort_mode == "score":
 		entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-			var sa := int(a.get("score", 0))
-			var sb := int(b.get("score", 0))
+			var sa = int(a.get("score", 0))
+			var sb = int(b.get("score", 0))
 			if sa == sb:
 				if str(a.get("pack_id", "")) == str(b.get("pack_id", "")):
 					return int(a.get("level_index", 0)) < int(b.get("level_index", 0))
@@ -165,28 +165,28 @@ func _apply_sort(entries: Array[Dictionary]) -> void:
 	)
 
 func create_level_card(entry: Dictionary) -> void:
-	var panel := PanelContainer.new()
+	var panel = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(360, 130)
 
-	var root := HBoxContainer.new()
+	var root = HBoxContainer.new()
 	root.add_theme_constant_override("separation", 10)
 	panel.add_child(root)
 
-	var preview := TextureRect.new()
+	var preview = TextureRect.new()
 	preview.custom_minimum_size = Vector2(120, 80)
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	preview.texture = entry.get("preview")
 	root.add_child(preview)
 
-	var vbox := VBoxContainer.new()
+	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.add_child(vbox)
 
-	var title := Label.new()
-	var prefix := ""
-	var legacy_level_id := int(entry.get("legacy_level_id", -1))
+	var title = Label.new()
+	var prefix = ""
+	var legacy_level_id = int(entry.get("legacy_level_id", -1))
 	if legacy_level_id != -1:
 		prefix = "LEVEL %d: " % legacy_level_id
 	title.text = prefix + str(entry.get("name", "Unknown"))
@@ -194,34 +194,34 @@ func create_level_card(entry: Dictionary) -> void:
 	title.add_theme_color_override("font_color", Color(0, 0.9, 1, 1))
 	vbox.add_child(title)
 
-	var desc := Label.new()
+	var desc = Label.new()
 	desc.text = str(entry.get("description", ""))
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.add_theme_font_size_override("font_size", 14)
 	desc.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
 	vbox.add_child(desc)
 
-	var meta := HBoxContainer.new()
+	var meta = HBoxContainer.new()
 	meta.add_theme_constant_override("separation", 8)
 	vbox.add_child(meta)
 
-	var stars_label := Label.new()
+	var stars_label = Label.new()
 	stars_label.text = _stars_text(int(entry.get("stars", 0)))
 	stars_label.add_theme_font_size_override("font_size", 15)
 	stars_label.add_theme_color_override("font_color", Color(1, 0.9, 0.45, 1))
 	meta.add_child(stars_label)
 
-	var score_label := Label.new()
+	var score_label = Label.new()
 	score_label.text = "Best: %d" % int(entry.get("score", 0))
 	score_label.add_theme_font_size_override("font_size", 15)
 	score_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75, 1))
 	meta.add_child(score_label)
 
-	var status_label := Label.new()
+	var status_label = Label.new()
 	status_label.add_theme_font_size_override("font_size", 15)
-	var is_unlocked := bool(entry.get("is_unlocked", false))
-	var is_completed := bool(entry.get("is_completed", false))
-	var score := int(entry.get("score", 0))
+	var is_unlocked = bool(entry.get("is_unlocked", false))
+	var is_completed = bool(entry.get("is_completed", false))
+	var score = int(entry.get("score", 0))
 
 	if not is_unlocked:
 		status_label.text = "LOCKED"
@@ -255,7 +255,7 @@ func create_level_card(entry: Dictionary) -> void:
 	levels_grid.add_child(panel)
 
 func _stars_text(stars: int) -> String:
-	var result := ""
+	var result = ""
 	for i in range(3):
 		if i < stars:
 			result += "*"
@@ -264,7 +264,7 @@ func _stars_text(stars: int) -> String:
 	return result
 
 func _create_filter_button(label_text: String, value: String) -> void:
-	var button := Button.new()
+	var button = Button.new()
 	button.text = label_text
 	button.custom_minimum_size = Vector2(118, 34)
 	button.add_theme_font_size_override("font_size", 16)
@@ -275,14 +275,14 @@ func _create_filter_button(label_text: String, value: String) -> void:
 	toolbar_row.add_child(button)
 
 func _create_toolbar_label(text_value: String) -> void:
-	var label := Label.new()
+	var label = Label.new()
 	label.text = text_value + ":"
 	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
 	toolbar_row.add_child(label)
 
 func _create_sort_button(label_text: String, value: String) -> void:
-	var button := Button.new()
+	var button = Button.new()
 	button.text = label_text
 	button.custom_minimum_size = Vector2(118, 34)
 	button.add_theme_font_size_override("font_size", 16)
@@ -299,12 +299,12 @@ func _on_play_pack_button_pressed() -> void:
 
 func _on_level_panel_input(event: InputEvent, panel: PanelContainer) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		var pack_id := str(panel.get_meta("pack_id"))
-		var level_index := int(panel.get_meta("level_index"))
+		var pack_id = str(panel.get_meta("pack_id"))
+		var level_index = int(panel.get_meta("level_index"))
 		MenuController.start_level_ref(pack_id, level_index)
 	elif event.is_action_pressed("ui_accept"):
-		var pack_id := str(panel.get_meta("pack_id"))
-		var level_index := int(panel.get_meta("level_index"))
+		var pack_id = str(panel.get_meta("pack_id"))
+		var level_index = int(panel.get_meta("level_index"))
 		MenuController.start_level_ref(pack_id, level_index)
 		accept_event()
 

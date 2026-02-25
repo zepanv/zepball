@@ -4,7 +4,7 @@ extends RefCounted
 var _leaderboard_cache: Dictionary = {}
 var _leaderboard_cache_dirty: bool = true
 
-func _invalidate_leaderboard_cache(parent: Node) -> void:
+func _invalidate_leaderboard_cache(_parent: Node) -> void:
 	_leaderboard_cache_dirty = true
 
 func get_level_key_high_score(parent: Node, level_key: String) -> int:
@@ -21,40 +21,40 @@ func update_level_key_high_score(parent: Node, level_key: String, score: int) ->
 	parent.save_data["pack_high_scores"][level_key] = score
 	parent.save_data["high_score_timestamps"][level_key] = Time.get_datetime_string_from_system()
 	
-	var parsed := parent.progression_helper._parse_level_key(parent, level_key)
+	var parsed = parent.progression_helper._parse_level_key(parent, level_key)
 	if not parsed.is_empty():
-		var pack_id := str(parsed.get("pack_id", ""))
-		var level_index := int(parsed.get("level_index", -1))
-		var legacy_level_id := parent.progression_helper._legacy_level_id_for(parent, pack_id, level_index)
+		var pack_id = str(parsed.get("pack_id", ""))
+		var level_index = int(parsed.get("level_index", -1))
+		var legacy_level_id = parent.progression_helper._legacy_level_id_for(parent, pack_id, level_index)
 		if legacy_level_id != -1:
 			parent.save_data["high_scores"][str(legacy_level_id)] = score
-			parent.high_score_updated.emit(legacy_level_id, score)
+			parent._emit_high_score_updated(legacy_level_id, score)
 	parent.save_to_disk()
 	return true
 
 func get_set_high_score(parent: Node, set_id: int) -> int:
-	var pack_id := parent.progression_helper._legacy_set_pack_id(parent, set_id)
+	var pack_id = parent.progression_helper._legacy_set_pack_id(parent, set_id)
 	if pack_id.is_empty():
 		return 0
 	return get_set_pack_high_score(parent, pack_id)
 
 func update_set_high_score(parent: Node, set_id: int, score: int) -> bool:
-	var pack_id := parent.progression_helper._legacy_set_pack_id(parent, set_id)
+	var pack_id = parent.progression_helper._legacy_set_pack_id(parent, set_id)
 	if pack_id.is_empty():
 		return false
 	return update_set_pack_high_score(parent, pack_id, score)
 
 func mark_set_completed(parent: Node, set_id: int) -> void:
-	var pack_id := parent.progression_helper._legacy_set_pack_id(parent, set_id)
+	var pack_id = parent.progression_helper._legacy_set_pack_id(parent, set_id)
 	if pack_id.is_empty():
 		return
 	parent.progression_helper.mark_set_pack_completed(parent, pack_id)
 
-func is_set_unlocked(parent: Node, _set_id: int) -> bool:
+func is_set_unlocked(_parent: Node, _set_id: int) -> bool:
 	return true
 
 func is_set_completed(parent: Node, set_id: int) -> bool:
-	var pack_id := parent.progression_helper._legacy_set_pack_id(parent, set_id)
+	var pack_id = parent.progression_helper._legacy_set_pack_id(parent, set_id)
 	if pack_id.is_empty():
 		return false
 	return parent.progression_helper.is_set_pack_completed(parent, pack_id)
@@ -63,7 +63,7 @@ func get_set_pack_high_score(parent: Node, pack_id: String) -> int:
 	return int(parent.save_data.get("pack_set_high_scores", {}).get(pack_id, 0))
 
 func update_set_pack_high_score(parent: Node, pack_id: String, score: int) -> bool:
-	var current_high_score := get_set_pack_high_score(parent, pack_id)
+	var current_high_score = get_set_pack_high_score(parent, pack_id)
 	if score <= current_high_score:
 		return false
 
@@ -73,7 +73,7 @@ func update_set_pack_high_score(parent: Node, pack_id: String, score: int) -> bo
 	parent.save_data["pack_set_high_scores"][pack_id] = score
 	parent.save_data["set_high_score_timestamps"][pack_id] = Time.get_datetime_string_from_system()
 	
-	var set_id := parent.progression_helper._legacy_set_id_for_pack(parent, pack_id)
+	var set_id = parent.progression_helper._legacy_set_id_for_pack(parent, pack_id)
 	if set_id != -1:
 		parent.save_data["set_high_scores"][str(set_id)] = score
 	parent.save_to_disk()
@@ -98,18 +98,18 @@ func _get_challenge_set_timestamps_key(parent: Node, challenge_mode: String) -> 
 			return ""
 
 func get_challenge_set_high_score(parent: Node, pack_id: String, challenge_mode: String) -> int:
-	var scores_key := _get_challenge_set_scores_key(parent, challenge_mode)
+	var scores_key = _get_challenge_set_scores_key(parent, challenge_mode)
 	if scores_key.is_empty():
 		return 0
 	return int(parent.save_data.get(scores_key, {}).get(pack_id, 0))
 
 func save_challenge_set_high_score(parent: Node, pack_id: String, challenge_mode: String, score: int) -> bool:
-	var scores_key := _get_challenge_set_scores_key(parent, challenge_mode)
-	var timestamps_key := _get_challenge_set_timestamps_key(parent, challenge_mode)
+	var scores_key = _get_challenge_set_scores_key(parent, challenge_mode)
+	var timestamps_key = _get_challenge_set_timestamps_key(parent, challenge_mode)
 	if scores_key.is_empty() or timestamps_key.is_empty():
 		return false
 
-	var current_high_score := get_challenge_set_high_score(parent, pack_id, challenge_mode)
+	var current_high_score = get_challenge_set_high_score(parent, pack_id, challenge_mode)
 	if score <= current_high_score:
 		return false
 
@@ -130,7 +130,7 @@ func save_time_attack_set_high_score(parent: Node, pack_id: String, time_seconds
 	if time_seconds <= 0:
 		return false
 
-	var current_best := get_time_attack_set_high_score(parent, pack_id)
+	var current_best = get_time_attack_set_high_score(parent, pack_id)
 	if current_best > 0 and time_seconds >= current_best:
 		return false
 
@@ -154,7 +154,7 @@ func save_survival_run(parent: Node, score: int, wave: int) -> void:
 	if not parent.save_data.has("survival_top_runs"):
 		parent.save_data["survival_top_runs"] = []
 
-	var runs := parent.progression_helper._sanitize_survival_runs(parent, parent.save_data.get("survival_top_runs", []))
+	var runs = parent.progression_helper._sanitize_survival_runs(parent, parent.save_data.get("survival_top_runs", []))
 	runs.append({
 		"score": max(0, score),
 		"wave": max(1, wave),
@@ -252,7 +252,7 @@ func get_all_leaderboards(parent: Node, use_cache: bool = true) -> Dictionary:
 				"date": str(p_time_attack_times.get(pack_id, "Unknown"))
 			})
 
-		var p_survival_runs := parent.progression_helper._sanitize_survival_runs(parent, p_data.get("survival_top_runs", []))
+		var p_survival_runs = parent.progression_helper._sanitize_survival_runs(parent, p_data.get("survival_top_runs", []))
 		for run_variant in p_survival_runs:
 			if not (run_variant is Dictionary):
 				continue
@@ -283,12 +283,12 @@ func get_all_leaderboards(parent: Node, use_cache: bool = true) -> Dictionary:
 			leaderboards["one_life_sets"][pack_id] = leaderboards["one_life_sets"][pack_id].slice(0, 10)
 	for pack_id in leaderboards["time_attack_sets"].keys():
 		leaderboards["time_attack_sets"][pack_id].sort_custom(func(a, b):
-			var score_a := int(a.get("score", 0))
-			var score_b := int(b.get("score", 0))
+			var score_a = int(a.get("score", 0))
+			var score_b = int(b.get("score", 0))
 			if score_a != score_b:
 				return score_a < score_b
-			var date_a := str(a.get("date", "9999-12-31T23:59:59"))
-			var date_b := str(b.get("date", "9999-12-31T23:59:59"))
+			var date_a = str(a.get("date", "9999-12-31T23:59:59"))
+			var date_b = str(b.get("date", "9999-12-31T23:59:59"))
 			if date_a != date_b:
 				return date_a < date_b
 			return str(a.get("name", "")) < str(b.get("name", ""))
@@ -297,16 +297,16 @@ func get_all_leaderboards(parent: Node, use_cache: bool = true) -> Dictionary:
 			leaderboards["time_attack_sets"][pack_id] = leaderboards["time_attack_sets"][pack_id].slice(0, 10)
 
 	leaderboards["survival_runs"].sort_custom(func(a, b):
-		var score_a := int(a.get("score", 0))
-		var score_b := int(b.get("score", 0))
+		var score_a = int(a.get("score", 0))
+		var score_b = int(b.get("score", 0))
 		if score_a != score_b:
 			return score_a > score_b
-		var wave_a := int(a.get("wave", 0))
-		var wave_b := int(b.get("wave", 0))
+		var wave_a = int(a.get("wave", 0))
+		var wave_b = int(b.get("wave", 0))
 		if wave_a != wave_b:
 			return wave_a > wave_b
-		var date_a := str(a.get("date", "9999-12-31T23:59:59"))
-		var date_b := str(b.get("date", "9999-12-31T23:59:59"))
+		var date_a = str(a.get("date", "9999-12-31T23:59:59"))
+		var date_b = str(b.get("date", "9999-12-31T23:59:59"))
 		if date_a != date_b:
 			return date_a < date_b
 		return str(a.get("name", "")) < str(b.get("name", ""))
@@ -334,7 +334,7 @@ func get_global_set_high_score(parent: Node, pack_id: String) -> int:
 	return int(scores[0]["score"])
 
 func get_global_challenge_set_high_score(parent: Node, pack_id: String, challenge_mode: String) -> int:
-	var leaderboard_key := ""
+	var leaderboard_key = ""
 	match parent.progression_helper._normalize_challenge_mode(parent, challenge_mode):
 		parent.CHALLENGE_MODE_IRON_BALL:
 			leaderboard_key = "iron_ball_sets"

@@ -458,7 +458,7 @@ func _setup_focus_chain() -> void:
 
 func _clone_input_event(event: InputEvent) -> InputEvent:
 	if event is InputEventKey:
-		var key_event := InputEventKey.new()
+		var key_event = InputEventKey.new()
 		key_event.keycode = event.keycode
 		key_event.physical_keycode = event.physical_keycode
 		key_event.shift_pressed = event.shift_pressed
@@ -469,17 +469,17 @@ func _clone_input_event(event: InputEvent) -> InputEvent:
 		key_event.echo = false
 		return key_event
 	if event is InputEventMouseButton:
-		var mouse_event := InputEventMouseButton.new()
+		var mouse_event = InputEventMouseButton.new()
 		mouse_event.button_index = event.button_index
 		mouse_event.pressed = false
 		return mouse_event
 	if event is InputEventJoypadButton:
-		var joypad_event := InputEventJoypadButton.new()
+		var joypad_event = InputEventJoypadButton.new()
 		joypad_event.button_index = event.button_index
 		joypad_event.pressed = true
 		return joypad_event
 	if event is InputEventJoypadMotion:
-		var motion_event := InputEventJoypadMotion.new()
+		var motion_event = InputEventJoypadMotion.new()
 		motion_event.axis = event.axis
 		motion_event.axis_value = event.axis_value
 		return motion_event

@@ -1,7 +1,7 @@
 class_name SaveProfileHelper
 extends RefCounted
 
-func _ensure_dir_exists(parent: Node, path: String) -> void:
+func _ensure_dir_exists(_parent: Node, path: String) -> void:
 	if not DirAccess.dir_exists_absolute(path):
 		DirAccess.make_dir_recursive_absolute(path)
 
@@ -52,7 +52,7 @@ func _migrate_legacy_save(parent: Node) -> void:
 			var dir = DirAccess.open("user://")
 			dir.rename(parent.LEGACY_SAVE_PATH, "user://save_data.json.bak")
 			print("Migration complete.")
-			parent.save_loaded.emit()
+			parent._emit_save_loaded()
 			return
 	
 	create_profile(parent, "Player 1")
@@ -166,7 +166,7 @@ func switch_profile(parent: Node, profile_id: String) -> void:
 func _get_profile_path(parent: Node, profile_id: String) -> String:
 	return parent.PROFILES_DIR + profile_id + ".json"
 
-func sanitize_name(parent: Node, profile_name: String) -> String:
+func sanitize_name(_parent: Node, profile_name: String) -> String:
 	var regex = RegEx.new()
 	regex.compile("[^a-zA-Z0-9 ]")
 	return regex.sub(profile_name, "", true).strip_edges()
@@ -184,7 +184,7 @@ func _apply_profile_settings(parent: Node) -> void:
 	if AudioManager and AudioManager.has_method("refresh_from_save"):
 		AudioManager.refresh_from_save()
 	
-	parent.save_loaded.emit()
+	parent._emit_save_loaded()
 
 func get_next_default_name(parent: Node) -> String:
 	var counter = 1

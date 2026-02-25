@@ -106,6 +106,9 @@ var force_arrow_audio: AudioStreamPlayer = null
 signal ball_lost
 signal brick_hit(brick)
 
+func _emit_brick_hit(brick: Variant) -> void:
+	brick_hit.emit(brick)
+
 func _ready():
 	# Add to ball group for collision detection
 	add_to_group("ball")

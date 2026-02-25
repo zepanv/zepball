@@ -13,7 +13,7 @@ func _start_survival_run(parent: Node) -> void:
 func _load_survival_wave(parent: Node, wave_number: int, show_intro: bool) -> void:
 	var wave: int = wave_number if wave_number > 1 else 1
 	var level_data: Dictionary = parent.SURVIVAL_GENERATOR_SCRIPT.generate_wave(wave)
-	var level_result := parent._instantiate_level_from_data(level_data, parent.SURVIVAL_PACK_ID, wave - 1)
+	var level_result = parent._instantiate_level_from_data(level_data, parent.SURVIVAL_PACK_ID, wave - 1)
 	if not level_result.get("success", false):
 		push_error("Failed to load survival wave %d" % wave)
 		return
@@ -57,7 +57,7 @@ func _on_survival_wave_complete(parent: Node) -> void:
 	survival_transition_in_progress = false
 
 func _clear_non_main_balls(parent: Node) -> void:
-	var active_balls := parent._get_active_balls()
+	var active_balls = parent._get_active_balls()
 	for existing_ball in active_balls:
 		if not is_instance_valid(existing_ball):
 			continue
@@ -78,7 +78,7 @@ func _clear_active_powerups(parent: Node) -> void:
 func _apply_survival_speed_step(parent: Node) -> void:
 	if not parent.is_survival_mode:
 		return
-	var wave_one_speed := parent.SURVIVAL_BASE_BALL_SPEED * DifficultyManager.get_speed_multiplier()
+	var wave_one_speed = parent.SURVIVAL_BASE_BALL_SPEED * DifficultyManager.get_speed_multiplier()
 	var target_speed: float = float(parent.SURVIVAL_GENERATOR_SCRIPT.get_speed_for_wave(current_wave, wave_one_speed))
 	survival_speed_multiplier = target_speed / wave_one_speed if wave_one_speed > 0.0 else 1.0
 

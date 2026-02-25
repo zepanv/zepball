@@ -36,10 +36,10 @@ func _ready():
 	var breakdown = MenuController.get_set_breakdown()
 	var set_time = MenuController.get_set_total_time_seconds()
 	var set_bonus = MenuController.get_set_perfect_bonus()
-	var challenge_mode := _get_active_challenge_mode()
-	var challenge_mode_label := _get_challenge_mode_label(challenge_mode)
-	var is_challenge_set_run := _is_challenge_set_run(challenge_mode)
-	var displayed_time_seconds := int(floor(max(set_time, 0.0)))
+	var challenge_mode = _get_active_challenge_mode()
+	var challenge_mode_label = _get_challenge_mode_label(challenge_mode)
+	var is_challenge_set_run = _is_challenge_set_run(challenge_mode)
+	var displayed_time_seconds = int(floor(max(set_time, 0.0)))
 	if challenge_mode == "time_attack":
 		displayed_time_seconds = int(MenuController.get_time_attack_elapsed_base_seconds())
 		if displayed_time_seconds < 0:

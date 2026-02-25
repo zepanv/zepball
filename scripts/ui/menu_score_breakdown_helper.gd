@@ -45,10 +45,10 @@ func _create_empty_breakdown() -> Dictionary:
 	}
 
 func _sum_breakdown(breakdown: Dictionary) -> int:
-	return int(breakdown.get("base_points", 0)) 
-		+ int(breakdown.get("difficulty_bonus", 0)) 
-		+ int(breakdown.get("combo_bonus", 0)) 
-		+ int(breakdown.get("streak_bonus", 0)) 
+	return int(breakdown.get("base_points", 0)) \
+		+ int(breakdown.get("difficulty_bonus", 0)) \
+		+ int(breakdown.get("combo_bonus", 0)) \
+		+ int(breakdown.get("streak_bonus", 0)) \
 		+ int(breakdown.get("double_bonus", 0))
 
 func _capture_level_breakdown(parent: Node, game_manager: Node) -> void:
@@ -66,7 +66,7 @@ func _capture_level_breakdown(parent: Node, game_manager: Node) -> void:
 
 	var previous_set_score = 0
 	if parent.current_play_mode == parent.PlayMode.SET:
-		previous_set_score = parent.set_saved_score
+		previous_set_score = parent.set_mode_helper.set_saved_score
 
 	var level_score_applied = parent.current_score - previous_set_score
 	var perfect_clear_bonus = max(level_score_applied - level_score_raw, 0)

@@ -1,32 +1,32 @@
 extends RefCounted
 class_name SurvivalGenerator
 
-const BRICK_SIZE := 48
-const BRICK_SPACING := 3
-const START_X := 150
-const START_Y := 120
-const GRID_ROWS := 9
-const GRID_COLS := 20
+const BRICK_SIZE = 48
+const BRICK_SPACING = 3
+const START_X = 150
+const START_Y = 120
+const GRID_ROWS = 9
+const GRID_COLS = 20
 
-const WAVE_ONE_BRICK_COUNT := 10
-const BRICK_COUNT_STEP := 2
-const MAX_BREAKABLE_BRICKS := 48
+const WAVE_ONE_BRICK_COUNT = 10
+const BRICK_COUNT_STEP = 2
+const MAX_BREAKABLE_BRICKS = 48
 
-const SPEED_STEP_INTERVAL_WAVES := 3
-const SPEED_STEP_SIZE := 50.0
-const SPEED_CAP_MULTIPLIER := 3.0
+const SPEED_STEP_INTERVAL_WAVES = 3
+const SPEED_STEP_SIZE = 50.0
+const SPEED_CAP_MULTIPLIER = 3.0
 
-const INDESTRUCTIBLE_START_WAVE := 5
-const INDESTRUCTIBLE_INTERVAL := 4
-const INDESTRUCTIBLE_MAX := 6
+const INDESTRUCTIBLE_START_WAVE = 5
+const INDESTRUCTIBLE_INTERVAL = 4
+const INDESTRUCTIBLE_MAX = 6
 
-const TIER0_TYPES := ["NORMAL", "RED", "BLUE", "GREEN"]
-const TIER1_TYPES := ["STRONG", "PURPLE", "DIAMOND", "POLYGON"]
-const TIER2_TYPES := ["GOLD", "ORANGE", "POWERUP_BRICK"]
-const TIER3_TYPES := ["BOMB", "DIAMOND_GLOSSY", "POLYGON_GLOSSY"]
-const TIER4_TYPES := ["NORMAL", "STRONG", "GOLD", "RED", "BLUE", "GREEN", "PURPLE", "ORANGE", "BOMB", "DIAMOND", "DIAMOND_GLOSSY", "POLYGON", "POLYGON_GLOSSY", "POWERUP_BRICK"]
+const TIER0_TYPES = ["NORMAL", "RED", "BLUE", "GREEN"]
+const TIER1_TYPES = ["STRONG", "PURPLE", "DIAMOND", "POLYGON"]
+const TIER2_TYPES = ["GOLD", "ORANGE", "POWERUP_BRICK"]
+const TIER3_TYPES = ["BOMB", "DIAMOND_GLOSSY", "POLYGON_GLOSSY"]
+const TIER4_TYPES = ["NORMAL", "STRONG", "GOLD", "RED", "BLUE", "GREEN", "PURPLE", "ORANGE", "BOMB", "DIAMOND", "DIAMOND_GLOSSY", "POLYGON", "POLYGON_GLOSSY", "POWERUP_BRICK"]
 
-const POWERUP_BRICK_TYPES := [
+const POWERUP_BRICK_TYPES = [
 	"EXPAND", "CONTRACT", "SPEED_UP", "TRIPLE_BALL", "BIG_BALL", "SMALL_BALL",
 	"SLOW_DOWN", "EXTRA_LIFE", "GRAB", "BRICK_THROUGH", "DOUBLE_SCORE",
 	"MYSTERY", "BOMB_BALL", "AIR_BALL", "MAGNET", "BLOCK"
@@ -34,26 +34,26 @@ const POWERUP_BRICK_TYPES := [
 
 static func generate_wave(wave_number: int) -> Dictionary:
 	var wave: int = wave_number if wave_number > 1 else 1
-	var rng := RandomNumberGenerator.new()
+	var rng = RandomNumberGenerator.new()
 	rng.randomize()
 
-	var tier := _tier_for_wave(wave)
+	var tier = _tier_for_wave(wave)
 	var target_breakables: int = min(WAVE_ONE_BRICK_COUNT + ((wave - 1) * BRICK_COUNT_STEP), MAX_BREAKABLE_BRICKS)
-	var cells := _build_pattern_cells(wave, tier, target_breakables, rng)
+	var cells = _build_pattern_cells(wave, tier, target_breakables, rng)
 
 	var occupied: Dictionary = {}
 	var bricks: Array = []
 
 	for cell in cells:
-		var row := int(cell.x)
-		var col := int(cell.y)
-		var key := "%d:%d" % [row, col]
+		var row = int(cell.x)
+		var col = int(cell.y)
+		var key = "%d:%d" % [row, col]
 		if occupied.has(key):
 			continue
 		occupied[key] = true
 
-		var brick_type := _pick_breakable_type(tier, wave, rng)
-		var brick_entry := {
+		var brick_type = _pick_breakable_type(tier, wave, rng)
+		var brick_entry = {
 			"row": row,
 			"col": col,
 			"type": brick_type
@@ -84,7 +84,7 @@ static func generate_wave(wave_number: int) -> Dictionary:
 static func get_speed_for_wave(wave_number: int, wave_one_speed: float) -> float:
 	var wave: int = wave_number if wave_number > 1 else 1
 	var steps: int = int(floor(float(wave - 1) / float(SPEED_STEP_INTERVAL_WAVES)))
-	var stepped_speed := wave_one_speed + (SPEED_STEP_SIZE * float(steps))
+	var stepped_speed = wave_one_speed + (SPEED_STEP_SIZE * float(steps))
 	return min(stepped_speed, wave_one_speed * SPEED_CAP_MULTIPLIER)
 
 static func _tier_for_wave(wave: int) -> int:
@@ -100,9 +100,9 @@ static func _tier_for_wave(wave: int) -> int:
 
 static func _build_pattern_cells(wave: int, tier: int, target_count: int, rng: RandomNumberGenerator) -> Array[Vector2i]:
 	var cells: Array[Vector2i] = []
-	var max_row := 7 if tier == 0 else 8
+	var max_row = 7 if tier == 0 else 8
 	# Safe zone shrinks from 5 cols at wave 1 to 0 by wave 6, keeping early bricks away from the paddle.
-	var safe_cols := clampi(6 - wave, 0, 5)
+	var safe_cols = clampi(6 - wave, 0, 5)
 
 	# Base scatter keeps early waves sparse and readable.
 	while cells.size() < min(target_count, 8 + (tier * 2)):
@@ -153,12 +153,12 @@ static func _pick_unbreakable_cells(wave: int, occupied: Dictionary, rng: Random
 	var count: int = 1 + int(floor(float(wave - INDESTRUCTIBLE_START_WAVE) / float(INDESTRUCTIBLE_INTERVAL)))
 	count = min(count, INDESTRUCTIBLE_MAX)
 
-	var attempts := 0
+	var attempts = 0
 	while result.size() < count and attempts < 200:
 		attempts += 1
-		var row := rng.randi_range(0, 4)
-		var col := rng.randi_range(2, GRID_COLS - 3)
-		var key := "%d:%d" % [row, col]
+		var row = rng.randi_range(0, 4)
+		var col = rng.randi_range(2, GRID_COLS - 3)
+		var key = "%d:%d" % [row, col]
 		if occupied.has(key):
 			continue
 		occupied[key] = true

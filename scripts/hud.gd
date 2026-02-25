@@ -352,7 +352,7 @@ func _configure_topbar_mode() -> void:
 		_show_center_mode_with_detail("SURVIVAL", "WAVE %d" % max(1, int(MenuController.get_survival_wave_reached())))
 		return
 
-	var challenge_mode := "normal"
+	var challenge_mode = "normal"
 	if MenuController and MenuController.has_method("get_challenge_mode"):
 		challenge_mode = str(MenuController.get_challenge_mode())
 
@@ -409,7 +409,7 @@ func _show_special_topbar(left_text: String, right_text: String) -> void:
 func _on_time_attack_timer_updated(elapsed_seconds: int) -> void:
 	if not logo_label:
 		return
-	var challenge_mode := "normal"
+	var challenge_mode = "normal"
 	if MenuController and MenuController.has_method("get_challenge_mode"):
 		challenge_mode = str(MenuController.get_challenge_mode())
 	if challenge_mode != MenuController.CHALLENGE_MODE_TIME_ATTACK:
@@ -423,7 +423,7 @@ func _on_survival_wave_changed(new_wave: int) -> void:
 
 func _format_time_mm_ss(total_seconds: int) -> String:
 	var minutes: int = int(floor(float(total_seconds) / 60.0))
-	var seconds := int(total_seconds % 60)
+	var seconds = int(total_seconds % 60)
 	return "%02d:%02d" % [minutes, seconds]
 
 func _update_multiplier_display() -> void:

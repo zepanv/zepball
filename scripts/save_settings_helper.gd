@@ -144,7 +144,7 @@ func get_rebind_actions() -> Array:
 	return REBIND_ACTIONS.duplicate()
 
 func capture_keybindings(actions: Array) -> Dictionary:
-	var bindings := {}
+	var bindings = {}
 	for action in actions:
 		if not InputMap.has_action(action):
 			continue
@@ -269,7 +269,7 @@ func _deserialize_input_event(data: Dictionary) -> InputEvent:
 	if not data.has("type"):
 		return null
 	if data["type"] == "key":
-		var event := InputEventKey.new()
+		var event = InputEventKey.new()
 		event.keycode = int(data.get("keycode", 0)) as Key
 		event.physical_keycode = int(data.get("physical_keycode", 0)) as Key
 		event.shift_pressed = bool(data.get("shift", false))
@@ -280,7 +280,7 @@ func _deserialize_input_event(data: Dictionary) -> InputEvent:
 		event.echo = false
 		return event
 	if data["type"] == "mouse_button":
-		var event := InputEventMouseButton.new()
+		var event = InputEventMouseButton.new()
 		event.button_index = int(data.get("button_index", 0)) as MouseButton
 		event.pressed = false
 		return event

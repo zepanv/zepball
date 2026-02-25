@@ -109,13 +109,13 @@ const POLYGON_GLOSSY_VARIANTS = [
 	{"texture": "res://assets/graphics/bricks/element_yellow_polygon_glossy.png", "color": Color(1.0, 0.843, 0.0)}
 ]
 
-var DIAMOND_POINTS := PackedVector2Array([
+var DIAMOND_POINTS = PackedVector2Array([
 	Vector2(0, -24),
 	Vector2(24, 0),
 	Vector2(0, 24),
 	Vector2(-24, 0)
 ])
-var PENTAGON_POINTS := PackedVector2Array([
+var PENTAGON_POINTS = PackedVector2Array([
 	Vector2(0, -23),
 	Vector2(22, -8),
 	Vector2(18, 20),

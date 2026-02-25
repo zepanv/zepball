@@ -92,7 +92,7 @@ func _display_overall():
 		_add_empty_message("No high scores recorded yet.")
 
 func _display_sets():
-	var selected_leaderboard := _get_selected_set_leaderboard()
+	var selected_leaderboard = _get_selected_set_leaderboard()
 	_add_header(_get_selected_set_header())
 	
 	var all_sets = []
@@ -104,12 +104,12 @@ func _display_sets():
 			all_sets.append(new_entry)
 	if current_set_challenge_filter == "time_attack":
 		all_sets.sort_custom(func(a, b):
-			var score_a := int(a.get("score", 0))
-			var score_b := int(b.get("score", 0))
+			var score_a = int(a.get("score", 0))
+			var score_b = int(b.get("score", 0))
 			if score_a != score_b:
 				return score_a < score_b
-			var date_a := str(a.get("date", "9999-12-31T23:59:59"))
-			var date_b := str(b.get("date", "9999-12-31T23:59:59"))
+			var date_a = str(a.get("date", "9999-12-31T23:59:59"))
+			var date_b = str(b.get("date", "9999-12-31T23:59:59"))
 			if date_a != date_b:
 				return date_a < date_b
 			return str(a.get("name", "")) < str(b.get("name", ""))

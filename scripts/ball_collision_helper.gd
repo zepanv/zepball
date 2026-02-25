@@ -83,7 +83,7 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 			return
 
 		if is_powerup_brick:
-			parent.brick_hit.emit(collider)
+			parent._emit_brick_hit(collider)
 			if collider.has_method("collect_powerup"):
 				collider.collect_powerup()
 			parent.position += parent.velocity * parent.last_physics_delta
@@ -95,7 +95,7 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 		var can_pass_through = not is_block_brick and not is_unbreakable and (parent.frame_brick_through_active or has_penetrating_spin)
 		if can_pass_through:
 			# Don't bounce, just pass through and notify brick
-			parent.brick_hit.emit(collider)
+			parent._emit_brick_hit(collider)
 			if is_powerup_brick and collider.has_method("collect_powerup"):
 				collider.collect_powerup()
 				AudioManager.play_sfx("power_up")
@@ -138,7 +138,7 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 				# For polygon/diamond bricks, add slight separation to prevent stuck loops
 				parent.position += bounce_normal * (parent.ball_radius * 0.3)
 
-			parent.brick_hit.emit(collider)
+			parent._emit_brick_hit(collider)
 			if collider.has_method("hit"):
 				collider.hit(old_velocity.normalized())
 			parent.spin_amount *= parent.SPIN_ON_HIT_DECAY

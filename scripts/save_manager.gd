@@ -110,6 +110,15 @@ signal level_unlocked(level_id: int)
 signal high_score_updated(level_id: int, new_score: int)
 signal achievement_unlocked(achievement_id: String, achievement_name: String)
 
+func _emit_save_loaded() -> void:
+	save_loaded.emit()
+
+func _emit_level_unlocked(level_id: int) -> void:
+	level_unlocked.emit(level_id)
+
+func _emit_high_score_updated(level_id: int, new_score: int) -> void:
+	high_score_updated.emit(level_id, new_score)
+
 func _ready():
 	"""Initialize helpers and load profiles"""
 	settings_helper = SETTINGS_HELPER_SCRIPT.new()
@@ -444,21 +453,21 @@ func set_last_played(level_id: int, mode: String, set_id: int = -1, in_progress:
 	var ref: Dictionary = _legacy_ref_for_level(level_id)
 	if ref.is_empty():
 		return
-	var pack_id := str(ref.get("pack_id", "classic-challenge"))
-	var level_index := int(ref.get("level_index", 0))
-	var set_pack_id := ""
+	var pack_id = str(ref.get("pack_id", "classic-challenge"))
+	var level_index = int(ref.get("level_index", 0))
+	var set_pack_id = ""
 	if set_id != -1:
 		set_pack_id = _legacy_set_pack_id(set_id)
 	set_last_played_ref(pack_id, level_index, mode, set_pack_id, in_progress, challenge_mode)
 
 func set_last_played_ref(pack_id: String, level_index: int, mode: String, set_pack_id: String = "", in_progress: bool = true, challenge_mode: String = CHALLENGE_MODE_NORMAL) -> void:
-	var level_key := "%s:%d" % [pack_id, level_index]
-	var legacy_level_id := _legacy_level_id_for(pack_id, level_index)
+	var level_key = "%s:%d" % [pack_id, level_index]
+	var legacy_level_id = _legacy_level_id_for(pack_id, level_index)
 	if legacy_level_id == -1:
 		legacy_level_id = 0
-	var normalized_challenge := _normalize_challenge_mode(challenge_mode)
+	var normalized_challenge = _normalize_challenge_mode(challenge_mode)
 
-	var legacy_set_id := -1
+	var legacy_set_id = -1
 	if not set_pack_id.is_empty():
 		legacy_set_id = _legacy_set_id_for_pack(set_pack_id)
 

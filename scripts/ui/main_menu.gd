@@ -223,7 +223,7 @@ func _on_update_check_completed(result: int, response_code: int, _headers: Packe
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
 		_flash_update_button("✕", Color(0.9, 0.3, 0.4, 1))
 		return
-	var json := JSON.new()
+	var json = JSON.new()
 	if json.parse(body.get_string_from_utf8()) != OK:
 		_flash_update_button("✕", Color(0.9, 0.3, 0.4, 1))
 		return
