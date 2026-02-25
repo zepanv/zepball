@@ -49,22 +49,14 @@ var _quit_requested: bool = false
 var current_play_mode: PlayMode = PlayMode.INDIVIDUAL
 var current_set_id: int = -1
 var current_set_pack_id: String = ""
-var set_current_index: int = 0
-var set_level_ids: Array = []
-var set_level_refs: Array[Dictionary] = []
-
-# Set mode saved game state (persists between level transitions)
-var set_saved_score: int = 0
-var set_saved_lives: int = 3
-var set_saved_combo: int = 0
-var set_saved_no_miss: int = 0
-var set_saved_perfect: bool = true
 
 
 const MENU_EDITOR_TEST_HELPER_SCRIPT = preload("res://scripts/ui/menu_editor_test_helper.gd")
 var editor_test_helper: RefCounted = null
 const MENU_SCORE_BREAKDOWN_HELPER_SCRIPT = preload("res://scripts/ui/menu_score_breakdown_helper.gd")
 var score_breakdown_helper: RefCounted = null
+const MENU_SET_MODE_HELPER_SCRIPT = preload("res://scripts/ui/menu_set_mode_helper.gd")
+var set_mode_helper: RefCounted = null
 
 # Signals
 signal scene_changed(scene_path: String)
@@ -72,6 +64,7 @@ signal scene_changed(scene_path: String)
 func _ready():
 	editor_test_helper = MENU_EDITOR_TEST_HELPER_SCRIPT.new()
 	score_breakdown_helper = MENU_SCORE_BREAKDOWN_HELPER_SCRIPT.new()
+	set_mode_helper = MENU_SET_MODE_HELPER_SCRIPT.new()
 	"""Initialize MenuController"""
 	get_tree().set_auto_accept_quit(false)
 	if SaveManager and SaveManager.has_method("get_last_challenge_mode"):
@@ -117,9 +110,9 @@ func show_set_select() -> void:
 	current_set_id = -1
 	current_set_pack_id = ""
 	current_browse_pack_id = ""
-	set_current_index = 0
-	set_level_ids = []
-	set_level_refs = []
+	set_mode_helper.set_current_index = 0
+	set_mode_helper.set_level_ids = []
+	set_mode_helper.set_level_refs = []
 
 	# Difficulty should remain unlocked in menus
 	DifficultyManager.unlock_difficulty()
@@ -307,107 +300,19 @@ func start_level_ref(pack_id: String, level_index: int) -> void:
 
 func start_set(set_id: int) -> void:
 	"""Start playing a set from the beginning"""
-	if not PackLoader.legacy_set_exists(set_id):
-		push_error("Set does not exist: ", set_id)
-		return
-
-	# Switch to set mode
-	current_play_mode = PlayMode.SET
-	current_set_id = set_id
-	current_set_pack_id = PackLoader.get_legacy_set_pack_id(set_id)
-	set_level_ids = PackLoader.get_legacy_set_level_ids(set_id)
-	set_level_refs = []
-	var level_count := PackLoader.get_level_count(current_set_pack_id)
-	for level_index in range(level_count):
-		set_level_refs.append({
-			"pack_id": current_set_pack_id,
-			"level_index": level_index
-		})
-	set_current_index = 0
-
-	# Reset saved state for new set
-	set_saved_score = 0
-	set_saved_lives = _get_starting_lives_for_challenge()
-	set_saved_combo = 0
-	set_saved_no_miss = 0
-	set_saved_perfect = true
-	time_attack_elapsed_base_seconds = 0
-	time_attack_final_seconds = 0
-	_reset_set_breakdown()
-
-	# Start first level in the set
-	if set_level_refs.size() > 0:
-		start_level_ref(current_set_pack_id, 0)
-	else:
-		push_error("Set ", set_id, " has no levels!")
+	set_mode_helper.start_set(self, set_id)
 
 func start_pack(pack_id: String) -> void:
 	"""Start playing a pack from the beginning (supports built-in and user packs)."""
-	if not PackLoader.pack_exists(pack_id):
-		push_error("Pack does not exist: %s" % pack_id)
-		return
-
-	current_play_mode = PlayMode.SET
-	current_set_pack_id = pack_id
-	current_set_id = _find_set_id_by_pack_id(pack_id)
-	current_browse_pack_id = pack_id
-	set_level_ids = []
-	set_level_refs = []
-
-	var level_count := PackLoader.get_level_count(pack_id)
-	for level_index in range(level_count):
-		set_level_refs.append({"pack_id": pack_id, "level_index": level_index})
-		var legacy_level_id := PackLoader.get_legacy_level_id(pack_id, level_index)
-		if legacy_level_id != -1:
-			set_level_ids.append(legacy_level_id)
-
-	set_current_index = 0
-	set_saved_score = 0
-	set_saved_lives = _get_starting_lives_for_challenge()
-	set_saved_combo = 0
-	set_saved_no_miss = 0
-	set_saved_perfect = true
-	time_attack_elapsed_base_seconds = 0
-	time_attack_final_seconds = 0
-	_reset_set_breakdown()
-
-	if set_level_refs.is_empty():
-		push_error("Pack %s has no levels!" % pack_id)
-		return
-	start_level_ref(pack_id, 0)
+	set_mode_helper.start_pack(self, pack_id)
 
 func continue_set_from_level(level_id: int) -> void:
 	"""Resume set mode after game over continue (resets score/lives, continues from current level)"""
-	var ref: Dictionary = PackLoader.get_legacy_level_ref(level_id)
-	if ref.is_empty():
-		push_error("Level ", level_id, " not found in current set")
-		return
-	continue_set_from_ref(str(ref.get("pack_id", "")), int(ref.get("level_index", -1)))
+	set_mode_helper.continue_set_from_level(self, level_id)
 
 func continue_set_from_ref(pack_id: String, level_index: int) -> void:
 	"""Resume set mode from pack-native level reference."""
-	var found_index := -1
-	for i in range(set_level_refs.size()):
-		var level_ref: Dictionary = set_level_refs[i]
-		if str(level_ref.get("pack_id", "")) == pack_id and int(level_ref.get("level_index", -1)) == level_index:
-			found_index = i
-			break
-	if found_index == -1:
-		push_error("Level %s:%d not found in current set" % [pack_id, level_index])
-		return
-
-	set_current_index = found_index
-
-	# Mark that we used a continue (prevents perfect set bonus)
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
-	if game_manager:
-		game_manager.had_continue = true
-	if get_challenge_mode() == CHALLENGE_MODE_TIME_ATTACK:
-		time_attack_elapsed_base_seconds = 0
-		time_attack_final_seconds = 0
-
-	# Start the level (score and lives will be reset by GameManager)
-	start_level_ref(pack_id, level_index)
+	set_mode_helper.continue_set_from_ref(self, pack_id, level_index)
 
 func start_survival() -> void:
 	"""Start a standalone survival run."""
@@ -415,9 +320,9 @@ func start_survival() -> void:
 	current_set_id = -1
 	current_set_pack_id = ""
 	current_browse_pack_id = ""
-	set_current_index = 0
-	set_level_ids = []
-	set_level_refs = []
+	set_mode_helper.set_current_index = 0
+	set_mode_helper.set_level_ids = []
+	set_mode_helper.set_level_refs = []
 	_reset_set_breakdown()
 	time_attack_elapsed_base_seconds = 0
 	time_attack_final_seconds = 0
@@ -518,7 +423,7 @@ func show_level_complete(final_score: int) -> void:
 	_capture_level_breakdown(game_manager)
 	if current_play_mode == PlayMode.SET and get_challenge_mode() == CHALLENGE_MODE_TIME_ATTACK and game_manager and game_manager.has_method("stop_time_attack_timer"):
 		time_attack_elapsed_base_seconds = int(game_manager.stop_time_attack_timer())
-		if set_current_index >= (set_level_refs.size() - 1):
+		if set_mode_helper.set_current_index >= (set_mode_helper.set_level_refs.size() - 1):
 			time_attack_final_seconds = time_attack_elapsed_base_seconds
 
 	if editor_test_helper.is_editor_test_mode:
@@ -536,11 +441,11 @@ func show_level_complete(final_score: int) -> void:
 
 	# Save game state for set mode (before scene changes)
 	if current_play_mode == PlayMode.SET and game_manager:
-		set_saved_score = current_score
-		set_saved_lives = game_manager.lives
-		set_saved_perfect = game_manager.is_perfect_clear
-		set_saved_combo = game_manager.combo
-		set_saved_no_miss = game_manager.no_miss_hits
+		set_mode_helper.set_saved_score = current_score
+		set_mode_helper.set_saved_lives = game_manager.lives
+		set_mode_helper.set_saved_perfect = game_manager.is_perfect_clear
+		set_mode_helper.set_saved_combo = game_manager.combo
+		set_mode_helper.set_saved_no_miss = game_manager.no_miss_hits
 
 	# Mark level as completed
 	SaveManager.mark_level_key_completed(get_current_level_key())
@@ -578,10 +483,10 @@ func continue_to_next_level() -> void:
 		return
 	if current_play_mode == PlayMode.SET:
 		# In set mode, advance to next level in set
-		set_current_index += 1
-		if set_current_index < set_level_refs.size():
+		set_mode_helper.set_current_index += 1
+		if set_mode_helper.set_current_index < set_mode_helper.set_level_refs.size():
 			# Continue to next level in set
-			var next_ref: Dictionary = set_level_refs[set_current_index]
+			var next_ref: Dictionary = set_mode_helper.set_level_refs[set_mode_helper.set_current_index]
 			start_level_ref(str(next_ref.get("pack_id", "")), int(next_ref.get("level_index", -1)))
 		else:
 			# Completed all levels in set
@@ -598,66 +503,7 @@ func continue_to_next_level() -> void:
 
 func show_set_complete(final_score: int) -> void:
 	"""Show set complete screen with cumulative score and bonuses"""
-	var challenge_mode := get_challenge_mode()
-	var expected_perfect_lives := 1 if challenge_mode == CHALLENGE_MODE_ONE_LIFE else 3
-
-	# Check for perfect set clear (3x bonus if all lives intact and no continues used)
-	var game_manager = get_tree().get_first_node_in_group("game_manager")
-	score_breakdown_helper.set_score_before_bonus = final_score
-	score_breakdown_helper.set_perfect_bonus = 0
-	if game_manager and game_manager.lives == expected_perfect_lives and game_manager.is_perfect_clear and not game_manager.had_continue:
-		current_score = final_score * 3
-		score_breakdown_helper.set_perfect_bonus = current_score - final_score
-	else:
-		current_score = final_score
-
-	var completion_time_seconds: int = 0
-	if challenge_mode == CHALLENGE_MODE_TIME_ATTACK:
-		completion_time_seconds = int(max(time_attack_final_seconds, time_attack_elapsed_base_seconds))
-		if completion_time_seconds <= 0:
-			completion_time_seconds = int(floor(max(score_breakdown_helper.set_total_time_seconds, 0.0)))
-
-	# Determine high score status BEFORE saving
-	was_new_personal_best = false
-	was_new_machine_best = false
-	if challenge_mode == CHALLENGE_MODE_TIME_ATTACK:
-		var prev_pb_time := SaveManager.get_time_attack_set_high_score(current_set_pack_id)
-		var prev_global_time := SaveManager.get_global_time_attack_set_best_time(current_set_pack_id)
-		if completion_time_seconds > 0:
-			was_new_personal_best = (prev_pb_time == 0) or (completion_time_seconds < prev_pb_time)
-			was_new_machine_best = (prev_global_time == 0) or (completion_time_seconds < prev_global_time)
-	elif challenge_mode != CHALLENGE_MODE_NORMAL:
-		var prev_pb_challenge := SaveManager.get_challenge_set_high_score(current_set_pack_id, challenge_mode)
-		var prev_global_challenge := SaveManager.get_global_challenge_set_high_score(current_set_pack_id, challenge_mode)
-		was_new_personal_best = (current_score > prev_pb_challenge) or (prev_pb_challenge == 0 and current_score > 0)
-		was_new_machine_best = (current_score > prev_global_challenge) or (prev_global_challenge == 0 and current_score > 0)
-	else:
-		var prev_pb := SaveManager.get_set_pack_high_score(current_set_pack_id)
-		var prev_global := SaveManager.get_global_set_high_score(current_set_pack_id)
-		was_new_personal_best = (current_score > prev_pb) or (prev_pb == 0 and current_score > 0)
-		was_new_machine_best = (current_score > prev_global) or (prev_global == 0 and current_score > 0)
-
-	# Update set high score
-	SaveManager.update_set_pack_high_score(current_set_pack_id, current_score)
-	if challenge_mode == CHALLENGE_MODE_TIME_ATTACK:
-		if completion_time_seconds > 0:
-			SaveManager.save_time_attack_set_high_score(current_set_pack_id, completion_time_seconds)
-	elif challenge_mode != CHALLENGE_MODE_NORMAL:
-		SaveManager.save_challenge_set_high_score(current_set_pack_id, challenge_mode, current_score)
-
-	# Mark set as completed
-	SaveManager.mark_set_pack_completed(current_set_pack_id)
-
-	# Track set completion statistic
-	SaveManager.increment_stat("total_set_runs_completed")
-
-	# Check for achievements
-	SaveManager.check_achievements()
-
-	is_in_gameplay = false
-	SaveManager.set_last_played_in_progress(false)
-	get_tree().change_scene_to_file(SET_COMPLETE_SCENE)
-	scene_changed.emit(SET_COMPLETE_SCENE)
+	set_mode_helper.show_set_complete(self, final_score)
 
 func resume_last_level() -> void:
 	"""Resume the last played level if it was left in progress"""
@@ -686,24 +532,24 @@ func resume_last_level() -> void:
 		current_challenge_mode = challenge_mode
 		current_set_pack_id = set_pack_id
 		current_set_id = _find_set_id_by_pack_id(set_pack_id)
-		set_level_ids = PackLoader.get_legacy_set_level_ids(current_set_id) if current_set_id != -1 else []
-		set_level_refs = []
+		set_mode_helper.set_level_ids = PackLoader.get_legacy_set_level_ids(current_set_id) if current_set_id != -1 else []
+		set_mode_helper.set_level_refs = []
 		var level_count := PackLoader.get_level_count(set_pack_id)
 		for idx in range(level_count):
-			set_level_refs.append({"pack_id": set_pack_id, "level_index": idx})
-		set_current_index = level_index
-		set_saved_score = 0
-		set_saved_lives = _get_starting_lives_for_challenge()
-		set_saved_combo = 0
-		set_saved_no_miss = 0
-		set_saved_perfect = true
+			set_mode_helper.set_level_refs.append({"pack_id": set_pack_id, "level_index": idx})
+		set_mode_helper.set_current_index = level_index
+		set_mode_helper.set_saved_score = 0
+		set_mode_helper.set_saved_lives = _get_starting_lives_for_challenge()
+		set_mode_helper.set_saved_combo = 0
+		set_mode_helper.set_saved_no_miss = 0
+		set_mode_helper.set_saved_perfect = true
 	else:
 		current_play_mode = PlayMode.INDIVIDUAL
 		current_set_id = -1
 		current_set_pack_id = ""
-		set_current_index = 0
-		set_level_ids = []
-		set_level_refs = []
+		set_mode_helper.set_current_index = 0
+		set_mode_helper.set_level_ids = []
+		set_mode_helper.set_level_refs = []
 
 	start_level_ref(pack_id, level_index)
 
@@ -801,31 +647,10 @@ func _reset_set_breakdown() -> void:
 
 
 func _get_next_level_ref() -> Dictionary:
-	# First check if there's a next level within the same pack
-	var next_level_index = current_level_index + 1
-	var level_count = PackLoader.get_level_count(current_pack_id)
-
-	if next_level_index < level_count:
-		# Next level exists in the same pack
-		return {
-			"pack_id": current_pack_id,
-			"level_index": next_level_index
-		}
-
-	# No next level in current pack - check legacy system for cross-pack progression
-	var current_legacy_id := PackLoader.get_legacy_level_id(current_pack_id, current_level_index)
-	if current_legacy_id == -1:
-		# Not a legacy pack and no more levels in this pack
-		return {}
-
-	# Legacy pack - try to get next level across packs
-	return PackLoader.get_legacy_level_ref(current_legacy_id + 1)
+	return set_mode_helper._get_next_level_ref(self)
 
 func _find_set_id_by_pack_id(pack_id: String) -> int:
-	for set_data in PackLoader.get_all_legacy_sets():
-		if str(set_data.get("pack_id", "")) == pack_id:
-			return int(set_data.get("set_id", -1))
-	return -1
+	return set_mode_helper._find_set_id_by_pack_id(pack_id)
 
 func set_challenge_mode(mode: String) -> void:
 	current_challenge_mode = normalize_challenge_mode(mode)
@@ -848,7 +673,7 @@ func normalize_challenge_mode(mode: String) -> String:
 	return CHALLENGE_MODE_NORMAL
 
 func _get_starting_lives_for_challenge() -> int:
-	return 1 if get_challenge_mode() == CHALLENGE_MODE_ONE_LIFE else 3
+	return set_mode_helper._get_starting_lives_for_challenge(self)
 
 func is_gameplay_active() -> bool:
 	"""Check if we're currently in a gameplay scene"""
