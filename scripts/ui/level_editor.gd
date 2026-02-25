@@ -535,4 +535,3 @@ func _build_pack_payload(target_pack_id: String) -> Dictionary:
 
 func _requires_pack_v2(pack_data: Dictionary) -> bool:
 	return pack_io_helper._requires_pack_v2(pack_data)
-

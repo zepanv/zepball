@@ -66,8 +66,7 @@ func _on_delete_button_pressed(parent: Node) -> void:
 	if not _can_delete_current_pack(parent):
 		parent.status_label.text = "Delete available only for saved custom packs"
 		return
-	parent.delete_confirm_dialog.dialog_text = "Delete pack "%s"?
-This cannot be undone." % pack_id
+	parent.delete_confirm_dialog.dialog_text = "Delete pack \"%s\"?\nThis cannot be undone." % pack_id
 	parent.delete_confirm_dialog.popup_centered()
 
 func _on_delete_confirm_dialog_confirmed(parent: Node) -> void:

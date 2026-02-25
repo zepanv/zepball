@@ -58,6 +58,251 @@ var score_breakdown_helper: RefCounted = null
 const MENU_SET_MODE_HELPER_SCRIPT = preload("res://scripts/ui/menu_set_mode_helper.gd")
 var set_mode_helper: RefCounted = null
 
+# Compatibility backings for pre-_ready reads/writes.
+var _compat_is_editor_test_mode: bool = false
+var _compat_editor_test_pack_data: Dictionary = {}
+var _compat_editor_test_level_index: int = 0
+var _compat_editor_draft_pack_data: Dictionary = {}
+var _compat_editor_draft_level_index: int = 0
+var _compat_editor_draft_is_builtin_edit: bool = false
+var _compat_set_current_index: int = 0
+var _compat_set_level_ids: Array = []
+var _compat_set_level_refs: Array[Dictionary] = []
+var _compat_set_saved_score: int = 0
+var _compat_set_saved_lives: int = 3
+var _compat_set_saved_combo: int = 0
+var _compat_set_saved_no_miss: int = 0
+var _compat_set_saved_perfect: bool = true
+var _compat_last_level_breakdown: Dictionary = {}
+var _compat_last_level_time_seconds: float = 0.0
+var _compat_last_level_score_raw: int = 0
+var _compat_last_level_score_final: int = 0
+var _compat_set_breakdown: Dictionary = {}
+var _compat_set_total_time_seconds: float = 0.0
+var _compat_set_score_before_bonus: int = 0
+var _compat_set_perfect_bonus: int = 0
+
+# Public compatibility API preserved on MenuController while state is helper-owned.
+var is_editor_test_mode: bool:
+	get:
+		if editor_test_helper != null:
+			return editor_test_helper.is_editor_test_mode
+		return _compat_is_editor_test_mode
+	set(value):
+		_compat_is_editor_test_mode = value
+		if editor_test_helper != null:
+			editor_test_helper.is_editor_test_mode = value
+
+var editor_test_pack_data: Dictionary:
+	get:
+		if editor_test_helper != null:
+			return editor_test_helper.editor_test_pack_data
+		return _compat_editor_test_pack_data
+	set(value):
+		_compat_editor_test_pack_data = value
+		if editor_test_helper != null:
+			editor_test_helper.editor_test_pack_data = value
+
+var editor_test_level_index: int:
+	get:
+		if editor_test_helper != null:
+			return editor_test_helper.editor_test_level_index
+		return _compat_editor_test_level_index
+	set(value):
+		_compat_editor_test_level_index = value
+		if editor_test_helper != null:
+			editor_test_helper.editor_test_level_index = value
+
+var editor_draft_pack_data: Dictionary:
+	get:
+		if editor_test_helper != null:
+			return editor_test_helper.editor_draft_pack_data
+		return _compat_editor_draft_pack_data
+	set(value):
+		_compat_editor_draft_pack_data = value
+		if editor_test_helper != null:
+			editor_test_helper.editor_draft_pack_data = value
+
+var editor_draft_level_index: int:
+	get:
+		if editor_test_helper != null:
+			return editor_test_helper.editor_draft_level_index
+		return _compat_editor_draft_level_index
+	set(value):
+		_compat_editor_draft_level_index = value
+		if editor_test_helper != null:
+			editor_test_helper.editor_draft_level_index = value
+
+var editor_draft_is_builtin_edit: bool:
+	get:
+		if editor_test_helper != null:
+			return editor_test_helper.editor_draft_is_builtin_edit
+		return _compat_editor_draft_is_builtin_edit
+	set(value):
+		_compat_editor_draft_is_builtin_edit = value
+		if editor_test_helper != null:
+			editor_test_helper.editor_draft_is_builtin_edit = value
+
+var set_current_index: int:
+	get:
+		if set_mode_helper != null:
+			return set_mode_helper.set_current_index
+		return _compat_set_current_index
+	set(value):
+		_compat_set_current_index = value
+		if set_mode_helper != null:
+			set_mode_helper.set_current_index = value
+
+var set_level_ids: Array:
+	get:
+		if set_mode_helper != null:
+			return set_mode_helper.set_level_ids
+		return _compat_set_level_ids
+	set(value):
+		_compat_set_level_ids = value
+		if set_mode_helper != null:
+			set_mode_helper.set_level_ids = value
+
+var set_level_refs: Array[Dictionary]:
+	get:
+		if set_mode_helper != null:
+			return set_mode_helper.set_level_refs
+		return _compat_set_level_refs
+	set(value):
+		_compat_set_level_refs = value
+		if set_mode_helper != null:
+			set_mode_helper.set_level_refs = value
+
+var set_saved_score: int:
+	get:
+		if set_mode_helper != null:
+			return set_mode_helper.set_saved_score
+		return _compat_set_saved_score
+	set(value):
+		_compat_set_saved_score = value
+		if set_mode_helper != null:
+			set_mode_helper.set_saved_score = value
+
+var set_saved_lives: int:
+	get:
+		if set_mode_helper != null:
+			return set_mode_helper.set_saved_lives
+		return _compat_set_saved_lives
+	set(value):
+		_compat_set_saved_lives = value
+		if set_mode_helper != null:
+			set_mode_helper.set_saved_lives = value
+
+var set_saved_combo: int:
+	get:
+		if set_mode_helper != null:
+			return set_mode_helper.set_saved_combo
+		return _compat_set_saved_combo
+	set(value):
+		_compat_set_saved_combo = value
+		if set_mode_helper != null:
+			set_mode_helper.set_saved_combo = value
+
+var set_saved_no_miss: int:
+	get:
+		if set_mode_helper != null:
+			return set_mode_helper.set_saved_no_miss
+		return _compat_set_saved_no_miss
+	set(value):
+		_compat_set_saved_no_miss = value
+		if set_mode_helper != null:
+			set_mode_helper.set_saved_no_miss = value
+
+var set_saved_perfect: bool:
+	get:
+		if set_mode_helper != null:
+			return set_mode_helper.set_saved_perfect
+		return _compat_set_saved_perfect
+	set(value):
+		_compat_set_saved_perfect = value
+		if set_mode_helper != null:
+			set_mode_helper.set_saved_perfect = value
+
+var last_level_breakdown: Dictionary:
+	get:
+		if score_breakdown_helper != null:
+			return score_breakdown_helper.last_level_breakdown
+		return _compat_last_level_breakdown
+	set(value):
+		_compat_last_level_breakdown = value
+		if score_breakdown_helper != null:
+			score_breakdown_helper.last_level_breakdown = value
+
+var last_level_time_seconds: float:
+	get:
+		if score_breakdown_helper != null:
+			return score_breakdown_helper.last_level_time_seconds
+		return _compat_last_level_time_seconds
+	set(value):
+		_compat_last_level_time_seconds = value
+		if score_breakdown_helper != null:
+			score_breakdown_helper.last_level_time_seconds = value
+
+var last_level_score_raw: int:
+	get:
+		if score_breakdown_helper != null:
+			return score_breakdown_helper.last_level_score_raw
+		return _compat_last_level_score_raw
+	set(value):
+		_compat_last_level_score_raw = value
+		if score_breakdown_helper != null:
+			score_breakdown_helper.last_level_score_raw = value
+
+var last_level_score_final: int:
+	get:
+		if score_breakdown_helper != null:
+			return score_breakdown_helper.last_level_score_final
+		return _compat_last_level_score_final
+	set(value):
+		_compat_last_level_score_final = value
+		if score_breakdown_helper != null:
+			score_breakdown_helper.last_level_score_final = value
+
+var set_breakdown: Dictionary:
+	get:
+		if score_breakdown_helper != null:
+			return score_breakdown_helper.set_breakdown
+		return _compat_set_breakdown
+	set(value):
+		_compat_set_breakdown = value
+		if score_breakdown_helper != null:
+			score_breakdown_helper.set_breakdown = value
+
+var set_total_time_seconds: float:
+	get:
+		if score_breakdown_helper != null:
+			return score_breakdown_helper.set_total_time_seconds
+		return _compat_set_total_time_seconds
+	set(value):
+		_compat_set_total_time_seconds = value
+		if score_breakdown_helper != null:
+			score_breakdown_helper.set_total_time_seconds = value
+
+var set_score_before_bonus: int:
+	get:
+		if score_breakdown_helper != null:
+			return score_breakdown_helper.set_score_before_bonus
+		return _compat_set_score_before_bonus
+	set(value):
+		_compat_set_score_before_bonus = value
+		if score_breakdown_helper != null:
+			score_breakdown_helper.set_score_before_bonus = value
+
+var set_perfect_bonus: int:
+	get:
+		if score_breakdown_helper != null:
+			return score_breakdown_helper.set_perfect_bonus
+		return _compat_set_perfect_bonus
+	set(value):
+		_compat_set_perfect_bonus = value
+		if score_breakdown_helper != null:
+			score_breakdown_helper.set_perfect_bonus = value
+
 # Signals
 signal scene_changed(scene_path: String)
 
@@ -65,10 +310,36 @@ func _ready():
 	editor_test_helper = MENU_EDITOR_TEST_HELPER_SCRIPT.new()
 	score_breakdown_helper = MENU_SCORE_BREAKDOWN_HELPER_SCRIPT.new()
 	set_mode_helper = MENU_SET_MODE_HELPER_SCRIPT.new()
+	_sync_helper_state_from_compat()
 	"""Initialize MenuController"""
 	get_tree().set_auto_accept_quit(false)
 	if SaveManager and SaveManager.has_method("get_last_challenge_mode"):
 		current_challenge_mode = normalize_challenge_mode(str(SaveManager.get_last_challenge_mode()))
+
+func _sync_helper_state_from_compat() -> void:
+	# Preserve parent API behavior for any values assigned before _ready.
+	is_editor_test_mode = _compat_is_editor_test_mode
+	editor_test_pack_data = _compat_editor_test_pack_data
+	editor_test_level_index = _compat_editor_test_level_index
+	editor_draft_pack_data = _compat_editor_draft_pack_data
+	editor_draft_level_index = _compat_editor_draft_level_index
+	editor_draft_is_builtin_edit = _compat_editor_draft_is_builtin_edit
+	set_current_index = _compat_set_current_index
+	set_level_ids = _compat_set_level_ids
+	set_level_refs = _compat_set_level_refs
+	set_saved_score = _compat_set_saved_score
+	set_saved_lives = _compat_set_saved_lives
+	set_saved_combo = _compat_set_saved_combo
+	set_saved_no_miss = _compat_set_saved_no_miss
+	set_saved_perfect = _compat_set_saved_perfect
+	last_level_breakdown = _compat_last_level_breakdown
+	last_level_time_seconds = _compat_last_level_time_seconds
+	last_level_score_raw = _compat_last_level_score_raw
+	last_level_score_final = _compat_last_level_score_final
+	set_breakdown = _compat_set_breakdown
+	set_total_time_seconds = _compat_set_total_time_seconds
+	set_score_before_bonus = _compat_set_score_before_bonus
+	set_perfect_bonus = _compat_set_perfect_bonus
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
@@ -110,9 +381,9 @@ func show_set_select() -> void:
 	current_set_id = -1
 	current_set_pack_id = ""
 	current_browse_pack_id = ""
-	set_mode_helper.set_current_index = 0
-	set_mode_helper.set_level_ids.clear()
-	set_mode_helper.set_level_refs.clear()
+	set_current_index = 0
+	set_level_ids.clear()
+	set_level_refs.clear()
 
 	# Difficulty should remain unlocked in menus
 	DifficultyManager.unlock_difficulty()
@@ -164,7 +435,7 @@ func show_editor_from_main_menu() -> void:
 	"""Open the level editor for creating a new user pack from Main Menu."""
 	is_in_gameplay = false
 	is_survival_mode = false
-	editor_test_helper.is_editor_test_mode = false
+	is_editor_test_mode = false
 	current_editor_pack_id = ""
 	editor_return_target = EditorReturnTarget.MAIN_MENU
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -176,7 +447,7 @@ func show_editor_from_set_select() -> void:
 	"""Open the level editor for creating a new user pack from Pack Select."""
 	is_in_gameplay = false
 	is_survival_mode = false
-	editor_test_helper.is_editor_test_mode = false
+	is_editor_test_mode = false
 	current_editor_pack_id = ""
 	editor_return_target = EditorReturnTarget.SET_SELECT
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -188,7 +459,7 @@ func show_editor_for_pack(pack_id: String) -> void:
 	"""Open the level editor with an existing pack loaded."""
 	is_in_gameplay = false
 	is_survival_mode = false
-	editor_test_helper.is_editor_test_mode = false
+	is_editor_test_mode = false
 	current_editor_pack_id = pack_id
 	editor_return_target = EditorReturnTarget.SET_SELECT
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -204,9 +475,9 @@ func should_editor_return_to_main_menu() -> bool:
 
 func return_from_editor() -> void:
 	"""Return to the correct menu based on where editor was opened from."""
-	editor_test_helper.editor_draft_pack_data = {}
-	editor_test_helper.editor_draft_level_index = 0
-	editor_test_helper.editor_draft_is_builtin_edit = false
+	editor_draft_pack_data = {}
+	editor_draft_level_index = 0
+	editor_draft_is_builtin_edit = false
 	if editor_return_target == EditorReturnTarget.MAIN_MENU:
 		show_main_menu()
 		return
@@ -320,9 +591,9 @@ func start_survival() -> void:
 	current_set_id = -1
 	current_set_pack_id = ""
 	current_browse_pack_id = ""
-	set_mode_helper.set_current_index = 0
-	set_mode_helper.set_level_ids.clear()
-	set_mode_helper.set_level_refs.clear()
+	set_current_index = 0
+	set_level_ids.clear()
+	set_level_refs.clear()
 	_reset_set_breakdown()
 	time_attack_elapsed_base_seconds = 0
 	time_attack_final_seconds = 0
@@ -351,8 +622,8 @@ func start_survival() -> void:
 
 func restart_current_level() -> void:
 	"""Restart the current level"""
-	if editor_test_helper.is_editor_test_mode:
-		start_editor_test(editor_test_helper.editor_draft_pack_data, editor_test_helper.editor_draft_level_index, editor_test_helper.editor_draft_is_builtin_edit)
+	if is_editor_test_mode:
+		start_editor_test(editor_draft_pack_data, editor_draft_level_index, editor_draft_is_builtin_edit)
 		return
 	start_level_ref(current_pack_id, current_level_index)
 
@@ -364,7 +635,7 @@ func show_game_over(final_score: int) -> void:
 	current_score = final_score
 	is_in_gameplay = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	if not editor_test_helper.is_editor_test_mode:
+	if not is_editor_test_mode:
 		SaveManager.set_last_played_in_progress(false)
 	if current_play_mode == PlayMode.SET and get_challenge_mode() == CHALLENGE_MODE_TIME_ATTACK:
 		time_attack_elapsed_base_seconds = 0
@@ -374,7 +645,7 @@ func show_game_over(final_score: int) -> void:
 	DifficultyManager.unlock_difficulty()
 
 	# Try to update high score
-	if not editor_test_helper.is_editor_test_mode:
+	if not is_editor_test_mode:
 		SaveManager.update_level_key_high_score(get_current_level_key(), final_score)
 
 	get_tree().change_scene_to_file(GAME_OVER_SCENE)
@@ -392,7 +663,7 @@ func show_survival_over(final_score: int, wave: int) -> void:
 			SaveManager.set_last_played_survival()
 		else:
 			SaveManager.set_last_played_in_progress(false)
-		if not editor_test_helper.is_editor_test_mode and SaveManager.has_method("save_survival_run"):
+		if not is_editor_test_mode and SaveManager.has_method("save_survival_run"):
 			SaveManager.save_survival_run(final_score, survival_wave_reached)
 
 	get_tree().change_scene_to_file(GAME_OVER_SCENE)
@@ -403,7 +674,7 @@ func show_level_complete(final_score: int) -> void:
 	current_score = final_score
 	is_in_gameplay = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-	if not editor_test_helper.is_editor_test_mode:
+	if not is_editor_test_mode:
 		SaveManager.set_last_played_in_progress(false)
 
 	# Unlock difficulty when leaving gameplay
@@ -423,10 +694,10 @@ func show_level_complete(final_score: int) -> void:
 	_capture_level_breakdown(game_manager)
 	if current_play_mode == PlayMode.SET and get_challenge_mode() == CHALLENGE_MODE_TIME_ATTACK and game_manager and game_manager.has_method("stop_time_attack_timer"):
 		time_attack_elapsed_base_seconds = int(game_manager.stop_time_attack_timer())
-		if set_mode_helper.set_current_index >= (set_mode_helper.set_level_refs.size() - 1):
+		if set_current_index >= (set_level_refs.size() - 1):
 			time_attack_final_seconds = time_attack_elapsed_base_seconds
 
-	if editor_test_helper.is_editor_test_mode:
+	if is_editor_test_mode:
 		get_tree().change_scene_to_file(LEVEL_COMPLETE_SCENE)
 		scene_changed.emit(LEVEL_COMPLETE_SCENE)
 		return
@@ -441,11 +712,11 @@ func show_level_complete(final_score: int) -> void:
 
 	# Save game state for set mode (before scene changes)
 	if current_play_mode == PlayMode.SET and game_manager:
-		set_mode_helper.set_saved_score = current_score
-		set_mode_helper.set_saved_lives = game_manager.lives
-		set_mode_helper.set_saved_perfect = game_manager.is_perfect_clear
-		set_mode_helper.set_saved_combo = game_manager.combo
-		set_mode_helper.set_saved_no_miss = game_manager.no_miss_hits
+		set_saved_score = current_score
+		set_saved_lives = game_manager.lives
+		set_saved_perfect = game_manager.is_perfect_clear
+		set_saved_combo = game_manager.combo
+		set_saved_no_miss = game_manager.no_miss_hits
 
 	# Mark level as completed
 	SaveManager.mark_level_key_completed(get_current_level_key())
@@ -478,15 +749,15 @@ func show_level_complete(final_score: int) -> void:
 
 func continue_to_next_level() -> void:
 	"""Load the next level after completion (handles both individual and set mode)"""
-	if editor_test_helper.is_editor_test_mode:
+	if is_editor_test_mode:
 		return_to_editor_from_test()
 		return
 	if current_play_mode == PlayMode.SET:
 		# In set mode, advance to next level in set
-		set_mode_helper.set_current_index += 1
-		if set_mode_helper.set_current_index < set_mode_helper.set_level_refs.size():
+		set_current_index += 1
+		if set_current_index < set_level_refs.size():
 			# Continue to next level in set
-			var next_ref: Dictionary = set_mode_helper.set_level_refs[set_mode_helper.set_current_index]
+			var next_ref: Dictionary = set_level_refs[set_current_index]
 			start_level_ref(str(next_ref.get("pack_id", "")), int(next_ref.get("level_index", -1)))
 		else:
 			# Completed all levels in set
@@ -532,24 +803,24 @@ func resume_last_level() -> void:
 		current_challenge_mode = challenge_mode
 		current_set_pack_id = set_pack_id
 		current_set_id = _find_set_id_by_pack_id(set_pack_id)
-		set_mode_helper.set_level_ids = PackLoader.get_legacy_set_level_ids(current_set_id) if current_set_id != -1 else []
-		set_mode_helper.set_level_refs.clear()
+		set_level_ids = PackLoader.get_legacy_set_level_ids(current_set_id) if current_set_id != -1 else []
+		set_level_refs.clear()
 		var level_count = PackLoader.get_level_count(set_pack_id)
 		for idx in range(level_count):
-			set_mode_helper.set_level_refs.append({"pack_id": set_pack_id, "level_index": idx})
-		set_mode_helper.set_current_index = level_index
-		set_mode_helper.set_saved_score = 0
-		set_mode_helper.set_saved_lives = _get_starting_lives_for_challenge()
-		set_mode_helper.set_saved_combo = 0
-		set_mode_helper.set_saved_no_miss = 0
-		set_mode_helper.set_saved_perfect = true
+			set_level_refs.append({"pack_id": set_pack_id, "level_index": idx})
+		set_current_index = level_index
+		set_saved_score = 0
+		set_saved_lives = _get_starting_lives_for_challenge()
+		set_saved_combo = 0
+		set_saved_no_miss = 0
+		set_saved_perfect = true
 	else:
 		current_play_mode = PlayMode.INDIVIDUAL
 		current_set_id = -1
 		current_set_pack_id = ""
-		set_mode_helper.set_current_index = 0
-		set_mode_helper.set_level_ids.clear()
-		set_mode_helper.set_level_refs.clear()
+		set_current_index = 0
+		set_level_ids.clear()
+		set_level_refs.clear()
 
 	start_level_ref(pack_id, level_index)
 

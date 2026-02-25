@@ -54,7 +54,7 @@ func _ready():
 			and challenge_mode != MenuController.CHALLENGE_MODE_TIME_ATTACK:
 		add_continue_set_button()
 
-	if MenuController.editor_test_helper.is_editor_test_mode:
+	if MenuController.is_editor_test_mode:
 		high_score_label.text = "EDITOR TEST"
 		high_score_label.set("theme_override_colors/font_color", Color(0.75, 0.9, 1.0, 1))
 		retry_button.text = "RETEST LEVEL"
@@ -118,7 +118,7 @@ func _on_continue_set_button_pressed():
 
 func _on_menu_button_pressed():
 	"""Return to main menu"""
-	if MenuController.editor_test_helper.is_editor_test_mode:
+	if MenuController.is_editor_test_mode:
 		MenuController.return_to_editor_from_test()
 		return
 	MenuController.show_main_menu()

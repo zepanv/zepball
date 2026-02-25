@@ -132,14 +132,14 @@ func _ready() -> void:
 		load_level_ref(str(level_ref.get("pack_id", "classic-challenge")), int(level_ref.get("level_index", 0)))
 
 		# Restore state if in set mode (deferred to ensure HUD is ready)
-		if MenuController.current_play_mode == MenuController.PlayMode.SET and MenuController.set_mode_helper.set_current_index > 0:
+		if MenuController.current_play_mode == MenuController.PlayMode.SET and MenuController.set_current_index > 0:
 			# Not the first level in the set - restore saved state from MenuController
 			call_deferred("_restore_set_state",
-				MenuController.set_mode_helper.set_saved_score,
-				MenuController.set_mode_helper.set_saved_lives,
-				MenuController.set_mode_helper.set_saved_perfect,
-				MenuController.set_mode_helper.set_saved_combo,
-				MenuController.set_mode_helper.set_saved_no_miss)
+				MenuController.set_saved_score,
+				MenuController.set_saved_lives,
+				MenuController.set_saved_perfect,
+				MenuController.set_saved_combo,
+				MenuController.set_saved_no_miss)
 
 		# Connect existing bricks
 		connect_brick_signals()
@@ -199,7 +199,7 @@ func load_level_ref(pack_id: String, level_index: int):
 		# Update game manager with level info
 		if game_manager:
 			var legacy_level_id: int = PackLoader.get_legacy_level_id(pack_id, level_index)
-			if MenuController.editor_test_helper.is_editor_test_mode:
+			if MenuController.is_editor_test_mode:
 				game_manager.current_level = level_index + 1
 			else:
 				game_manager.current_level = legacy_level_id if legacy_level_id != -1 else 1
@@ -358,7 +358,7 @@ func _on_brick_broken(score_value: int, brick_ref: Node):
 	game_manager.add_score(score_value)
 
 	# Track statistic
-	if not MenuController.editor_test_helper.is_editor_test_mode:
+	if not MenuController.is_editor_test_mode:
 		SaveManager.increment_stat("total_bricks_broken")
 
 	# Trigger screen shake (intensity scales with score and combo)

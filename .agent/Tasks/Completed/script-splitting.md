@@ -1,6 +1,6 @@
 # Script Splitting Refactor
 
-## Status: 📋 BACKLOG
+## Status: ✅ COMPLETED
 
 Several core scripts have grown too large for comfortable navigation and maintenance. The project already uses a proven `extends RefCounted` helper pattern (ball helpers, HUD helpers, save helpers). This task applies that same pattern to the remaining oversized files.
 
