@@ -88,15 +88,20 @@ var cached_force_arrows: Array[Node] = []
 var background_manager: RefCounted = null
 var power_up_handler: RefCounted = null
 var is_survival_mode: bool = false
-var current_wave: int = 1
-var survival_speed_multiplier: float = 1.0
-var survival_transition_in_progress: bool = false
+
+const MAIN_SURVIVAL_HELPER_SCRIPT: GDScript = preload("res://scripts/main_survival_helper.gd")
+var survival_helper: RefCounted = null
+
+const MAIN_BLOCK_BARRIER_HELPER_SCRIPT: GDScript = preload("res://scripts/main_block_barrier_helper.gd")
+var block_barrier_helper: RefCounted = null
 
 func _enter_tree() -> void:
 	add_to_group("main_controller")
 
 func _ready() -> void:
 	# Set up background
+	survival_helper = MAIN_SURVIVAL_HELPER_SCRIPT.new()
+	block_barrier_helper = MAIN_BLOCK_BARRIER_HELPER_SCRIPT.new()
 	setup_background()
 	if power_up_handler == null:
 		power_up_handler = POWER_UP_HANDLER_SCRIPT.new()
@@ -210,93 +215,28 @@ func load_level_ref(pack_id: String, level_index: int):
 		create_test_level()
 
 func _start_survival_run() -> void:
-	current_wave = max(1, int(MenuController.get_survival_wave_reached()))
-	survival_transition_in_progress = false
-	_load_survival_wave(current_wave, true)
+	survival_helper._start_survival_run(self)
+
 
 func _load_survival_wave(wave_number: int, show_intro: bool) -> void:
-	var wave: int = wave_number if wave_number > 1 else 1
-	var level_data: Dictionary = SURVIVAL_GENERATOR_SCRIPT.generate_wave(wave)
-	var level_result := _instantiate_level_from_data(level_data, SURVIVAL_PACK_ID, wave - 1)
-	if not level_result.get("success", false):
-		push_error("Failed to load survival wave %d" % wave)
-		return
+	survival_helper._load_survival_wave(self, wave_number, show_intro)
 
-	current_wave = wave
-	MenuController.survival_wave_reached = current_wave
-	if game_manager:
-		game_manager.current_level = current_wave
-		game_manager.current_pack_id = SURVIVAL_PACK_ID
-		game_manager.current_level_index = current_wave - 1
-		game_manager.current_level_key = "%s:%d" % [SURVIVAL_PACK_ID, current_wave]
-		if game_manager.has_method("set_survival_wave"):
-			game_manager.set_survival_wave(current_wave)
-		game_manager.set_state(game_manager.GameState.READY)
-
-	connect_brick_signals()
-
-	if ball and is_instance_valid(ball) and ball.has_method("reset_ball"):
-		ball.reset_ball()
-	_apply_survival_speed_step()
-
-	if show_intro and hud and hud.has_method("show_survival_wave_intro"):
-		hud.show_survival_wave_intro(current_wave)
 
 func _on_survival_wave_complete() -> void:
-	if not is_survival_mode or survival_transition_in_progress:
-		return
-	survival_transition_in_progress = true
-	current_wave += 1
+	survival_helper._on_survival_wave_complete(self)
 
-	_clear_non_main_balls()
-	_clear_active_powerups()
-	if ball and is_instance_valid(ball) and ball.has_method("reset_ball"):
-		ball.reset_ball()
-	if game_manager:
-		game_manager.set_state(game_manager.GameState.READY)
-
-	if hud and hud.has_method("show_survival_wave_countdown"):
-		await hud.show_survival_wave_countdown(current_wave)
-	_load_survival_wave(current_wave, false)
-	survival_transition_in_progress = false
 
 func _clear_non_main_balls() -> void:
-	var active_balls := _get_active_balls()
-	for existing_ball in active_balls:
-		if not is_instance_valid(existing_ball):
-			continue
-		if existing_ball == ball:
-			continue
-		existing_ball.queue_free()
+	survival_helper._clear_non_main_balls(self)
+
 
 func _clear_active_powerups() -> void:
-	if not play_area:
-		return
-	for child in play_area.get_children():
-		if not is_instance_valid(child):
-			continue
-		var child_script: Variant = child.get_script()
-		if child_script and child_script.resource_path == "res://scripts/power_up.gd":
-			child.queue_free()
+	survival_helper._clear_active_powerups(self)
+
 
 func _apply_survival_speed_step() -> void:
-	if not is_survival_mode:
-		return
-	var wave_one_speed := SURVIVAL_BASE_BALL_SPEED * DifficultyManager.get_speed_multiplier()
-	var target_speed: float = float(SURVIVAL_GENERATOR_SCRIPT.get_speed_for_wave(current_wave, wave_one_speed))
-	survival_speed_multiplier = target_speed / wave_one_speed if wave_one_speed > 0.0 else 1.0
+	survival_helper._apply_survival_speed_step(self)
 
-	for active_ball in _get_active_balls():
-		if not is_instance_valid(active_ball):
-			continue
-		if active_ball.has_method("set_external_speed_multiplier"):
-			active_ball.set_external_speed_multiplier(survival_speed_multiplier)
-		else:
-			var base_speed_value: Variant = active_ball.get("base_speed")
-			if base_speed_value == null:
-				continue
-			active_ball.base_speed = target_speed
-			active_ball.current_speed = target_speed
 
 func _instantiate_level_from_data(level_data: Dictionary, pack_id: String, level_index: int) -> Dictionary:
 	"""Instantiate a level directly from provided data (used for editor test mode)."""
@@ -504,7 +444,7 @@ func _on_level_complete():
 func _on_game_over():
 	"""Handle game over - transition to game over screen"""
 	if is_survival_mode:
-		MenuController.show_survival_over(game_manager.score, current_wave)
+		MenuController.show_survival_over(game_manager.score, survival_helper.current_wave)
 		return
 	# Show game over screen with final score
 	MenuController.show_game_over(game_manager.score)
@@ -529,141 +469,33 @@ func _spawn_debug_powerup(_label: String, powerup_type: int):
 	else:
 		push_error("Could not load power-up scene for debug spawn")
 
-func _spawn_block_barrier(duration: float):
-	if not paddle or not play_area:
-		return
+func _spawn_block_barrier(duration: float) -> void:
+	block_barrier_helper._spawn_block_barrier(self, duration)
 
-	var barrier = Node2D.new()
-	barrier.name = "BlockBarrier"
-	play_area.add_child(barrier)
 
-	var paddle_width = _get_paddle_width()
-	var segment_height = BLOCK_BRICK_HEIGHT
-	var segment_width = BLOCK_BRICK_WIDTH
-	var segment_count = BLOCK_SEGMENT_COUNT
-	var step = segment_height + BRICK_SPACING
-	var start_y = paddle.position.y - ((segment_count - 1) * step) / 2.0
-	var base_x = paddle.position.x + (paddle_width / 2.0) + (segment_width / 2.0) + BLOCK_OFFSET_X
+func _configure_block_brick(brick: Node, texture: Texture2D, segment_width: float, segment_height: float) -> void:
+	block_barrier_helper._configure_block_brick(self, brick, texture, segment_width, segment_height)
 
-	var block_texture = load("res://assets/graphics/bricks/element_green_rectangle.png")
 
-	for i in range(segment_count):
-		var brick = BRICK_SCENE.instantiate()
-		brick.brick_type = brick.BrickType.NORMAL
-		brick.power_up_spawn_chance = 0.0
-		brick.add_to_group("block_brick")
-		barrier.add_child(brick)
-		brick.position = Vector2(base_x, start_y + i * step)
-		_configure_block_brick(brick, block_texture, segment_width, segment_height)
-		if brick.has_signal("brick_broken"):
-			brick.brick_broken.connect(_on_block_brick_broken)
+func _on_block_brick_broken(score_value: int) -> void:
+	block_barrier_helper._on_block_brick_broken(self, score_value)
 
-	var timer = Timer.new()
-	timer.name = "BlockLifetimeTimer"
-	timer.one_shot = true
-	timer.wait_time = duration
-	barrier.add_child(timer)
-	timer.timeout.connect(_on_block_barrier_timeout.bind(barrier))
-	timer.start()
 
-	var color_timer = Timer.new()
-	color_timer.name = "BlockColorTimer"
-	color_timer.one_shot = false
-	color_timer.wait_time = 1.0
-	barrier.add_child(color_timer)
-	color_timer.timeout.connect(_update_block_barrier_color.bind(barrier))
-	color_timer.start()
+func _on_block_barrier_timeout(barrier: Node) -> void:
+	block_barrier_helper._on_block_barrier_timeout(barrier)
 
-func _configure_block_brick(brick: Node, texture: Texture2D, segment_width: float, segment_height: float):
-	if not brick:
-		return
 
-	if brick.has_node("Sprite"):
-		var sprite = brick.get_node("Sprite")
-		if texture:
-			sprite.texture = texture
-			sprite.rotation_degrees = 90.0
-			var tex_size = texture.get_size()
-			if tex_size.x > 0 and tex_size.y > 0:
-				var scale_x = segment_width / tex_size.y
-				var scale_y = segment_height / tex_size.x
-				sprite.scale = Vector2(scale_x, scale_y)
+func _update_block_barrier_color(barrier: Node) -> void:
+	block_barrier_helper._update_block_barrier_color(barrier)
 
-	if brick.has_node("CollisionShape2D"):
-		var collision = brick.get_node("CollisionShape2D")
-		if collision.shape is RectangleShape2D:
-			var new_shape = collision.shape
-			if not new_shape.is_local_to_scene():
-				new_shape = new_shape.duplicate()
-			new_shape.size = Vector2(segment_width, segment_height)
-			collision.set_deferred("shape", new_shape)
-
-	brick.brick_color = Color(0.2, 0.8, 0.2)
-	if brick.has_node("Particles"):
-		brick.get_node("Particles").color = brick.brick_color
-	if brick.has_node("Sprite"):
-		brick.get_node("Sprite").modulate = brick.brick_color
-
-func _on_block_brick_broken(score_value: int):
-	"""Handle block brick destruction without affecting level completion"""
-	if game_manager:
-		game_manager.add_score(score_value)
-	SaveManager.increment_stat("total_bricks_broken")
-
-	# Trigger screen shake similar to normal bricks
-	_apply_brick_hit_shake(score_value)
-
-func _on_block_barrier_timeout(barrier: Node):
-	if barrier and barrier.is_inside_tree():
-		barrier.queue_free()
-
-func _update_block_barrier_color(barrier: Node):
-	if not barrier or not barrier.is_inside_tree():
-		return
-
-	var lifetime_timer = barrier.get_node_or_null("BlockLifetimeTimer")
-	if not lifetime_timer:
-		return
-
-	var time_left = lifetime_timer.time_left
-	var new_color = Color(0.2, 0.8, 0.2)
-	if time_left <= BLOCK_COLOR_INTERVAL:
-		new_color = Color(1.0, 0.35, 0.35)
-	elif time_left <= BLOCK_COLOR_INTERVAL * 2.0:
-		new_color = Color(1.0, 0.8, 0.2)
-
-	for child in barrier.get_children():
-		if not (child is Node):
-			continue
-		if not child.is_in_group("block_brick"):
-			continue
-		if child.has_method("set"):
-			child.brick_color = new_color
-		if child.has_node("Sprite"):
-			child.get_node("Sprite").modulate = new_color
-		if child.has_node("Particles"):
-			child.get_node("Particles").color = new_color
 
 func _get_paddle_height() -> float:
-	if not paddle:
-		return 130.0
-	var height = paddle.get("current_height")
-	if height != null:
-		return float(height)
-	if paddle.has_node("CollisionShape2D"):
-		var collision = paddle.get_node("CollisionShape2D")
-		if collision.shape is RectangleShape2D:
-			return collision.shape.size.y
-	return 130.0
+	return block_barrier_helper._get_paddle_height(self)
+
 
 func _get_paddle_width() -> float:
-	if not paddle:
-		return 24.0
-	if paddle.has_node("CollisionShape2D"):
-		var collision = paddle.get_node("CollisionShape2D")
-		if collision.shape is RectangleShape2D:
-			return collision.shape.size.x
-	return 24.0
+	return block_barrier_helper._get_paddle_width(self)
+
 
 func _hit_all_bricks():
 	"""Hit all bricks (breaks normals, strongs via double hit)"""
@@ -759,7 +591,7 @@ func spawn_additional_balls(source_ball):
 	for i in range(TRIPLE_BALL_ADDITIONAL_COUNT):
 		var new_ball = BALL_SCENE.instantiate()
 		if is_survival_mode and new_ball.has_method("set_external_speed_multiplier"):
-			new_ball.set_external_speed_multiplier(survival_speed_multiplier)
+			new_ball.set_external_speed_multiplier(survival_helper.survival_speed_multiplier)
 
 		# Mark as extra ball (won't count as life loss)
 		if new_ball.has_method("set_is_main_ball"):
