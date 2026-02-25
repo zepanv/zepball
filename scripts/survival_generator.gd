@@ -98,13 +98,15 @@ static func _tier_for_wave(wave: int) -> int:
 		return 3
 	return 4
 
-static func _build_pattern_cells(_wave: int, tier: int, target_count: int, rng: RandomNumberGenerator) -> Array[Vector2i]:
+static func _build_pattern_cells(wave: int, tier: int, target_count: int, rng: RandomNumberGenerator) -> Array[Vector2i]:
 	var cells: Array[Vector2i] = []
-	var max_row := 5 if tier == 0 else 7
+	var max_row := 7 if tier == 0 else 8
+	# Safe zone shrinks from 5 cols at wave 1 to 0 by wave 6, keeping early bricks away from the paddle.
+	var safe_cols := clampi(6 - wave, 0, 5)
 
 	# Base scatter keeps early waves sparse and readable.
 	while cells.size() < min(target_count, 8 + (tier * 2)):
-		_try_add_cell(cells, Vector2i(rng.randi_range(0, max_row), rng.randi_range(1, GRID_COLS - 2)))
+		_try_add_cell(cells, Vector2i(rng.randi_range(0, max_row), rng.randi_range(1, GRID_COLS - 2 - safe_cols)))
 
 	if tier >= 1:
 		_add_rectangle_cluster(cells, Vector2i(rng.randi_range(2, 4), rng.randi_range(6, 12)), 2, 3)
@@ -116,7 +118,7 @@ static func _build_pattern_cells(_wave: int, tier: int, target_count: int, rng: 
 		_add_diagonal_band(cells, rng.randi_range(1, 3), rng.randi_range(3, 9), 8)
 
 	while cells.size() < target_count:
-		_try_add_cell(cells, Vector2i(rng.randi_range(0, max_row), rng.randi_range(1, GRID_COLS - 2)))
+		_try_add_cell(cells, Vector2i(rng.randi_range(0, max_row), rng.randi_range(1, GRID_COLS - 2 - safe_cols)))
 
 	if cells.size() > target_count:
 		cells = cells.slice(0, target_count)
