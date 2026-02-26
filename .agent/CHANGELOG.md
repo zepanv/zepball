@@ -6,6 +6,12 @@ For current game state, see `README.md`. For full system architecture, see `Syst
 
 ---
 
+## 2026-02-26 (Latest) - v0.6.0 Release Prep
+- ✅ **Public Version Bump**: Updated public version display to `v0.6.0` in `scripts/ui/main_menu.gd` and `scenes/ui/main_menu.tscn` fallback label.
+- ✅ **README Current Version Sync**: Updated root `README.md` current version marker and current-features date for release prep.
+- ✅ **Release Notes Drafted**: Added `temp/release-v0.6.0-notes.md` using the standardized GitHub release notes format.
+- ✅ **No Publishing Performed**: Release build/export/tag/upload steps intentionally deferred for a later release execution pass.
+
 ## 2026-02-24 (Latest) - Time Attack + Survival Modes
 - ✅ **Time Attack Challenge Mode**: Added `Time Attack` as a fourth pack-run challenge option with launch/pause-aware timer behavior and HUD `MM:SS` display.
 - ✅ **Survival Mode**: Added standalone `SURVIVAL` entry from Main Menu using procedural wave generation, wave countdown transitions, and endless play-until-game-over flow.

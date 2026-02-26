@@ -2,14 +2,15 @@
 
 A breakout-style game with a unique vertical paddle positioned on the right side of the screen. Inspired by z-ball (retro64).
 
-## Current Features: 2026-02-18
+## Current Features: 2026-02-26
 
 Highlights:
 
-- Current version: **v0.5.1**
+- Current version: **v0.6.0**
 - 40 built-in levels across 4 official packs
 - Player profiles with local high score tracking
 - Difficulty modes (Easy/Normal/Hard) with multipliers
+- Multiple game modes: Normal, Iron Ball, One Life, Time Attack, and Survival
 - Statistics + achievements tracking
 - Pack Select with filtering (ALL/OFFICIAL/CUSTOM) and sorting (BY ORDER/BY PROGRESSION)
 - In-game level/pack editor with test, save, export, and delete flows
@@ -92,6 +93,14 @@ sha256sum -c SHA256SUMS.txt
 - Unlock progression, per-level high scores, per-pack run scores
 - Star ratings per level (0-3 stars)
 - Set Mode: Score and lives carry across levels; combo/streak reset each level; Perfect Set bonus (3x) for flawless runs
+
+### Game Modes
+- **Normal**: Standard level and set play with full power-up behavior.
+- **Iron Ball (Set Challenge)**: Power-up drops are suppressed; power-up bricks score like normal bricks without granting effects.
+- **One Life (Set Challenge)**: Set runs start with 1 life; extra-life grants are blocked.
+- **Time Attack (Set Challenge)**: Set runs are timed with best-time tracking and Time Attack leaderboard support.
+- **Survival (Endless Mode)**: Standalone wave-based mode launched from Main Menu with increasing speed pressure and top-run tracking (wave + score).
+- **Leaderboard Views**: High Scores supports challenge-specific set tabs and a dedicated Survival tab.
 
 ### Power-Ups (16 Types)
 - **Paddle**: Expand, Contract

@@ -2,7 +2,7 @@ extends Control
 
 ## Main Menu - Entry point for the game
 ## Allows player to start game, select difficulty, and quit
-const PUBLIC_VERSION: String = "0.5.1"
+const PUBLIC_VERSION: String = "0.6.0"
 const GITHUB_RELEASES_API = "https://api.github.com/repos/zepanv/zepball/releases/latest"
 
 @onready var current_difficulty_label = $VBoxContainer/CurrentDifficultyLabel
