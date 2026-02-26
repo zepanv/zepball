@@ -16,6 +16,7 @@ const GITHUB_RELEASES_API = "https://api.github.com/repos/zepanv/zepball/release
 @onready var update_button = $VersionContainer/UpdateButton
 @onready var new_profile_dialog = $NewProfileDialog
 @onready var profile_name_input = $NewProfileDialog/VBoxContainer/ProfileNameInput
+@onready var rename_hint_label = $RenameHintLabel
 
 var _update_http: HTTPRequest
 var _pending_update_url: String = ""
@@ -83,6 +84,14 @@ func _populate_profiles():
 		i += 1
 	
 	profile_dropdown.selected = select_index
+	_update_rename_hint()
+
+func _update_rename_hint():
+	"""Show rename hint when the active profile still has a default 'Player N' name"""
+	var current_name = SaveManager.get_current_profile_name()
+	var regex = RegEx.new()
+	regex.compile("^Player \\d+$")
+	rename_hint_label.visible = regex.search(current_name) != null
 
 func _on_profile_dropdown_item_selected(index: int):
 	"""Handle profile selection from dropdown"""

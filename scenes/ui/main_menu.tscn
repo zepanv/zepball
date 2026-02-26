@@ -193,6 +193,24 @@ theme_override_colors/font_hover_color = Color(0.9, 0.3, 0.4, 1)
 theme_override_font_sizes/font_size = 22
 text = "QUIT"
 
+[node name="RenameHintLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_left = 0.0
+anchor_top = 1.0
+anchor_right = 0.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -30.0
+offset_right = 420.0
+offset_bottom = -10.0
+grow_horizontal = 1
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.3, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 16
+text = "Tip: You can rename your profile in Settings"
+visible = false
+
 [node name="VersionContainer" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 3
