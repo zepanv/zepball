@@ -76,7 +76,7 @@ func _configure_block_brick(_parent: Node, brick: Node, texture: Texture2D, segm
 	if brick.has_node("Sprite"):
 		brick.get_node("Sprite").modulate = brick.brick_color
 
-func _on_block_brick_broken(parent: Node, score_value: int) -> void:
+func _on_block_brick_broken(score_value: int, parent: Node) -> void:
 	"""Handle block brick destruction without affecting level completion"""
 	if parent.game_manager:
 		parent.game_manager.add_score(score_value)

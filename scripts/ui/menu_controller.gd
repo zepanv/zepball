@@ -783,6 +783,9 @@ func resume_last_level() -> void:
 		return
 	if str(last_played.get("mode", "")) == LAST_PLAYED_MODE_SURVIVAL:
 		return
+	var saved_challenge = normalize_challenge_mode(str(last_played.get("challenge_mode", CHALLENGE_MODE_NORMAL)))
+	if saved_challenge == CHALLENGE_MODE_TIME_ATTACK:
+		return
 	var pack_id = str(last_played.get("pack_id", ""))
 	var level_index = int(last_played.get("level_index", -1))
 	if pack_id.is_empty() or level_index < 0:

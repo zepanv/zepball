@@ -578,20 +578,26 @@ func _handle_out_of_bounds() -> void:
 		_handle_error_boundary_escape(BOUNDARY_BOTTOM_ERROR_LABEL)
 
 func _handle_error_boundary_escape(boundary_name: String) -> void:
-	ball_lost.emit(self)
-	push_warning("Ball escaped %s boundary at %s" % [boundary_name, str(position)])
+	push_warning("Ball escaped %s boundary at %s, recovering" % [boundary_name, str(position)])
 
-	# Main ball should be reset, not removed
-	if is_main_ball:
-		call_deferred("reset_ball")
-		return
+	# Nudge back inside the boundary and reflect — no life penalty for a physics edge case
+	if position.x < LEFT_BOUNDARY_X:
+		position.x = LEFT_BOUNDARY_X + ball_radius
+		velocity.x = abs(velocity.x)
+	elif position.y < TOP_BOUNDARY_Y:
+		position.y = TOP_BOUNDARY_Y + ball_radius
+		velocity.y = abs(velocity.y)
+	elif position.y > BOTTOM_BOUNDARY_Y:
+		position.y = BOTTOM_BOUNDARY_Y - ball_radius
+		velocity.y = -abs(velocity.y)
 
-	# Extra balls can be safely removed
-	set_physics_process(false)
-	visible = false
-	set_deferred("collision_layer", 0)
-	set_deferred("collision_mask", 0)
-	call_deferred("queue_free")
+	if not is_main_ball:
+		# Extra balls are removed silently without emitting ball_lost
+		set_physics_process(false)
+		visible = false
+		set_deferred("collision_layer", 0)
+		set_deferred("collision_mask", 0)
+		call_deferred("queue_free")
 
 func _refresh_effect_flags() -> void:
 	if PowerUpManager:

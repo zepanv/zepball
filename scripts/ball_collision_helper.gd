@@ -77,22 +77,29 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 			is_powerup_brick = collider.brick_type == parent.BRICK_TYPE_POWERUP_BRICK
 
 		var is_block_brick = collider.is_in_group("block_brick")
-		if is_block_brick and (parent.velocity.x < 0.0 or parent.grab_immunity_timer > 0.0 or parent.block_pass_timer > 0.0):
+		# normal.x > 0 means ball hit the brick from the right (behind the barrier)
+		# normal.x <= 0 means ball hit from the field side — don't pass through even if velocity.x < 0
+		# (prevents escaping the barrier after bouncing off one brick and clipping the next)
+		var from_behind = normal.x > 0.0
+		if is_block_brick and ((from_behind and parent.velocity.x < 0.0) or parent.grab_immunity_timer > 0.0 or parent.block_pass_timer > 0.0):
 			# Allow held/just-launched balls to pass block bricks when moving left
 			parent.position += parent.velocity * parent.last_physics_delta
-			return
-
-		if is_powerup_brick:
-			parent._emit_brick_hit(collider)
-			if collider.has_method("collect_powerup"):
-				collider.collect_powerup()
-			parent.position += parent.velocity * parent.last_physics_delta
-			AudioManager.play_sfx("power_up")
 			return
 
 		# Check if brick through is enabled (block + unbreakable bricks always behave normally)
 		var has_penetrating_spin = absf(parent.spin_amount) >= parent.PENETRATING_SPIN_THRESHOLD
 		var can_pass_through = not is_block_brick and not is_unbreakable and (parent.frame_brick_through_active or has_penetrating_spin)
+
+		if is_powerup_brick and not can_pass_through:
+			# Powerup bricks bounce like normal bricks and grant their effect on contact
+			parent._emit_brick_hit(collider)
+			if collider.has_method("collect_powerup"):
+				collider.collect_powerup()
+			parent.velocity = parent.velocity.bounce(normal)
+			parent.spin_amount *= parent.SPIN_ON_HIT_DECAY
+			AudioManager.play_sfx("power_up")
+			return
+
 		if can_pass_through:
 			# Don't bounce, just pass through and notify brick
 			parent._emit_brick_hit(collider)

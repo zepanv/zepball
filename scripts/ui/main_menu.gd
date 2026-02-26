@@ -215,7 +215,10 @@ func _update_return_button():
 	var last_played = SaveManager.get_last_played()
 	var in_progress = last_played.get("in_progress", false)
 	var mode = str(last_played.get("mode", ""))
-	return_button.visible = in_progress and mode != "survival"
+	var challenge = str(last_played.get("challenge_mode", SaveManager.CHALLENGE_MODE_NORMAL))
+	return_button.visible = in_progress \
+		and mode != "survival" \
+		and challenge != SaveManager.CHALLENGE_MODE_TIME_ATTACK
 
 func _on_update_button_pressed() -> void:
 	"""Check for update, or open release page if one was already found"""

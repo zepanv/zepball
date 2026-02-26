@@ -526,6 +526,9 @@ func _on_power_up_collected(type):
 	# Track statistic
 	SaveManager.increment_stat("total_power_ups_collected")
 
+	# Award points for collecting a powerup (brick hit or falling capsule)
+	game_manager.add_score(10)
+
 	if power_up_handler == null:
 		power_up_handler = POWER_UP_HANDLER_SCRIPT.new()
 	if power_up_handler and power_up_handler.has_method("apply_collected_power_up"):
