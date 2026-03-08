@@ -85,26 +85,94 @@ Rules:
 - Include only relevant sections; omit empty sections.
 - Keep summary short and specific.
 
-## 4) Version Bump + Release Tag (On Request Only)
+## 4) Version Bump + Release (On Request Only)
 
 Public versioning uses SemVer: `MAJOR.MINOR.PATCH`.
 
-When a version bump is explicitly requested, update in the same change:
-1. `scripts/ui/main_menu.gd` (`PUBLIC_VERSION`)
-2. `scenes/ui/main_menu.tscn` (`VersionLabel.text` fallback)
-3. `.agent/CHANGELOG.md` release entry
-4. Any other docs that mention the old current version
+Follow these steps **in order**. Do not skip ahead — build and publish only after all code/doc changes are committed and approved.
 
-Then tag release:
-```bash
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
-git push origin vX.Y.Z
+### Step 1 — Pre-Release Gate
+- [ ] All feature/fix branches merged to `main`.
+- [ ] Working tree is clean (`git status` shows nothing uncommitted).
+- [ ] Game runs and no regressions observed.
+
+### Step 2 — Draft Release Notes (Requires Approval Before Continuing)
+Create `temp/release-vX.Y.Z-notes.md` using this format:
+
+```markdown
+## ZepBall vX.Y.Z
+
+One-line summary of the release theme.
+
+## vX.Y.Z Highlights
+- **Feature or fix** — brief description.
+- ...
+
+## Release Assets
+- `zepball.zip` (Windows x86_64)
+- `zepball.x86_64.zip` (Linux x86_64)
+- `SHA256SUMS.txt`
+- `SHA256SUMS.txt.minisig`
+- `minisign.pub`
+
+## Verify Downloads
+\`\`\`bash
+minisign -Vm SHA256SUMS.txt -p minisign.pub
+sha256sum -c SHA256SUMS.txt
+\`\`\`
 ```
 
-If publishing GitHub release assets, use:
-```bash
-scripts/publish_github_release.sh X.Y.Z
+**Stop here and get the release notes approved before continuing.**
+
+### Step 3 — Version Bump
+Update the version string in all of these locations in the same commit:
+1. `scripts/ui/main_menu.gd` — `PUBLIC_VERSION` constant
+2. `scenes/ui/main_menu.tscn` — `VersionLabel.text` fallback string
+3. `README.md` — "Current version:" line and "Current Features:" date
+4. `.agent/CHANGELOG.md` — add a new dated entry at the top
+
+Commit message format:
 ```
+chore: prepare vX.Y.Z release metadata
+```
+
+### Step 4 — Build Release Bundles
+Run the export script (requires Godot in PATH and Minisign keys for signing):
+
+```bash
+# Unsigned build (CI/testing):
+scripts/export_release_bundle.sh
+
+# Signed build (required for publishing):
+MINISIGN_SECRET_KEY=/path/to/minisign.key \
+MINISIGN_PUBLIC_KEY=/path/to/minisign.pub \
+scripts/export_release_bundle.sh
+```
+
+This produces in `dist/releases/`:
+- `zepball.zip` (Windows)
+- `zepball.x86_64.zip` (Linux)
+- `SHA256SUMS.txt`
+- `SHA256SUMS.txt.minisig` (if signed)
+- `minisign.pub` (if signed)
+
+Note: `README.md` and `LICENSE` are automatically copied into each platform's staging folder by the script — no manual copy needed.
+
+Verify the zips open correctly and the game launches before continuing.
+
+### Step 5 — Tag and Publish
+```bash
+scripts/publish_github_release.sh X.Y.Z --notes-file temp/release-vX.Y.Z-notes.md
+```
+
+This script will:
+1. Create and push the `vX.Y.Z` git tag
+2. Create the GitHub release with the approved notes
+3. Upload all assets from `dist/releases/`
+
+### Step 6 — Post-Release Cleanup
+- [ ] Confirm the GitHub release page looks correct (assets, notes, tag).
+- [ ] Delete or archive `temp/release-vX.Y.Z-notes.md` (already published).
 
 ## Quick Pre-Commit Gate
 - [ ] Save schema touched? Migration and default-save updates added.
@@ -113,7 +181,7 @@ scripts/publish_github_release.sh X.Y.Z
 - [ ] Commit message matches required format and includes co-author.
 - [ ] Version changed only if explicitly requested.
 
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-03-08
 
 **Related Docs:**
 - `.agent/System/architecture.md`

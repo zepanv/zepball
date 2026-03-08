@@ -86,7 +86,8 @@ var save_data = {
 		"set_pack_id": "",
 		"mode": "individual",
 		"challenge_mode": CHALLENGE_MODE_NORMAL,
-		"in_progress": false
+		"in_progress": false,
+		"set_score": 0
 	},
 	"statistics": {
 		"total_bricks_broken": 0,
@@ -268,7 +269,8 @@ func create_default_save() -> void:
 			"set_pack_id": "",
 			"mode": "individual",
 			"challenge_mode": CHALLENGE_MODE_NORMAL,
-			"in_progress": false
+			"in_progress": false,
+			"set_score": 0
 		},
 		"statistics": {
 			"total_bricks_broken": 0,
@@ -426,7 +428,8 @@ func reset_progress_data() -> void:
 		"set_pack_id": "",
 		"mode": "individual",
 		"challenge_mode": CHALLENGE_MODE_NORMAL,
-		"in_progress": false
+		"in_progress": false,
+		"set_score": 0
 	}
 	save_data["statistics"] = {
 		"total_bricks_broken": 0, "total_power_ups_collected": 0,

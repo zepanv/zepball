@@ -269,6 +269,8 @@ func _ensure_pack_progression_defaults(parent: Node) -> void:
 		parent.save_data["last_played"]["challenge_mode"] = parent.CHALLENGE_MODE_NORMAL
 	else:
 		parent.save_data["last_played"]["challenge_mode"] = _normalize_challenge_mode(parent, str(parent.save_data["last_played"].get("challenge_mode", parent.CHALLENGE_MODE_NORMAL)))
+	if not parent.save_data["last_played"].has("set_score"):
+		parent.save_data["last_played"]["set_score"] = 0
 
 func _perform_migrations(parent: Node) -> void:
 	var did_migrate = false
