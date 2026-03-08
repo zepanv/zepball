@@ -550,7 +550,8 @@ func start_level_ref(pack_id: String, level_index: int) -> void:
 	current_level_id = legacy_level_id if legacy_level_id != -1 else 0
 	is_in_gameplay = true
 	var mode_name = "set" if current_play_mode == PlayMode.SET else "individual"
-	SaveManager.set_last_played_ref(pack_id, level_index, mode_name, current_set_pack_id, true, current_challenge_mode)
+	var score_to_save = set_saved_score if current_play_mode == PlayMode.SET else 0
+	SaveManager.set_last_played_ref(pack_id, level_index, mode_name, current_set_pack_id, true, current_challenge_mode, score_to_save)
 
 	# Track gameplay sessions (counts each level start)
 	SaveManager.increment_stat("total_games_played")
@@ -812,7 +813,7 @@ func resume_last_level() -> void:
 		for idx in range(level_count):
 			set_level_refs.append({"pack_id": set_pack_id, "level_index": idx})
 		set_current_index = level_index
-		set_saved_score = 0
+		set_saved_score = int(last_played.get("set_score", 0))
 		set_saved_lives = _get_starting_lives_for_challenge()
 		set_saved_combo = 0
 		set_saved_no_miss = 0

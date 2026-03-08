@@ -119,7 +119,7 @@ func remove_effect(type: PowerUpType):
 
 	var effect_data: ActiveEffect = active_effects[type]
 	var target = effect_data.target_node
-	if target and not is_instance_valid(target):
+	if not is_instance_valid(target):
 		target = null
 
 	# Reset based on type
@@ -243,31 +243,25 @@ func _get_speed_target() -> Node:
 		return fallback
 	return null
 
-func _update_ball_size(target_node: Node):
-	if target_node and not is_instance_valid(target_node):
-		target_node = null
-	if not target_node:
-		target_node = _get_ball_target()
-	if not target_node:
-		return
-
+func _update_ball_size(_target_node: Node):
 	var has_big = active_effects.has(PowerUpType.BIG_BALL)
 	var has_small = active_effects.has(PowerUpType.SMALL_BALL)
 
-	if has_big and has_small:
-		if target_node.has_method("reset_ball_size"):
-			target_node.reset_ball_size()
-		return
-
-	if has_big:
-		if target_node.has_method("apply_big_ball_effect"):
-			target_node.apply_big_ball_effect()
-	elif has_small:
-		if target_node.has_method("apply_small_ball_effect"):
-			target_node.apply_small_ball_effect()
-	else:
-		if target_node.has_method("reset_ball_size"):
-			target_node.reset_ball_size()
+	for ball in get_active_balls():
+		if not is_instance_valid(ball):
+			continue
+		if has_big and has_small:
+			if ball.has_method("reset_ball_size"):
+				ball.reset_ball_size()
+		elif has_big:
+			if ball.has_method("apply_big_ball_effect"):
+				ball.apply_big_ball_effect()
+		elif has_small:
+			if ball.has_method("apply_small_ball_effect"):
+				ball.apply_small_ball_effect()
+		else:
+			if ball.has_method("reset_ball_size"):
+				ball.reset_ball_size()
 
 func _get_effect_target(effect_type: int) -> Node:
 	if active_effects.has(effect_type):

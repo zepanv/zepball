@@ -656,6 +656,8 @@ func spawn_additional_balls(source_ball):
 		if PowerUpManager and new_ball.has_method("set_ball_size_multiplier"):
 			var size_multiplier = PowerUpManager.get_ball_size_multiplier()
 			new_ball.call_deferred("set_ball_size_multiplier", size_multiplier)
+		if PowerUpManager and PowerUpManager.is_bomb_ball_active() and new_ball.has_method("enable_bomb_ball"):
+			new_ball.call_deferred("enable_bomb_ball")
 
 		# Enable collision immunity to prevent spawn collision issues
 		if new_ball.has_method("enable_collision_immunity"):

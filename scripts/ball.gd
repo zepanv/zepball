@@ -219,6 +219,16 @@ func _physics_process(delta):
 		# Maintain constant speed (arcade feel)
 		velocity = velocity.normalized() * current_speed
 
+		# Enforce minimum horizontal velocity to prevent near-vertical oscillation
+		# between top and bottom walls (same threshold used for paddle bounces)
+		var min_vx = current_speed * (1.0 - MAX_VERTICAL_ANGLE)
+		if abs(velocity.x) < min_vx:
+			var h_dir = sign(velocity.x)
+			if h_dir == 0:
+				h_dir = -1  # Default toward bricks (left)
+			velocity.x = h_dir * min_vx
+			velocity = velocity.normalized() * current_speed
+
 		# Rotate ball to show movement/spin (only if actually moving)
 		# Rotation based on distance traveled (creates rolling effect)
 		if visual_node and velocity.length_squared() > 100.0:

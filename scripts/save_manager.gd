@@ -460,7 +460,7 @@ func set_last_played(level_id: int, mode: String, set_id: int = -1, in_progress:
 		set_pack_id = _legacy_set_pack_id(set_id)
 	set_last_played_ref(pack_id, level_index, mode, set_pack_id, in_progress, challenge_mode)
 
-func set_last_played_ref(pack_id: String, level_index: int, mode: String, set_pack_id: String = "", in_progress: bool = true, challenge_mode: String = CHALLENGE_MODE_NORMAL) -> void:
+func set_last_played_ref(pack_id: String, level_index: int, mode: String, set_pack_id: String = "", in_progress: bool = true, challenge_mode: String = CHALLENGE_MODE_NORMAL, set_score: int = 0) -> void:
 	var level_key = "%s:%d" % [pack_id, level_index]
 	var legacy_level_id = _legacy_level_id_for(pack_id, level_index)
 	if legacy_level_id == -1:
@@ -480,6 +480,7 @@ func set_last_played_ref(pack_id: String, level_index: int, mode: String, set_pa
 	save_data["last_played"]["set_pack_id"] = set_pack_id
 	save_data["last_played"]["challenge_mode"] = normalized_challenge
 	save_data["last_played"]["in_progress"] = in_progress
+	save_data["last_played"]["set_score"] = set_score
 	save_to_disk()
 
 func set_last_played_in_progress(in_progress: bool) -> void:

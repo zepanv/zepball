@@ -86,7 +86,7 @@ const VALID_POWERUP_TYPES: Array[String] = [
 	"BLOCK"
 ]
 
-const LEGACY_PACK_ORDER: Array[String] = ["classic-challenge", "prism-showcase", "nebula-ascend"]
+const LEGACY_PACK_ORDER: Array[String] = ["classic-challenge", "prism-showcase", "nebula-ascend", "advanced-elements"]
 
 var _packs_by_id: Dictionary = {}
 var _builtin_pack_ids: Array[String] = []
