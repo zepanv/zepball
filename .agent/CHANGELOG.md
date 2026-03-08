@@ -6,6 +6,17 @@ For current game state, see `README.md`. For full system architecture, see `Syst
 
 ---
 
+## 2026-03-08 (Latest) - v0.6.1 Release
+- ✅ **Ball Physics Fix**: Enforced minimum horizontal velocity each physics frame to prevent ball getting stuck bouncing nearly vertically between top/bottom walls.
+- ✅ **Triple Ball Size Fix**: `_update_ball_size` now iterates all active balls so extra balls from triple-ball correctly inherit and reset big/small ball size.
+- ✅ **Triple Ball Bomb Visual Fix**: Bomb ball orange tint applied immediately to newly spawned triple balls rather than waiting for next physics frame.
+- ✅ **Power-Up Crash Fix**: Fixed "freed instance" crash in `PowerUpManager.remove_effect` during level transitions — replaced `if target and not is_instance_valid` guard with `if not is_instance_valid` (freed Objects evaluate as falsy in GDScript 4, causing the null guard to be skipped).
+- ✅ **Set Score Restore on Resume**: Accumulated set score is now persisted to `last_played.set_score` on each level start and restored when using "Return to Last Level".
+- ✅ **Advanced Elements Progression**: Added `advanced-elements` to `LEGACY_PACK_ORDER` so progression continues after completing Nebula Ascend.
+- ✅ **Save Schema Fix**: Added `set_score` to all `last_played` default blocks and migration in `save_progression_helper.gd`; existing saves migrate automatically.
+- ✅ **Release SOP Expanded**: Rewrote `critical-workflows.md` release section into a complete ordered six-step procedure with an approval gate before build/publish.
+- ✅ **Public Version Bump**: Updated public version display to `v0.6.1` in `scripts/ui/main_menu.gd` and `scenes/ui/main_menu.tscn` fallback label.
+
 ## 2026-02-26 (Latest) - v0.6.0 Release Prep
 - ✅ **Public Version Bump**: Updated public version display to `v0.6.0` in `scripts/ui/main_menu.gd` and `scenes/ui/main_menu.tscn` fallback label.
 - ✅ **README Current Version Sync**: Updated root `README.md` current version marker and current-features date for release prep.
