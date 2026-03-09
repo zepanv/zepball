@@ -77,13 +77,14 @@ Code Improvements:
 Documentation:
 - Doc updates
 
-Co-Authored-By: Codex <codex@openai.com>
+Co-Authored-By: <agent name> <agent email>
 ```
 
 Rules:
 - Valid `<type>`: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`.
 - Include only relevant sections; omit empty sections.
 - Keep summary short and specific.
+- The AI agent assisting with the commit must sign as co-author using its own identity (name and email), not a hardcoded value.
 
 ## 4) Version Bump + Release (On Request Only)
 
