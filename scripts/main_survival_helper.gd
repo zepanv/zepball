@@ -31,8 +31,13 @@ func _load_survival_wave(parent: Node, wave_number: int, show_intro: bool) -> vo
 
 	parent.connect_brick_signals()
 
-	if parent.ball and is_instance_valid(parent.ball) and parent.ball.has_method("reset_ball"):
-		parent.ball.reset_ball()
+	var primary_ball: Node = null
+	if parent.has_method("ensure_primary_ball"):
+		primary_ball = parent.ensure_primary_ball()
+	elif parent.ball and is_instance_valid(parent.ball):
+		primary_ball = parent.ball
+	if primary_ball and primary_ball.has_method("reset_ball"):
+		primary_ball.reset_ball()
 	_apply_survival_speed_step(parent)
 
 	if show_intro and parent.hud and parent.hud.has_method("show_survival_wave_intro"):
@@ -44,10 +49,15 @@ func _on_survival_wave_complete(parent: Node) -> void:
 	survival_transition_in_progress = true
 	current_wave += 1
 
-	_clear_non_main_balls(parent)
+	var primary_ball: Node = null
+	if parent.has_method("ensure_primary_ball"):
+		primary_ball = parent.ensure_primary_ball()
+	_clear_non_main_balls(parent, primary_ball)
 	_clear_active_powerups(parent)
-	if parent.ball and is_instance_valid(parent.ball) and parent.ball.has_method("reset_ball"):
-		parent.ball.reset_ball()
+	if primary_ball == null and parent.has_method("ensure_primary_ball"):
+		primary_ball = parent.ensure_primary_ball()
+	if primary_ball and primary_ball.has_method("reset_ball"):
+		primary_ball.reset_ball()
 	if parent.game_manager:
 		parent.game_manager.set_state(parent.game_manager.GameState.READY)
 
@@ -56,12 +66,14 @@ func _on_survival_wave_complete(parent: Node) -> void:
 	_load_survival_wave(parent, current_wave, false)
 	survival_transition_in_progress = false
 
-func _clear_non_main_balls(parent: Node) -> void:
+func _clear_non_main_balls(parent: Node, preserved_ball: Node = null) -> void:
+	if preserved_ball == null and parent.has_method("ensure_primary_ball"):
+		preserved_ball = parent.ensure_primary_ball()
 	var active_balls = parent._get_active_balls()
 	for existing_ball in active_balls:
 		if not is_instance_valid(existing_ball):
 			continue
-		if existing_ball == parent.ball:
+		if existing_ball == preserved_ball:
 			continue
 		existing_ball.queue_free()
 

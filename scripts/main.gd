@@ -429,6 +429,13 @@ func _on_ball_lost(lost_ball):
 			lost_ball.queue_free()
 	else:
 		# Still have other balls in play - no life penalty
+		var lost_was_primary = false
+		if is_instance_valid(lost_ball):
+			lost_was_primary = lost_ball == ball or lost_ball.is_main_ball
+		if lost_was_primary:
+			var surviving_primary = _resolve_primary_ball(lost_ball)
+			if surviving_primary:
+				_set_primary_ball(surviving_primary)
 		if is_instance_valid(lost_ball):
 			lost_ball.queue_free()
 
@@ -671,9 +678,81 @@ func _get_active_balls() -> Array:
 		return []
 	var active_balls: Array = []
 	for child in play_area.get_children():
-		if is_instance_valid(child) and child.is_in_group("ball"):
+		if is_instance_valid(child) and not child.is_queued_for_deletion() and child.is_in_group("ball"):
 			active_balls.append(child)
 	return active_balls
+
+func ensure_primary_ball() -> Node:
+	var primary_ball = _resolve_primary_ball()
+	if primary_ball:
+		_set_primary_ball(primary_ball)
+		return primary_ball
+	return _spawn_replacement_main_ball()
+
+func _resolve_primary_ball(excluded_ball: Node = null) -> Node:
+	var active_balls = _get_active_balls()
+	if active_balls.is_empty():
+		return null
+
+	if is_instance_valid(ball) and not ball.is_queued_for_deletion() and ball != excluded_ball and active_balls.has(ball):
+		return ball
+
+	for active_ball in active_balls:
+		if not is_instance_valid(active_ball) or active_ball == excluded_ball:
+			continue
+		if active_ball.is_main_ball:
+			return active_ball
+
+	for active_ball in active_balls:
+		if is_instance_valid(active_ball) and active_ball != excluded_ball:
+			return active_ball
+
+	return null
+
+func _set_primary_ball(primary_ball: Node) -> void:
+	if not is_instance_valid(primary_ball) or primary_ball.is_queued_for_deletion():
+		return
+
+	for active_ball in _get_active_balls():
+		if not is_instance_valid(active_ball):
+			continue
+		var should_be_main = active_ball == primary_ball
+		if active_ball.has_method("set_is_main_ball"):
+			active_ball.set_is_main_ball(should_be_main)
+		else:
+			active_ball.is_main_ball = should_be_main
+
+	ball = primary_ball
+
+func _spawn_replacement_main_ball() -> Node:
+	if not BALL_SCENE or not play_area:
+		return null
+
+	var replacement_ball = BALL_SCENE.instantiate()
+	play_area.add_child(replacement_ball)
+
+	if replacement_ball.has_method("set_is_main_ball"):
+		replacement_ball.set_is_main_ball(true)
+	else:
+		replacement_ball.is_main_ball = true
+
+	if is_survival_mode and replacement_ball.has_method("set_external_speed_multiplier"):
+		replacement_ball.set_external_speed_multiplier(survival_helper.survival_speed_multiplier)
+
+	if PowerUpManager:
+		if replacement_ball.has_method("set_ball_size_multiplier"):
+			replacement_ball.call_deferred("set_ball_size_multiplier", PowerUpManager.get_ball_size_multiplier())
+		if PowerUpManager.is_bomb_ball_active() and replacement_ball.has_method("enable_bomb_ball"):
+			replacement_ball.call_deferred("enable_bomb_ball")
+
+	if replacement_ball.has_signal("ball_lost"):
+		replacement_ball.ball_lost.connect(_on_ball_lost)
+
+	if replacement_ball.has_method("reset_ball"):
+		replacement_ball.reset_ball()
+
+	ball = replacement_ball
+	return replacement_ball
 
 func _apply_brick_hit_shake(score_value: int) -> void:
 	if not camera or not camera.has_method("shake"):

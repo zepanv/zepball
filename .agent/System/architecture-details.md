@@ -48,6 +48,7 @@ Changing order changes balancing and leaderboard comparability.
 - Ball runtime effect truth for timed effects comes from manager-active state.
 - Compatibility hook methods may still exist on ball/paddle; manager state remains source of truth.
 - Multi-ball and effect expiry timing must be checked together after changes.
+- Main-ball ownership must remain valid across multiball loss and Survival wave transitions. If the original main ball is lost while extras remain, gameplay must promote a surviving ball (or recreate one) before any READY-state reset/transition path runs.
 
 ### MenuController <-> GameManager <-> SaveManager
 - Mode/challenge context influences what is persisted and how results are interpreted.
@@ -90,4 +91,4 @@ Changing order changes balancing and leaderboard comparability.
 - `SOP/critical-workflows.md` - Required save/asset/commit/release procedures
 - `Tasks/Completed/INDEX.md` - Implementation history index
 
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-03-09

@@ -49,6 +49,7 @@ Touching these can impact physics determinism, scoring events, and completion lo
 - `scripts/ball.gd`
 - `scripts/paddle.gd`
 - `scripts/brick.gd`
+- `scripts/main.gd`
 
 Details:
 - `System/architecture-details.md` -> `Runtime Coupling To Watch`
@@ -88,6 +89,7 @@ Details:
 ## Verification Checklist After Runtime Changes
 - [ ] Game state transitions still work (`READY` -> `PLAYING` -> complete/fail paths).
 - [ ] Level completion and life-loss logic remain correct (single-ball and multi-ball).
+- [ ] Survival wave transitions preserve or recreate a valid primary ball after multiball cleanup.
 - [ ] Pack-level addressing still resolves correct levels (`pack_id + level_index`).
 - [ ] Save-backed features load old saves without crashes (if schema changed).
 - [ ] Changed behavior is documented in canonical docs.
@@ -98,4 +100,4 @@ Details:
 - Required procedures (save/assets/commit/release): `SOP/critical-workflows.md`
 - Supplemental Godot workflow notes: `SOP/godot-workflow.md`
 
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-03-09
