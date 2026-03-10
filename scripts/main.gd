@@ -74,6 +74,7 @@ const TRIPLE_BALL_ADDITIONAL_COUNT = 2
 const TRIPLE_BALL_IMMUNITY_DURATION = 0.5
 const BRICK_TYPE_FORCE_ARROW = 14
 const BRICK_TYPE_POWERUP_BRICK = 15
+const BRICK_META_HIGH_SPIN_HIT = "wave_objective_high_spin_hit"
 
 # Boundary constants
 const RIGHT_BOUNDARY = 1300   # Past paddle (ball lost)
@@ -88,9 +89,12 @@ var cached_force_arrows: Array[Node] = []
 var background_manager: RefCounted = null
 var power_up_handler: RefCounted = null
 var is_survival_mode: bool = false
+var is_blitz_mode: bool = false
 
 const MAIN_SURVIVAL_HELPER_SCRIPT: GDScript = preload("res://scripts/main_survival_helper.gd")
 var survival_helper: RefCounted = null
+const MAIN_BLITZ_HELPER_SCRIPT: GDScript = preload("res://scripts/main_blitz_helper.gd")
+var blitz_helper: RefCounted = null
 
 const MAIN_BLOCK_BARRIER_HELPER_SCRIPT: GDScript = preload("res://scripts/main_block_barrier_helper.gd")
 var block_barrier_helper: RefCounted = null
@@ -101,6 +105,7 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	# Set up background
 	survival_helper = MAIN_SURVIVAL_HELPER_SCRIPT.new()
+	blitz_helper = MAIN_BLITZ_HELPER_SCRIPT.new()
 	block_barrier_helper = MAIN_BLOCK_BARRIER_HELPER_SCRIPT.new()
 	setup_background()
 	if power_up_handler == null:
@@ -124,8 +129,11 @@ func _ready() -> void:
 		game_manager.lives_changed.emit(game_manager.lives)
 
 	is_survival_mode = MenuController.is_survival_mode
+	is_blitz_mode = MenuController.is_blitz_mode
 	if is_survival_mode:
 		_start_survival_run()
+	elif is_blitz_mode:
+		_start_blitz_run()
 	else:
 		# Load level from MenuController using pack-native addressing.
 		var level_ref = MenuController.get_current_level_ref()
@@ -217,6 +225,10 @@ func load_level_ref(pack_id: String, level_index: int):
 func _start_survival_run() -> void:
 	survival_helper._start_survival_run(self)
 
+func _start_blitz_run() -> void:
+	if blitz_helper == null:
+		blitz_helper = MAIN_BLITZ_HELPER_SCRIPT.new()
+	blitz_helper._start_blitz_run(self)
 
 func _load_survival_wave(wave_number: int, show_intro: bool) -> void:
 	survival_helper._load_survival_wave(self, wave_number, show_intro)
@@ -355,6 +367,11 @@ func get_cached_force_arrows() -> Array[Node]:
 
 func _on_brick_broken(score_value: int, brick_ref: Node):
 	"""Handle brick destruction"""
+	var high_spin_hit: bool = false
+	if brick_ref and is_instance_valid(brick_ref) and brick_ref.has_meta(BRICK_META_HIGH_SPIN_HIT):
+		high_spin_hit = bool(brick_ref.get_meta(BRICK_META_HIGH_SPIN_HIT))
+		brick_ref.remove_meta(BRICK_META_HIGH_SPIN_HIT)
+
 	game_manager.add_score(score_value)
 
 	# Track statistic
@@ -368,6 +385,9 @@ func _on_brick_broken(score_value: int, brick_ref: Node):
 	if brick_ref and is_instance_valid(brick_ref) and not brick_ref.is_in_group("block_brick"):
 		if _is_completion_brick(int(brick_ref.brick_type)):
 			remaining_breakable_bricks = max(remaining_breakable_bricks - 1, 0)
+
+	if is_survival_mode and survival_helper and survival_helper.has_method("_on_survival_brick_broken"):
+		survival_helper._on_survival_brick_broken(self, brick_ref, high_spin_hit)
 	check_level_complete()
 
 func _is_completion_brick(brick_type_int: int) -> bool:
@@ -380,6 +400,8 @@ func _is_completion_brick(brick_type_int: int) -> bool:
 func check_level_complete():
 	"""Check if all bricks have been destroyed"""
 	if remaining_breakable_bricks == 0:
+		if is_blitz_mode:
+			return
 		if is_survival_mode:
 			call_deferred("_on_survival_wave_complete")
 		else:
@@ -389,9 +411,12 @@ func _on_ball_lost(lost_ball):
 	"""Handle ball loss - only lose life if this is the last ball in play"""
 	# Get all balls currently in play (before removing this one)
 	var balls_in_play = _get_active_balls()
+	var is_life_loss: bool = balls_in_play.size() <= 1
+	if is_survival_mode and survival_helper and survival_helper.has_method("_on_survival_ball_lost"):
+		survival_helper._on_survival_ball_lost(self, is_life_loss)
 
 	# Check if this is the last ball
-	if balls_in_play.size() <= 1:
+	if is_life_loss:
 		# Last ball lost - lose a life and reset main ball
 		game_manager.lose_life()
 
@@ -453,6 +478,9 @@ func _on_game_over():
 	if is_survival_mode:
 		MenuController.show_survival_over(game_manager.score, survival_helper.current_wave)
 		return
+	if is_blitz_mode:
+		MenuController.show_blitz_over(game_manager.score)
+		return
 	# Show game over screen with final score
 	MenuController.show_game_over(game_manager.score)
 
@@ -465,6 +493,12 @@ func _input(event):
 	if event is InputEventKey and event.pressed and not event.echo:
 		if OS.is_debug_build() and event.keycode == KEY_C:
 			_hit_all_bricks()
+
+func _process(delta: float) -> void:
+	if is_survival_mode and survival_helper and survival_helper.has_method("_process_survival"):
+		survival_helper._process_survival(self, delta)
+	if is_blitz_mode and blitz_helper and blitz_helper.has_method("_process_blitz"):
+		blitz_helper._process_blitz(self, delta)
 
 func _spawn_debug_powerup(_label: String, powerup_type: int):
 	var powerup_scene = load("res://scenes/gameplay/power_up.tscn")

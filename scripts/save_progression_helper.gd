@@ -253,6 +253,12 @@ func _ensure_pack_progression_defaults(parent: Node) -> void:
 		parent.save_data["survival_top_runs"] = []
 	else:
 		parent.save_data["survival_top_runs"] = _sanitize_survival_runs(parent, parent.save_data["survival_top_runs"])
+	if not parent.save_data.has("blitz_top_runs"):
+		parent.save_data["blitz_top_runs"] = []
+	elif not (parent.save_data["blitz_top_runs"] is Array):
+		parent.save_data["blitz_top_runs"] = []
+	else:
+		parent.save_data["blitz_top_runs"] = _sanitize_blitz_runs(parent, parent.save_data["blitz_top_runs"])
 	if not parent.save_data.has("last_played"):
 		parent.save_data["last_played"] = {
 			"level_id": 0,
@@ -404,6 +410,17 @@ func _perform_migrations(parent: Node) -> void:
 		var normalized_survival_runs = _sanitize_survival_runs(parent, parent.save_data["survival_top_runs"])
 		if normalized_survival_runs != parent.save_data["survival_top_runs"]:
 			parent.save_data["survival_top_runs"] = normalized_survival_runs
+			did_migrate = true
+	if not parent.save_data.has("blitz_top_runs"):
+		parent.save_data["blitz_top_runs"] = []
+		did_migrate = true
+	elif not (parent.save_data["blitz_top_runs"] is Array):
+		parent.save_data["blitz_top_runs"] = []
+		did_migrate = true
+	else:
+		var normalized_blitz_runs = _sanitize_blitz_runs(parent, parent.save_data["blitz_top_runs"])
+		if normalized_blitz_runs != parent.save_data["blitz_top_runs"]:
+			parent.save_data["blitz_top_runs"] = normalized_blitz_runs
 			did_migrate = true
 
 	_ensure_pack_progression_defaults(parent)
@@ -561,6 +578,9 @@ func _migrate_to_v4_new_game_modes(parent: Node) -> bool:
 	if not parent.save_data.has("survival_top_runs"):
 		parent.save_data["survival_top_runs"] = []
 		did_change = true
+	if not parent.save_data.has("blitz_top_runs"):
+		parent.save_data["blitz_top_runs"] = []
+		did_change = true
 
 	if not (parent.save_data.get("survival_top_runs", []) is Array):
 		parent.save_data["survival_top_runs"] = []
@@ -569,6 +589,14 @@ func _migrate_to_v4_new_game_modes(parent: Node) -> bool:
 		var normalized_runs = _sanitize_survival_runs(parent, parent.save_data["survival_top_runs"])
 		if normalized_runs != parent.save_data["survival_top_runs"]:
 			parent.save_data["survival_top_runs"] = normalized_runs
+			did_change = true
+	if not (parent.save_data.get("blitz_top_runs", []) is Array):
+		parent.save_data["blitz_top_runs"] = []
+		did_change = true
+	else:
+		var normalized_blitz_runs = _sanitize_blitz_runs(parent, parent.save_data["blitz_top_runs"])
+		if normalized_blitz_runs != parent.save_data["blitz_top_runs"]:
+			parent.save_data["blitz_top_runs"] = normalized_blitz_runs
 			did_change = true
 
 	return did_change
@@ -601,6 +629,33 @@ func _sanitize_survival_runs(_parent: Node, raw_runs: Variant) -> Array:
 		var wave_b = int(b.get("wave", 0))
 		if wave_a != wave_b:
 			return wave_a > wave_b
+		var date_a = str(a.get("date", "9999-12-31T23:59:59"))
+		var date_b = str(b.get("date", "9999-12-31T23:59:59"))
+		if date_a != date_b:
+			return date_a < date_b
+		return str(a.get("name", "")) < str(b.get("name", ""))
+	)
+	if sanitized.size() > 10:
+		sanitized = sanitized.slice(0, 10)
+	return sanitized
+
+func _sanitize_blitz_runs(_parent: Node, raw_runs: Variant) -> Array:
+	var sanitized: Array = []
+	if raw_runs is Array:
+		for run_variant in raw_runs:
+			if not (run_variant is Dictionary):
+				continue
+			var run: Dictionary = run_variant
+			sanitized.append({
+				"score": max(0, int(run.get("score", 0))),
+				"date": str(run.get("date", "Unknown"))
+			})
+
+	sanitized.sort_custom(func(a, b):
+		var score_a = int(a.get("score", 0))
+		var score_b = int(b.get("score", 0))
+		if score_a != score_b:
+			return score_a > score_b
 		var date_a = str(a.get("date", "9999-12-31T23:59:59"))
 		var date_b = str(b.get("date", "9999-12-31T23:59:59"))
 		if date_a != date_b:

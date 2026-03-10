@@ -119,7 +119,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.95, 0.55, 0.2, 1)
 theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 22
-text = "SURVIVAL"
+text = "ENDLESS WAVES"
 
 [node name="Spacer3" type="Control" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 10)
@@ -279,7 +279,7 @@ select_all_on_focus = true
 [connection signal="pressed" from="VBoxContainer/ProfilePanel/MarginContainer/ProfileVBox/ProfileContainer/AddProfileButton" to="." method="_on_add_profile_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/PlayButton" to="." method="_on_play_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ReturnButton" to="." method="_on_return_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/SurvivalButton" to="." method="_on_survival_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/SurvivalButton" to="." method="_on_endless_waves_pressed"]
 [connection signal="item_selected" from="VBoxContainer/DifficultyContainer/DifficultyDropdown" to="." method="_on_difficulty_dropdown_item_selected"]
 [connection signal="pressed" from="VBoxContainer/StatsHBox/StatsButton" to="." method="_on_stats_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/StatsHBox/HighScoresButton" to="." method="_on_high_scores_button_pressed"]

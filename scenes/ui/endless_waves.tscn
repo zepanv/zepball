@@ -1,0 +1,169 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/endless_waves.gd" id="1_endless_waves"]
+
+[node name="EndlessWaves" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_endless_waves")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.05, 0.1, 1)
+
+[node name="ScreenMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 28.0
+offset_right = -32.0
+offset_bottom = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CenterContainer" type="CenterContainer" parent="ScreenMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Panel" type="PanelContainer" parent="ScreenMargin/CenterContainer"]
+custom_minimum_size = Vector2(980, 620)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="ScreenMargin/CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="HeaderVBox" type="VBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TitleLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/HeaderVBox"]
+layout_mode = 2
+text = "ENDLESS WAVES"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/HeaderVBox"]
+layout_mode = 2
+text = "Choose your endless mode."
+horizontal_alignment = 1
+
+[node name="CardsRow" type="HBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="SurvivalCard" type="PanelContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="SurvivalMargin" type="MarginContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/SurvivalCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="SurvivalVBox" type="VBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/SurvivalCard/SurvivalMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="SurvivalTitleLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/SurvivalCard/SurvivalMargin/SurvivalVBox"]
+layout_mode = 2
+text = "SURVIVAL"
+
+[node name="SurvivalDescriptionLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/SurvivalCard/SurvivalMargin/SurvivalVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Wave-based endless mode. Clear each wave to advance while speed ramps over time."
+autowrap_mode = 3
+
+[node name="SurvivalBestLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/SurvivalCard/SurvivalMargin/SurvivalVBox"]
+layout_mode = 2
+text = "BEST RUN: NO RUNS YET"
+autowrap_mode = 3
+
+[node name="SurvivalStartButton" type="Button" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/SurvivalCard/SurvivalMargin/SurvivalVBox"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+focus_mode = 2
+text = "PLAY SURVIVAL"
+
+[node name="BlitzCard" type="PanelContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="BlitzMargin" type="MarginContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/BlitzCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="BlitzVBox" type="VBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/BlitzCard/BlitzMargin"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="BlitzTitleLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/BlitzCard/BlitzMargin/BlitzVBox"]
+layout_mode = 2
+text = "BLITZ"
+
+[node name="BlitzDescriptionLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/BlitzCard/BlitzMargin/BlitzVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Rows push toward the paddle on a timer. Survive pressure by clearing lanes before they close."
+autowrap_mode = 3
+
+[node name="BlitzBestLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/BlitzCard/BlitzMargin/BlitzVBox"]
+layout_mode = 2
+text = "BEST RUN: NO RUNS YET"
+autowrap_mode = 3
+
+[node name="BlitzStartButton" type="Button" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/BlitzCard/BlitzMargin/BlitzVBox"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+focus_mode = 2
+text = "PLAY BLITZ"
+
+[node name="FooterRow" type="HBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="FooterHintLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/FooterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Select an endless mode and chase your best run."
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="BackButton" type="Button" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/FooterRow"]
+custom_minimum_size = Vector2(190, 48)
+layout_mode = 2
+focus_mode = 2
+text = "BACK TO MENU"
+
+[connection signal="pressed" from="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/SurvivalCard/SurvivalMargin/SurvivalVBox/SurvivalStartButton" to="." method="_on_survival_start_pressed"]
+[connection signal="pressed" from="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/CardsRow/BlitzCard/BlitzMargin/BlitzVBox/BlitzStartButton" to="." method="_on_blitz_start_pressed"]
+[connection signal="pressed" from="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/FooterRow/BackButton" to="." method="_on_back_pressed"]

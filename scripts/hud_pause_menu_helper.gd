@@ -163,6 +163,8 @@ func update_info(game_manager: Node) -> void:
 	if pause_level_info_label:
 		if MenuController and MenuController.is_survival_mode:
 			pause_level_info_label.text = "SURVIVAL: WAVE %d" % max(1, int(MenuController.get_survival_wave_reached()))
+		elif MenuController and MenuController.is_blitz_mode:
+			pause_level_info_label.text = "BLITZ: ROW %d" % max(1, int(MenuController.get_blitz_rows_survived()) + 1)
 		else:
 			var pack_id: String = str(game_manager.current_pack_id)
 			var level_index: int = int(game_manager.current_level_index)

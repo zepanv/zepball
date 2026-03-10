@@ -101,7 +101,7 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 10.0
-offset_top = 4.0
+offset_top = 0.0
 offset_right = -10.0
 offset_bottom = -10.0
 grow_horizontal = 2
@@ -114,7 +114,7 @@ theme_override_constants/margin_bottom = 0
 [node name="HUDVBox" type="VBoxContainer" parent="UI/HUD/SafeMargin" unique_id=1760973629]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
+theme_override_constants/separation = 0
 
 [node name="TopBarCard" type="PanelContainer" parent="UI/HUD/SafeMargin/HUDVBox" unique_id=1891856073]
 layout_mode = 2
@@ -125,7 +125,7 @@ layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 2
 theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 2
+theme_override_constants/margin_bottom = 1
 
 [node name="TopBar" type="HBoxContainer" parent="UI/HUD/SafeMargin/HUDVBox/TopBarCard/TopBarMargin" unique_id=332138551]
 layout_mode = 2
@@ -201,7 +201,7 @@ anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -176.0
-offset_top = 100.0
+offset_top = 112.0
 offset_right = -14.0
 offset_bottom = 312.0
 grow_horizontal = 0

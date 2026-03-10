@@ -40,6 +40,7 @@ var game_manager_ref: Node = null
 var multiplier_lines: PackedStringArray = PackedStringArray()
 var _last_total_multiplier: float = 1.0
 var _last_objective_text: String = ""
+var _bonus_message_until_msec: int = 0
 
 var pause_helper: RefCounted = null
 var debug_helper: RefCounted = null
@@ -109,7 +110,7 @@ func apply_settings_from_save() -> void:
 	_configure_topbar_mode()
 	_refresh_processing_state()
 
-func set_objective_text(text: String) -> void:
+func set_objective_text(text: String, pulse_on_change: bool = true, color_override: Color = Color(-1.0, -1.0, -1.0, -1.0)) -> void:
 	if not objective_card or not objective_label:
 		return
 	var normalized := text.strip_edges()
@@ -117,13 +118,44 @@ func set_objective_text(text: String) -> void:
 		normalized = "★ " + normalized
 	info_row.visible = not normalized.is_empty()
 	objective_card.visible = not normalized.is_empty()
+	if color_override.a >= 0.0:
+		objective_label.add_theme_color_override("font_color", color_override)
+	else:
+		objective_label.add_theme_color_override("font_color", UI_THEME.GOLD)
 	objective_label.text = normalized
-	if normalized != _last_objective_text and not normalized.is_empty():
+	if pulse_on_change and normalized != _last_objective_text and not normalized.is_empty():
 		_pulse_card(objective_card, UI_THEME.GOLD)
 	_last_objective_text = normalized
 
 func clear_objective_text() -> void:
 	set_objective_text("")
+
+func set_blitz_push_status(remaining_seconds: int, rows_survived: int, interval_seconds: float) -> void:
+	var seconds_left: int = max(0, remaining_seconds)
+	var rows_value: int = max(0, rows_survived)
+	var safe_interval: float = max(0.001, interval_seconds)
+	var ratio_left: float = clampf(float(seconds_left) / safe_interval, 0.0, 1.0)
+	var status_color: Color = UI_THEME.SUCCESS
+	if ratio_left <= 0.33:
+		status_color = UI_THEME.DANGER
+	elif ratio_left <= 0.66:
+		status_color = UI_THEME.GOLD
+	set_objective_text("BLITZ PUSH IN: %ds | ROWS %d" % [seconds_left, rows_value], false, status_color)
+
+func show_blitz_all_clear_bonus(points: int) -> void:
+	if combo_overlay == null or combo_label == null:
+		return
+	var display_points: int = max(0, points)
+	_bonus_message_until_msec = Time.get_ticks_msec() + 1800
+	combo_overlay.visible = true
+	combo_label.text = "ALL CLEAR BONUS +%d" % display_points
+	UI_THEME.style_success(combo_label, 18)
+	combo_overlay.modulate = Color(1, 1, 1, 1)
+	combo_overlay.scale = Vector2(1.12, 1.12)
+	var tween = create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(combo_overlay, "scale", Vector2.ONE, 0.2)
 
 func _apply_hud_theme() -> void:
 	top_bar_card.add_theme_stylebox_override("panel", _make_empty_stylebox())
@@ -142,7 +174,7 @@ func _apply_hud_theme() -> void:
 	UI_THEME.style_meta(lives_caption)
 	lives_caption.add_theme_font_size_override("font_size", 12)
 	UI_THEME.style_success(lives_label, 22)
-	UI_THEME.style_warning(objective_label, 13)
+	UI_THEME.style_warning(objective_label, 14)
 	objective_label.uppercase = true
 	UI_THEME.style_meta(multiplier_title_label)
 	multiplier_title_label.add_theme_font_size_override("font_size", 11)
@@ -169,10 +201,18 @@ func _init_dynamic_elements() -> void:
 			game_manager.combo_milestone.connect(_on_combo_milestone)
 		if not game_manager.no_miss_streak_changed.is_connected(_on_streak_changed):
 			game_manager.no_miss_streak_changed.connect(_on_streak_changed)
-		if game_manager.has_signal("time_attack_timer_updated") and not game_manager.time_attack_timer_updated.is_connected(_on_time_attack_timer_updated):
-			game_manager.time_attack_timer_updated.connect(_on_time_attack_timer_updated)
-		if game_manager.has_signal("survival_wave_changed") and not game_manager.survival_wave_changed.is_connected(_on_survival_wave_changed):
-			game_manager.survival_wave_changed.connect(_on_survival_wave_changed)
+			if game_manager.has_signal("time_attack_timer_updated") and not game_manager.time_attack_timer_updated.is_connected(_on_time_attack_timer_updated):
+				game_manager.time_attack_timer_updated.connect(_on_time_attack_timer_updated)
+			if game_manager.has_signal("survival_wave_changed") and not game_manager.survival_wave_changed.is_connected(_on_survival_wave_changed):
+				game_manager.survival_wave_changed.connect(_on_survival_wave_changed)
+			if game_manager.has_signal("objective_assigned") and not game_manager.objective_assigned.is_connected(_on_objective_assigned):
+				game_manager.objective_assigned.connect(_on_objective_assigned)
+			if game_manager.has_signal("objective_progress") and not game_manager.objective_progress.is_connected(_on_objective_progress):
+				game_manager.objective_progress.connect(_on_objective_progress)
+			if game_manager.has_signal("objective_completed") and not game_manager.objective_completed.is_connected(_on_objective_completed):
+				game_manager.objective_completed.connect(_on_objective_completed)
+			if game_manager.has_signal("objective_failed") and not game_manager.objective_failed.is_connected(_on_objective_failed):
+				game_manager.objective_failed.connect(_on_objective_failed)
 		var score_value: Variant = game_manager.get("score")
 		if score_value != null:
 			_on_score_changed(int(score_value))
@@ -212,9 +252,13 @@ func _on_difficulty_changed(_new_difficulty: int) -> void:
 	_update_multiplier_display()
 
 func _on_combo_changed(new_combo: int) -> void:
+	if _is_bonus_message_active():
+		_update_multiplier_display()
+		return
 	if new_combo >= 3:
 		combo_overlay.visible = true
 		combo_label.text = "COMBO x%d!" % new_combo
+		UI_THEME.style_warning(combo_label, 18)
 		combo_overlay.modulate = Color(1, 1, 1, 1)
 		combo_overlay.scale = Vector2(1.08, 1.08)
 		var tween = create_tween()
@@ -227,6 +271,8 @@ func _on_combo_changed(new_combo: int) -> void:
 	_update_multiplier_display()
 
 func _on_combo_milestone(combo_value: int) -> void:
+	if _is_bonus_message_active():
+		return
 	if not combo_overlay.visible:
 		return
 
@@ -291,6 +337,10 @@ func _process(delta: float) -> void:
 	var game_manager = _get_game_manager()
 	var is_paused = game_manager and game_manager.game_state == game_manager.GameState.PAUSED
 
+	if _bonus_message_until_msec > 0 and Time.get_ticks_msec() >= _bonus_message_until_msec:
+		_bonus_message_until_msec = 0
+		_restore_combo_overlay_state()
+
 	if not show_fps:
 		debug_visible = false
 		if powerup_helper.powerup_indicators.is_empty() and not is_paused:
@@ -333,7 +383,10 @@ func _configure_topbar_mode() -> void:
 	var mode_text := "ZEPBALL"
 	var detail_text := _get_run_descriptor()
 
-	if MenuController and MenuController.is_survival_mode:
+	if MenuController and MenuController.is_blitz_mode:
+		mode_text = "BLITZ"
+		detail_text = "ROWS %d" % max(0, int(MenuController.get_blitz_rows_survived()))
+	elif MenuController and MenuController.is_survival_mode:
 		mode_text = "SURVIVAL"
 		detail_text = "WAVE %d" % max(1, int(MenuController.get_survival_wave_reached()))
 	else:
@@ -389,6 +442,19 @@ func _on_survival_wave_changed(new_wave: int) -> void:
 		return
 	mode_label.text = "SURVIVAL"
 	mode_detail_label.text = "WAVE %d" % max(1, new_wave)
+
+func _on_objective_assigned(objective_text: String) -> void:
+	set_objective_text(objective_text)
+
+func _on_objective_progress(objective_text: String) -> void:
+	set_objective_text(objective_text)
+
+func _on_objective_completed(objective_text: String) -> void:
+	set_objective_text(objective_text)
+	_pulse_card(objective_card, UI_THEME.SUCCESS)
+
+func _on_objective_failed(objective_text: String) -> void:
+	set_objective_text(objective_text)
 
 func _format_time_mm_ss(total_seconds: int) -> String:
 	var minutes: int = int(floor(float(total_seconds) / 60.0))
@@ -471,6 +537,17 @@ func _pulse_card(card: Control, accent: Color) -> void:
 	tween.parallel().tween_property(card, "scale", Vector2(1.03, 1.03), 0.08)
 	tween.tween_property(card, "modulate", Color.WHITE, 0.18)
 	tween.parallel().tween_property(card, "scale", Vector2.ONE, 0.18)
+
+func _is_bonus_message_active() -> bool:
+	return _bonus_message_until_msec > Time.get_ticks_msec()
+
+func _restore_combo_overlay_state() -> void:
+	UI_THEME.style_warning(combo_label, 18)
+	var game_manager = _get_game_manager()
+	if game_manager and int(game_manager.combo) >= 3:
+		_on_combo_changed(int(game_manager.combo))
+	else:
+		combo_overlay.visible = false
 
 func _get_game_manager() -> Node:
 	if game_manager_ref and is_instance_valid(game_manager_ref):

@@ -7,11 +7,20 @@ For subsystem internals, data schemas, and edge-case behavior, use `System/archi
 - Engine/runtime: Godot 4.6, 2D breakout/arkanoid gameplay.
 - Built-in content: 4 official packs, 40 levels total.
 - Core loop: menu -> load level/wave -> play -> complete/fail -> next menu/state.
+- Endless mode entry: main menu routes to `Endless Waves` hub (`scenes/ui/endless_waves.tscn`) before Survival starts.
+- Endless run persistence includes mode-specific boards: `survival_top_runs` (score+wave) and `blitz_top_runs` (score-only).
+- Blitz runtime loop is helper-owned (`scripts/main_blitz_helper.gd`) and drives timed brick pushes with paddle-zone fail checks.
+- Blitz HUD push timer uses countdown color thresholds (green/yellow/red), and Blitz awards an all-clear score bonus if the board is cleared before the next push.
+- Blitz row generation uses full playable vertical geometry (top-to-bottom wall bounds) instead of a fixed 9-row subset.
+- Manual exits from endless gameplay (menu navigation/restart/quit before game over) are treated as run end and persist the current score.
+- Blitz all-clear bonus now triggers a short HUD callout in the combo overlay area so players get explicit feedback on bonus awards.
 - Primary data model: pack-native (`pack_id + level_index`) with compatibility fields retained.
 
 ## Runtime Topology
 - Gameplay scene: `scenes/main/main.tscn`
 - Scene orchestrator: `scripts/main.gd`
+- Blitz loop helper: `scripts/main_blitz_helper.gd`
+- Endless hub scene/controller: `scenes/ui/endless_waves.tscn` + `scripts/ui/endless_waves.gd`
 - State/scoring authority: `scripts/game_manager.gd`
 - Gameplay HUD: `scripts/hud.gd` with fixed scene slots in `scenes/main/main.tscn`
 - Global systems (autoload):

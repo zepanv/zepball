@@ -70,6 +70,7 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 		# Brick collision: reflect + notify brick
 		var old_velocity = parent.velocity  # Store for particle direction
 		var hit_brick_position = collider.global_position  # Store for bomb effect
+		var had_high_spin: bool = absf(parent.spin_amount) >= parent.HIGH_SPIN_THRESHOLD
 		var is_unbreakable = false
 		var is_powerup_brick = false
 		if "brick_type" in collider:
@@ -89,6 +90,7 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 		# Check if brick through is enabled (block + unbreakable bricks always behave normally)
 		var has_penetrating_spin = absf(parent.spin_amount) >= parent.PENETRATING_SPIN_THRESHOLD
 		var can_pass_through = not is_block_brick and not is_unbreakable and (parent.frame_brick_through_active or has_penetrating_spin)
+		_tag_high_spin_hit(collider, had_high_spin)
 
 		if is_powerup_brick and not can_pass_through:
 			# Powerup bricks bounce like normal bricks and grant their effect on contact
@@ -162,6 +164,12 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 
 	if collider != null:
 		parent.stuck_helper.record_collision(normal, collider)
+
+func _tag_high_spin_hit(collider: Variant, had_high_spin: bool) -> void:
+	if collider == null:
+		return
+	if collider is Node and (collider as Node).has_method("set_meta"):
+		(collider as Node).set_meta("wave_objective_high_spin_hit", had_high_spin)
 
 func destroy_surrounding_bricks(parent: Node, impact_position: Vector2) -> void:
 	"""Destroy bricks in a radius around the impact point (bomb ball effect)"""

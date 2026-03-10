@@ -165,7 +165,7 @@ func _refresh_display() -> void:
 		"survival":
 			_render_survival_view()
 		"blitz":
-			_render_blitz_placeholder()
+			_render_blitz_view()
 		_:
 			_render_overall_view()
 
@@ -173,7 +173,7 @@ func _sync_filter_controls() -> void:
 	var showing_set_filter := current_filter == "sets"
 	set_filter_container.visible = showing_set_filter
 	set_filter_dropdown.disabled = not showing_set_filter
-	column_header_panel.visible = current_filter != "blitz"
+	column_header_panel.visible = true
 
 	filter_tabs.focus_neighbor_bottom = filter_tabs.get_path_to(back_button)
 	back_button.focus_neighbor_top = back_button.get_path_to(filter_tabs)
@@ -301,15 +301,24 @@ func _render_survival_view() -> void:
 		run_entry["context"] = "WAVE %d" % int(run_entry.get("wave", 1))
 		_add_score_row(run_entry, index + 1, true, "score", index % 2 == 1)
 
-func _render_blitz_placeholder() -> void:
+func _render_blitz_view() -> void:
 	_set_view_text(
-		"Coming soon.",
+		"Endless push-mode high scores.",
 		""
 	)
-	_add_empty_state(
-		"Blitz leaderboard reserved.",
-		"Scores will appear here once Blitz mode is implemented."
-	)
+	_set_column_headers("MODE", false, "SCORE")
+
+	var blitz_runs: Array = leaderboards.get("blitz_runs", [])
+	if blitz_runs.is_empty():
+		_add_empty_state("No Blitz runs yet.", "Start a Blitz run to claim a spot.")
+		return
+
+	for index in range(blitz_runs.size()):
+		var run_variant = blitz_runs[index]
+		if not (run_variant is Dictionary):
+			continue
+		var run_entry: Dictionary = (run_variant as Dictionary).duplicate()
+		_add_score_row(run_entry, index + 1, false, "score", index % 2 == 1)
 
 func _set_view_text(subtitle_text: String, footer_text: String) -> void:
 	subtitle_label.text = subtitle_text

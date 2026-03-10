@@ -77,6 +77,7 @@ var save_data = {
 	"one_life_set_high_score_timestamps": {},
 	"time_attack_set_high_score_timestamps": {},
 	"survival_top_runs": [],
+	"blitz_top_runs": [],
 	"last_played": {
 		"level_id": 0,
 		"pack_id": "classic-challenge",
@@ -99,7 +100,9 @@ var save_data = {
 		"highest_combo": 0,
 		"highest_score": 0,
 		"total_games_played": 0,
-		"perfect_clears": 0
+		"perfect_clears": 0,
+		"blitz_games_played": 0,
+		"wave_objectives_completed": 0
 	},
 	"achievements": [],
 	"settings": SaveSettingsHelper.DEFAULT_SETTINGS.duplicate(true)
@@ -260,6 +263,7 @@ func create_default_save() -> void:
 		"one_life_set_high_score_timestamps": {},
 		"time_attack_set_high_score_timestamps": {},
 		"survival_top_runs": [],
+		"blitz_top_runs": [],
 		"last_played": {
 			"level_id": 0,
 			"pack_id": "classic-challenge",
@@ -282,7 +286,9 @@ func create_default_save() -> void:
 			"highest_combo": 0,
 			"highest_score": 0,
 			"total_games_played": 0,
-			"perfect_clears": 0
+			"perfect_clears": 0,
+			"blitz_games_played": 0,
+			"wave_objectives_completed": 0
 		},
 		"achievements": [],
 		"settings": SaveSettingsHelper.DEFAULT_SETTINGS.duplicate(true)
@@ -306,6 +312,9 @@ func _normalize_challenge_mode(mode: String) -> String:
 
 func _sanitize_survival_runs(raw_runs: Variant) -> Array:
 	return progression_helper._sanitize_survival_runs(self, raw_runs)
+
+func _sanitize_blitz_runs(raw_runs: Variant) -> Array:
+	return progression_helper._sanitize_blitz_runs(self, raw_runs)
 
 func _parse_level_key(level_key: String) -> Dictionary:
 	return progression_helper._parse_level_key(self, level_key)
@@ -419,6 +428,7 @@ func reset_progress_data() -> void:
 	save_data["one_life_set_high_score_timestamps"] = {}
 	save_data["time_attack_set_high_score_timestamps"] = {}
 	save_data["survival_top_runs"] = []
+	save_data["blitz_top_runs"] = []
 	save_data["last_played"] = {
 		"level_id": 0,
 		"pack_id": "classic-challenge",
@@ -436,7 +446,8 @@ func reset_progress_data() -> void:
 		"total_levels_completed": 0, "total_individual_levels_completed": 0,
 		"total_set_runs_completed": 0, "total_playtime": 0.0,
 		"highest_combo": 0, "highest_score": 0,
-		"total_games_played": 0, "perfect_clears": 0
+		"total_games_played": 0, "perfect_clears": 0,
+		"blitz_games_played": 0, "wave_objectives_completed": 0
 	}
 	save_data["achievements"] = []
 	save_data["settings"] = settings_copy
@@ -507,6 +518,20 @@ func set_last_played_survival() -> void:
 	save_data["last_played"]["in_progress"] = false
 	save_to_disk()
 
+func set_last_played_blitz() -> void:
+	if not save_data.has("last_played"):
+		save_data["last_played"] = {}
+	save_data["last_played"]["level_id"] = 0
+	save_data["last_played"]["pack_id"] = "classic-challenge"
+	save_data["last_played"]["level_index"] = 0
+	save_data["last_played"]["level_key"] = "classic-challenge:0"
+	save_data["last_played"]["mode"] = "blitz"
+	save_data["last_played"]["set_id"] = -1
+	save_data["last_played"]["set_pack_id"] = ""
+	save_data["last_played"]["challenge_mode"] = CHALLENGE_MODE_NORMAL
+	save_data["last_played"]["in_progress"] = false
+	save_to_disk()
+
 func set_last_challenge_mode(challenge_mode: String) -> void:
 	save_data["last_played"]["challenge_mode"] = _normalize_challenge_mode(challenge_mode)
 	save_to_disk()
@@ -560,6 +585,12 @@ func get_survival_top_runs() -> Array:
 
 func save_survival_run(score: int, wave: int) -> void:
 	high_scores_helper.save_survival_run(self, score, wave)
+
+func get_blitz_top_runs() -> Array:
+	return high_scores_helper.get_blitz_top_runs(self)
+
+func save_blitz_run(score: int) -> void:
+	high_scores_helper.save_blitz_run(self, score)
 
 func update_set_pack_high_score(pack_id: String, score: int) -> bool:
 	return high_scores_helper.update_set_pack_high_score(self, pack_id, score)

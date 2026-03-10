@@ -36,5 +36,11 @@ func migrate_statistics(save_data: Dictionary, save_to_disk: Callable) -> void:
 	if not save_data["statistics"].has("total_set_runs_completed"):
 		save_data["statistics"]["total_set_runs_completed"] = 0
 		updated = true
+	if not save_data["statistics"].has("blitz_games_played"):
+		save_data["statistics"]["blitz_games_played"] = 0
+		updated = true
+	if not save_data["statistics"].has("wave_objectives_completed"):
+		save_data["statistics"]["wave_objectives_completed"] = 0
+		updated = true
 	if updated:
 		save_to_disk.call()

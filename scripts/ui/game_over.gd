@@ -25,6 +25,7 @@ func _ready():
 	var final_score = MenuController.get_current_score()
 	var level_key = MenuController.get_current_level_key()
 	var in_survival = MenuController.is_survival_mode
+	var in_blitz = MenuController.is_blitz_mode
 
 	# Display final score
 	score_label.text = "Final Score: " + str(final_score)
@@ -37,6 +38,14 @@ func _ready():
 		high_score_label.text = "SURVIVAL RUN COMPLETE"
 		high_score_label.set("theme_override_colors/font_color", Color(0.9, 0.8, 0.35, 1))
 		_show_survival_comparison()
+	elif in_blitz:
+		retry_button.text = "PLAY AGAIN"
+		if survival_label:
+			survival_label.visible = true
+			survival_label.text = "Rows Survived: " + str(max(0, int(MenuController.get_blitz_rows_survived())))
+		high_score_label.text = "BLITZ RUN COMPLETE"
+		high_score_label.set("theme_override_colors/font_color", Color(0.9, 0.8, 0.35, 1))
+		_show_blitz_comparison()
 	else:
 		if survival_label:
 			survival_label.visible = false
@@ -54,7 +63,7 @@ func _ready():
 
 	# Add "Continue Set" button if in set mode (hidden for One Life and Time Attack)
 	var challenge_mode = MenuController.get_challenge_mode()
-	if not in_survival and MenuController.current_play_mode == MenuController.PlayMode.SET \
+	if not in_survival and not in_blitz and MenuController.current_play_mode == MenuController.PlayMode.SET \
 			and challenge_mode != MenuController.CHALLENGE_MODE_ONE_LIFE \
 			and challenge_mode != MenuController.CHALLENGE_MODE_TIME_ATTACK:
 		add_continue_set_button()
@@ -115,6 +124,9 @@ func _on_retry_button_pressed():
 	if MenuController.is_survival_mode:
 		MenuController.start_survival()
 		return
+	if MenuController.is_blitz_mode:
+		MenuController.start_blitz()
+		return
 	MenuController.restart_current_level()
 
 func _on_continue_set_button_pressed():
@@ -161,3 +173,24 @@ func _format_survival_run(run: Dictionary) -> String:
 	var wave = int(run.get("wave", 1))
 	var score = int(run.get("score", 0))
 	return "Wave %d, %d pts" % [wave, score]
+
+func _show_blitz_comparison() -> void:
+	var personal_runs: Array = SaveManager.get_blitz_top_runs()
+	var machine_runs: Array = SaveManager.get_all_leaderboards().get("blitz_runs", [])
+
+	var personal_line = "Your best: No runs yet"
+	if not personal_runs.is_empty():
+		var best_personal: Dictionary = personal_runs[0]
+		personal_line = "Your best: " + _format_blitz_run(best_personal)
+
+	var machine_line = "Machine best: No runs yet"
+	if not machine_runs.is_empty():
+		var best_machine: Dictionary = machine_runs[0]
+		machine_line = "Machine best: " + _format_blitz_run(best_machine)
+
+	if survival_label:
+		survival_label.text += "\n" + personal_line + "\n" + machine_line
+
+func _format_blitz_run(run: Dictionary) -> String:
+	var score = int(run.get("score", 0))
+	return "%d pts" % score

@@ -25,6 +25,10 @@ const TIER1_TYPES = ["STRONG", "PURPLE", "DIAMOND", "POLYGON"]
 const TIER2_TYPES = ["GOLD", "ORANGE", "POWERUP_BRICK"]
 const TIER3_TYPES = ["BOMB", "DIAMOND_GLOSSY", "POLYGON_GLOSSY"]
 const TIER4_TYPES = ["NORMAL", "STRONG", "GOLD", "RED", "BLUE", "GREEN", "PURPLE", "ORANGE", "BOMB", "DIAMOND", "DIAMOND_GLOSSY", "POLYGON", "POLYGON_GLOSSY", "POWERUP_BRICK"]
+const BLITZ_ROW_MIN_BRICKS = 3
+const BLITZ_ROW_MAX_BRICKS = 8
+const BLITZ_INITIAL_COLUMNS_MIN = 2
+const BLITZ_INITIAL_COLUMNS_MAX = 3
 
 const POWERUP_BRICK_TYPES = [
 	"EXPAND", "CONTRACT", "SPEED_UP", "TRIPLE_BALL", "BIG_BALL", "SMALL_BALL",
@@ -86,6 +90,42 @@ static func get_speed_for_wave(wave_number: int, wave_one_speed: float) -> float
 	var steps: int = int(floor(float(wave - 1) / float(SPEED_STEP_INTERVAL_WAVES)))
 	var stepped_speed = wave_one_speed + (SPEED_STEP_SIZE * float(steps))
 	return min(stepped_speed, wave_one_speed * SPEED_CAP_MULTIPLIER)
+
+static func generate_blitz_initial(rng: RandomNumberGenerator, grid_rows: int = GRID_ROWS) -> Array:
+	var initial_columns: int = rng.randi_range(BLITZ_INITIAL_COLUMNS_MIN, BLITZ_INITIAL_COLUMNS_MAX)
+	var generated_columns: Array = []
+	for column_index in range(initial_columns):
+		generated_columns.append(generate_blitz_row(column_index + 1, rng, grid_rows))
+	return generated_columns
+
+static func generate_blitz_row(row_number: int, rng: RandomNumberGenerator, grid_rows: int = GRID_ROWS) -> Array:
+	var wave: int = max(1, row_number)
+	var tier: int = _tier_for_wave(wave)
+	var blitz_rows: int = max(1, grid_rows)
+	var candidates: Array[int] = []
+	for row_index in range(blitz_rows):
+		candidates.append(row_index)
+
+	candidates.shuffle()
+	var target_count: int = clampi(
+		BLITZ_ROW_MIN_BRICKS + int(floor(float(wave - 1) / 3.0)),
+		BLITZ_ROW_MIN_BRICKS,
+		BLITZ_ROW_MAX_BRICKS
+	)
+	target_count = min(target_count, candidates.size())
+
+	var entries: Array = []
+	for index in range(target_count):
+		var row_slot: int = int(candidates[index])
+		var brick_type: String = _pick_breakable_type(tier, wave, rng)
+		var entry: Dictionary = {
+			"row": row_slot,
+			"type": brick_type
+		}
+		if brick_type == "POWERUP_BRICK":
+			entry["powerup_type"] = POWERUP_BRICK_TYPES[rng.randi_range(0, POWERUP_BRICK_TYPES.size() - 1)]
+		entries.append(entry)
+	return entries
 
 static func _tier_for_wave(wave: int) -> int:
 	if wave <= 2:

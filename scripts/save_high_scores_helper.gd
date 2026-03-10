@@ -163,6 +163,24 @@ func save_survival_run(parent: Node, score: int, wave: int) -> void:
 	parent.save_data["survival_top_runs"] = parent.progression_helper._sanitize_survival_runs(parent, runs)
 	parent.save_to_disk()
 
+func get_blitz_top_runs(parent: Node) -> Array:
+	if not parent.save_data.has("blitz_top_runs"):
+		parent.save_data["blitz_top_runs"] = []
+		parent.save_to_disk()
+	return parent.progression_helper._sanitize_blitz_runs(parent, parent.save_data.get("blitz_top_runs", []))
+
+func save_blitz_run(parent: Node, score: int) -> void:
+	if not parent.save_data.has("blitz_top_runs"):
+		parent.save_data["blitz_top_runs"] = []
+
+	var runs = parent.progression_helper._sanitize_blitz_runs(parent, parent.save_data.get("blitz_top_runs", []))
+	runs.append({
+		"score": max(0, score),
+		"date": Time.get_datetime_string_from_system()
+	})
+	parent.save_data["blitz_top_runs"] = parent.progression_helper._sanitize_blitz_runs(parent, runs)
+	parent.save_to_disk()
+
 func get_all_leaderboards(parent: Node, use_cache: bool = true) -> Dictionary:
 	if use_cache and not _leaderboard_cache_dirty and not _leaderboard_cache.is_empty():
 		return _leaderboard_cache.duplicate(true)
@@ -173,7 +191,8 @@ func get_all_leaderboards(parent: Node, use_cache: bool = true) -> Dictionary:
 		"iron_ball_sets": {},
 		"one_life_sets": {},
 		"time_attack_sets": {},
-		"survival_runs": []
+		"survival_runs": [],
+		"blitz_runs": []
 	}
 	
 	var profiles = parent.profile_helper.get_profile_list(parent)
@@ -263,6 +282,17 @@ func get_all_leaderboards(parent: Node, use_cache: bool = true) -> Dictionary:
 				"wave": int(run.get("wave", 1)),
 				"date": str(run.get("date", "Unknown"))
 			})
+
+		var p_blitz_runs = parent.progression_helper._sanitize_blitz_runs(parent, p_data.get("blitz_top_runs", []))
+		for run_variant in p_blitz_runs:
+			if not (run_variant is Dictionary):
+				continue
+			var run: Dictionary = run_variant
+			leaderboards["blitz_runs"].append({
+				"name": p_name,
+				"score": int(run.get("score", 0)),
+				"date": str(run.get("date", "Unknown"))
+			})
 			
 	for l_key in leaderboards["levels"].keys():
 		leaderboards["levels"][l_key].sort_custom(func(a, b): return a["score"] > b["score"])
@@ -313,6 +343,20 @@ func get_all_leaderboards(parent: Node, use_cache: bool = true) -> Dictionary:
 	)
 	if leaderboards["survival_runs"].size() > 10:
 		leaderboards["survival_runs"] = leaderboards["survival_runs"].slice(0, 10)
+
+	leaderboards["blitz_runs"].sort_custom(func(a, b):
+		var score_a = int(a.get("score", 0))
+		var score_b = int(b.get("score", 0))
+		if score_a != score_b:
+			return score_a > score_b
+		var date_a = str(a.get("date", "9999-12-31T23:59:59"))
+		var date_b = str(b.get("date", "9999-12-31T23:59:59"))
+		if date_a != date_b:
+			return date_a < date_b
+		return str(a.get("name", "")) < str(b.get("name", ""))
+	)
+	if leaderboards["blitz_runs"].size() > 10:
+		leaderboards["blitz_runs"] = leaderboards["blitz_runs"].slice(0, 10)
 
 	_leaderboard_cache = leaderboards.duplicate(true)
 	_leaderboard_cache_dirty = false

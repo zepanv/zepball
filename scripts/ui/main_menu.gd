@@ -18,7 +18,7 @@ var _background_anim_time: float = 0.0
 @onready var add_profile_button = $VBoxContainer/ProfilePanel/MarginContainer/ProfileVBox/ProfileContainer/AddProfileButton
 @onready var play_button = $VBoxContainer/PlayButton
 @onready var return_button = $VBoxContainer/ReturnButton
-@onready var survival_button = $VBoxContainer/SurvivalButton
+@onready var endless_waves_button = $VBoxContainer/SurvivalButton
 @onready var difficulty_title = $VBoxContainer/DifficultyContainer/DifficultyTitle
 @onready var difficulty_dropdown = $VBoxContainer/DifficultyContainer/DifficultyDropdown
 @onready var editor_button = $VBoxContainer/SecondaryHBox/EditorButton
@@ -74,9 +74,9 @@ func _apply_theme() -> void:
 	UI_THEME.style_primary_button(play_button)
 	UI_THEME.style_success_button(return_button)
 	return_button.add_theme_font_size_override("font_size", 22)
-	UI_THEME.style_primary_button(survival_button)
-	survival_button.add_theme_color_override("font_color", UI_THEME.GOLD)
-	survival_button.add_theme_font_size_override("font_size", 22)
+	UI_THEME.style_primary_button(endless_waves_button)
+	endless_waves_button.add_theme_color_override("font_color", UI_THEME.GOLD)
+	endless_waves_button.add_theme_font_size_override("font_size", 22)
 	
 	UI_THEME.style_muted_button(editor_button)
 	UI_THEME.style_muted_button(stats_button)
@@ -198,9 +198,9 @@ func _on_return_button_pressed():
 	"""Handle Return button - jump back into the last played level"""
 	MenuController.resume_last_level()
 
-func _on_survival_button_pressed():
-	"""Handle Survival button - go to survival mode"""
-	MenuController.start_survival()
+func _on_endless_waves_pressed():
+	"""Handle Endless Waves button - go to endless mode hub"""
+	MenuController.show_endless_waves()
 
 func _on_stats_button_pressed():
 	"""Handle Stats button - show stats screen"""
@@ -249,14 +249,14 @@ func _refresh_focus_chain() -> void:
 
 	if return_button.visible:
 		_set_focus_neighbors(play_button, profile_dropdown, return_button, null, null)
-		_set_focus_neighbors(return_button, play_button, survival_button, null, null)
-		_set_focus_neighbors(survival_button, return_button, difficulty_dropdown, null, null)
+		_set_focus_neighbors(return_button, play_button, endless_waves_button, null, null)
+		_set_focus_neighbors(endless_waves_button, return_button, difficulty_dropdown, null, null)
 	else:
-		_set_focus_neighbors(play_button, profile_dropdown, survival_button, null, null)
+		_set_focus_neighbors(play_button, profile_dropdown, endless_waves_button, null, null)
 		_set_focus_neighbors(return_button, null, null, null, null)
-		_set_focus_neighbors(survival_button, play_button, difficulty_dropdown, null, null)
+		_set_focus_neighbors(endless_waves_button, play_button, difficulty_dropdown, null, null)
 
-	_set_focus_neighbors(difficulty_dropdown, survival_button, stats_button, null, null)
+	_set_focus_neighbors(difficulty_dropdown, endless_waves_button, stats_button, null, null)
 	_set_focus_neighbors(stats_button, difficulty_dropdown, editor_button, null, high_scores_button)
 	_set_focus_neighbors(high_scores_button, difficulty_dropdown, settings_button, stats_button, null)
 

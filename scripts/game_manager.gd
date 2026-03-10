@@ -74,6 +74,10 @@ signal game_over()
 signal state_changed(new_state: GameState)
 signal time_attack_timer_updated(elapsed_seconds: int)
 signal survival_wave_changed(new_wave: int)
+signal objective_assigned(objective_text: String)
+signal objective_progress(objective_text: String)
+signal objective_completed(objective_text: String)
+signal objective_failed(objective_text: String)
 
 func _ready():
 	# Set this node to always process, even when paused (so pause toggle works)
@@ -199,6 +203,21 @@ func add_score(points: int):
 	increment_combo()
 	increment_no_miss_streak()
 
+func add_objective_bonus_score(points: int) -> int:
+	"""Apply objective bonus points without affecting combo/streak progression."""
+	var base_points: int = max(0, points)
+	if base_points <= 0:
+		return 0
+
+	var adjusted_points: int = int(base_points * DifficultyManager.get_score_multiplier())
+	var difficulty_bonus: int = adjusted_points - base_points
+	score_breakdown[SCORE_KEY_BASE] += base_points
+	score_breakdown[SCORE_KEY_DIFFICULTY] += difficulty_bonus
+	score += adjusted_points
+	score_changed.emit(score)
+	SaveManager.update_stat_if_higher("highest_score", score)
+	return adjusted_points
+
 ## Increment combo counter
 func increment_combo():
 	combo += 1
@@ -320,6 +339,18 @@ func get_time_attack_elapsed_seconds() -> int:
 func set_survival_wave(new_wave: int) -> void:
 	current_wave = max(1, new_wave)
 	survival_wave_changed.emit(current_wave)
+
+func emit_objective_assigned(objective_text: String) -> void:
+	objective_assigned.emit(objective_text)
+
+func emit_objective_progress(objective_text: String) -> void:
+	objective_progress.emit(objective_text)
+
+func emit_objective_completed(objective_text: String) -> void:
+	objective_completed.emit(objective_text)
+
+func emit_objective_failed(objective_text: String) -> void:
+	objective_failed.emit(objective_text)
 
 func _is_time_attack_mode() -> bool:
 	return MenuController and MenuController.has_method("get_challenge_mode") and str(MenuController.get_challenge_mode()) == "time_attack"

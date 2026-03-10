@@ -5,6 +5,7 @@ extends Node
 
 # Scene paths
 const MAIN_MENU_SCENE = "res://scenes/ui/main_menu.tscn"
+const ENDLESS_WAVES_SCENE = "res://scenes/ui/endless_waves.tscn"
 const LEVEL_SELECT_SCENE = "res://scenes/ui/level_select.tscn"
 const SET_SELECT_SCENE = "res://scenes/ui/set_select.tscn"
 const SET_COMPLETE_SCENE = "res://scenes/ui/set_complete.tscn"
@@ -26,6 +27,7 @@ const CHALLENGE_MODE_IRON_BALL = "iron_ball"
 const CHALLENGE_MODE_ONE_LIFE = "one_life"
 const CHALLENGE_MODE_TIME_ATTACK = "time_attack"
 const LAST_PLAYED_MODE_SURVIVAL = "survival"
+const LAST_PLAYED_MODE_BLITZ = "blitz"
 
 # Current state
 var current_level_id: int = 1
@@ -36,7 +38,9 @@ var current_challenge_mode: String = "normal"
 var current_score: int = 0
 var is_in_gameplay: bool = false
 var is_survival_mode: bool = false
+var is_blitz_mode: bool = false
 var survival_wave_reached: int = 1
+var blitz_rows_survived: int = 0
 var time_attack_elapsed_base_seconds: int = 0
 var time_attack_final_seconds: int = 0
 var was_perfect_clear: bool = false
@@ -357,8 +361,10 @@ func _input(event: InputEvent) -> void:
 
 func show_main_menu() -> void:
 	"""Load and show the main menu"""
+	_finalize_endless_run_on_exit_if_needed()
 	is_in_gameplay = false
 	is_survival_mode = false
+	is_blitz_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Unlock difficulty for selection
@@ -367,6 +373,17 @@ func show_main_menu() -> void:
 	# Change to main menu scene
 	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 	scene_changed.emit(MAIN_MENU_SCENE)
+
+func show_endless_waves() -> void:
+	"""Load and show the endless mode hub."""
+	_finalize_endless_run_on_exit_if_needed()
+	is_in_gameplay = false
+	is_survival_mode = false
+	is_blitz_mode = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	DifficultyManager.unlock_difficulty()
+	get_tree().change_scene_to_file(ENDLESS_WAVES_SCENE)
+	scene_changed.emit(ENDLESS_WAVES_SCENE)
 
 func _request_screenshot() -> void:
 	if _screenshot_capture_in_progress:
@@ -425,8 +442,10 @@ func _save_screenshot_image(image: Image, dir_path: String, file_name: String) -
 
 func show_level_select() -> void:
 	"""Load and show the level selection screen"""
+	_finalize_endless_run_on_exit_if_needed()
 	is_in_gameplay = false
 	is_survival_mode = false
+	is_blitz_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Difficulty should remain unlocked in menus
@@ -437,8 +456,10 @@ func show_level_select() -> void:
 
 func show_set_select() -> void:
 	"""Load and show the set selection screen"""
+	_finalize_endless_run_on_exit_if_needed()
 	is_in_gameplay = false
 	is_survival_mode = false
+	is_blitz_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Reset set mode state when entering set select
@@ -458,8 +479,10 @@ func show_set_select() -> void:
 
 func show_stats() -> void:
 	"""Load and show the stats screen"""
+	_finalize_endless_run_on_exit_if_needed()
 	is_in_gameplay = false
 	is_survival_mode = false
+	is_blitz_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	# Difficulty should remain unlocked in menus
@@ -470,8 +493,10 @@ func show_stats() -> void:
 
 func show_high_scores() -> void:
 	"""Load and show the high scores screen"""
+	_finalize_endless_run_on_exit_if_needed()
 	is_in_gameplay = false
 	is_survival_mode = false
+	is_blitz_mode = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 	DifficultyManager.unlock_difficulty()
@@ -483,6 +508,7 @@ func show_settings(from_pause: bool = false) -> void:
 	"""Load and show the settings screen"""
 	is_in_gameplay = false
 	is_survival_mode = false
+	is_blitz_mode = false
 	settings_opened_from_pause = from_pause
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
@@ -500,6 +526,7 @@ func show_editor_from_main_menu() -> void:
 	"""Open the level editor for creating a new user pack from Main Menu."""
 	is_in_gameplay = false
 	is_survival_mode = false
+	is_blitz_mode = false
 	is_editor_test_mode = false
 	current_editor_pack_id = ""
 	editor_return_target = EditorReturnTarget.MAIN_MENU
@@ -512,6 +539,7 @@ func show_editor_from_set_select() -> void:
 	"""Open the level editor for creating a new user pack from Pack Select."""
 	is_in_gameplay = false
 	is_survival_mode = false
+	is_blitz_mode = false
 	is_editor_test_mode = false
 	current_editor_pack_id = ""
 	editor_return_target = EditorReturnTarget.SET_SELECT
@@ -524,6 +552,7 @@ func show_editor_for_pack(pack_id: String) -> void:
 	"""Open the level editor with an existing pack loaded."""
 	is_in_gameplay = false
 	is_survival_mode = false
+	is_blitz_mode = false
 	is_editor_test_mode = false
 	current_editor_pack_id = pack_id
 	editor_return_target = EditorReturnTarget.SET_SELECT
@@ -611,6 +640,7 @@ func start_level_ref(pack_id: String, level_index: int) -> void:
 	current_pack_id = pack_id
 	current_level_index = level_index
 	is_survival_mode = false
+	is_blitz_mode = false
 	var legacy_level_id = PackLoader.get_legacy_level_id(pack_id, level_index)
 	current_level_id = legacy_level_id if legacy_level_id != -1 else 0
 	is_in_gameplay = true
@@ -665,7 +695,9 @@ func start_survival() -> void:
 	time_attack_final_seconds = 0
 
 	is_survival_mode = true
+	is_blitz_mode = false
 	survival_wave_reached = 1
+	blitz_rows_survived = 0
 	current_score = 0
 	current_pack_id = ""
 	current_level_index = 0
@@ -686,10 +718,56 @@ func start_survival() -> void:
 	get_tree().change_scene_to_file(GAMEPLAY_SCENE)
 	scene_changed.emit(GAMEPLAY_SCENE)
 
+func start_blitz() -> void:
+	"""Start a standalone Blitz run."""
+	current_play_mode = PlayMode.INDIVIDUAL
+	current_set_id = -1
+	current_set_pack_id = ""
+	current_browse_pack_id = ""
+	set_current_index = 0
+	set_level_ids.clear()
+	set_level_refs.clear()
+	_reset_set_breakdown()
+	time_attack_elapsed_base_seconds = 0
+	time_attack_final_seconds = 0
+
+	is_survival_mode = false
+	is_blitz_mode = true
+	survival_wave_reached = 1
+	blitz_rows_survived = 0
+	current_score = 0
+	current_pack_id = ""
+	current_level_index = 0
+	current_level_id = 0
+	is_in_gameplay = true
+	was_perfect_clear = false
+	was_new_personal_best = false
+	was_new_machine_best = false
+	if SaveManager and SaveManager.has_method("set_last_played_blitz"):
+		SaveManager.set_last_played_blitz()
+	else:
+		SaveManager.set_last_played_in_progress(false)
+
+	SaveManager.increment_stat("total_games_played")
+	SaveManager.increment_stat("blitz_games_played")
+	DifficultyManager.lock_difficulty()
+	PowerUpManager.clear_all_effects()
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	get_tree().change_scene_to_file(GAMEPLAY_SCENE)
+	scene_changed.emit(GAMEPLAY_SCENE)
+
 func restart_current_level() -> void:
 	"""Restart the current level"""
 	if is_editor_test_mode:
 		start_editor_test(editor_draft_pack_data, editor_draft_level_index, editor_draft_is_builtin_edit)
+		return
+	if is_survival_mode:
+		_finalize_endless_run_on_exit_if_needed()
+		start_survival()
+		return
+	if is_blitz_mode:
+		_finalize_endless_run_on_exit_if_needed()
+		start_blitz()
 		return
 	start_level_ref(current_pack_id, current_level_index)
 
@@ -697,6 +775,9 @@ func show_game_over(final_score: int) -> void:
 	"""Show game over screen with final score"""
 	if is_survival_mode:
 		show_survival_over(final_score, survival_wave_reached)
+		return
+	if is_blitz_mode:
+		show_blitz_over(final_score)
 		return
 	current_score = final_score
 	is_in_gameplay = false
@@ -731,6 +812,23 @@ func show_survival_over(final_score: int, wave: int) -> void:
 			SaveManager.set_last_played_in_progress(false)
 		if not is_editor_test_mode and SaveManager.has_method("save_survival_run"):
 			SaveManager.save_survival_run(final_score, survival_wave_reached)
+
+	get_tree().change_scene_to_file(GAME_OVER_SCENE)
+	scene_changed.emit(GAME_OVER_SCENE)
+
+func show_blitz_over(final_score: int) -> void:
+	"""Show game over screen for Blitz mode and persist the run."""
+	current_score = final_score
+	is_in_gameplay = false
+	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	DifficultyManager.unlock_difficulty()
+	if SaveManager:
+		if SaveManager.has_method("set_last_played_blitz"):
+			SaveManager.set_last_played_blitz()
+		else:
+			SaveManager.set_last_played_in_progress(false)
+		if not is_editor_test_mode and SaveManager.has_method("save_blitz_run"):
+			SaveManager.save_blitz_run(final_score)
 
 	get_tree().change_scene_to_file(GAME_OVER_SCENE)
 	scene_changed.emit(GAME_OVER_SCENE)
@@ -847,7 +945,8 @@ func resume_last_level() -> void:
 	var last_played = SaveManager.get_last_played()
 	if not last_played.get("in_progress", false):
 		return
-	if str(last_played.get("mode", "")) == LAST_PLAYED_MODE_SURVIVAL:
+	var last_mode: String = str(last_played.get("mode", ""))
+	if last_mode == LAST_PLAYED_MODE_SURVIVAL or last_mode == LAST_PLAYED_MODE_BLITZ:
 		return
 	var saved_challenge = normalize_challenge_mode(str(last_played.get("challenge_mode", CHALLENGE_MODE_NORMAL)))
 	if saved_challenge == CHALLENGE_MODE_TIME_ATTACK:
@@ -898,9 +997,56 @@ func quit_game() -> void:
 	if _quit_requested:
 		return
 	_quit_requested = true
+	_finalize_endless_run_on_exit_if_needed()
 	if AudioManager != null and AudioManager.has_method("prepare_for_quit"):
 		await AudioManager.prepare_for_quit()
 	get_tree().quit()
+
+func _finalize_endless_run_on_exit_if_needed() -> void:
+	if not is_in_gameplay:
+		return
+	if is_editor_test_mode:
+		return
+	if not is_survival_mode and not is_blitz_mode:
+		return
+
+	var final_score: int = _get_active_gameplay_score()
+	current_score = final_score
+
+	if is_survival_mode:
+		var wave_for_save: int = _get_active_survival_wave()
+		survival_wave_reached = wave_for_save
+		if SaveManager:
+			if SaveManager.has_method("set_last_played_survival"):
+				SaveManager.set_last_played_survival()
+			else:
+				SaveManager.set_last_played_in_progress(false)
+			if SaveManager.has_method("save_survival_run"):
+				SaveManager.save_survival_run(final_score, wave_for_save)
+	elif is_blitz_mode:
+		if SaveManager:
+			if SaveManager.has_method("set_last_played_blitz"):
+				SaveManager.set_last_played_blitz()
+			else:
+				SaveManager.set_last_played_in_progress(false)
+			if SaveManager.has_method("save_blitz_run"):
+				SaveManager.save_blitz_run(final_score)
+
+func _get_active_gameplay_score() -> int:
+	var game_manager: Node = get_tree().get_first_node_in_group("game_manager")
+	if game_manager:
+		var score_value: Variant = game_manager.get("score")
+		if score_value != null:
+			return max(0, int(score_value))
+	return max(0, current_score)
+
+func _get_active_survival_wave() -> int:
+	var game_manager: Node = get_tree().get_first_node_in_group("game_manager")
+	if game_manager:
+		var wave_value: Variant = game_manager.get("current_wave")
+		if wave_value != null:
+			return max(1, int(wave_value))
+	return max(1, survival_wave_reached)
 
 func get_current_level_id() -> int:
 	"""Get the ID of the currently selected/playing level"""
@@ -926,6 +1072,9 @@ func get_current_score() -> int:
 
 func get_survival_wave_reached() -> int:
 	return survival_wave_reached
+
+func get_blitz_rows_survived() -> int:
+	return max(0, blitz_rows_survived)
 
 func get_time_attack_elapsed_base_seconds() -> int:
 	return time_attack_elapsed_base_seconds

@@ -5,7 +5,7 @@
 Exploration brief for post-core features that deepen replayability, strengthen Survival's identity, and add more strategic decisions without requiring a full genre shift.
 
 Created: 2026-03-09
-Last Updated: 2026-03-09 (discussion notes updated 2026-03-09)
+Last Updated: 2026-03-10 (discussion notes updated 2026-03-10)
 
 ---
 
@@ -57,9 +57,8 @@ This task is intentionally exploratory. It should narrow the field to a few cand
 | Speed Clear | Clear wave in under X seconds | ✅ Yes | Yes — tighten timer gently; floor ~30s (ball travel time is the bottleneck) |
 | Combo Streak | Reach Nx combo | ✅ Yes | Yes — raise N, cap ~15 (RNG limits how much ball angle can be influenced) |
 | Bomb Chain | Trigger N bomb explosions | ❌ Layout-check required | Gentle — only if wave contains enough bombs |
-| Spin Master | Clear N bricks with penetrating spin | ✅ Yes | Gentle — cap ~5 |
+| Spin Master | Land N high-spin brick hits (from quick paddle impact) | ✅ Yes | Gentle — cap ~5 |
 | Opening Salvo | Break N bricks in the first 15 seconds | ✅ Yes | Yes — raise N |
-| Score Target | Score X points this wave | ✅ Yes | Yes — scale with wave number |
 
 - Power-up-specific objectives (e.g., "collect a negative power-up") are **cut** — player can't control what drops, violating the "bonus, not a gate" principle.
 - ~60-70% chance of an objective appearing per wave. Some waves are just "play" waves. Early waves (1-3) could have higher odds to teach the mechanic.
