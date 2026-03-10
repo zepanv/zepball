@@ -2,6 +2,7 @@ extends RefCounted
 class_name HudPowerUpTimersHelper
 
 ## HudPowerUpTimersHelper - Power-up indicator creation, timer updates, removal extracted from hud.gd.
+const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
 const POWERUP_TIMER_REFRESH_INTERVAL = 0.1
 
@@ -11,66 +12,77 @@ var powerup_timer_refresh_time: float = 0.0
 func create_indicator(type: int) -> Control:
 	var indicator = PanelContainer.new()
 	indicator.set_meta("powerup_type", type)
-	indicator.custom_minimum_size = Vector2(120, 40)
+	indicator.custom_minimum_size = Vector2(120, 36)
+	indicator.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 
-	var hbox = HBoxContainer.new()
-	indicator.add_child(hbox)
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 6)
+	margin.add_theme_constant_override("margin_top", 4)
+	margin.add_theme_constant_override("margin_right", 6)
+	margin.add_theme_constant_override("margin_bottom", 4)
+	indicator.add_child(margin)
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 2)
+	margin.add_child(vbox)
 
 	var name_label = Label.new()
 	match type:
 		0:  # EXPAND
 			name_label.text = "BIG PADDLE"
-			name_label.modulate = Color(0.3, 0.8, 0.3)
+			name_label.modulate = UI_THEME.SUCCESS
 		1:  # CONTRACT
 			name_label.text = "SMALL PADDLE"
-			name_label.modulate = Color(0.8, 0.3, 0.3)
+			name_label.modulate = UI_THEME.DANGER
 		2:  # SPEED_UP
 			name_label.text = "FAST BALL"
-			name_label.modulate = Color(1.0, 0.8, 0.3)
+			name_label.modulate = UI_THEME.GOLD
 		4:  # BIG_BALL
 			name_label.text = "BIG BALL"
-			name_label.modulate = Color(0.3, 0.8, 0.3)
+			name_label.modulate = UI_THEME.SUCCESS
 		5:  # SMALL_BALL
 			name_label.text = "SMALL BALL"
-			name_label.modulate = Color(0.8, 0.3, 0.3)
+			name_label.modulate = UI_THEME.DANGER
 		6:  # SLOW_DOWN
 			name_label.text = "SLOW BALL"
-			name_label.modulate = Color(0.3, 0.6, 1.0)
+			name_label.modulate = UI_THEME.PRIMARY_SOFT
 		7:  # EXTRA_LIFE
 			name_label.text = "EXTRA LIFE"
-			name_label.modulate = Color(0.3, 0.8, 0.3)
+			name_label.modulate = UI_THEME.SUCCESS
 		8:  # GRAB
 			name_label.text = "GRAB"
-			name_label.modulate = Color(0.3, 0.8, 0.3)
+			name_label.modulate = UI_THEME.SUCCESS
 		9:  # BRICK_THROUGH
 			name_label.text = "BRICK THROUGH"
-			name_label.modulate = Color(0.3, 0.8, 0.3)
+			name_label.modulate = UI_THEME.SUCCESS
 		10:  # DOUBLE_SCORE
 			name_label.text = "DOUBLE SCORE"
-			name_label.modulate = Color(1.0, 0.8, 0.0)
+			name_label.modulate = UI_THEME.GOLD
 		11:  # MYSTERY
 			name_label.text = "MYSTERY"
-			name_label.modulate = Color(1.0, 1.0, 0.3)
+			name_label.modulate = UI_THEME.GOLD
 		12:  # BOMB_BALL
 			name_label.text = "BOMB BALL"
-			name_label.modulate = Color(1.0, 0.4, 0.1)
+			name_label.modulate = UI_THEME.DANGER
 		13:  # AIR_BALL
 			name_label.text = "AIR BALL"
-			name_label.modulate = Color(0.3, 0.8, 0.3)
+			name_label.modulate = UI_THEME.SUCCESS
 		14:  # MAGNET
 			name_label.text = "MAGNET"
-			name_label.modulate = Color(0.3, 0.8, 0.3)
+			name_label.modulate = UI_THEME.SUCCESS
 		15:  # BLOCK
 			name_label.text = "BLOCK"
-			name_label.modulate = Color(0.3, 0.8, 0.3)
+			name_label.modulate = UI_THEME.SUCCESS
 
-	name_label.add_theme_font_size_override("font_size", 14)
-	hbox.add_child(name_label)
+	UI_THEME.style_subtitle(name_label)
+	name_label.add_theme_font_size_override("font_size", 12)
+	vbox.add_child(name_label)
 
 	var timer_label = Label.new()
 	timer_label.name = "TimerLabel"
-	timer_label.add_theme_font_size_override("font_size", 14)
-	hbox.add_child(timer_label)
+	UI_THEME.style_meta(timer_label)
+	timer_label.add_theme_font_size_override("font_size", 11)
+	vbox.add_child(timer_label)
 	indicator.set_meta("timer_label", timer_label)
 
 	return indicator

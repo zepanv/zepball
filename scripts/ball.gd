@@ -139,7 +139,7 @@ func _ready():
 	aim_helper.virtual_mouse_pos = viewport_ref.get_mouse_position()
 	stuck_helper = STUCK_HELPER_SCRIPT.new()
 	collision_helper = BALL_COLLISION_HELPER_SCRIPT.new()
-	visual_helper = BALL_VISUAL_HELPER_SCRIPT.new()
+	_ensure_visual_helper()
 	set_process_unhandled_input(is_main_ball)
 
 	if collision_shape_node and collision_shape_node.shape is CircleShape2D:
@@ -366,10 +366,12 @@ func _recalculate_speed() -> void:
 		velocity = velocity.normalized() * current_speed
 
 func _update_trail_appearance() -> void:
+	_ensure_visual_helper()
 	visual_helper._update_trail_appearance(self)
 
 
 func _get_trail_color() -> Color:
+	_ensure_visual_helper()
 	return visual_helper._get_trail_color(self)
 
 
@@ -391,6 +393,11 @@ func _ensure_aim_helper() -> void:
 		return
 	aim_helper = AIM_HELPER_SCRIPT.new()
 	aim_helper.aim_available = is_main_ball
+
+func _ensure_visual_helper() -> void:
+	if visual_helper != null:
+		return
+	visual_helper = BALL_VISUAL_HELPER_SCRIPT.new()
 
 
 func enable_grab():
@@ -627,6 +634,7 @@ func _refresh_effect_flags() -> void:
 		_apply_bomb_ball_visual(frame_bomb_ball_active)
 
 func _apply_bomb_ball_visual(active: bool) -> void:
+	_ensure_visual_helper()
 	visual_helper._apply_bomb_ball_visual(self, active)
 
 
@@ -798,38 +806,47 @@ func destroy_surrounding_bricks(impact_position: Vector2):
 
 
 func apply_big_ball_effect():
+	_ensure_visual_helper()
 	visual_helper.apply_big_ball_effect(self)
 
 
 func apply_small_ball_effect():
+	_ensure_visual_helper()
 	visual_helper.apply_small_ball_effect(self)
 
 
 func reset_ball_size():
+	_ensure_visual_helper()
 	visual_helper.reset_ball_size(self)
 
 
 func get_ball_radius() -> float:
+	_ensure_visual_helper()
 	return visual_helper.get_ball_radius(self)
 
 
 func set_ball_radius(new_radius: float):
+	_ensure_visual_helper()
 	visual_helper.set_ball_radius(self, new_radius)
 
 
 func get_base_radius() -> float:
+	_ensure_visual_helper()
 	return visual_helper.get_base_radius(self)
 
 
 func set_ball_size_multiplier(multiplier: float):
+	_ensure_visual_helper()
 	visual_helper.set_ball_size_multiplier(self, multiplier)
 
 
 func _set_ball_radius(new_radius: float):
+	_ensure_visual_helper()
 	visual_helper._set_ball_radius(self, new_radius)
 
 
 func refresh_trail_state() -> void:
+	_ensure_visual_helper()
 	visual_helper.refresh_trail_state(self)
 
 

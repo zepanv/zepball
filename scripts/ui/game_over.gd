@@ -2,7 +2,10 @@ extends Control
 
 ## Game Over Screen - Displayed when player loses all lives
 ## Shows final score and options to retry or return to menu
+const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
+@onready var background = $Background
+@onready var game_over_label = $VBoxContainer/GameOverLabel
 @onready var score_label = $VBoxContainer/ScoreLabel
 @onready var high_score_label = $VBoxContainer/HighScoreLabel
 @onready var survival_label = $VBoxContainer/SurvivalLabel
@@ -15,6 +18,7 @@ var _ready_time: float = 0.0
 
 func _ready():
 	"""Initialize game over screen"""
+	_apply_theme()
 	_ready_time = Time.get_ticks_msec()
 	# Get score from MenuController
 	var final_score = MenuController.get_current_score()
@@ -64,6 +68,16 @@ func _ready():
 	await get_tree().process_frame
 	retry_button.grab_focus()
 
+func _apply_theme() -> void:
+	UI_THEME.apply_to(self)
+	UI_THEME.style_background(background, true)
+	UI_THEME.style_danger(game_over_label, 46)
+	UI_THEME.style_value(score_label, 30)
+	UI_THEME.style_subtitle(high_score_label)
+	UI_THEME.style_subtitle(survival_label)
+	UI_THEME.style_primary_button(retry_button)
+	UI_THEME.style_muted_button(menu_button)
+
 func add_continue_set_button():
 	"""Add Continue Set button between Retry and Menu buttons"""
 	# Create the button
@@ -71,9 +85,8 @@ func add_continue_set_button():
 	continue_set_button.name = "ContinueSetButton"
 	continue_set_button.text = "CONTINUE SET"
 	continue_set_button.custom_minimum_size = Vector2(0, 55)
-	continue_set_button.set("theme_override_colors/font_color", Color(1, 0.8, 0, 1))
-	continue_set_button.set("theme_override_colors/font_hover_color", Color(0, 0.9, 1, 1))
-	continue_set_button.set("theme_override_font_sizes/font_size", 30)
+	UI_THEME.style_secondary_button(continue_set_button)
+	continue_set_button.add_theme_font_size_override("font_size", 30)
 
 	# Insert between RetryButton and MenuButton
 	var retry_index = retry_button.get_index()

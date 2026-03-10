@@ -2,6 +2,7 @@ extends RefCounted
 class_name HudDebugOverlayHelper
 
 ## HudDebugOverlayHelper - Debug overlay with FPS/ball/velocity/speed/combo display extracted from hud.gd.
+const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
 const DEBUG_BALL_REFRESH_INTERVAL = 0.1
 
@@ -25,55 +26,66 @@ var debug_key_handled: bool = false
 
 func create_overlay() -> PanelContainer:
 	var panel = PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	panel.position = Vector2(10, -170)
-	panel.custom_minimum_size = Vector2(250, 150)
-	panel.modulate.a = 0.8
+	panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	panel.offset_left = -296.0
+	panel.offset_top = -48.0
+	panel.offset_right = -12.0
+	panel.offset_bottom = -8.0
+	panel.custom_minimum_size = Vector2(284, 40)
+	panel.modulate.a = 0.72
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 
-	var vbox = VBoxContainer.new()
-	vbox.set("theme_override_constants/separation", 5)
-	panel.add_child(vbox)
+	var rows = VBoxContainer.new()
+	rows.set("theme_override_constants/separation", 2)
+	panel.add_child(rows)
 
-	var title = Label.new()
-	title.text = "DEBUG INFO (` to toggle)"
-	title.set("theme_override_font_sizes/font_size", 12)
-	title.set("theme_override_colors/font_color", Color(1, 1, 0, 1))
-	vbox.add_child(title)
+	var top_row = HBoxContainer.new()
+	top_row.set("theme_override_constants/separation", 8)
+	rows.add_child(top_row)
+
+	var bottom_row = HBoxContainer.new()
+	bottom_row.set("theme_override_constants/separation", 8)
+	rows.add_child(bottom_row)
 
 	var fps_label = Label.new()
 	fps_label.name = "FPS"
 	fps_label.text = "FPS: 0"
-	fps_label.set("theme_override_font_sizes/font_size", 14)
-	vbox.add_child(fps_label)
+	UI_THEME.style_meta(fps_label)
+	fps_label.add_theme_font_size_override("font_size", 10)
+	top_row.add_child(fps_label)
 	debug_fps_label = fps_label
 
 	var ball_count_label = Label.new()
 	ball_count_label.name = "BallCount"
 	ball_count_label.text = "Balls: 0"
-	ball_count_label.set("theme_override_font_sizes/font_size", 14)
-	vbox.add_child(ball_count_label)
+	UI_THEME.style_meta(ball_count_label)
+	ball_count_label.add_theme_font_size_override("font_size", 10)
+	top_row.add_child(ball_count_label)
 	debug_ball_count_label = ball_count_label
+
+	var combo_label_debug = Label.new()
+	combo_label_debug.name = "Combo"
+	combo_label_debug.text = "Combo: 0"
+	UI_THEME.style_warning(combo_label_debug, 10)
+	top_row.add_child(combo_label_debug)
+	debug_combo_label = combo_label_debug
 
 	var velocity_label = Label.new()
 	velocity_label.name = "Velocity"
-	velocity_label.text = "Velocity: (0, 0)"
-	velocity_label.set("theme_override_font_sizes/font_size", 14)
-	vbox.add_child(velocity_label)
+	velocity_label.text = "Velocity: 0,0"
+	UI_THEME.style_meta(velocity_label)
+	velocity_label.add_theme_font_size_override("font_size", 10)
+	bottom_row.add_child(velocity_label)
 	debug_velocity_label = velocity_label
 
 	var speed_label = Label.new()
 	speed_label.name = "Speed"
 	speed_label.text = "Speed: 0"
-	speed_label.set("theme_override_font_sizes/font_size", 14)
-	vbox.add_child(speed_label)
+	UI_THEME.style_meta(speed_label)
+	speed_label.add_theme_font_size_override("font_size", 10)
+	bottom_row.add_child(speed_label)
 	debug_speed_label = speed_label
-
-	var combo_label_debug = Label.new()
-	combo_label_debug.name = "Combo"
-	combo_label_debug.text = "Combo: 0"
-	combo_label_debug.set("theme_override_font_sizes/font_size", 14)
-	vbox.add_child(combo_label_debug)
-	debug_combo_label = combo_label_debug
 
 	debug_overlay = panel
 	return panel
@@ -139,7 +151,7 @@ func update(delta: float, game_manager: Node) -> void:
 		var speed = int(round(main_ball.current_speed))
 		if debug_velocity_label:
 			if not debug_last_has_main_ball or velocity_x != debug_last_velocity_x or velocity_y != debug_last_velocity_y:
-				debug_velocity_label.text = "Velocity: (%d, %d)" % [velocity_x, velocity_y]
+				debug_velocity_label.text = "Velocity: %d,%d" % [velocity_x, velocity_y]
 				debug_last_velocity_x = velocity_x
 				debug_last_velocity_y = velocity_y
 		if debug_speed_label:
@@ -149,7 +161,7 @@ func update(delta: float, game_manager: Node) -> void:
 		debug_last_has_main_ball = true
 	elif debug_last_has_main_ball:
 		if debug_velocity_label:
-			debug_velocity_label.text = "Velocity: (0, 0)"
+			debug_velocity_label.text = "Velocity: 0,0"
 		if debug_speed_label:
 			debug_speed_label.text = "Speed: 0"
 		debug_last_velocity_x = 0

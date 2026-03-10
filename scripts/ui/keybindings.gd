@@ -7,6 +7,7 @@ const ACTION_LABELS = {
 	"move_down": "Move Down",
 	"launch_ball": "Launch Ball",
 	"restart_game": "Restart Level",
+	"take_screenshot": "Take Screenshot",
 	"ui_cancel": "Pause / Back",
 	"audio_volume_down": "Music Volume Down",
 	"audio_volume_up": "Music Volume Up",

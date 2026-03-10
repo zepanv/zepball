@@ -24,6 +24,7 @@ const REBIND_ACTIONS = [
 	"move_down",
 	"launch_ball",
 	"restart_game",
+	"take_screenshot",
 	"audio_volume_down",
 	"audio_volume_up",
 	"audio_prev_track",

@@ -2,7 +2,10 @@ extends Control
 
 ## Set Complete Screen - Displayed when player completes all levels in a set
 ## Shows cumulative score, set high score, and perfect set clear bonus
+const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
+@onready var background = $Background
+@onready var set_complete_label = $VBoxContainer/SetCompleteLabel
 @onready var set_name_label = $VBoxContainer/SetNameLabel
 @onready var score_label = $VBoxContainer/ScoreLabel
 @onready var set_high_score_label = $VBoxContainer/SetHighScoreLabel
@@ -18,9 +21,12 @@ extends Control
 @onready var total_score_label = $VBoxContainer/HBoxContainer/BreakdownContainer/TotalScoreLabel
 @onready var time_label = $VBoxContainer/HBoxContainer/BreakdownContainer/TimeLabel
 @onready var next_set_button = $VBoxContainer/HBoxContainer/ButtonsContainer/NextSetButton
+@onready var set_select_button = $VBoxContainer/HBoxContainer/ButtonsContainer/SetSelectButton
+@onready var menu_button = $VBoxContainer/HBoxContainer/ButtonsContainer/MenuButton
 
 func _ready():
 	"""Initialize set complete screen"""
+	_apply_theme()
 	# Grab focus for controller navigation
 	await get_tree().process_frame
 
@@ -90,36 +96,38 @@ func _ready():
 	if challenge_mode == "time_attack":
 		if MenuController.was_new_machine_best:
 			set_high_score_label.text = "NEW MACHINE TIME ATTACK RECORD!"
-			set_high_score_label.set("theme_override_colors/font_color", Color(0, 1, 1, 1)) # Cyan
+			UI_THEME.style_title(set_high_score_label)
+			set_high_score_label.add_theme_font_size_override("font_size", 24)
 		elif MenuController.was_new_personal_best:
 			set_high_score_label.text = "NEW PERSONAL TIME ATTACK BEST!"
-			set_high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1)) # Yellow
+			UI_THEME.style_warning(set_high_score_label, 24)
 		else:
 			var best_time = SaveManager.get_time_attack_set_high_score(pack_id)
 			if best_time > 0:
 				set_high_score_label.text = "Time Attack Best: " + _format_time(float(best_time))
-				set_high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+				UI_THEME.style_subtitle(set_high_score_label)
 			else:
 				set_high_score_label.text = ""
 	elif is_challenge_set_run:
 		if MenuController.was_new_machine_best:
 			set_high_score_label.text = "NEW MACHINE %s RECORD!" % challenge_mode_label
-			set_high_score_label.set("theme_override_colors/font_color", Color(0, 1, 1, 1)) # Cyan
+			UI_THEME.style_title(set_high_score_label)
+			set_high_score_label.add_theme_font_size_override("font_size", 24)
 		elif MenuController.was_new_personal_best:
 			set_high_score_label.text = "NEW PERSONAL %s BEST!" % challenge_mode_label
-			set_high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1)) # Yellow
+			UI_THEME.style_warning(set_high_score_label, 24)
 		else:
 			var challenge_personal_best = SaveManager.get_challenge_set_high_score(pack_id, challenge_mode)
 			if challenge_personal_best > 0:
 				set_high_score_label.text = "%s Best: %d" % [challenge_mode_label, challenge_personal_best]
-				set_high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+				UI_THEME.style_subtitle(set_high_score_label)
 			else:
 				set_high_score_label.text = ""
 	else:
 		var personal_best = SaveManager.get_set_pack_high_score(pack_id)
 		if personal_best > 0:
 			set_high_score_label.text = "Set Personal Best: " + str(personal_best)
-			set_high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+			UI_THEME.style_subtitle(set_high_score_label)
 		else:
 			set_high_score_label.text = ""
 
@@ -133,6 +141,29 @@ func _ready():
 	else:
 		next_set_button.disabled = true
 		next_set_button.text = "NO MORE PACKS"
+
+func _apply_theme() -> void:
+	UI_THEME.apply_to(self)
+	UI_THEME.style_background(background, true)
+	UI_THEME.style_success(set_complete_label, 44)
+	UI_THEME.style_title(set_name_label)
+	set_name_label.add_theme_font_size_override("font_size", 28)
+	UI_THEME.style_value(score_label, 32)
+	UI_THEME.style_subtitle(set_high_score_label)
+	UI_THEME.style_warning(perfect_set_label, 24)
+	UI_THEME.style_section_title(breakdown_title_label)
+	UI_THEME.style_subtitle(base_score_label)
+	UI_THEME.style_subtitle(difficulty_bonus_label)
+	UI_THEME.style_subtitle(combo_bonus_label)
+	UI_THEME.style_subtitle(streak_bonus_label)
+	UI_THEME.style_subtitle(double_bonus_label)
+	UI_THEME.style_warning(perfect_clear_bonus_label, 20)
+	UI_THEME.style_warning(perfect_set_bonus_label, 20)
+	UI_THEME.style_value(total_score_label, 22)
+	UI_THEME.style_subtitle(time_label)
+	UI_THEME.style_primary_button(next_set_button)
+	UI_THEME.style_muted_button(set_select_button)
+	UI_THEME.style_muted_button(menu_button)
 
 func _unhandled_input(event: InputEvent) -> void:
 	"""Handle B button to return to menu"""

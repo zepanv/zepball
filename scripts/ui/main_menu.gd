@@ -4,14 +4,26 @@ extends Control
 ## Allows player to start game, select difficulty, and quit
 const PUBLIC_VERSION: String = "0.6.1"
 const GITHUB_RELEASES_API = "https://api.github.com/repos/zepanv/zepball/releases/latest"
+const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
+@onready var background = $Background
+@onready var title_label = $VBoxContainer/TitleLabel
+@onready var profile_label = $VBoxContainer/ProfileContainer/ProfileLabel
 @onready var current_difficulty_label = $VBoxContainer/CurrentDifficultyLabel
+@onready var difficulty_label = $VBoxContainer/DifficultyLabel
 @onready var easy_button = $VBoxContainer/DifficultyButtons/EasyButton
 @onready var normal_button = $VBoxContainer/DifficultyButtons/NormalButton
 @onready var hard_button = $VBoxContainer/DifficultyButtons/HardButton
 @onready var play_button = $VBoxContainer/PlayButton
 @onready var return_button = $VBoxContainer/ReturnButton
 @onready var profile_dropdown = $VBoxContainer/ProfileContainer/ProfileDropdown
+@onready var add_profile_button = $VBoxContainer/ProfileContainer/AddProfileButton
+@onready var survival_button = $VBoxContainer/SurvivalButton
+@onready var editor_button = $VBoxContainer/EditorButton
+@onready var stats_button = $VBoxContainer/StatsHBox/StatsButton
+@onready var high_scores_button = $VBoxContainer/StatsHBox/HighScoresButton
+@onready var settings_button = $VBoxContainer/SettingsButton
+@onready var quit_button = $VBoxContainer/QuitButton
 @onready var version_label = $VersionContainer/VersionLabel
 @onready var update_button = $VersionContainer/UpdateButton
 @onready var new_profile_dialog = $NewProfileDialog
@@ -23,6 +35,7 @@ var _pending_update_url: String = ""
 
 func _ready():
 	"""Initialize main menu"""
+	_apply_theme()
 	version_label.text = "v%s" % PUBLIC_VERSION
 	_update_http = HTTPRequest.new()
 	add_child(_update_http)
@@ -51,6 +64,31 @@ func _ready():
 		return_button.grab_focus()
 	else:
 		play_button.grab_focus()
+
+func _apply_theme() -> void:
+	UI_THEME.apply_to(self)
+	UI_THEME.style_background(background)
+	UI_THEME.style_title(title_label)
+	UI_THEME.style_subtitle(profile_label)
+	UI_THEME.style_subtitle(difficulty_label)
+	UI_THEME.style_meta(current_difficulty_label)
+	UI_THEME.style_meta(version_label)
+	UI_THEME.style_meta(rename_hint_label)
+
+	UI_THEME.style_primary_button(play_button)
+	UI_THEME.style_success_button(return_button)
+	UI_THEME.style_option_button(profile_dropdown)
+	UI_THEME.style_success_button(add_profile_button)
+	UI_THEME.style_muted_button(easy_button)
+	UI_THEME.style_primary_button(normal_button)
+	UI_THEME.style_danger_button(hard_button)
+	UI_THEME.style_secondary_button(survival_button)
+	UI_THEME.style_secondary_button(editor_button)
+	UI_THEME.style_secondary_button(stats_button)
+	UI_THEME.style_secondary_button(high_scores_button)
+	UI_THEME.style_muted_button(settings_button)
+	UI_THEME.style_muted_button(quit_button)
+	UI_THEME.style_muted_button(update_button)
 
 func _refresh_full_ui():
 	"""Update all UI elements based on current save/profile"""

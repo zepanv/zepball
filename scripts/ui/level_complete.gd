@@ -2,7 +2,10 @@ extends Control
 
 ## Level Complete Screen - Displayed when player clears all bricks
 ## Shows score, high score status, and progression options
+const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
+@onready var background = $Background
+@onready var complete_label = $VBoxContainer/CompleteLabel
 @onready var score_label = $VBoxContainer/ScoreLabel
 @onready var high_score_label = $VBoxContainer/HighScoreLabel
 @onready var perfect_clear_label = $VBoxContainer/PerfectClearLabel
@@ -19,11 +22,14 @@ extends Control
 @onready var unlocked_label = $VBoxContainer/HBoxContainer/ButtonsContainer/UnlockedLabel
 @onready var play_again_button = $VBoxContainer/HBoxContainer/ButtonsContainer/PlayAgainButton
 @onready var next_level_button = $VBoxContainer/HBoxContainer/ButtonsContainer/NextLevelButton
+@onready var level_select_button = $VBoxContainer/HBoxContainer/ButtonsContainer/LevelSelectButton
+@onready var menu_button = $VBoxContainer/HBoxContainer/ButtonsContainer/MenuButton
 
 var _ready_time: float = 0.0
 
 func _ready():
 	"""Initialize level complete screen"""
+	_apply_theme()
 	_ready_time = Time.get_ticks_msec()
 	# Get data from MenuController
 	var final_score = MenuController.get_current_score()
@@ -56,15 +62,16 @@ func _ready():
 	# Check if this was a high score
 	if MenuController.was_new_machine_best:
 		high_score_label.text = "NEW MACHINE HIGH SCORE!"
-		high_score_label.set("theme_override_colors/font_color", Color(0, 1, 1, 1)) # Cyan
+		UI_THEME.style_title(high_score_label)
+		high_score_label.add_theme_font_size_override("font_size", 24)
 	elif MenuController.was_new_personal_best:
 		high_score_label.text = "NEW PERSONAL BEST!"
-		high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1)) # Yellow
+		UI_THEME.style_warning(high_score_label, 24)
 	else:
 		var personal_best = SaveManager.get_level_key_high_score(level_key)
 		if personal_best > 0:
 			high_score_label.text = "Personal Best: " + str(personal_best)
-			high_score_label.set("theme_override_colors/font_color", Color(0.7, 0.7, 0.7, 1))
+			UI_THEME.style_subtitle(high_score_label)
 
 	# Populate score breakdown
 	var base_points = int(breakdown.get("base_points", 0))
@@ -100,7 +107,8 @@ func _ready():
 		set_total_label.visible = false
 		perfect_clear_label.visible = false
 		high_score_label.text = "EDITOR TEST RUN COMPLETE"
-		high_score_label.set("theme_override_colors/font_color", Color(0.75, 0.9, 1.0, 1))
+		UI_THEME.style_title(high_score_label)
+		high_score_label.add_theme_font_size_override("font_size", 24)
 		unlocked_label.text = "Return to editor to keep iterating"
 		next_level_button.text = "RETURN TO EDITOR"
 		next_level_button.disabled = false
@@ -125,7 +133,7 @@ func _ready():
 			next_level_button.disabled = false
 		else:
 			unlocked_label.text = "All Levels Complete!"
-			unlocked_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1))
+			UI_THEME.style_warning(unlocked_label, 24)
 			next_level_button.disabled = true
 			next_level_button.text = "NO MORE LEVELS"
 
@@ -135,6 +143,31 @@ func _ready():
 
 	if legacy_level_id == 0:
 		score_label.text = "Level %d Score: %d" % [level_index + 1, level_score_final]
+
+func _apply_theme() -> void:
+	UI_THEME.apply_to(self)
+	UI_THEME.style_background(background, true)
+	UI_THEME.style_success(complete_label, 42)
+	UI_THEME.style_value(score_label, 30)
+	UI_THEME.style_subtitle(high_score_label)
+	UI_THEME.style_warning(perfect_clear_label, 22)
+	UI_THEME.style_section_title(breakdown_title_label)
+	UI_THEME.style_subtitle(base_score_label)
+	UI_THEME.style_subtitle(difficulty_bonus_label)
+	UI_THEME.style_subtitle(combo_bonus_label)
+	UI_THEME.style_subtitle(streak_bonus_label)
+	UI_THEME.style_subtitle(double_bonus_label)
+	UI_THEME.style_warning(perfect_bonus_label, 20)
+	UI_THEME.style_value(total_score_label, 22)
+	UI_THEME.style_subtitle(time_label)
+	UI_THEME.style_title(set_total_label)
+	set_total_label.add_theme_font_size_override("font_size", 22)
+	UI_THEME.style_title(unlocked_label)
+	unlocked_label.add_theme_font_size_override("font_size", 24)
+	UI_THEME.style_primary_button(play_again_button)
+	UI_THEME.style_success_button(next_level_button)
+	UI_THEME.style_muted_button(level_select_button)
+	UI_THEME.style_muted_button(menu_button)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if Time.get_ticks_msec() - _ready_time < 500:

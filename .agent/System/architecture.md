@@ -13,6 +13,7 @@ For subsystem internals, data schemas, and edge-case behavior, use `System/archi
 - Gameplay scene: `scenes/main/main.tscn`
 - Scene orchestrator: `scripts/main.gd`
 - State/scoring authority: `scripts/game_manager.gd`
+- Gameplay HUD: `scripts/hud.gd` with fixed scene slots in `scenes/main/main.tscn`
 - Global systems (autoload):
   - `PowerUpManager`
   - `DifficultyManager`
@@ -29,6 +30,8 @@ Detailed scene graph and node-level breakdown:
 - Gameplay events flow through signals (`ball_lost`, `brick_broken`, score/life/state updates).
 - Explicit cross-system actions use direct method calls.
 - Hot-path runtime queries must use cached references/registries, not ad-hoc tree scans.
+- In-play HUD layout is slot-based: score, mode/detail, lives, difficulty, player, objective, power-ups, multiplier, and center overlays each have stable regions. Game modes should update slot content rather than swap layout structure.
+- HUD edge elements are intentionally gutter-bound: top strip stays transparent, combo feedback lives in the bottom-center gutter, multiplier lives bottom-left, debug lives bottom-right, and power-up timers should stay below the top strip rather than crossing the playfield border.
 
 Detailed conventions and examples:
 - `System/architecture-details.md` -> `Cross-System Invariants`
@@ -100,4 +103,4 @@ Details:
 - Required procedures (save/assets/commit/release): `SOP/critical-workflows.md`
 - Supplemental Godot workflow notes: `SOP/godot-workflow.md`
 
-**Last Updated:** 2026-03-09
+**Last Updated:** 2026-03-10

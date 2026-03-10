@@ -1,17 +1,62 @@
 # UI Overhaul
 
-## Status: 📋 BACKLOG
+## Status: 🚧 IN PROGRESS
 
 Holistic pass over ZepBall's menus and HUD to reduce clutter, improve information hierarchy, and modernize the visual language. Some items overlap with other tasks (Blitz Mode needs High Scores tabs, Wave Objectives need HUD elements) — this task owns the design direction so those features slot in cleanly.
 
 Created: 2026-03-09
-Last Updated: 2026-03-09
+Last Updated: 2026-03-10
 
 ---
 
 ## Goal
 
 Make every menu and HUD feel polished rather than functional-but-flat. Prioritize readability, reduce visual noise, and establish a consistent design language across all screens.
+
+## Foundation Progress (2026-03-10)
+
+- Shared theme foundation added via `scripts/ui/ui_theme.gd`. Main Menu, Settings, High Scores, Game Over, Level Complete, Set Complete, and HUD now consume the same theme tokens rather than each defining their own color/font language ad hoc.
+- In-play HUD standardized in `scenes/main/main.tscn` + `scripts/hud.gd` around fixed slots:
+  - score
+  - mode + detail
+  - lives
+  - difficulty
+  - player
+  - reserved objective slot
+  - power-up indicator stack
+  - multiplier card
+  - center state/combo overlays
+- This means future mode work (Wave Objectives, Blitz timer, Survival variants) should populate reserved HUD regions instead of introducing a new HUD arrangement per mode.
+- Power-up indicators were restyled to match the shared theme, but they are still text-first. Icon/radial treatment remains future polish.
+- Follow-up HUD tightening kept the top strip transparent, moved combo feedback into the bottom-center gutter, pushed debug/multiplier into opposite bottom corners, and reduced power-up timer footprint so the playfield border stays clear.
+- Power-up timers now occupy a dedicated right-side lane that starts just below the top wall and grows downward instead of upward, preventing overlap with the top HUD when multiple timed effects are active.
+- Debug overlay was compacted into a two-line bottom-right readout (`FPS / Balls / Combo` and `Velocity / Speed`) to fit the gameplay gutter without clipping.
+- Gameplay screenshot capture now exists as a real input action (`take_screenshot`, default `F12`) so HUD iteration can be reviewed from in-run frames without OS-level capture timing.
+
+---
+
+## Current Status Summary
+
+### Completed
+
+- Shared theme foundation is in place and already applied to the major menu/result screens plus the gameplay HUD.
+- The in-play HUD now has a predictable slot contract instead of mode-specific rearrangement.
+- Transparent, gutter-based HUD placement is established for top bar, multiplier, debug, combo, and power-up timers.
+- Gameplay screenshot capture exists and is bound by default to `F12`.
+
+### Still To Do
+
+- High Scores full redesign: replace code-built rows, remove nested tabs, add controller-friendly tab/dropdown structure, and prepare for Blitz.
+- Level Complete / Set Complete declutter: vertical information flow, shared breakdown helper, and reduced scene/script coupling.
+- Main Menu refresh: replace difficulty button row with dropdown behavior, regroup primary actions, and tighten controller flow.
+- HUD polish beyond layout stabilization: objective presentation, stronger multiplier treatment, icon/radial power-up treatment, and future Blitz/Wave Objective widgets.
+- Consistency pass on secondary screens so the entire UI system matches the new theme and hierarchy.
+
+### Out Of Scope For What Is Already Done
+
+- Blitz leaderboard tab and row-push timer are not implemented here yet.
+- Wave Objective HUD element is not implemented yet; only the slot/layout groundwork exists.
+- Endless Waves hub/menu replacement is not implemented yet.
 
 ---
 
@@ -148,7 +193,9 @@ These don't need a full rework but should be updated to match whatever design la
 - [ ] Level Complete / Set Complete declutter
 
 ### Phase 2: Polish
-- [ ] Main HUD improvements (scene-based overlays, multiplier badge, power-up icons)
+- [~] Main HUD improvements
+  - Completed: fixed-slot HUD contract, shared-theme styling, transparent gutter-based overlays, player/lives top-bar cleanup, bottom-center combo placement, bottom-corner multiplier/debug placement, downward-growing power-up timer lane, and screenshot capture input.
+  - Remaining: dedicated objective treatment, stronger multiplier presentation, icon/radial power-up treatment, and mode-specific widgets for Blitz / Wave Objectives.
 - [ ] Main Menu refresh
 
 ### Phase 3: Consistency Pass

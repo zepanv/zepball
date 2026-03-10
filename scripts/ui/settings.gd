@@ -1,8 +1,18 @@
 extends Control
 
 ## Settings Menu - Customize game options
+const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
+@onready var background = $Background
+@onready var panel = $Panel
+@onready var title_label = $Panel/ScrollContainer/VBoxContainer/TitleLabel
 @onready var back_button = $BackButton
+@onready var effects_title = $Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsTitle
+@onready var shake_title = $Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeTitle
+@onready var audio_title = $Panel/ScrollContainer/VBoxContainer/AudioSection/AudioTitle
+@onready var controls_title = $Panel/ScrollContainer/VBoxContainer/ControlsSection/ControlsTitle
+@onready var profile_title = $Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileTitle
+@onready var data_title = $Panel/ScrollContainer/VBoxContainer/DataSection/DataTitle
 
 # Screen shake controls
 @onready var shake_off_button = $Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons/OffButton
@@ -58,6 +68,7 @@ signal closed_from_pause
 
 func _ready():
 	"""Initialize settings menu with current values"""
+	_apply_theme()
 	if has_meta("opened_from_pause"):
 		opened_from_pause = bool(get_meta("opened_from_pause"))
 	if opened_from_pause:
@@ -130,6 +141,26 @@ func _ready():
 	# Grab focus on back button for controller navigation
 	await get_tree().process_frame
 	back_button.grab_focus()
+
+func _apply_theme() -> void:
+	UI_THEME.apply_to(self)
+	UI_THEME.style_background(background, true)
+	UI_THEME.style_panel(panel, UI_THEME.PANEL_BORDER_ACCENT)
+	UI_THEME.style_title(title_label)
+	UI_THEME.style_section_title(effects_title)
+	UI_THEME.style_section_title(shake_title)
+	UI_THEME.style_section_title(audio_title)
+	UI_THEME.style_section_title(controls_title)
+	UI_THEME.style_section_title(profile_title)
+	UI_THEME.style_section_title(data_title)
+	UI_THEME.style_primary_button(back_button)
+	UI_THEME.style_option_button(music_mode_option)
+	UI_THEME.style_option_button(music_track_option)
+	UI_THEME.style_muted_button(keybindings_button)
+	UI_THEME.style_muted_button(reset_settings_button)
+	UI_THEME.style_danger_button(clear_save_button)
+	UI_THEME.style_muted_button(rename_profile_button)
+	UI_THEME.style_danger_button(delete_profile_button)
 
 
 func _process(_delta: float) -> void:
@@ -442,6 +473,7 @@ func _create_switch_profile_button():
 	switch_profile_button.custom_minimum_size = Vector2(0, 45)
 	switch_profile_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	switch_profile_button.pressed.connect(_on_switch_profile_pressed)
+	UI_THEME.style_muted_button(switch_profile_button)
 
 	# Insert before the rename button (index 0)
 	profile_buttons_container.add_child(switch_profile_button)
@@ -464,6 +496,7 @@ func _create_switch_profile_dialog():
 
 	switch_profile_dropdown = OptionButton.new()
 	switch_profile_dropdown.custom_minimum_size = Vector2(0, 40)
+	UI_THEME.style_option_button(switch_profile_dropdown)
 	vbox.add_child(switch_profile_dropdown)
 
 	switch_profile_dialog.add_child(vbox)
