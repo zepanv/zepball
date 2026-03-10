@@ -5,15 +5,11 @@ For subsystem internals, data schemas, and edge-case behavior, use `System/archi
 
 ## Quick Facts
 - Engine/runtime: Godot 4.6, 2D breakout/arkanoid gameplay.
-- Built-in content: 4 official packs, 40 levels total.
 - Core loop: menu -> load level/wave -> play -> complete/fail -> next menu/state.
 - Endless mode entry: main menu routes to `Endless Waves` hub (`scenes/ui/endless_waves.tscn`) before Survival starts.
 - Endless run persistence includes mode-specific boards: `survival_top_runs` (score+wave) and `blitz_top_runs` (score-only).
 - Blitz runtime loop is helper-owned (`scripts/main_blitz_helper.gd`) and drives timed brick pushes with paddle-zone fail checks.
-- Blitz HUD push timer uses countdown color thresholds (green/yellow/red), and Blitz awards an all-clear score bonus if the board is cleared before the next push.
-- Blitz row generation uses full playable vertical geometry (top-to-bottom wall bounds) instead of a fixed 9-row subset.
 - Manual exits from endless gameplay (menu navigation/restart/quit before game over) are treated as run end and persist the current score.
-- Blitz all-clear bonus now triggers a short HUD callout in the combo overlay area so players get explicit feedback on bonus awards.
 - Primary data model: pack-native (`pack_id + level_index`) with compatibility fields retained.
 
 ## Runtime Topology
@@ -40,7 +36,7 @@ Detailed scene graph and node-level breakdown:
 - Explicit cross-system actions use direct method calls.
 - Hot-path runtime queries must use cached references/registries, not ad-hoc tree scans.
 - In-play HUD layout is slot-based: score, mode/detail, lives, difficulty, player, objective, power-ups, multiplier, and center overlays each have stable regions. Game modes should update slot content rather than swap layout structure.
-- HUD edge elements are intentionally gutter-bound: top strip stays transparent, combo feedback lives in the bottom-center gutter, multiplier lives bottom-left, debug lives bottom-right, and power-up timers should stay below the top strip rather than crossing the playfield border.
+- HUD edge elements are intentionally gutter-bound so mode additions do not reclaim playfield space.
 
 Detailed conventions and examples:
 - `System/architecture-details.md` -> `Cross-System Invariants`

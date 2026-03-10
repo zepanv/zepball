@@ -46,7 +46,7 @@ Implementation should be executed as two deliverables under this single task:
 - Clearing all bricks before the next push now grants an all-clear score bonus.
 - All-clear bonus now shows a short in-run HUD callout in the combo overlay area.
 - Exiting Survival/Blitz before game over now records the current score as a completed run.
-- Remaining tuning follow-up is pacing/balance feel across longer play sessions and is tracked under `.agent/Tasks/Backlog/ui-overhaul.md`.
+- Remaining tuning follow-up is pacing/balance feel across longer play sessions and is tracked under `.agent/Tasks/Backlog/run-variety-expansion.md`.
 
 ---
 
@@ -156,7 +156,7 @@ A new endless mode where brick rows push in from the left edge on a fixed timer.
 - Tighten: ~1 second reduction every N pushes.
 - Floor: ~8 seconds (never faster).
 - Ball speed also ramps via existing `DifficultyManager` path.
-- All values need longer-session playtesting — these are starting points and are tracked as ongoing tuning in `.agent/Tasks/Backlog/ui-overhaul.md`.
+- All values need longer-session playtesting — these are starting points and are tracked as ongoing tuning in `.agent/Tasks/Backlog/run-variety-expansion.md`.
 
 ### Game Over Condition
 After each push, scan the rightmost column(s). If any brick occupies the paddle zone → game over.
@@ -310,7 +310,7 @@ Steps 3 and 4 can be developed in parallel.
 13. Clear all bricks before a push → confirm an all-clear bonus is awarded exactly once during that push interval.
 14. Test on Easy/Normal/Hard — confirm speed and score multipliers apply.
 15. Play a long run → confirm push timer tightens over time (starts ~15-20s, gets faster).
-16. Continue pacing feel validation over multiple sessions; track tuning notes in `.agent/Tasks/Backlog/ui-overhaul.md`.
+16. Continue pacing feel validation over multiple sessions; track tuning notes in `.agent/Tasks/Backlog/run-variety-expansion.md`.
 
 #### Save Data
 1. Launch game with pre-existing save (no `blitz_top_runs` key) → confirm no crash, key auto-initialized.
@@ -329,6 +329,6 @@ Steps 3 and 4 can be developed in parallel.
 ## Related Docs
 - `.agent/Tasks/Backlog/run-variety-expansion.md` — parent exploration brief
 - `.agent/Tasks/Backlog/future-features.md` — broader backlog
-- `.agent/Tasks/Backlog/ui-overhaul.md` — ongoing HUD/mode polish and long-session pacing feel follow-up
+- `.agent/Tasks/Backlog/run-variety-expansion.md` — ongoing endless-mode polish, mutator leaderboard decisions, and long-session pacing feel follow-up
 - `.agent/System/architecture.md` — runtime topology
 - `.agent/SOP/critical-workflows.md` — save migration procedure

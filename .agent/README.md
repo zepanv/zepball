@@ -23,7 +23,6 @@ This folder contains implementation-facing docs for contributors and agents.
 | `SOP/godot-workflow.md` | Supplemental Godot workflow notes (non-canonical) |
 | `Tasks/Backlog/` | Planned work |
 | `Tasks/Completed/INDEX.md` | Entry point for completed work history (active + archive) |
-| `CHANGELOG.md` | User-facing chronological change history |
 
 ## Boundary Rules
 - `../README.md` is player-facing.
@@ -38,4 +37,4 @@ This folder contains implementation-facing docs for contributors and agents.
 - Prefer documenting non-obvious contracts over easily discoverable file inventories.
 - Run docs lint after `.agent` doc edits: `scripts/check_agent_docs.sh`
 
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-03-10

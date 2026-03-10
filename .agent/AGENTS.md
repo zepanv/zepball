@@ -10,7 +10,7 @@ Start with the shallowest layer that answers the task, then go deeper only when 
 | Layer 0 (mandatory) | Entry rules and guardrails | `.agent/AGENTS.md` |
 | Layer 1 (routing) | Find the right canonical doc quickly | `.agent/README.md`, `.agent/QUICK-REF.md` |
 | Layer 2 (canonical) | Source of truth for behavior/procedures | `.agent/System/architecture.md`, `.agent/System/tech-stack.md`, `.agent/SOP/critical-workflows.md` |
-| Layer 3 (deep/historical) | Long-form background and change history | `.agent/System/architecture-details.md`, `.agent/SOP/godot-workflow.md`, `.agent/Tasks/Completed/INDEX.md`, `.agent/CHANGELOG.md` |
+| Layer 3 (deep/historical) | Long-form background and change history | `.agent/System/architecture-details.md`, `.agent/SOP/godot-workflow.md`, `.agent/Tasks/Completed/INDEX.md` |
 
 ## Non-Negotiables
 1. Save data structure changes require migration logic.
@@ -33,7 +33,7 @@ Update canonical docs when behavior changes. Avoid repeating the same detail in 
 - Save/asset/release procedure changes: `.agent/SOP/critical-workflows.md`
 - Asset inventory: `.agent/System/used-assets.md` and `.agent/System/unused-assets.md`
 - Task lifecycle: `.agent/Tasks/Backlog/` and `.agent/Tasks/Completed/`
-- User-visible release history: `.agent/CHANGELOG.md`
+- User-visible release notes/history: git history and release notes drafts during release prep
 
 ## Pre-Commit Doc Gate
 - Run `.agent` docs lint after doc updates:
@@ -45,4 +45,4 @@ Update canonical docs when behavior changes. Avoid repeating the same detail in 
 - Remove stale references instead of documenting legacy behavior in multiple places.
 - Do not document facts that are trivial to discover from code, scenes, or `project.godot` unless they are part of a fragile contract.
 
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-03-10

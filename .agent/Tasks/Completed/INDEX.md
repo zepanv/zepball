@@ -12,6 +12,7 @@ These are the primary recent records for architecture/runtime context.
 - `optimization-pass.md`
 - `player-profiles.md`
 - `post-overhaul-fixes.md`
+- `ui-overhaul.md`
 - `skip-options.md`
 
 ## Archived
@@ -35,4 +36,4 @@ Older or superseded records are in `Archive/`.
 Archived records should be referenced directly from `Tasks/Completed/Archive/`.
 No redirect stubs are required when references are kept current.
 
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-03-10

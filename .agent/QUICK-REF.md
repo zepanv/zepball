@@ -11,8 +11,7 @@ Use this file for routing only. Canonical details live in Layer 2 docs.
 | Change save structure safely | `.agent/SOP/critical-workflows.md` |
 | Add/remove assets correctly | `.agent/SOP/critical-workflows.md` |
 | Prepare commit or release/version bump | `.agent/SOP/critical-workflows.md` |
-| Review user-facing change history | `.agent/CHANGELOG.md` |
-| Find planned work | `.agent/Tasks/Backlog/future-features.md` |
+| Find planned work | `.agent/Tasks/Backlog/` |
 | Find completed work history | `.agent/Tasks/Completed/INDEX.md` |
 
 ## Fast Change Impact Map
@@ -22,8 +21,6 @@ Use this file for routing only. Canonical details live in Layer 2 docs.
   - Update code + `.agent/System/tech-stack.md`
 - Save schema or asset usage changes:
   - Update code + `.agent/SOP/critical-workflows.md` and relevant asset docs
-- User-visible release change:
-  - Update `.agent/CHANGELOG.md`
 
 ## Guardrails
 1. Keep one source of truth per topic.
@@ -31,4 +28,4 @@ Use this file for routing only. Canonical details live in Layer 2 docs.
 3. Remove stale legacy references when found.
 4. Run `scripts/check_agent_docs.sh` after `.agent` doc edits.
 
-**Last Updated:** 2026-02-24
+**Last Updated:** 2026-03-10

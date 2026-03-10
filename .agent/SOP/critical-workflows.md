@@ -130,7 +130,6 @@ Update the version string in all of these locations in the same commit:
 1. `scripts/ui/main_menu.gd` — `PUBLIC_VERSION` constant
 2. `scenes/ui/main_menu.tscn` — `VersionLabel.text` fallback string
 3. `README.md` — "Current version:" line and "Current Features:" date
-4. `.agent/CHANGELOG.md` — add a new dated entry at the top
 
 Commit message format:
 ```

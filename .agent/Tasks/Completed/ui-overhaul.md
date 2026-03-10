@@ -1,11 +1,11 @@
 # UI Overhaul
 
-## Status: 🚧 IN PROGRESS
+## Status: ✅ COMPLETE
 
 Holistic pass over ZepBall's menus and HUD to reduce clutter, improve information hierarchy, and modernize the visual language. Some items overlap with other tasks (Blitz Mode needs High Scores tabs, Wave Objectives need HUD elements) — this task owns the design direction so those features slot in cleanly.
 
 Created: 2026-03-09
-Last Updated: 2026-03-10 (main menu/profile flattening + level select compaction + HUD objective/multiplier polish)
+Last Updated: 2026-03-10 (moved to Completed; remaining run-variety follow-up tracked in `.agent/Tasks/Backlog/run-variety-expansion.md`)
 
 ---
 
@@ -47,28 +47,25 @@ Make every menu and HUD feel polished rather than functional-but-flat. Prioritiz
 - **Stats screen** fully rebuilt: `ui_theme` integration, tighter layout, accent-row achievements.
 - **Settings screen** updated with `title_large` and green profile label.
 - **Set Select** themed with accent-row pack cards (cyan/gold) and proper theme colors.
-- **Main Menu** no longer uses the old 3-button difficulty row: it now has the dropdown layout, grouped primary actions near the top, click-triggered update checks, and post-refactor sanity fixes for difficulty persistence plus button routing.
+- **Main Menu** no longer uses the old 3-button difficulty row: it now has the dropdown layout, grouped primary actions near the top, Endless Waves hub replacing the old Survival button, click-triggered update checks, and post-refactor sanity fixes for difficulty persistence plus button routing.
 - **Main Menu secondary actions** are now tighter: `Editor` and `Settings` sit in a shared row instead of two extra full-width lines.
 - **Main Menu finishing pass** landed: profile controls were tightened into a cleaner strip (no framed bubble), the background has subtle ambient color drift, and explicit controller focus neighbors were added across profile/actions/difficulty/footer rows (including return-button visibility cases).
 - **Game Over** now uses a centered panel + constrained action column with shared-theme styling, fixing the oversized full-width button presentation.
 - **Keybindings overlay** now consumes shared-theme styling and no longer runs verbose focus/controller debug logging during normal menu use.
 - **Level Select** was compacted to match shared-theme density: narrower panel target, 3-column card grid, reduced card footprint, and trimmed action footer sizing.
 
-### Partially Complete
+### Completion Note
 
-- **Main Menu refresh** is largely complete for this task scope; remaining menu-side work is primarily the future Endless Waves hub replacement for the current Survival placeholder.
-
-### Still To Do
-
-- Main Menu follow-up after Endless Waves work: replace the current Survival entry with the dedicated hub flow when that feature lands.
-- HUD polish beyond layout stabilization: icon/radial power-up treatment and any richer objective presentation polish.
-- Ongoing long-session pacing and readability tuning for Blitz pressure loop (timer pacing, feedback intensity, readability under stress). This is follow-up work after implementation in `.agent/Tasks/Backlog/phase1-wave-objectives-blitz.md`.
+- **Main HUD improvements** are complete for this overhaul's structural/design scope. Remaining endless-mode follow-up work that grew out of this pass now lives under `.agent/Tasks/Backlog/run-variety-expansion.md`:
+  - long-session Blitz pacing/readability tuning
+  - mutator leaderboard/filter policy
+  - optional HUD polish such as icon/radial power-up treatment and richer objective presentation
 
 ### Out Of Scope For What Is Already Done
 
-- Blitz leaderboard tab and row-push timer are not implemented here yet.
-- Wave Objective HUD element is not implemented yet; only the slot/layout groundwork exists.
-- Endless Waves hub/menu replacement is not implemented yet.
+- ~~Blitz leaderboard tab and row-push timer are not implemented here yet.~~ **Done** — implemented in `.agent/Tasks/Completed/phase1-wave-objectives-blitz.md`; `high_scores.gd` now renders live Blitz run data; `hud.gd` has `set_blitz_push_status()` with color-threshold countdown.
+- ~~Wave Objective HUD element is not implemented yet.~~ **Done** — `hud.gd` has `set_objective_text()` / `_on_objective_assigned` / `_on_objective_completed` / `_on_objective_failed` wired to `GameManager` signals via `main_survival_helper.gd`.
+- ~~Endless Waves hub/menu replacement is not implemented yet.~~ **Done** — `scenes/ui/endless_waves.tscn` exists; `main_menu.gd` routes `SurvivalButton → _on_endless_waves_pressed() → MenuController.show_endless_waves()`.
 
 ---
 
@@ -85,9 +82,9 @@ Make every menu and HUD feel polished rather than functional-but-flat. Prioritiz
 - Back now lives in the panel footer instead of as a floating orphan button.
 - Blitz now has a placeholder tab in the layout so future work can attach real data without another structural UI pass.
 
-**Remaining follow-up**:
-- Hook the Blitz tab to real leaderboard data when Blitz mode lands.
-- Consider optional mutator/filter controls in the same header area once mutator scoring rules are decided.
+**Follow-up moved to run variety task**:
+- Blitz tab data is now live via `.agent/Tasks/Completed/phase1-wave-objectives-blitz.md`.
+- Optional mutator/filter controls remain deferred until mutator scoring rules are decided in `.agent/Tasks/Backlog/run-variety-expansion.md`.
 
 **Mutator-proofing** (future consideration from `run-variety-expansion.md`):
 - Mutators (No Walls, Ricochet Chaos, Speed Ramp, etc.) could affect scoring fairness. Options to consider when mutators ship:
@@ -114,8 +111,8 @@ Make every menu and HUD feel polished rather than functional-but-flat. Prioritiz
 - Zero-value bonus lines are hidden to reduce visual noise while still keeping meaningful breakdown detail visible.
 - Both screens were restyled around the shared theme with stronger hierarchy for headline totals, banners, and supporting breakdown rows.
 
-**Remaining follow-up**:
-- If more result-screen cleanup is needed later, it is polish-level only; the structural declutter goals for this task are met.
+**Follow-up status**:
+- Any future result-screen work is polish only; the structural declutter goals for this task are complete.
 
 ---
 
@@ -125,15 +122,14 @@ Make every menu and HUD feel polished rather than functional-but-flat. Prioritiz
 
 **Shipped in this pass**:
 - The old difficulty button trio was replaced with a compact dropdown.
-- Survival now sits alongside the primary action cluster near the top instead of being buried lower in the menu.
+- Survival was replaced with an **Endless Waves** button that routes to the new hub scene (`endless_waves.tscn`), providing Survival and Blitz mode cards.
 - Stats and High Scores were grouped into a shared row to reduce some vertical sprawl.
 - Version/update behavior was corrected so network checks only happen when the player clicks the update button.
 - Main-menu refactor bugs already found in implementation were fixed: difficulty restores from the active profile, quit/editor/survival keep using `MenuController`, and pause/settings/menu return flows stay coherent.
 - Profile section was flattened by removing the extra framed panel treatment while preserving profile controls and controller flow.
 
-**Remaining follow-up**:
-- Do a final live playtest sanity pass for controller feel after any future menu structural changes.
-- `SurvivalButton` is still a placeholder for the future Endless Waves hub entry (per `run-variety-expansion.md`).
+**Follow-up status**:
+- Controller-flow sanity work is now part of normal regression testing if later menu changes land; no standalone backlog item remains here.
 
 ---
 
@@ -154,9 +150,8 @@ Make every menu and HUD feel polished rather than functional-but-flat. Prioritiz
 - Ensure HUD cleanly supports future Wave Objective display (per `run-variety-expansion.md` § Wave Objectives): persistent top element like `⭐ No ball loss | +500` with live progress for threshold objectives.
 - Mode-specific styling: Survival could have a distinct HUD tint or accent, Blitz could show a row-push countdown timer.
 
-**Cross-task notes**:
-- `run-variety-expansion.md` § Wave Objectives → needs a persistent HUD element for objective display.
-- `run-variety-expansion.md` § Blitz → needs a countdown timer for next row push.
+**Carry-over follow-up**:
+- Longer-term endless-mode HUD polish and Blitz readability tuning moved to `.agent/Tasks/Backlog/run-variety-expansion.md`.
 
 ---
 
@@ -193,12 +188,11 @@ These don't need a full rework but should be updated to match whatever design la
 - [x] Level Complete / Set Complete declutter (vertical flow, shared breakdown logic)
 
 ### Phase 2: Polish
-- [~] Main HUD improvements
+- [x] Main HUD improvements
   - Completed: fixed-slot HUD contract, shared-theme styling, transparent gutter-based overlays, player/lives top-bar cleanup, bottom-center combo placement, bottom-corner multiplier/debug placement, downward-growing power-up timer lane, screenshot capture input, improved objective/multiplier readability with pulse feedback while keeping them unboxed, Blitz countdown color states, and all-clear HUD callout feedback.
-  - Remaining: icon/radial power-up treatment plus long-session readability/pacing feel tuning.
-- [~] Main Menu refresh
-  - Completed: title/theme integration, difficulty dropdown, Survival repositioning, Stats/High Scores row grouping, click-only update checks, save-flow sanity fixes, flattened profile strip, ambient background drift, and explicit controller focus-neighbor wiring.
-  - Remaining: eventual Endless Waves hub replacement of the Survival placeholder and any post-hub controller-flow retune if layout changes.
+  - Carry-over moved to `.agent/Tasks/Backlog/run-variety-expansion.md`: icon/radial timer exploration, richer objective presentation polish, and long-session Blitz readability/pacing tuning.
+- [x] Main Menu refresh
+  - Completed: title/theme integration, difficulty dropdown, Survival button replaced with Endless Waves hub entry, Stats/High Scores row grouping, click-only update checks, save-flow sanity fixes, flattened profile strip, ambient background drift, and explicit controller focus-neighbor wiring across all layout variants.
 
 ### Phase 3: Consistency Pass
 - [x] Stats — full theme integration from scratch
@@ -212,12 +206,12 @@ These don't need a full rework but should be updated to match whatever design la
 
 ## Cross-Task Dependencies
 
-| Other Task | UI Work Needed | Owned Here? |
+| Other Task | UI Work Needed | Status |
 |-----------|---------------|-------------|
-| Blitz Mode (`run-variety-expansion.md`) | High Scores: new Blitz tab; HUD: row-push countdown timer; Main Menu: Endless Waves hub button | Design direction owned here; implementation may live in the Blitz task |
-| Wave Objectives (`run-variety-expansion.md`) | HUD: persistent objective display element | Design direction owned here; implementation may live in the Wave Objectives task |
-| Endless Waves Hub (`run-variety-expansion.md`) | New mode selection scene (card-based); replaces Survival button on Main Menu | New scene — could live in either task |
-| Phase 1 Wave Objectives + Blitz (`phase1-wave-objectives-blitz.md`) | Post-ship pacing/readability tuning over multiple sessions | Owned here as ongoing polish |
+| Blitz Mode (`run-variety-expansion.md`) | High Scores: Blitz tab ✅; HUD: row-push countdown timer ✅; Main Menu: Endless Waves hub button ✅ | **Complete** — shipped via `.agent/Tasks/Completed/phase1-wave-objectives-blitz.md` |
+| Wave Objectives (`run-variety-expansion.md`) | HUD: persistent objective display element ✅ | **Complete** — `set_objective_text()` wired end-to-end |
+| Endless Waves Hub (`run-variety-expansion.md`) | New mode selection scene ✅; Survival button rewired ✅ | **Complete** — shipped via `.agent/Tasks/Completed/phase1-wave-objectives-blitz.md` |
+| Phase 1 Wave Objectives + Blitz (`.agent/Tasks/Completed/phase1-wave-objectives-blitz.md`) | Post-ship pacing/readability tuning over multiple sessions | **Tracked elsewhere** — carried into `.agent/Tasks/Backlog/run-variety-expansion.md` as endless-mode follow-up |
 
 ---
 

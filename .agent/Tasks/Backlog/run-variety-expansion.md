@@ -5,7 +5,7 @@
 Exploration brief for post-core features that deepen replayability, strengthen Survival's identity, and add more strategic decisions without requiring a full genre shift.
 
 Created: 2026-03-09
-Last Updated: 2026-03-10 (discussion notes updated 2026-03-10)
+Last Updated: 2026-03-10 (absorbed unfinished follow-up from completed `ui-overhaul.md`)
 
 ---
 
@@ -42,6 +42,10 @@ This task is intentionally exploratory. It should narrow the field to a few cand
   - **Countdown** — bricks regenerate after N seconds if not cleared as part of a chain
   - **Speed Ramp** — ball accelerates each time it hits something (persistent escalation, unlike timed Speed Up power-up)
   - "Reverse Controls" may be more annoying than fun in a reflex game — keep for hard/challenge pool but maybe not in the casual random pool
+- **Leaderboard/UI follow-up carried over from `ui-overhaul.md` (2026-03-10)**:
+  - Decide whether mutator-enabled runs are tagged on the main board, split into separate leaderboard buckets, or excluded from leaderboards entirely.
+  - Prefer a filter/toggle in the existing leaderboard header over adding a separate tab per mutator.
+  - If mutators remain random-only, tagged shared boards are probably sufficient; player-selectable mutators likely need stricter score separation.
 
 ### 2. Wave Objectives ⭐ (new — added from discussion)
 - **Why it fits**: Adds per-wave decision interest to Survival with near-zero implementation cost and no new UI surface.
@@ -113,6 +117,14 @@ This task is intentionally exploratory. It should narrow the field to a few cand
 - Blitz needs its own leaderboard tab, separate from Survival.
 - Tracked metrics: score + rows survived (or time survived).
 - Current leaderboard UI may need rethinking to accommodate additional endless mode tabs (Survival + Blitz + future modes).
+- **Post-ship UI follow-up carried over from `ui-overhaul.md` (2026-03-10)**:
+  - Validate long-session pacing/readability over repeated Blitz sessions: push interval curve, countdown urgency, all-clear feedback intensity, and HUD readability under stress.
+  - Keep the current fixed HUD slot contract; future polish should refine presentation rather than invent a Blitz-specific layout.
+
+#### HUD polish follow-up carried over from `ui-overhaul.md` (2026-03-10)
+- Explore icon/radial power-up timer treatment instead of text-first timers.
+- Consider richer objective presentation polish while preserving the always-visible top-slot contract.
+- Treat both as optional polish after endless-mode pacing and scoring rules are settled.
 
 #### Technical Change Surface
 
@@ -215,7 +227,7 @@ Use these criteria before promoting any candidate to a full implementation task:
 
 ## Suggested Sequence
 
-### Phase 1: Low Cost, High Impact (arcade-first)
+### Phase 1: Low Cost, High Impact (arcade-first) — ✅ [Complete](../Completed/phase1-wave-objectives-blitz.md)
 - Wave Objectives
 - Timed Survival / Blitz Mode
 
@@ -238,6 +250,7 @@ Use these criteria before promoting any candidate to a full implementation task:
 - Should Daily Run and Survival share the same seeded-generation system?
 - How much UI complexity is acceptable between waves before pacing starts to drag? (preference: minimal — banners over menus)
 - Do leaderboards need separate buckets for mutator-enabled runs?
+- How much additional HUD polish is worth doing for endless modes before it becomes cosmetic churn rather than meaningful readability improvement?
 - ~~Is Timed Survival a separate mode or a toggle on existing Survival?~~ **Resolved: standalone Blitz mode under an Endless Waves hub menu.**
 - ~~What should the "Endless Modes" hub menu be called?~~ **Resolved: "Endless Waves" for now.** Should mirror pack/mode selection UI style (mode cards with descriptions).
 - ~~Should Environmental Hazards / Portals be promoted to the main shortlist?~~ **Partially resolved: may depend on available assets.** Some unused assets exist but unclear if they fit. Could also use Godot-generated visuals (particles, shaders). Needs an asset audit before committing.
@@ -252,11 +265,14 @@ Use these criteria before promoting any candidate to a full implementation task:
 - Decide whether Timed Survival is a standalone mode or a Survival variant/toggle.
 - Decide whether Mutators are free-pick or auto/random (UI clutter concern drives this).
 - Document final implementation order with effort/risk notes once PRDs are drafted.
+- Capture the final mutator leaderboard policy and any endless-mode HUD polish decisions before promoting the next PRD from this brief.
 
 ---
 
 ## Related Docs
 
+- `Tasks/Completed/phase1-wave-objectives-blitz.md` — implementation of Wave Objectives + Blitz
+- `Tasks/Completed/ui-overhaul.md` — completed menu/HUD overhaul; remaining endless-mode polish was rolled back into this backlog
 - `Tasks/Completed/new-game-modes.md`
 - `Tasks/Completed/challenge-modes.md`
 - `Tasks/Backlog/future-features.md`
