@@ -46,29 +46,55 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 15)
 layout_mode = 2
 
-[node name="ProfileContainer" type="HBoxContainer" parent="VBoxContainer"]
+[node name="ProfilePanel" type="PanelContainer" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 84)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="VBoxContainer/ProfilePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 9
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="ProfileVBox" type="VBoxContainer" parent="VBoxContainer/ProfilePanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ProfileTag" type="Label" parent="VBoxContainer/ProfilePanel/MarginContainer/ProfileVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.53, 0.6, 0.68, 1)
+theme_override_font_sizes/font_size = 13
+text = "ACTIVE PROFILE"
+horizontal_alignment = 1
+
+[node name="ProfileContainer" type="HBoxContainer" parent="VBoxContainer/ProfilePanel/MarginContainer/ProfileVBox"]
 layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 1
 
-[node name="ProfileLabel" type="Label" parent="VBoxContainer/ProfileContainer"]
+[node name="ProfileLabel" type="Label" parent="VBoxContainer/ProfilePanel/MarginContainer/ProfileVBox/ProfileContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 theme_override_font_sizes/font_size = 20
 text = "PLAYER:"
 
-[node name="ProfileDropdown" type="OptionButton" parent="VBoxContainer/ProfileContainer"]
-custom_minimum_size = Vector2(200, 44)
+[node name="ProfileDropdown" type="OptionButton" parent="VBoxContainer/ProfilePanel/MarginContainer/ProfileVBox/ProfileContainer"]
+custom_minimum_size = Vector2(200, 40)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_font_sizes/font_size = 20
 alignment = 1
 
-[node name="AddProfileButton" type="Button" parent="VBoxContainer/ProfileContainer"]
-custom_minimum_size = Vector2(44, 44)
+[node name="AddProfileButton" type="Button" parent="VBoxContainer/ProfilePanel/MarginContainer/ProfileVBox/ProfileContainer"]
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.15, 0.95, 0.65, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 22
 text = "+"
+
+[node name="Spacer2" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
 
 [node name="PlayButton" type="Button" parent="VBoxContainer" unique_id=1672319743]
 custom_minimum_size = Vector2(0, 54)
@@ -87,54 +113,6 @@ theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 22
 text = "RETURN TO LAST LEVEL"
 
-[node name="Spacer2" type="Control" parent="VBoxContainer" unique_id=349361510]
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-
-[node name="DifficultyLabel" type="Label" parent="VBoxContainer" unique_id=424761969]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 20
-text = "DIFFICULTY"
-horizontal_alignment = 1
-
-[node name="DifficultyButtons" type="HBoxContainer" parent="VBoxContainer" unique_id=1667795932]
-layout_mode = 2
-theme_override_constants/separation = 10
-alignment = 1
-
-[node name="EasyButton" type="Button" parent="VBoxContainer/DifficultyButtons" unique_id=1100847822]
-custom_minimum_size = Vector2(120, 42)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.5, 1, 0.5, 1)
-theme_override_font_sizes/font_size = 20
-text = "EASY"
-
-[node name="NormalButton" type="Button" parent="VBoxContainer/DifficultyButtons" unique_id=1319997160]
-custom_minimum_size = Vector2(120, 42)
-layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.9, 1, 1)
-theme_override_font_sizes/font_size = 20
-text = "NORMAL"
-
-[node name="HardButton" type="Button" parent="VBoxContainer/DifficultyButtons" unique_id=1877448607]
-custom_minimum_size = Vector2(120, 42)
-layout_mode = 2
-theme_override_colors/font_color = Color(0.9, 0.3, 0.4, 1)
-theme_override_font_sizes/font_size = 20
-text = "HARD"
-
-[node name="CurrentDifficultyLabel" type="Label" parent="VBoxContainer" unique_id=490023433]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
-theme_override_font_sizes/font_size = 16
-text = "Current: NORMAL"
-horizontal_alignment = 1
-
-[node name="Spacer3" type="Control" parent="VBoxContainer" unique_id=1136815340]
-custom_minimum_size = Vector2(0, 15)
-layout_mode = 2
-
 [node name="SurvivalButton" type="Button" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
@@ -143,13 +121,30 @@ theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 22
 text = "SURVIVAL"
 
-[node name="EditorButton" type="Button" parent="VBoxContainer" unique_id=893158771]
-custom_minimum_size = Vector2(0, 44)
+[node name="Spacer3" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.75, 0.25, 1)
-theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
+
+[node name="DifficultyContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="DifficultyTitle" type="Label" parent="VBoxContainer/DifficultyContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 20
+text = "DIFFICULTY:"
+
+[node name="DifficultyDropdown" type="OptionButton" parent="VBoxContainer/DifficultyContainer"]
+custom_minimum_size = Vector2(254, 44)
+layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "EDITOR"
+alignment = 1
+
+[node name="Spacer4" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
 
 [node name="StatsHBox" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
@@ -173,15 +168,29 @@ theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 22
 text = "HIGH SCORES"
 
-[node name="SettingsButton" type="Button" parent="VBoxContainer" unique_id=341168533]
+[node name="SecondaryHBox" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="EditorButton" type="Button" parent="VBoxContainer/SecondaryHBox" unique_id=893158771]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.75, 0.25, 1)
+theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "EDITOR"
+
+[node name="SettingsButton" type="Button" parent="VBoxContainer/SecondaryHBox" unique_id=341168533]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 22
 text = "SETTINGS"
 
-[node name="Spacer4" type="Control" parent="VBoxContainer" unique_id=129340431]
+[node name="Spacer5" type="Control" parent="VBoxContainer" unique_id=129340431]
 custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 
@@ -266,17 +275,15 @@ max_length = 20
 context_menu_enabled = false
 select_all_on_focus = true
 
-[connection signal="item_selected" from="VBoxContainer/ProfileContainer/ProfileDropdown" to="." method="_on_profile_dropdown_item_selected"]
-[connection signal="pressed" from="VBoxContainer/ProfileContainer/AddProfileButton" to="." method="_on_add_profile_button_pressed"]
+[connection signal="item_selected" from="VBoxContainer/ProfilePanel/MarginContainer/ProfileVBox/ProfileContainer/ProfileDropdown" to="." method="_on_profile_dropdown_item_selected"]
+[connection signal="pressed" from="VBoxContainer/ProfilePanel/MarginContainer/ProfileVBox/ProfileContainer/AddProfileButton" to="." method="_on_add_profile_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/PlayButton" to="." method="_on_play_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ReturnButton" to="." method="_on_return_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/DifficultyButtons/EasyButton" to="." method="_on_easy_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/DifficultyButtons/NormalButton" to="." method="_on_normal_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/DifficultyButtons/HardButton" to="." method="_on_hard_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/SurvivalButton" to="." method="_on_survival_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/EditorButton" to="." method="_on_editor_button_pressed"]
+[connection signal="item_selected" from="VBoxContainer/DifficultyContainer/DifficultyDropdown" to="." method="_on_difficulty_dropdown_item_selected"]
 [connection signal="pressed" from="VBoxContainer/StatsHBox/StatsButton" to="." method="_on_stats_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/StatsHBox/HighScoresButton" to="." method="_on_high_scores_button_pressed"]
-[connection signal="pressed" from="VBoxContainer/SettingsButton" to="." method="_on_settings_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/SecondaryHBox/EditorButton" to="." method="_on_editor_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/SecondaryHBox/SettingsButton" to="." method="_on_settings_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
 [connection signal="pressed" from="VersionContainer/UpdateButton" to="." method="_on_update_button_pressed"]

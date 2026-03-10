@@ -72,6 +72,7 @@ Details:
 Touching these can break existing player data if migration is missing:
 - `scripts/save_manager.gd`
 - Save-backed UI/state consumers (stats, settings, profile, progress)
+- Profile loads are expected to reapply save-backed runtime settings before UI refresh, including difficulty, keybindings, and audio state.
 
 Required migration procedure:
 - `SOP/critical-workflows.md` -> `1) Save System Compatibility (Required)`

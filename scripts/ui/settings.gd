@@ -146,13 +146,14 @@ func _apply_theme() -> void:
 	UI_THEME.apply_to(self)
 	UI_THEME.style_background(background, true)
 	UI_THEME.style_panel(panel, UI_THEME.PANEL_BORDER_ACCENT)
-	UI_THEME.style_title(title_label)
+	UI_THEME.style_title_large(title_label)
 	UI_THEME.style_section_title(effects_title)
 	UI_THEME.style_section_title(shake_title)
 	UI_THEME.style_section_title(audio_title)
 	UI_THEME.style_section_title(controls_title)
 	UI_THEME.style_section_title(profile_title)
 	UI_THEME.style_section_title(data_title)
+	UI_THEME.style_success(current_profile_label, 18)
 	UI_THEME.style_primary_button(back_button)
 	UI_THEME.style_option_button(music_mode_option)
 	UI_THEME.style_option_button(music_track_option)
@@ -579,6 +580,9 @@ func _on_reset_settings_confirmed():
 func _on_back_pressed():
 	"""Return to main menu"""
 	if opened_from_pause:
+		var game_manager = get_tree().get_first_node_in_group("game_manager")
+		if game_manager and game_manager.has_method("suppress_next_pause_toggle"):
+			game_manager.suppress_next_pause_toggle()
 		closed_from_pause.emit()
 		queue_free()
 	else:

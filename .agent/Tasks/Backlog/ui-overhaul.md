@@ -5,7 +5,7 @@
 Holistic pass over ZepBall's menus and HUD to reduce clutter, improve information hierarchy, and modernize the visual language. Some items overlap with other tasks (Blitz Mode needs High Scores tabs, Wave Objectives need HUD elements) — this task owns the design direction so those features slot in cleanly.
 
 Created: 2026-03-09
-Last Updated: 2026-03-10
+Last Updated: 2026-03-10 (main menu/profile flattening + level select compaction + HUD objective/multiplier polish)
 
 ---
 
@@ -16,6 +16,7 @@ Make every menu and HUD feel polished rather than functional-but-flat. Prioritiz
 ## Foundation Progress (2026-03-10)
 
 - Shared theme foundation added via `scripts/ui/ui_theme.gd`. Main Menu, Settings, High Scores, Game Over, Level Complete, Set Complete, and HUD now consume the same theme tokens rather than each defining their own color/font language ad hoc.
+- The shared menu theme has since been tightened toward a flatter, denser look: smaller corner radii, slimmer borders, reduced control padding, and less pill-heavy chrome so dense menus do not waste vertical space.
 - In-play HUD standardized in `scenes/main/main.tscn` + `scripts/hud.gd` around fixed slots:
   - score
   - mode + detail
@@ -31,7 +32,7 @@ Make every menu and HUD feel polished rather than functional-but-flat. Prioritiz
 - Follow-up HUD tightening kept the top strip transparent, moved combo feedback into the bottom-center gutter, pushed debug/multiplier into opposite bottom corners, and reduced power-up timer footprint so the playfield border stays clear.
 - Power-up timers now occupy a dedicated right-side lane that starts just below the top wall and grows downward instead of upward, preventing overlap with the top HUD when multiple timed effects are active.
 - Debug overlay was compacted into a two-line bottom-right readout (`FPS / Balls / Combo` and `Velocity / Speed`) to fit the gameplay gutter without clipping.
-- Gameplay screenshot capture now exists as a real input action (`take_screenshot`, default `F12`) so HUD iteration can be reviewed from in-run frames without OS-level capture timing.
+- Screenshot capture now exists as a real input action (`take_screenshot`) with defaults for `F12`, `Cmd+Shift+S`, and `Ctrl+Shift+S`, so UI iteration can be reviewed from menus or in-run frames without OS-level capture timing.
 
 ---
 
@@ -39,18 +40,29 @@ Make every menu and HUD feel polished rather than functional-but-flat. Prioritiz
 
 ### Completed
 
-- Shared theme foundation is in place and already applied to the major menu/result screens plus the gameplay HUD.
-- The in-play HUD now has a predictable slot contract instead of mode-specific rearrangement.
-- Transparent, gutter-based HUD placement is established for top bar, multiplier, debug, combo, and power-up timers.
-- Gameplay screenshot capture exists and is bound by default to `F12`.
+- **Shared theme foundation** is in place and applied to all major screens.
+- **In-play HUD** has a predictable slot contract, transparent gutter-based overlays, downward-growing power-up lane, screenshot capture (`F12`), and refreshed objective/multiplier presentation with pulse feedback while keeping those elements unboxed so they do not intrude on the playfield.
+- **High Scores** full visual and structural rework: single tab bar, Sets dropdown filter, footer Back button, left-accent rank stripes, tighter flush panels. Stable Blitz tab placeholder added.
+- **Level Complete & Set Complete declutter**: Switched from side-by-side to vertical flow, extracted shared breakdown formatting logic, hid zero-value bonus lines, reduced script @onready bloat, and applied `title_large` header treatments.
+- **Stats screen** fully rebuilt: `ui_theme` integration, tighter layout, accent-row achievements.
+- **Settings screen** updated with `title_large` and green profile label.
+- **Set Select** themed with accent-row pack cards (cyan/gold) and proper theme colors.
+- **Main Menu** no longer uses the old 3-button difficulty row: it now has the dropdown layout, grouped primary actions near the top, click-triggered update checks, and post-refactor sanity fixes for difficulty persistence plus button routing.
+- **Main Menu secondary actions** are now tighter: `Editor` and `Settings` sit in a shared row instead of two extra full-width lines.
+- **Main Menu finishing pass** landed: profile controls were tightened into a cleaner strip (no framed bubble), the background has subtle ambient color drift, and explicit controller focus neighbors were added across profile/actions/difficulty/footer rows (including return-button visibility cases).
+- **Game Over** now uses a centered panel + constrained action column with shared-theme styling, fixing the oversized full-width button presentation.
+- **Keybindings overlay** now consumes shared-theme styling and no longer runs verbose focus/controller debug logging during normal menu use.
+- **Level Select** was compacted to match shared-theme density: narrower panel target, 3-column card grid, reduced card footprint, and trimmed action footer sizing.
+
+### Partially Complete
+
+- **Main Menu refresh** is largely complete for this task scope; remaining menu-side work is primarily the future Endless Waves hub replacement for the current Survival placeholder.
 
 ### Still To Do
 
-- High Scores full redesign: replace code-built rows, remove nested tabs, add controller-friendly tab/dropdown structure, and prepare for Blitz.
-- Level Complete / Set Complete declutter: vertical information flow, shared breakdown helper, and reduced scene/script coupling.
-- Main Menu refresh: replace difficulty button row with dropdown behavior, regroup primary actions, and tighten controller flow.
-- HUD polish beyond layout stabilization: objective presentation, stronger multiplier treatment, icon/radial power-up treatment, and future Blitz/Wave Objective widgets.
-- Consistency pass on secondary screens so the entire UI system matches the new theme and hierarchy.
+- Main Menu follow-up after Endless Waves work: replace the current Survival entry with the dedicated hub flow when that feature lands.
+- HUD polish beyond layout stabilization: icon/radial power-up treatment and future mode widgets (Blitz row-push timer, richer Wave Objective display behavior).
+- Wire real Blitz leaderboard data into the new placeholder tab once Blitz mode ships.
 
 ### Out Of Scope For What Is Already Done
 
@@ -64,24 +76,18 @@ Make every menu and HUD feel polished rather than functional-but-flat. Prioritiz
 
 ### 1. High Scores — Full Rework ⭐
 
-**Current state**: `scenes/ui/high_scores.tscn` + `scripts/ui/high_scores.gd` (350 lines)
+**Current state**: `scenes/ui/high_scores.tscn` + `scripts/ui/high_scores.gd` + `scenes/ui/components/high_score_row.tscn` + `scripts/ui/high_score_row.gd`
 
-**Problems**:
-- Entire layout is code-generated (`_add_score_entry` builds HBoxContainers with hardcoded sizes and colors) — brittle and hard to iterate on visually.
-- Double tab bars (Overall / Sets / Levels / Survival + a second challenge sub-tab bar for Sets) are confusing. Sets tab surfaces Normal / Iron Ball / One Life / Time Attack as a nested row — easy to miss.
-- Column widths are fixed magic numbers (`custom_minimum_size = Vector2(50, 0)`, `Vector2(120, 0)`, `Vector2(110, 0)`).
-- No visual distinction between score entries — plain rows with no alternating color, no card treatment, no ranking badges.
-- Back button floating at bottom-left outside the panel, easy to miss.
-- Already flagged in `run-variety-expansion.md`: adding Blitz as yet another tab makes the problem worse.
+**Shipped in this pass**:
+- Replaced the nested tab rows with a single tab bar: `Overall | Levels | Sets | Survival | Blitz`.
+- Sets now uses an in-panel dropdown filter (`Normal / Iron Ball / One Life / Time Attack`) instead of a second tab row.
+- Score entries now come from a reusable scene-based row template, with alternating card tint, top-3 rank badge colors, and current-profile highlighting.
+- Back now lives in the panel footer instead of as a floating orphan button.
+- Blitz now has a placeholder tab in the layout so future work can attach real data without another structural UI pass.
 
-**Direction**:
-- Replace double tab bars with a **single redesigned tab bar**: `Overall | Levels | Sets ▾ | Survival | Blitz` — where Sets uses a dropdown/submenu for challenge variants (Normal / Iron Ball / One Life / Time Attack) instead of a second nested tab row.
-- Move score entry layout to a scene-based template (PackedScene row) instead of pure code generation, so styling can be iterated in the editor.
-- Add rank badges for top 3 (🥇🥈🥉 or colored highlights).
-- Alternating row tint or card-style entries for scanability.
-- Integrate Back action into the panel footer, not a floating orphan button.
-- Plan for extensibility: adding a new mode tab should be trivial — data-driven tab list, not hardcoded match statements.
-- **Controller focus**: tab bar must be navigable with shoulder buttons or d-pad. Sets dropdown must be openable/closable with gamepad.
+**Remaining follow-up**:
+- Hook the Blitz tab to real leaderboard data when Blitz mode lands.
+- Consider optional mutator/filter controls in the same header area once mutator scoring rules are decided.
 
 **Mutator-proofing** (future consideration from `run-variety-expansion.md`):
 - Mutators (No Walls, Ricochet Chaos, Speed Ramp, etc.) could affect scoring fairness. Options to consider when mutators ship:
@@ -100,40 +106,34 @@ Make every menu and HUD feel polished rather than functional-but-flat. Prioritiz
 
 ### 2. Level Complete / Set Complete — Declutter
 
-**Current state**: `scenes/ui/level_complete.tscn` (205 lines) + `scripts/ui/level_complete.gd` (206 lines); `scenes/ui/set_complete.tscn` + `scripts/ui/set_complete.gd` (187 lines)
+**Current state**: `scenes/ui/level_complete.tscn` + `scripts/ui/level_complete.gd`; `scenes/ui/set_complete.tscn` + `scripts/ui/set_complete.gd`
 
-**Problems**:
-- Level Complete shows 7 breakdown line items (Base, Difficulty, Combo, Streak, Power-Up, Perfect Clear, Total) plus Time, plus Set Total, plus High Score label, plus Perfect Clear banner — all displayed at once.
-- Breakdown + buttons are in a side-by-side HBoxContainer that can feel cramped on smaller windows.
-- Set Complete duplicates much of the breakdown logic (same bonus categories + Perfect Set Bonus), but the two scenes share no code — maintenance burden.
-- 16+ `@onready` vars in level_complete.gd alone, tightly coupled to scene tree paths.
+**Shipped in this pass**:
+- Result screens now use a vertical information flow instead of the older cramped side-by-side arrangement.
+- Shared bonus/time formatting moved into helper code instead of duplicating that logic in both result scripts.
+- Zero-value bonus lines are hidden to reduce visual noise while still keeping meaningful breakdown detail visible.
+- Both screens were restyled around the shared theme with stronger hierarchy for headline totals, banners, and supporting breakdown rows.
 
-**Direction**:
-- Keep all breakdown info visible — don't collapse or hide bonus lines. Instead, improve readability through **positioning and font treatment**: use size/weight/color to establish hierarchy between the big numbers (Total, Score) and supporting detail (individual bonuses).
-- Stack layout vertically instead of side-by-side (breakdown left, buttons right). On these screens the player's focus is "what did I get?" then "what do I do next?" — vertical flow matches that better.
-- Perfect Clear and Perfect Set bonuses should remain visually prominent — these are exciting moments.
-- Extract shared bonus-formatting logic into a helper (both screens format bonuses and time identically).
-- Reduce `@onready` count by grouping labels into a sub-scene or using a dictionary-driven approach.
+**Remaining follow-up**:
+- If more result-screen cleanup is needed later, it is polish-level only; the structural declutter goals for this task are met.
 
 ---
 
 ### 3. Main Menu — Possible Refresh
 
-**Current state**: `scenes/ui/main_menu.tscn` (283 lines) + `scripts/ui/main_menu.gd` (264 lines)
+**Current state**: `scenes/ui/main_menu.tscn` + `scripts/ui/main_menu.gd`
 
-**Problems (minor)**:
-- Long vertical button list can feel flat: Play, Return, Difficulty row, Survival, Editor, Stats/High Scores row, Settings, Quit — 8+ tappable items stacked with spacers.
-- Difficulty selection (3 buttons + "Current: NORMAL" label) takes up significant vertical space for a setting that changes rarely.
-- Profile dropdown + "+" button works but looks utilitarian.
-- `SurvivalButton` will eventually be replaced by an "Endless Waves" hub entry (per `run-variety-expansion.md`).
+**Shipped in this pass**:
+- The old difficulty button trio was replaced with a compact dropdown.
+- Survival now sits alongside the primary action cluster near the top instead of being buried lower in the menu.
+- Stats and High Scores were grouped into a shared row to reduce some vertical sprawl.
+- Version/update behavior was corrected so network checks only happen when the player clicks the update button.
+- Main-menu refactor bugs already found in implementation were fixed: difficulty restores from the active profile, quit/editor/survival keep using `MenuController`, and pause/settings/menu return flows stay coherent.
+- Profile section was flattened by removing the extra framed panel treatment while preserving profile controls and controller flow.
 
-**Direction**:
-- Move Survival / Endless Waves up near the Play button so the primary gameplay actions are grouped together at the top.
-- Keep Difficulty on the Main Menu (players use it often enough), but replace the 3-button row + label with a **dropdown selector** to save vertical space.
-- Group secondary actions (Stats, High Scores, Settings, Editor) into a smaller row or icon strip to further elevate the primary actions.
-- When Blitz / Endless Waves hub is implemented, replace the standalone Survival button with an "Endless Waves" button that opens the mode hub.
-- Visual polish: subtle background animation (particles, gradient shift), title treatment, profile area styling.
-- **Controller focus**: dropdown must support gamepad cycling (left/right or triggers to change selection). Ensure focus chains flow logically top-to-bottom through the revised layout.
+**Remaining follow-up**:
+- Do a final live playtest sanity pass for controller feel after any future menu structural changes.
+- `SurvivalButton` is still a placeholder for the future Endless Waves hub entry (per `run-variety-expansion.md`).
 
 ---
 
@@ -166,12 +166,12 @@ These don't need a full rework but should be updated to match whatever design la
 
 | Screen | File | Notes |
 |--------|------|-------|
-| Game Over | `scenes/ui/game_over.tscn` | Align styling with new Level/Set Complete treatment |
-| Set Select | `scenes/ui/set_select.tscn` | Verify card styling is consistent |
-| Level Select | `scenes/ui/level_select.tscn` | Check for consistency |
-| Settings | `scenes/ui/settings.tscn` | May absorb Difficulty selection from Main Menu |
-| Stats | `scenes/ui/stats.tscn` | Align with new High Scores design |
-| Keybindings | `scenes/ui/keybindings.tscn` | Consistent panel styling |
+| Game Over | `scenes/ui/game_over.tscn` | **Done** for this task: shared-theme styling plus narrowed, centered action layout |
+| Set Select | `scenes/ui/set_select.tscn` | **Done** for this task: accent-row cards and theme colors are in place |
+| Level Select | `scenes/ui/level_select.tscn` | **Done** for this task: shared-theme pass plus compact 3-column panel/card layout |
+| Settings | `scenes/ui/settings.tscn` | **Done** for this task |
+| Stats | `scenes/ui/stats.tscn` | **Done** for this task |
+| Keybindings | `scenes/ui/keybindings.tscn` | **Done** for this task: shared-theme pass applied and debug-heavy focus/input logging removed |
 | Level Editor | `scenes/ui/level_editor.tscn` | Low priority — functional tool |
 
 ---
@@ -189,17 +189,24 @@ These don't need a full rework but should be updated to match whatever design la
 ## Suggested Phasing
 
 ### Phase 1: High Impact
-- [ ] High Scores full rework
-- [ ] Level Complete / Set Complete declutter
+- [x] High Scores full rework (structural + visual overhaul)
+- [x] Level Complete / Set Complete declutter (vertical flow, shared breakdown logic)
 
 ### Phase 2: Polish
 - [~] Main HUD improvements
-  - Completed: fixed-slot HUD contract, shared-theme styling, transparent gutter-based overlays, player/lives top-bar cleanup, bottom-center combo placement, bottom-corner multiplier/debug placement, downward-growing power-up timer lane, and screenshot capture input.
-  - Remaining: dedicated objective treatment, stronger multiplier presentation, icon/radial power-up treatment, and mode-specific widgets for Blitz / Wave Objectives.
-- [ ] Main Menu refresh
+  - Completed: fixed-slot HUD contract, shared-theme styling, transparent gutter-based overlays, player/lives top-bar cleanup, bottom-center combo placement, bottom-corner multiplier/debug placement, downward-growing power-up timer lane, screenshot capture input, and improved objective/multiplier readability with pulse feedback while keeping them unboxed.
+  - Remaining: icon/radial power-up treatment and mode-specific widgets for Blitz / Wave Objectives.
+- [~] Main Menu refresh
+  - Completed: title/theme integration, difficulty dropdown, Survival repositioning, Stats/High Scores row grouping, click-only update checks, save-flow sanity fixes, flattened profile strip, ambient background drift, and explicit controller focus-neighbor wiring.
+  - Remaining: eventual Endless Waves hub replacement of the Survival placeholder and any post-hub controller-flow retune if layout changes.
 
 ### Phase 3: Consistency Pass
-- [ ] Update remaining screens (Game Over, Set Select, Level Select, Settings, Stats, Keybindings) to match new design language
+- [x] Stats — full theme integration from scratch
+- [x] Settings — title_large, profile label styled
+- [x] Set Select — accent-row cards with theme colors
+- [x] Game Over — centered panel + constrained action column aligned with shared theme
+- [x] Level Select — shared-theme pass + compact panel/card layout complete
+- [x] Keybindings — consistent shared-theme styling with cleaned controller/focus logging behavior
 
 ---
 

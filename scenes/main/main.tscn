@@ -185,10 +185,10 @@ size_flags_horizontal = 3
 
 [node name="ObjectiveMargin" type="MarginContainer" parent="UI/HUD/SafeMargin/HUDVBox/InfoRow/ObjectiveCard" unique_id=2138213010]
 layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 6
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 6
+theme_override_constants/margin_left = 9
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 9
+theme_override_constants/margin_bottom = 4
 
 [node name="ObjectiveLabel" type="Label" parent="UI/HUD/SafeMargin/HUDVBox/InfoRow/ObjectiveCard/ObjectiveMargin" unique_id=874826990]
 layout_mode = 2
@@ -215,17 +215,17 @@ anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 10.0
-offset_top = -72.0
-offset_right = 150.0
+offset_top = -92.0
+offset_right = 198.0
 offset_bottom = -10.0
 grow_vertical = 0
 
 [node name="MultiplierMargin" type="MarginContainer" parent="UI/HUD/MultiplierCard" unique_id=2003926621]
 layout_mode = 2
 theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 6
+theme_override_constants/margin_top = 5
 theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 6
+theme_override_constants/margin_bottom = 5
 
 [node name="MultiplierVBox" type="VBoxContainer" parent="UI/HUD/MultiplierCard/MultiplierMargin" unique_id=89668843]
 layout_mode = 2

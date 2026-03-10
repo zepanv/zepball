@@ -5,13 +5,14 @@ extends Control
 const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
 @onready var background = $Background
-@onready var game_over_label = $VBoxContainer/GameOverLabel
-@onready var score_label = $VBoxContainer/ScoreLabel
-@onready var high_score_label = $VBoxContainer/HighScoreLabel
-@onready var survival_label = $VBoxContainer/SurvivalLabel
-@onready var retry_button = $VBoxContainer/RetryButton
-@onready var menu_button = $VBoxContainer/MenuButton
-@onready var vbox_container = $VBoxContainer
+@onready var panel = $ScreenMargin/CenterContainer/Panel
+@onready var game_over_label = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/GameOverLabel
+@onready var score_label = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ScoreLabel
+@onready var high_score_label = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/HighScoreLabel
+@onready var survival_label = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/SurvivalLabel
+@onready var retry_button = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ButtonsContainer/RetryButton
+@onready var menu_button = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ButtonsContainer/MenuButton
+@onready var buttons_container = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ButtonsContainer
 
 var continue_set_button: Button = null
 var _ready_time: float = 0.0
@@ -71,12 +72,15 @@ func _ready():
 func _apply_theme() -> void:
 	UI_THEME.apply_to(self)
 	UI_THEME.style_background(background, true)
+	UI_THEME.style_panel(panel, UI_THEME.PANEL_BORDER_ACCENT)
 	UI_THEME.style_danger(game_over_label, 46)
 	UI_THEME.style_value(score_label, 30)
 	UI_THEME.style_subtitle(high_score_label)
 	UI_THEME.style_subtitle(survival_label)
 	UI_THEME.style_primary_button(retry_button)
 	UI_THEME.style_muted_button(menu_button)
+	retry_button.add_theme_font_size_override("font_size", 30)
+	menu_button.add_theme_font_size_override("font_size", 26)
 
 func add_continue_set_button():
 	"""Add Continue Set button between Retry and Menu buttons"""
@@ -84,14 +88,14 @@ func add_continue_set_button():
 	continue_set_button = Button.new()
 	continue_set_button.name = "ContinueSetButton"
 	continue_set_button.text = "CONTINUE SET"
-	continue_set_button.custom_minimum_size = Vector2(0, 55)
+	continue_set_button.custom_minimum_size = Vector2(0, 48)
 	UI_THEME.style_secondary_button(continue_set_button)
-	continue_set_button.add_theme_font_size_override("font_size", 30)
+	continue_set_button.add_theme_font_size_override("font_size", 26)
 
 	# Insert between RetryButton and MenuButton
 	var retry_index = retry_button.get_index()
-	vbox_container.add_child(continue_set_button)
-	vbox_container.move_child(continue_set_button, retry_index + 1)
+	buttons_container.add_child(continue_set_button)
+	buttons_container.move_child(continue_set_button, retry_index + 1)
 
 	# Connect signal
 	continue_set_button.pressed.connect(_on_continue_set_button_pressed)

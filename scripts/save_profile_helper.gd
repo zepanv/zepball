@@ -178,6 +178,9 @@ func _profile_name_exists(parent: Node, profile_name: String) -> bool:
 	return false
 
 func _apply_profile_settings(parent: Node) -> void:
+	if DifficultyManager and DifficultyManager.has_method("set_difficulty_by_name") and parent.settings_helper:
+		DifficultyManager.set_difficulty_by_name(parent.settings_helper.get_saved_difficulty(parent.save_data))
+
 	if parent.settings_helper:
 		parent.settings_helper.apply_saved_keybindings(parent.save_data)
 	

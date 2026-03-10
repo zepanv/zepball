@@ -16,6 +16,7 @@ enum GameState {
 # Current game state
 var game_state: GameState = GameState.READY
 var last_state_before_pause: GameState = GameState.READY
+var suppress_pause_toggle_until_cancel_released: bool = false
 
 # Player stats
 var score: int = 0
@@ -105,7 +106,10 @@ func _apply_challenge_mode_defaults() -> void:
 
 func _process(_delta):
 	# Debug: Press Escape to toggle pause (when implemented)
-	if Input.is_action_just_pressed("ui_cancel") and (game_state == GameState.PLAYING or game_state == GameState.READY):
+	if suppress_pause_toggle_until_cancel_released:
+		if not Input.is_action_pressed("ui_cancel"):
+			suppress_pause_toggle_until_cancel_released = false
+	elif Input.is_action_just_pressed("ui_cancel") and (game_state == GameState.PLAYING or game_state == GameState.READY):
 		set_state(GameState.PAUSED)
 	elif Input.is_action_just_pressed("ui_cancel") and game_state == GameState.PAUSED:
 		set_state(last_state_before_pause)
@@ -301,6 +305,10 @@ func start_time_attack_timer() -> void:
 
 func pause_time_attack_timer() -> void:
 	time_attack_running = false
+
+func suppress_next_pause_toggle() -> void:
+	"""Ignore ui_cancel pause toggles until the current cancel press is released."""
+	suppress_pause_toggle_until_cancel_released = true
 
 func stop_time_attack_timer() -> int:
 	time_attack_running = false

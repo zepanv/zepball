@@ -9,8 +9,6 @@ const DEBUG_HELPER_SCRIPT = preload("res://scripts/hud_debug_overlay_helper.gd")
 const INTRO_HELPER_SCRIPT = preload("res://scripts/hud_level_intro_helper.gd")
 const POWERUP_HELPER_SCRIPT = preload("res://scripts/hud_power_up_timers_helper.gd")
 const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
-const SCREENSHOT_RES_DIR := "res://temp"
-const SCREENSHOT_USER_DIR := "user://screenshots"
 
 @onready var top_bar_card: PanelContainer = $SafeMargin/HUDVBox/TopBarCard
 @onready var info_row: HBoxContainer = $SafeMargin/HUDVBox/InfoRow
@@ -40,13 +38,14 @@ var show_fps: bool = false
 var debug_visible: bool = false
 var game_manager_ref: Node = null
 var multiplier_lines: PackedStringArray = PackedStringArray()
+var _last_total_multiplier: float = 1.0
+var _last_objective_text: String = ""
 
 var pause_helper: RefCounted = null
 var debug_helper: RefCounted = null
 var intro_helper: RefCounted = null
 var powerup_helper: RefCounted = null
 var default_player_name_text: String = "PLAYER"
-var screenshot_capture_in_progress: bool = false
 
 func _make_empty_stylebox() -> StyleBoxEmpty:
 	return StyleBoxEmpty.new()
@@ -114,9 +113,14 @@ func set_objective_text(text: String) -> void:
 	if not objective_card or not objective_label:
 		return
 	var normalized := text.strip_edges()
+	if not normalized.is_empty() and not normalized.begins_with("★"):
+		normalized = "★ " + normalized
 	info_row.visible = not normalized.is_empty()
 	objective_card.visible = not normalized.is_empty()
 	objective_label.text = normalized
+	if normalized != _last_objective_text and not normalized.is_empty():
+		_pulse_card(objective_card, UI_THEME.GOLD)
+	_last_objective_text = normalized
 
 func clear_objective_text() -> void:
 	set_objective_text("")
@@ -138,12 +142,13 @@ func _apply_hud_theme() -> void:
 	UI_THEME.style_meta(lives_caption)
 	lives_caption.add_theme_font_size_override("font_size", 12)
 	UI_THEME.style_success(lives_label, 22)
-	UI_THEME.style_warning(objective_label, 14)
+	UI_THEME.style_warning(objective_label, 13)
+	objective_label.uppercase = true
 	UI_THEME.style_meta(multiplier_title_label)
 	multiplier_title_label.add_theme_font_size_override("font_size", 11)
 	UI_THEME.style_accent_value(multiplier_value_label, 22)
-	UI_THEME.style_subtitle(multiplier_breakdown_label)
-	multiplier_breakdown_label.add_theme_font_size_override("font_size", 12)
+	UI_THEME.style_meta(multiplier_breakdown_label)
+	multiplier_breakdown_label.add_theme_font_size_override("font_size", 11)
 	UI_THEME.style_title(state_title_label)
 	state_title_label.add_theme_font_size_override("font_size", 34)
 	UI_THEME.style_subtitle(state_detail_label)
@@ -278,10 +283,6 @@ func show_survival_wave_countdown(next_wave_number: int) -> void:
 	intro_helper.level_intro.visible = false
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("take_screenshot"):
-		_request_screenshot()
-		get_viewport().set_input_as_handled()
-		return
 	if intro_helper and intro_helper.is_showing() and event.is_action_pressed("launch_ball"):
 		intro_helper.skip_intro()
 		get_viewport().set_input_as_handled()
@@ -430,6 +431,7 @@ func _update_multiplier_display() -> void:
 
 	if multiplier_lines.is_empty():
 		multiplier_card.visible = false
+		_last_total_multiplier = 1.0
 		return
 
 	var total_mult = difficulty_mult
@@ -442,8 +444,13 @@ func _update_multiplier_display() -> void:
 		total_mult *= 2.0
 
 	multiplier_card.visible = true
-	multiplier_value_label.text = "%sx" % str(snapped(total_mult, 0.01))
-	multiplier_breakdown_label.text = "\n".join(multiplier_lines)
+	var rounded_total = snapped(total_mult, 0.01)
+	multiplier_value_label.text = "%.2fx" % rounded_total
+	multiplier_breakdown_label.text = "  ·  ".join(multiplier_lines)
+	if absf(rounded_total - _last_total_multiplier) > 0.001:
+		var pulse_color = UI_THEME.GOLD if rounded_total >= 2.0 else UI_THEME.PRIMARY
+		_pulse_card(multiplier_card, pulse_color)
+	_last_total_multiplier = rounded_total
 
 	if total_mult >= 2.0:
 		UI_THEME.style_warning(multiplier_value_label, 22)
@@ -452,6 +459,19 @@ func _update_multiplier_display() -> void:
 	else:
 		UI_THEME.style_value(multiplier_value_label, 22)
 
+func _pulse_card(card: Control, accent: Color) -> void:
+	if not card:
+		return
+	card.scale = Vector2.ONE
+	var flash := Color(accent.r, accent.g, accent.b, 0.95)
+	var tween = create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(card, "modulate", flash, 0.08)
+	tween.parallel().tween_property(card, "scale", Vector2(1.03, 1.03), 0.08)
+	tween.tween_property(card, "modulate", Color.WHITE, 0.18)
+	tween.parallel().tween_property(card, "scale", Vector2.ONE, 0.18)
+
 func _get_game_manager() -> Node:
 	if game_manager_ref and is_instance_valid(game_manager_ref):
 		return game_manager_ref
@@ -459,58 +479,3 @@ func _get_game_manager() -> Node:
 	if game_manager_ref and is_instance_valid(game_manager_ref):
 		return game_manager_ref
 	return null
-
-func _request_screenshot() -> void:
-	if screenshot_capture_in_progress:
-		return
-	screenshot_capture_in_progress = true
-	_capture_screenshot()
-
-func _capture_screenshot() -> void:
-	await RenderingServer.frame_post_draw
-	var viewport_texture := get_viewport().get_texture()
-	if viewport_texture == null:
-		screenshot_capture_in_progress = false
-		push_warning("HUD: screenshot skipped because viewport texture was unavailable")
-		return
-
-	var image := viewport_texture.get_image()
-	if image == null or image.is_empty():
-		screenshot_capture_in_progress = false
-		push_warning("HUD: screenshot skipped because viewport image was empty")
-		return
-
-	var file_name := _build_screenshot_file_name()
-	var saved_path := _save_screenshot_image(image, SCREENSHOT_RES_DIR, file_name)
-	if saved_path.is_empty():
-		saved_path = _save_screenshot_image(image, SCREENSHOT_USER_DIR, file_name)
-
-	screenshot_capture_in_progress = false
-	if saved_path.is_empty():
-		push_error("HUD: failed to save screenshot")
-		return
-
-	print("Screenshot saved to: %s" % saved_path)
-
-func _build_screenshot_file_name() -> String:
-	var timestamp := Time.get_datetime_dict_from_system()
-	return "Screenshot_%04d%02d%02d_%02d%02d%02d.png" % [
-		int(timestamp.get("year", 0)),
-		int(timestamp.get("month", 0)),
-		int(timestamp.get("day", 0)),
-		int(timestamp.get("hour", 0)),
-		int(timestamp.get("minute", 0)),
-		int(timestamp.get("second", 0))
-	]
-
-func _save_screenshot_image(image: Image, dir_path: String, file_name: String) -> String:
-	var global_dir := ProjectSettings.globalize_path(dir_path)
-	if not DirAccess.dir_exists_absolute(global_dir):
-		var make_dir_error := DirAccess.make_dir_recursive_absolute(global_dir)
-		if make_dir_error != OK:
-			return ""
-
-	var global_path := global_dir.path_join(file_name)
-	if image.save_png(global_path) != OK:
-		return ""
-	return global_path

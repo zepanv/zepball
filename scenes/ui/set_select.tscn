@@ -132,12 +132,16 @@ size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="BackButton" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 50)
+[node name="FooterRow" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="BackButton" type="Button" parent="VBoxContainer/FooterRow"]
+custom_minimum_size = Vector2(360, 50)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 theme_override_colors/font_hover_color = Color(0, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 28
 text = "BACK TO MENU"
 
-[connection signal="pressed" from="VBoxContainer/BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/FooterRow/BackButton" to="." method="_on_back_button_pressed"]

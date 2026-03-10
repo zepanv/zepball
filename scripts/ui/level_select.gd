@@ -1,10 +1,14 @@
 extends Control
 
 ## Level Select Screen - pack-aware level browser with thumbnails, stars, and filter/sort
+const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
-@onready var levels_grid = $VBoxContainer/LevelsGrid
-@onready var vbox_container = $VBoxContainer
-@onready var title_label = $VBoxContainer/TitleLabel
+@onready var background = $Background
+@onready var panel = $ScreenMargin/CenterContainer/Panel
+@onready var levels_grid = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/LevelsGrid
+@onready var vbox_container = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer
+@onready var title_label = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/TitleLabel
+@onready var back_button = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/FooterRow/BackButton
 
 var filter_mode: String = "all" # all | completed | locked
 var sort_mode: String = "order" # order | score
@@ -14,6 +18,7 @@ var header_desc_label: Label = null
 var play_pack_button: Button = null
 
 func _ready() -> void:
+	_apply_theme()
 	build_toolbar()
 	if not MenuController.current_browse_pack_id.is_empty():
 		add_pack_context_ui(MenuController.current_browse_pack_id)
@@ -22,6 +27,13 @@ func _ready() -> void:
 	# Grab focus on first button for controller navigation
 	await get_tree().process_frame
 	_grab_first_button_focus()
+
+func _apply_theme() -> void:
+	UI_THEME.apply_to(self)
+	UI_THEME.style_background(background)
+	UI_THEME.style_panel(panel, UI_THEME.PANEL_BORDER_ACCENT)
+	UI_THEME.style_title_large(title_label)
+	UI_THEME.style_muted_button(back_button)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
@@ -58,17 +70,17 @@ func add_pack_context_ui(pack_id: String) -> void:
 
 	header_desc_label = Label.new()
 	header_desc_label.text = str(pack.get("description", ""))
-	header_desc_label.add_theme_font_size_override("font_size", 17)
-	header_desc_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	header_desc_label.add_theme_font_size_override("font_size", 16)
+	header_desc_label.add_theme_color_override("font_color", UI_THEME.TEXT_MUTED)
 	header_desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox_container.add_child(header_desc_label)
 	vbox_container.move_child(header_desc_label, 3)
 
 	play_pack_button = Button.new()
 	play_pack_button.text = "PLAY THIS PACK"
-	play_pack_button.custom_minimum_size = Vector2(300, 50)
-	play_pack_button.add_theme_font_size_override("font_size", 24)
-	play_pack_button.add_theme_color_override("font_color", Color(0, 0.9, 1, 1))
+	play_pack_button.custom_minimum_size = Vector2(288, 44)
+	play_pack_button.add_theme_font_size_override("font_size", 22)
+	UI_THEME.style_primary_button(play_pack_button)
 	play_pack_button.pressed.connect(_on_play_pack_button_pressed)
 
 	var button_row = HBoxContainer.new()
@@ -166,21 +178,25 @@ func _apply_sort(entries: Array[Dictionary]) -> void:
 
 func create_level_card(entry: Dictionary) -> void:
 	var panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(360, 130)
+	panel.custom_minimum_size = Vector2(328, 112)
+	var is_unlocked = bool(entry.get("is_unlocked", false))
+	var card_bg = Color(UI_THEME.PANEL_BACKGROUND_SOFT.r, UI_THEME.PANEL_BACKGROUND_SOFT.g, UI_THEME.PANEL_BACKGROUND_SOFT.b, 0.66)
+	var accent = UI_THEME.PRIMARY if is_unlocked else UI_THEME.PANEL_BORDER
+	UI_THEME.style_accent_row(panel, accent, card_bg)
 
 	var root = HBoxContainer.new()
-	root.add_theme_constant_override("separation", 10)
+	root.add_theme_constant_override("separation", 8)
 	panel.add_child(root)
 
 	var preview = TextureRect.new()
-	preview.custom_minimum_size = Vector2(120, 80)
+	preview.custom_minimum_size = Vector2(96, 64)
 	preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	preview.texture = entry.get("preview")
 	root.add_child(preview)
 
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 4)
+	vbox.add_theme_constant_override("separation", 3)
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	root.add_child(vbox)
 
@@ -190,15 +206,17 @@ func create_level_card(entry: Dictionary) -> void:
 	if legacy_level_id != -1:
 		prefix = "LEVEL %d: " % legacy_level_id
 	title.text = prefix + str(entry.get("name", "Unknown"))
-	title.add_theme_font_size_override("font_size", 20)
-	title.add_theme_color_override("font_color", Color(0, 0.9, 1, 1))
+	title.add_theme_font_size_override("font_size", 17)
+	title.add_theme_color_override("font_color", UI_THEME.PRIMARY if is_unlocked else UI_THEME.TEXT_SECONDARY)
 	vbox.add_child(title)
 
 	var desc = Label.new()
 	desc.text = str(entry.get("description", ""))
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 14)
-	desc.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	desc.max_lines_visible = 2
+	desc.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	desc.add_theme_font_size_override("font_size", 13)
+	desc.add_theme_color_override("font_color", UI_THEME.TEXT_MUTED)
 	vbox.add_child(desc)
 
 	var meta = HBoxContainer.new()
@@ -207,32 +225,31 @@ func create_level_card(entry: Dictionary) -> void:
 
 	var stars_label = Label.new()
 	stars_label.text = _stars_text(int(entry.get("stars", 0)))
-	stars_label.add_theme_font_size_override("font_size", 15)
-	stars_label.add_theme_color_override("font_color", Color(1, 0.9, 0.45, 1))
+	stars_label.add_theme_font_size_override("font_size", 14)
+	stars_label.add_theme_color_override("font_color", UI_THEME.GOLD)
 	meta.add_child(stars_label)
 
 	var score_label = Label.new()
 	score_label.text = "Best: %d" % int(entry.get("score", 0))
-	score_label.add_theme_font_size_override("font_size", 15)
-	score_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75, 1))
+	score_label.add_theme_font_size_override("font_size", 14)
+	score_label.add_theme_color_override("font_color", UI_THEME.TEXT_SECONDARY)
 	meta.add_child(score_label)
 
 	var status_label = Label.new()
-	status_label.add_theme_font_size_override("font_size", 15)
-	var is_unlocked = bool(entry.get("is_unlocked", false))
+	status_label.add_theme_font_size_override("font_size", 14)
 	var is_completed = bool(entry.get("is_completed", false))
 	var score = int(entry.get("score", 0))
 
 	if not is_unlocked:
 		status_label.text = "LOCKED"
-		status_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
+		status_label.add_theme_color_override("font_color", UI_THEME.TEXT_MUTED)
 	elif is_completed or score > 0:
 		status_label.text = "COMPLETED"
-		status_label.add_theme_color_override("font_color", Color(0.55, 1.0, 0.55, 1))
+		status_label.add_theme_color_override("font_color", UI_THEME.SUCCESS)
 	else:
 		# NEW only for unlocked levels with no completion/high score.
 		status_label.text = "NEW"
-		status_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.55, 1))
+		status_label.add_theme_color_override("font_color", UI_THEME.GOLD)
 	meta.add_child(status_label)
 
 	if is_unlocked:
@@ -268,6 +285,7 @@ func _create_filter_button(label_text: String, value: String) -> void:
 	button.text = label_text
 	button.custom_minimum_size = Vector2(118, 34)
 	button.add_theme_font_size_override("font_size", 16)
+	UI_THEME.style_muted_button(button)
 	button.pressed.connect(func():
 		filter_mode = value
 		populate_levels()
@@ -278,7 +296,7 @@ func _create_toolbar_label(text_value: String) -> void:
 	var label = Label.new()
 	label.text = text_value + ":"
 	label.add_theme_font_size_override("font_size", 16)
-	label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	label.add_theme_color_override("font_color", UI_THEME.TEXT_MUTED)
 	toolbar_row.add_child(label)
 
 func _create_sort_button(label_text: String, value: String) -> void:
@@ -286,6 +304,7 @@ func _create_sort_button(label_text: String, value: String) -> void:
 	button.text = label_text
 	button.custom_minimum_size = Vector2(118, 34)
 	button.add_theme_font_size_override("font_size", 16)
+	UI_THEME.style_muted_button(button)
 	button.pressed.connect(func():
 		sort_mode = value
 		populate_levels()
@@ -342,3 +361,6 @@ func _grab_first_button_focus() -> void:
 			if child is Button and child.is_visible_in_tree() and not child.disabled:
 				child.grab_focus()
 				return
+
+	if back_button and back_button.is_visible_in_tree() and not back_button.disabled:
+		back_button.grab_focus()

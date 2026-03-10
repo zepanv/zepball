@@ -1,6 +1,7 @@
 extends Control
 
 ## Pack Select Screen - Displays available built-in and user packs
+const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
 # Filter and Sort modes
 enum FilterMode { ALL, OFFICIAL, CUSTOM }
@@ -20,11 +21,15 @@ var level_buttons: Array[Button] = []
 @onready var sets_container: VBoxContainer = $VBoxContainer/ContentContainer/PackListContainer/ScrollContainer/SetsContainer
 @onready var title_label: Label = $VBoxContainer/TitleLabel
 @onready var toolbar_container: MarginContainer = $VBoxContainer/ToolbarContainer
+@onready var back_button: Button = $VBoxContainer/FooterRow/BackButton
 @onready var challenge_dropdown: OptionButton = $VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox/ChallengeDropdown
 @onready var challenge_description_label: Label = $VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox/ChallengeDescription
 @onready var challenge_mode_note_label: Label = $VBoxContainer/ContentContainer/ChallengePanel/ChallengeMargin/ChallengeVBox/ChallengeModeNote
 
 func _ready() -> void:
+	UI_THEME.apply_to(self)
+	UI_THEME.style_title_large(title_label)
+	UI_THEME.style_muted_button(back_button)
 	title_label.text = "SELECT PACK"
 	_create_toolbar()
 	_initialize_challenge_mode_controls()
@@ -84,7 +89,12 @@ func create_pack_card(pack_data: Dictionary) -> void:
 	var set_high_score = SaveManager.get_set_pack_high_score(pack_id)
 
 	var panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(780, 115)
+	panel.custom_minimum_size = Vector2(780, 110)
+
+	# Apply accent row — cyan for official, gold for custom
+	var bg := Color(UI_THEME.PANEL_BACKGROUND_SOFT.r, UI_THEME.PANEL_BACKGROUND_SOFT.g, UI_THEME.PANEL_BACKGROUND_SOFT.b, 0.7)
+	var accent := UI_THEME.PRIMARY if is_official else UI_THEME.GOLD
+	UI_THEME.style_accent_row(panel, accent, bg)
 
 	var margin = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
@@ -99,7 +109,7 @@ func create_pack_card(pack_data: Dictionary) -> void:
 
 	# Left side: Pack info
 	var info_vbox = VBoxContainer.new()
-	info_vbox.add_theme_constant_override("separation", 4)
+	info_vbox.add_theme_constant_override("separation", 3)
 	info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox_main.add_child(info_vbox)
 
@@ -110,84 +120,78 @@ func create_pack_card(pack_data: Dictionary) -> void:
 
 	var name_label = Label.new()
 	name_label.text = pack_name.to_upper()
-	name_label.add_theme_font_size_override("font_size", 24)
-	if is_official:
-		name_label.add_theme_color_override("font_color", Color(0, 0.9, 1, 1))
-	else:
-		name_label.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0, 1.0))
+	name_label.add_theme_font_size_override("font_size", 22)
+	name_label.add_theme_color_override("font_color", UI_THEME.PRIMARY if is_official else UI_THEME.TEXT_PRIMARY)
 	header.add_child(name_label)
 
 	var badge = Label.new()
-	if is_official:
-		badge.text = "[OFFICIAL]"
-	else:
-		badge.text = "[CUSTOM]"
-	badge.add_theme_font_size_override("font_size", 12)
-	if is_official:
-		badge.add_theme_color_override("font_color", Color(0.15, 0.95, 0.65, 1))
-	else:
-		badge.add_theme_color_override("font_color", Color(1.0, 0.75, 0.25, 1))
+	badge.text = "[OFFICIAL]" if is_official else "[CUSTOM]"
+	badge.add_theme_font_size_override("font_size", 11)
+	badge.add_theme_color_override("font_color", UI_THEME.SUCCESS if is_official else UI_THEME.GOLD)
 	header.add_child(badge)
 
-	# Description + Author on same line
+	# Description + Author line
+	var desc_text = ""
+	if description != "":
+		desc_text = description + "  •  "
+	desc_text += "By " + author
+
 	var desc_label = Label.new()
-	desc_label.text = description + "  •  By " + author
-	desc_label.add_theme_font_size_override("font_size", 14)
-	desc_label.add_theme_color_override("font_color", Color(0.72, 0.72, 0.72, 1))
-	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	desc_label.custom_minimum_size = Vector2(0, 30)
+	desc_label.text = desc_text
+	desc_label.add_theme_font_size_override("font_size", 13)
+	desc_label.add_theme_color_override("font_color", UI_THEME.TEXT_MUTED)
+	desc_label.clip_text = true
 	info_vbox.add_child(desc_label)
 
 	# Stats row - more compact
 	var info_row = HBoxContainer.new()
-	info_row.add_theme_constant_override("separation", 16)
+	info_row.add_theme_constant_override("separation", 14)
 	info_vbox.add_child(info_row)
 
 	var levels_label = Label.new()
 	levels_label.text = "%d Levels" % level_count
-	levels_label.add_theme_font_size_override("font_size", 14)
-	levels_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1))
+	levels_label.add_theme_font_size_override("font_size", 13)
+	levels_label.add_theme_color_override("font_color", UI_THEME.TEXT_MUTED)
 	info_row.add_child(levels_label)
 
 	var progress_label = Label.new()
-	var progress_color = Color(0.6, 0.8, 1.0, 1) if completed_count < level_count else Color(0.15, 0.95, 0.65, 1)
+	var progress_color = UI_THEME.PRIMARY_SOFT if completed_count < level_count else UI_THEME.SUCCESS
 	progress_label.text = "Progress: %d/%d" % [completed_count, level_count]
-	progress_label.add_theme_font_size_override("font_size", 14)
+	progress_label.add_theme_font_size_override("font_size", 13)
 	progress_label.add_theme_color_override("font_color", progress_color)
 	info_row.add_child(progress_label)
 
 	var stars_label = Label.new()
 	stars_label.text = "★ %d/%d" % [stars_total, max_stars]
-	stars_label.add_theme_font_size_override("font_size", 14)
-	stars_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.45, 1))
+	stars_label.add_theme_font_size_override("font_size", 13)
+	stars_label.add_theme_color_override("font_color", UI_THEME.GOLD)
 	info_row.add_child(stars_label)
 
 	if set_high_score > 0:
 		var score_label = Label.new()
 		score_label.text = "Best: %d" % set_high_score
-		score_label.add_theme_font_size_override("font_size", 14)
-		score_label.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6, 1))
+		score_label.add_theme_font_size_override("font_size", 13)
+		score_label.add_theme_color_override("font_color", UI_THEME.SUCCESS)
 		info_row.add_child(score_label)
 
 	# Right side: Buttons (vertical stack)
 	var button_vbox = VBoxContainer.new()
-	button_vbox.add_theme_constant_override("separation", 6)
+	button_vbox.add_theme_constant_override("separation", 4)
 	hbox_main.add_child(button_vbox)
 
 	var play_button = Button.new()
 	play_button.text = "PLAY"
-	play_button.custom_minimum_size = Vector2(124, 32)
-	play_button.add_theme_font_size_override("font_size", 18)
-	play_button.add_theme_color_override("font_color", Color(0, 0.9, 1, 1))
+	play_button.custom_minimum_size = Vector2(110, 30)
+	play_button.add_theme_font_size_override("font_size", 16)
+	play_button.add_theme_color_override("font_color", UI_THEME.PRIMARY)
 	play_button.pressed.connect(_on_play_pack_pressed.bind(pack_id))
 	button_vbox.add_child(play_button)
 
 	var view_button = Button.new()
 	view_button.text = "LEVELS"
-	view_button.custom_minimum_size = Vector2(124, 32)
-	view_button.add_theme_font_size_override("font_size", 16)
-	view_button.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75, 1))
+	view_button.custom_minimum_size = Vector2(110, 28)
+	view_button.add_theme_font_size_override("font_size", 14)
+	view_button.add_theme_color_override("font_color", UI_THEME.TEXT_SECONDARY)
 	view_button.pressed.connect(_on_view_levels_pressed.bind(pack_id))
 	button_vbox.add_child(view_button)
 	level_buttons.append(view_button)
@@ -195,17 +199,17 @@ func create_pack_card(pack_data: Dictionary) -> void:
 	if not is_official:
 		var edit_button = Button.new()
 		edit_button.text = "EDIT"
-		edit_button.custom_minimum_size = Vector2(124, 26)
-		edit_button.add_theme_font_size_override("font_size", 15)
-		edit_button.add_theme_color_override("font_color", Color(1.0, 0.75, 0.25, 1))
+		edit_button.custom_minimum_size = Vector2(110, 24)
+		edit_button.add_theme_font_size_override("font_size", 13)
+		edit_button.add_theme_color_override("font_color", UI_THEME.GOLD)
 		edit_button.pressed.connect(_on_edit_pack_pressed.bind(pack_id))
 		button_vbox.add_child(edit_button)
 	elif OS.is_debug_build():
 		var edit_button = Button.new()
 		edit_button.text = "EDIT [DEV]"
-		edit_button.custom_minimum_size = Vector2(124, 26)
-		edit_button.add_theme_font_size_override("font_size", 14)
-		edit_button.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4, 1))
+		edit_button.custom_minimum_size = Vector2(110, 24)
+		edit_button.add_theme_font_size_override("font_size", 13)
+		edit_button.add_theme_color_override("font_color", UI_THEME.DANGER)
 		edit_button.pressed.connect(_on_edit_pack_pressed.bind(pack_id))
 		button_vbox.add_child(edit_button)
 
@@ -213,20 +217,23 @@ func create_pack_card(pack_data: Dictionary) -> void:
 
 func _create_new_pack_card() -> void:
 	var panel: PanelContainer = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(780, 60)
+	panel.custom_minimum_size = Vector2(780, 50)
+
+	var bg := Color(UI_THEME.PANEL_BACKGROUND_SOFT.r, UI_THEME.PANEL_BACKGROUND_SOFT.g, UI_THEME.PANEL_BACKGROUND_SOFT.b, 0.4)
+	UI_THEME.style_accent_row(panel, UI_THEME.SUCCESS, bg)
 
 	var margin: MarginContainer = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 12)
 	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	margin.add_theme_constant_override("margin_top", 6)
+	margin.add_theme_constant_override("margin_bottom", 6)
 	panel.add_child(margin)
 
 	var button: Button = Button.new()
 	button.text = "+ CREATE NEW PACK"
-	button.custom_minimum_size = Vector2(0, 36)
-	button.add_theme_font_size_override("font_size", 19)
-	button.add_theme_color_override("font_color", Color(0.15, 0.95, 0.65, 1))
+	button.custom_minimum_size = Vector2(0, 32)
+	button.add_theme_font_size_override("font_size", 17)
+	button.add_theme_color_override("font_color", UI_THEME.SUCCESS)
 	button.pressed.connect(_on_create_pack_pressed)
 	margin.add_child(button)
 
@@ -309,62 +316,62 @@ func _create_toolbar() -> void:
 		return
 
 	var toolbar_hbox = HBoxContainer.new()
-	toolbar_hbox.add_theme_constant_override("separation", 20)
+	toolbar_hbox.add_theme_constant_override("separation", 16)
 	toolbar_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	# Filter label
 	var filter_label = Label.new()
 	filter_label.text = "FILTER:"
-	filter_label.add_theme_font_size_override("font_size", 16)
-	filter_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	filter_label.add_theme_font_size_override("font_size", 14)
+	filter_label.add_theme_color_override("font_color", UI_THEME.TEXT_MUTED)
 	toolbar_hbox.add_child(filter_label)
 
 	# Filter buttons
 	var filter_all_btn = Button.new()
 	filter_all_btn.text = "ALL"
-	filter_all_btn.custom_minimum_size = Vector2(100, 32)
-	filter_all_btn.add_theme_font_size_override("font_size", 14)
+	filter_all_btn.custom_minimum_size = Vector2(80, 30)
+	filter_all_btn.add_theme_font_size_override("font_size", 13)
 	filter_all_btn.pressed.connect(_on_filter_changed.bind(FilterMode.ALL))
 	toolbar_hbox.add_child(filter_all_btn)
 
 	var filter_official_btn = Button.new()
 	filter_official_btn.text = "OFFICIAL"
-	filter_official_btn.custom_minimum_size = Vector2(100, 32)
-	filter_official_btn.add_theme_font_size_override("font_size", 14)
+	filter_official_btn.custom_minimum_size = Vector2(80, 30)
+	filter_official_btn.add_theme_font_size_override("font_size", 13)
 	filter_official_btn.pressed.connect(_on_filter_changed.bind(FilterMode.OFFICIAL))
 	toolbar_hbox.add_child(filter_official_btn)
 
 	var filter_custom_btn = Button.new()
 	filter_custom_btn.text = "CUSTOM"
-	filter_custom_btn.custom_minimum_size = Vector2(100, 32)
-	filter_custom_btn.add_theme_font_size_override("font_size", 14)
+	filter_custom_btn.custom_minimum_size = Vector2(80, 30)
+	filter_custom_btn.add_theme_font_size_override("font_size", 13)
 	filter_custom_btn.pressed.connect(_on_filter_changed.bind(FilterMode.CUSTOM))
 	toolbar_hbox.add_child(filter_custom_btn)
 
 	# Spacer
 	var spacer = Control.new()
-	spacer.custom_minimum_size = Vector2(40, 0)
+	spacer.custom_minimum_size = Vector2(30, 0)
 	toolbar_hbox.add_child(spacer)
 
 	# Sort label
 	var sort_label = Label.new()
 	sort_label.text = "SORT:"
-	sort_label.add_theme_font_size_override("font_size", 16)
-	sort_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
+	sort_label.add_theme_font_size_override("font_size", 14)
+	sort_label.add_theme_color_override("font_color", UI_THEME.TEXT_MUTED)
 	toolbar_hbox.add_child(sort_label)
 
 	# Sort buttons
 	var sort_order_btn = Button.new()
 	sort_order_btn.text = "BY ORDER"
-	sort_order_btn.custom_minimum_size = Vector2(120, 32)
-	sort_order_btn.add_theme_font_size_override("font_size", 14)
+	sort_order_btn.custom_minimum_size = Vector2(100, 30)
+	sort_order_btn.add_theme_font_size_override("font_size", 13)
 	sort_order_btn.pressed.connect(_on_sort_changed.bind(SortMode.BY_ORDER))
 	toolbar_hbox.add_child(sort_order_btn)
 
 	var sort_progression_btn = Button.new()
 	sort_progression_btn.text = "BY PROGRESSION"
-	sort_progression_btn.custom_minimum_size = Vector2(160, 32)
-	sort_progression_btn.add_theme_font_size_override("font_size", 14)
+	sort_progression_btn.custom_minimum_size = Vector2(140, 30)
+	sort_progression_btn.add_theme_font_size_override("font_size", 13)
 	sort_progression_btn.pressed.connect(_on_sort_changed.bind(SortMode.BY_PROGRESSION))
 	toolbar_hbox.add_child(sort_progression_btn)
 
@@ -465,6 +472,9 @@ func _grab_first_button_focus() -> void:
 				if not buttons.is_empty():
 					buttons[0].grab_focus()
 					return
+
+	if back_button and back_button.is_visible_in_tree() and not back_button.disabled:
+		back_button.grab_focus()
 
 func _find_buttons_recursive(node: Node) -> Array[Button]:
 	"""Recursively find all buttons in a node"""

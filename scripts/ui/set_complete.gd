@@ -3,6 +3,7 @@ extends Control
 ## Set Complete Screen - Displayed when player completes all levels in a set
 ## Shows cumulative score, set high score, and perfect set clear bonus
 const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
+const Helpers = preload("res://scripts/ui/score_breakdown_helpers.gd")
 
 @onready var background = $Background
 @onready var set_complete_label = $VBoxContainer/SetCompleteLabel
@@ -10,19 +11,19 @@ const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 @onready var score_label = $VBoxContainer/ScoreLabel
 @onready var set_high_score_label = $VBoxContainer/SetHighScoreLabel
 @onready var perfect_set_label = $VBoxContainer/PerfectSetLabel
-@onready var breakdown_title_label = $VBoxContainer/HBoxContainer/BreakdownContainer/BreakdownTitleLabel
-@onready var base_score_label = $VBoxContainer/HBoxContainer/BreakdownContainer/BaseScoreLabel
-@onready var difficulty_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/DifficultyBonusLabel
-@onready var combo_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/ComboBonusLabel
-@onready var streak_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/StreakBonusLabel
-@onready var double_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/DoubleBonusLabel
-@onready var perfect_clear_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/PerfectClearBonusLabel
-@onready var perfect_set_bonus_label = $VBoxContainer/HBoxContainer/BreakdownContainer/PerfectSetBonusLabel
-@onready var total_score_label = $VBoxContainer/HBoxContainer/BreakdownContainer/TotalScoreLabel
-@onready var time_label = $VBoxContainer/HBoxContainer/BreakdownContainer/TimeLabel
-@onready var next_set_button = $VBoxContainer/HBoxContainer/ButtonsContainer/NextSetButton
-@onready var set_select_button = $VBoxContainer/HBoxContainer/ButtonsContainer/SetSelectButton
-@onready var menu_button = $VBoxContainer/HBoxContainer/ButtonsContainer/MenuButton
+@onready var breakdown_title_label = $VBoxContainer/BreakdownContainer/BreakdownTitleLabel
+@onready var base_score_label = $VBoxContainer/BreakdownContainer/BaseScoreLabel
+@onready var difficulty_bonus_label = $VBoxContainer/BreakdownContainer/DifficultyBonusLabel
+@onready var combo_bonus_label = $VBoxContainer/BreakdownContainer/ComboBonusLabel
+@onready var streak_bonus_label = $VBoxContainer/BreakdownContainer/StreakBonusLabel
+@onready var double_bonus_label = $VBoxContainer/BreakdownContainer/DoubleBonusLabel
+@onready var perfect_clear_bonus_label = $VBoxContainer/BreakdownContainer/PerfectClearBonusLabel
+@onready var perfect_set_bonus_label = $VBoxContainer/BreakdownContainer/PerfectSetBonusLabel
+@onready var total_score_label = $VBoxContainer/BreakdownContainer/TotalScoreLabel
+@onready var time_label = $VBoxContainer/BreakdownContainer/TimeLabel
+@onready var next_set_button = $VBoxContainer/ButtonsContainer/NextSetButton
+@onready var set_select_button = $VBoxContainer/ButtonsContainer/SetSelectButton
+@onready var menu_button = $VBoxContainer/ButtonsContainer/MenuButton
 
 func _ready():
 	"""Initialize set complete screen"""
@@ -42,9 +43,9 @@ func _ready():
 	var breakdown = MenuController.get_set_breakdown()
 	var set_time = MenuController.get_set_total_time_seconds()
 	var set_bonus = MenuController.get_set_perfect_bonus()
-	var challenge_mode = _get_active_challenge_mode()
-	var challenge_mode_label = _get_challenge_mode_label(challenge_mode)
-	var is_challenge_set_run = _is_challenge_set_run(challenge_mode)
+	var challenge_mode = Helpers.get_active_challenge_mode()
+	var challenge_mode_label = Helpers.get_challenge_mode_label(challenge_mode)
+	var is_challenge_set_run = Helpers.is_challenge_set_run(challenge_mode)
 	var displayed_time_seconds = int(floor(max(set_time, 0.0)))
 	if challenge_mode == "time_attack":
 		displayed_time_seconds = int(MenuController.get_time_attack_elapsed_base_seconds())
@@ -80,31 +81,34 @@ func _ready():
 	if is_challenge_set_run:
 		breakdown_title_label.text = challenge_mode_label + " SET BREAKDOWN"
 	base_score_label.text = "Base Score: " + str(base_points)
-	difficulty_bonus_label.text = "Difficulty Bonus: " + _format_bonus(difficulty_bonus)
-	combo_bonus_label.text = "Combo Bonus: " + _format_bonus(combo_bonus)
-	streak_bonus_label.text = "Streak Bonus: " + _format_bonus(streak_bonus)
-	double_bonus_label.text = "Power-Up Bonus: " + _format_bonus(double_bonus)
-	perfect_clear_bonus_label.text = "Perfect Clear Bonus: " + _format_bonus(perfect_clear_bonus)
-	perfect_set_bonus_label.text = "Perfect Set Bonus: " + _format_bonus(set_bonus)
+
+	# Hide zero-value bonus lines
+	_set_bonus_line(difficulty_bonus_label, "Difficulty", difficulty_bonus)
+	_set_bonus_line(combo_bonus_label, "Combo", combo_bonus)
+	_set_bonus_line(streak_bonus_label, "Streak", streak_bonus)
+	_set_bonus_line(double_bonus_label, "Power-Up", double_bonus)
+	_set_bonus_line(perfect_clear_bonus_label, "Perfect Clear", perfect_clear_bonus)
+	_set_bonus_line(perfect_set_bonus_label, "Perfect Set", set_bonus)
+
 	total_score_label.text = "Total: " + str(final_score)
 	if challenge_mode == "time_attack":
-		time_label.text = "Time Attack Time: " + _format_time(float(displayed_time_seconds))
+		time_label.text = "Time Attack Time: " + Helpers.format_time(float(displayed_time_seconds))
 	else:
-		time_label.text = "Set Time: " + _format_time(set_time)
+		time_label.text = "Set Time: " + Helpers.format_time(set_time)
 
 	# Check if this was a set high score
 	if challenge_mode == "time_attack":
 		if MenuController.was_new_machine_best:
 			set_high_score_label.text = "NEW MACHINE TIME ATTACK RECORD!"
 			UI_THEME.style_title(set_high_score_label)
-			set_high_score_label.add_theme_font_size_override("font_size", 24)
+			set_high_score_label.add_theme_font_size_override("font_size", 22)
 		elif MenuController.was_new_personal_best:
 			set_high_score_label.text = "NEW PERSONAL TIME ATTACK BEST!"
-			UI_THEME.style_warning(set_high_score_label, 24)
+			UI_THEME.style_warning(set_high_score_label, 22)
 		else:
 			var best_time = SaveManager.get_time_attack_set_high_score(pack_id)
 			if best_time > 0:
-				set_high_score_label.text = "Time Attack Best: " + _format_time(float(best_time))
+				set_high_score_label.text = "Time Attack Best: " + Helpers.format_time(float(best_time))
 				UI_THEME.style_subtitle(set_high_score_label)
 			else:
 				set_high_score_label.text = ""
@@ -112,10 +116,10 @@ func _ready():
 		if MenuController.was_new_machine_best:
 			set_high_score_label.text = "NEW MACHINE %s RECORD!" % challenge_mode_label
 			UI_THEME.style_title(set_high_score_label)
-			set_high_score_label.add_theme_font_size_override("font_size", 24)
+			set_high_score_label.add_theme_font_size_override("font_size", 22)
 		elif MenuController.was_new_personal_best:
 			set_high_score_label.text = "NEW PERSONAL %s BEST!" % challenge_mode_label
-			UI_THEME.style_warning(set_high_score_label, 24)
+			UI_THEME.style_warning(set_high_score_label, 22)
 		else:
 			var challenge_personal_best = SaveManager.get_challenge_set_high_score(pack_id, challenge_mode)
 			if challenge_personal_best > 0:
@@ -145,25 +149,34 @@ func _ready():
 func _apply_theme() -> void:
 	UI_THEME.apply_to(self)
 	UI_THEME.style_background(background, true)
-	UI_THEME.style_success(set_complete_label, 44)
+	UI_THEME.style_title_large(set_complete_label)
+	set_complete_label.add_theme_color_override("font_color", UI_THEME.SUCCESS)
 	UI_THEME.style_title(set_name_label)
-	set_name_label.add_theme_font_size_override("font_size", 28)
-	UI_THEME.style_value(score_label, 32)
+	set_name_label.add_theme_font_size_override("font_size", 24)
+	UI_THEME.style_value(score_label, 28)
 	UI_THEME.style_subtitle(set_high_score_label)
-	UI_THEME.style_warning(perfect_set_label, 24)
+	UI_THEME.style_warning(perfect_set_label, 20)
 	UI_THEME.style_section_title(breakdown_title_label)
-	UI_THEME.style_subtitle(base_score_label)
-	UI_THEME.style_subtitle(difficulty_bonus_label)
-	UI_THEME.style_subtitle(combo_bonus_label)
-	UI_THEME.style_subtitle(streak_bonus_label)
-	UI_THEME.style_subtitle(double_bonus_label)
-	UI_THEME.style_warning(perfect_clear_bonus_label, 20)
-	UI_THEME.style_warning(perfect_set_bonus_label, 20)
-	UI_THEME.style_value(total_score_label, 22)
-	UI_THEME.style_subtitle(time_label)
+	UI_THEME.style_stat_label(base_score_label)
+	UI_THEME.style_meta(difficulty_bonus_label)
+	UI_THEME.style_meta(combo_bonus_label)
+	UI_THEME.style_meta(streak_bonus_label)
+	UI_THEME.style_meta(double_bonus_label)
+	UI_THEME.style_warning(perfect_clear_bonus_label, 14)
+	UI_THEME.style_warning(perfect_set_bonus_label, 14)
+	UI_THEME.style_value(total_score_label, 20)
+	UI_THEME.style_meta(time_label)
 	UI_THEME.style_primary_button(next_set_button)
 	UI_THEME.style_muted_button(set_select_button)
 	UI_THEME.style_muted_button(menu_button)
+
+func _set_bonus_line(label: Label, name: String, value: int) -> void:
+	"""Show bonus line only if non-zero."""
+	if value > 0:
+		label.text = name + " Bonus: " + Helpers.format_bonus(value)
+		label.visible = true
+	else:
+		label.visible = false
 
 func _unhandled_input(event: InputEvent) -> void:
 	"""Handle B button to return to menu"""
@@ -185,33 +198,3 @@ func _on_set_select_button_pressed():
 func _on_menu_button_pressed():
 	"""Return to main menu"""
 	MenuController.show_main_menu()
-
-func _format_bonus(value: int) -> String:
-	if value > 0:
-		return "+" + str(value)
-	return str(value)
-
-func _format_time(seconds: float) -> String:
-	var total_seconds = int(seconds)
-	var minutes: int = int(floor(float(total_seconds) / 60.0))
-	var secs: int = int(total_seconds % 60)
-	return "%02d:%02d" % [minutes, secs]
-
-func _get_active_challenge_mode() -> String:
-	if MenuController and MenuController.has_method("get_challenge_mode"):
-		return str(MenuController.get_challenge_mode())
-	return "normal"
-
-func _is_challenge_set_run(challenge_mode: String) -> bool:
-	return MenuController.current_play_mode == MenuController.PlayMode.SET and challenge_mode != "normal"
-
-func _get_challenge_mode_label(challenge_mode: String) -> String:
-	match challenge_mode:
-		"iron_ball":
-			return "IRON BALL"
-		"one_life":
-			return "ONE LIFE"
-		"time_attack":
-			return "TIME ATTACK"
-		_:
-			return "NORMAL"

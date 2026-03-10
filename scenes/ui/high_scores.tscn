@@ -20,81 +20,171 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.05, 0.1, 1)
 
-[node name="Panel" type="Panel" parent="."]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -550.0
-offset_top = -300.0
-offset_right = 550.0
-offset_bottom = 300.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+[node name="ScreenMargin" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = -20.0
+offset_left = 32.0
+offset_top = 28.0
+offset_right = -32.0
+offset_bottom = -28.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 15
 
-[node name="TitleLabel" type="Label" parent="Panel/VBoxContainer"]
+[node name="CenterContainer" type="CenterContainer" parent="ScreenMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Panel" type="PanelContainer" parent="ScreenMargin/CenterContainer"]
+custom_minimum_size = Vector2(1120, 700)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="ScreenMargin/CenterContainer/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HeaderContainer" type="VBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="TitleLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/HeaderContainer"]
 layout_mode = 2
 text = "LOCAL HIGH SCORES"
 horizontal_alignment = 1
-vertical_alignment = 1
-theme_override_font_sizes/font_size = 24
 
-[node name="HSeparator" type="HSeparator" parent="Panel/VBoxContainer"]
+[node name="SubtitleLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/HeaderContainer"]
+layout_mode = 2
+text = "Machine-wide best scores across every profile."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ToolbarPanel" type="PanelContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="FilterTabs" type="TabBar" parent="Panel/VBoxContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ToolbarPanel"]
 layout_mode = 2
-focus_mode = 2
-tab_count = 4
-tab_alignment = 1
-tab_0/title = "OVERALL"
-tab_1/title = "SETS"
-tab_2/title = "LEVELS"
-tab_3/title = "SURVIVAL"
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
 
-[node name="ChallengeTabs" type="TabBar" parent="Panel/VBoxContainer"]
-visible = false
+[node name="ToolbarRow" type="HBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ToolbarPanel/MarginContainer"]
 layout_mode = 2
-focus_mode = 2
-tab_count = 4
-tab_alignment = 1
-tab_0/title = "NORMAL"
-tab_1/title = "IRON BALL"
-tab_2/title = "ONE LIFE"
-tab_3/title = "TIME ATTACK"
+theme_override_constants/separation = 12
 
-[node name="ScrollContainer" type="ScrollContainer" parent="Panel/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="ScoresContainer" type="VBoxContainer" parent="Panel/VBoxContainer/ScrollContainer"]
+[node name="FilterTabs" type="TabBar" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ToolbarPanel/MarginContainer/ToolbarRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+focus_mode = 2
+tab_count = 5
+tab_0/title = "OVERALL"
+tab_1/title = "LEVELS"
+tab_2/title = "SETS"
+tab_3/title = "SURVIVAL"
+tab_4/title = "BLITZ"
+
+[node name="SetFilterContainer" type="HBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ToolbarPanel/MarginContainer/ToolbarRow"]
+visible = false
+layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="BackButton" type="Button" parent="."]
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 40.0
-offset_top = -80.0
-offset_right = 160.0
-offset_bottom = -40.0
-grow_vertical = 0
-text = "Back to Menu"
+[node name="SetFilterLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ToolbarPanel/MarginContainer/ToolbarRow/SetFilterContainer"]
+layout_mode = 2
+text = "SET FILTER"
+vertical_alignment = 1
+
+[node name="SetFilterDropdown" type="OptionButton" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ToolbarPanel/MarginContainer/ToolbarRow/SetFilterContainer"]
+custom_minimum_size = Vector2(210, 0)
+layout_mode = 2
+focus_mode = 2
+text = "NORMAL"
+
+[node name="ColumnHeaderPanel" type="PanelContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ColumnHeaderPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 4
+
+[node name="HeaderRow" type="HBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ColumnHeaderPanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="RankHeaderLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ColumnHeaderPanel/MarginContainer/HeaderRow"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = "RANK"
+
+[node name="PlayerHeaderLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ColumnHeaderPanel/MarginContainer/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "PLAYER"
+
+[node name="ContextHeaderLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ColumnHeaderPanel/MarginContainer/HeaderRow"]
+custom_minimum_size = Vector2(210, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "LEVEL"
+horizontal_alignment = 1
+
+[node name="ScoreHeaderLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ColumnHeaderPanel/MarginContainer/HeaderRow"]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 2
+text = "SCORE"
+horizontal_alignment = 2
+
+[node name="DateHeaderLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ColumnHeaderPanel/MarginContainer/HeaderRow"]
+custom_minimum_size = Vector2(104, 0)
+layout_mode = 2
+text = "DATE"
+horizontal_alignment = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+follow_focus = true
+horizontal_scroll_mode = 0
+
+[node name="ScoresContainer" type="VBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 2
+
+[node name="FooterPanel" type="PanelContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/FooterPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 6
+
+[node name="FooterRow" type="HBoxContainer" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/FooterPanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="FooterHintLabel" type="Label" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/FooterPanel/MarginContainer/FooterRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Use left/right to switch boards."
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="BackButton" type="Button" parent="ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/FooterPanel/MarginContainer/FooterRow"]
+custom_minimum_size = Vector2(190, 48)
+layout_mode = 2
+focus_mode = 2
+text = "BACK TO MENU"

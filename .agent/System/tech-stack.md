@@ -18,7 +18,7 @@ For raw config inventories, read `project.godot` directly.
 - Public version is shown on main menu only; update both script constant and fallback label text in scene when bumping version.
 - Runtime content format is `.zeppack` from built-in `packs/` and user `user://packs/`.
 - Keybinding persistence is save-backed; `ui_cancel` remains effectively reserved/non-remappable behavior for menu/back flow.
-- Screenshot capture is a first-class input action: default `take_screenshot` binding is `F12`, it is exposed through the keybindings menu, and gameplay capture writes to `res://temp` in local dev when available with fallback to `user://screenshots`.
+- Screenshot capture is a first-class input action: default `take_screenshot` bindings are `F12`, `Cmd+Shift+S` (macOS-friendly fallback), and `Ctrl+Shift+S`. It is exposed through the keybindings menu, works from menus as well as gameplay through `MenuController`, and writes to `res://temp` in local dev when available with fallback to `user://screenshots`.
 - Audio buses (`Music`, `SFX`) are created/validated at runtime by `AudioManager` if missing.
 - UI screens should consume the shared theme helper instead of introducing new one-off color/font conventions. Runtime-generated UI (HUD, dialogs, helper-built controls) is expected to pull from the same source.
 

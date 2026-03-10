@@ -47,6 +47,16 @@ func set_difficulty(difficulty: Difficulty):
 		current_difficulty = difficulty
 		difficulty_changed.emit(difficulty)
 
+func set_difficulty_by_name(difficulty_name: String) -> void:
+	"""Set difficulty from a saved human-readable string."""
+	match difficulty_name.to_lower():
+		"easy":
+			set_difficulty(Difficulty.EASY)
+		"hard":
+			set_difficulty(Difficulty.HARD)
+		_:
+			set_difficulty(Difficulty.NORMAL)
+
 func lock_difficulty():
 	"""Lock difficulty changes (called when gameplay starts)"""
 	is_locked = true

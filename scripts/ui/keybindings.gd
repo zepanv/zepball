@@ -1,6 +1,7 @@
 extends Control
 
 signal closed
+const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
 const ACTION_LABELS = {
 	"move_up": "Move Up",
@@ -16,6 +17,9 @@ const ACTION_LABELS = {
 	"audio_toggle_pause": "Music Pause/Play"
 }
 
+@onready var background: ColorRect = $Background
+@onready var panel: Panel = $Panel
+@onready var title_label: Label = $Panel/VBoxContainer/TitleLabel
 @onready var bindings_list: VBoxContainer = $Panel/VBoxContainer/Scroll/BindingsList
 @onready var hint_label: Label = $Panel/VBoxContainer/HintLabel
 @onready var reset_button: Button = $Panel/VBoxContainer/ButtonRow/ResetButton
@@ -32,6 +36,7 @@ func _ready() -> void:
 
 	# Set high z_index to ensure we're on top
 	z_index = 1000
+	_apply_theme()
 
 	reset_button.pressed.connect(_on_reset_pressed)
 	back_button.pressed.connect(_on_back_pressed)
@@ -46,12 +51,17 @@ func _ready() -> void:
 	await get_tree().process_frame
 	_setup_focus_chain()
 
-	# Connect focus tracking for debugging
-	_setup_focus_debug()
-
 	# Ensure reset button gets focus for controller navigation
 	reset_button.grab_focus()
-	print("[Keybindings] Initial focus set to: ", reset_button.name)
+
+func _apply_theme() -> void:
+	UI_THEME.apply_to(self)
+	background.color = Color(UI_THEME.SCREEN_BACKGROUND.r, UI_THEME.SCREEN_BACKGROUND.g, UI_THEME.SCREEN_BACKGROUND.b, 0.88)
+	UI_THEME.style_panel(panel, UI_THEME.PANEL_BORDER_ACCENT)
+	UI_THEME.style_title_large(title_label)
+	UI_THEME.style_subtitle(hint_label)
+	UI_THEME.style_muted_button(reset_button)
+	UI_THEME.style_muted_button(back_button)
 
 func _build_column_headers() -> void:
 	# Add header row with column labels
@@ -63,21 +73,24 @@ func _build_column_headers() -> void:
 	action_label.text = "Action"
 	action_label.custom_minimum_size = Vector2(180, 0)
 	action_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	action_label.add_theme_font_size_override("font_size", 18)
+	UI_THEME.style_meta(action_label)
+	action_label.add_theme_font_size_override("font_size", 15)
 	header_row.add_child(action_label)
 
 	var kb_label = Label.new()
 	kb_label.text = "Keyboard/Mouse"
 	kb_label.custom_minimum_size = Vector2(160, 0)
 	kb_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	kb_label.add_theme_font_size_override("font_size", 18)
+	UI_THEME.style_meta(kb_label)
+	kb_label.add_theme_font_size_override("font_size", 15)
 	header_row.add_child(kb_label)
 
 	var ctrl_label = Label.new()
 	ctrl_label.text = "Controller"
 	ctrl_label.custom_minimum_size = Vector2(160, 0)
 	ctrl_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ctrl_label.add_theme_font_size_override("font_size", 18)
+	UI_THEME.style_meta(ctrl_label)
+	ctrl_label.add_theme_font_size_override("font_size", 15)
 	header_row.add_child(ctrl_label)
 
 	bindings_list.add_child(header_row)
@@ -98,12 +111,16 @@ func _build_bindings_list() -> void:
 		label.text = ACTION_LABELS.get(action, action)
 		label.custom_minimum_size = Vector2(180, 0)
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		UI_THEME.style_subtitle(label)
+		label.add_theme_font_size_override("font_size", 16)
 		row.add_child(label)
 
 		# Keyboard binding button
 		var kb_button = Button.new()
 		kb_button.custom_minimum_size = Vector2(160, 40)
 		kb_button.text = _get_keyboard_text(action)
+		UI_THEME.style_muted_button(kb_button)
+		kb_button.add_theme_font_size_override("font_size", 15)
 		kb_button.pressed.connect(_on_rebind_pressed.bind(action, kb_button, "keyboard"))
 		row.add_child(kb_button)
 
@@ -111,6 +128,8 @@ func _build_bindings_list() -> void:
 		var ctrl_button = Button.new()
 		ctrl_button.custom_minimum_size = Vector2(160, 40)
 		ctrl_button.text = _get_controller_text(action)
+		UI_THEME.style_muted_button(ctrl_button)
+		ctrl_button.add_theme_font_size_override("font_size", 15)
 		ctrl_button.pressed.connect(_on_rebind_pressed.bind(action, ctrl_button, "controller"))
 		row.add_child(ctrl_button)
 
@@ -202,53 +221,7 @@ func _on_rebind_pressed(action: String, button: Button, input_type: String) -> v
 		button.text = "Press a button..."
 		_update_hint("Press a controller button or move analog stick")
 
-func _process(_delta: float) -> void:
-	"""Track focus changes for debugging"""
-	var focused = get_viewport().gui_get_focus_owner()
-	if focused != _last_focused:
-		_last_focused = focused
-		if focused:
-			print("[Keybindings] Focus changed to: ", focused.name if focused.has_method("get_name") else str(focused))
-			print("  - Is in keybindings menu: ", _is_control_in_menu(focused))
-			print("  - Focus mode: ", focused.focus_mode if focused is Control else "N/A")
-		else:
-			print("[Keybindings] Focus lost (null)")
-
-var _last_focused: Control = null
-
-func _is_control_in_menu(control: Control) -> bool:
-	"""Check if a control is part of the keybindings menu"""
-	var current = control
-	while current:
-		if current == self:
-			return true
-		current = current.get_parent() as Control
-	return false
-
 func _unhandled_input(event: InputEvent) -> void:
-	# Debug controller navigation
-	if event is InputEventJoypadButton and event.pressed:
-		var button_name = "Unknown"
-		match event.button_index:
-			0: button_name = "A"
-			1: button_name = "B"
-			11: button_name = "D-Up"
-			12: button_name = "D-Down"
-			13: button_name = "D-Left"
-			14: button_name = "D-Right"
-		print("[Keybindings Input] Joypad button pressed: ", button_name, " (", event.button_index, ")")
-		var focused = get_viewport().gui_get_focus_owner()
-		if focused:
-			print("  - Current focus: ", focused.name if focused.has_method("get_name") else str(focused))
-	elif event is InputEventJoypadMotion and abs(event.axis_value) > 0.5:
-		var axis_name = "Unknown"
-		var direction = "+" if event.axis_value > 0 else "-"
-		match event.axis:
-			0: axis_name = "Left Stick X"
-			1: axis_name = "Left Stick Y"
-		print("[Keybindings Input] Joypad motion: ", axis_name, " ", direction, " (", event.axis, ")")
-
-	# Original input handling below
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE and waiting_action == "":
 			_on_back_pressed()
@@ -390,26 +363,6 @@ func _restore_background_focus() -> void:
 		if control:
 			control.focus_mode = Control.FOCUS_ALL
 	disabled_controls.clear()
-
-func _setup_focus_debug() -> void:
-	"""Set up debug logging for focus events"""
-	reset_button.focus_entered.connect(func(): print("[Keybindings] Focus entered: Reset Button"))
-	reset_button.focus_exited.connect(func(): print("[Keybindings] Focus exited: Reset Button"))
-	back_button.focus_entered.connect(func(): print("[Keybindings] Focus entered: Back Button"))
-	back_button.focus_exited.connect(func(): print("[Keybindings] Focus exited: Back Button"))
-
-	for action in action_buttons.keys():
-		var buttons: Dictionary = action_buttons[action]
-		if buttons.has("keyboard") and buttons["keyboard"]:
-			var kb = buttons["keyboard"]
-			var action_name = action
-			kb.focus_entered.connect(func(): print("[Keybindings] Focus entered: ", action_name, " (Keyboard)"))
-			kb.focus_exited.connect(func(): print("[Keybindings] Focus exited: ", action_name, " (Keyboard)"))
-		if buttons.has("controller") and buttons["controller"]:
-			var ctrl = buttons["controller"]
-			var action_name = action
-			ctrl.focus_entered.connect(func(): print("[Keybindings] Focus entered: ", action_name, " (Controller)"))
-			ctrl.focus_exited.connect(func(): print("[Keybindings] Focus exited: ", action_name, " (Controller)"))
 
 func _setup_focus_chain() -> void:
 	"""Set up explicit focus neighbor chain to keep focus within the menu"""

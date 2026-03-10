@@ -15,6 +15,8 @@ const STATS_SCENE = "res://scenes/ui/stats.tscn"
 const SETTINGS_SCENE = "res://scenes/ui/settings.tscn"
 const LEVEL_EDITOR_SCENE = "res://scenes/ui/level_editor.tscn"
 const HIGH_SCORES_SCENE = "res://scenes/ui/high_scores.tscn"
+const SCREENSHOT_RES_DIR = "res://temp"
+const SCREENSHOT_USER_DIR = "user://screenshots"
 
 # Play mode enum
 enum PlayMode { INDIVIDUAL, SET }
@@ -44,6 +46,7 @@ var settings_opened_from_pause: bool = false
 var current_editor_pack_id: String = ""
 var editor_return_target: EditorReturnTarget = EditorReturnTarget.SET_SELECT
 var _quit_requested: bool = false
+var _screenshot_capture_in_progress: bool = false
 
 # Set mode state
 var current_play_mode: PlayMode = PlayMode.INDIVIDUAL
@@ -345,6 +348,13 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		quit_game()
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.echo:
+		return
+	if event.is_action_pressed("take_screenshot"):
+		_request_screenshot()
+		get_viewport().set_input_as_handled()
+
 func show_main_menu() -> void:
 	"""Load and show the main menu"""
 	is_in_gameplay = false
@@ -357,6 +367,61 @@ func show_main_menu() -> void:
 	# Change to main menu scene
 	get_tree().change_scene_to_file(MAIN_MENU_SCENE)
 	scene_changed.emit(MAIN_MENU_SCENE)
+
+func _request_screenshot() -> void:
+	if _screenshot_capture_in_progress:
+		return
+	_screenshot_capture_in_progress = true
+	_capture_screenshot()
+
+func _capture_screenshot() -> void:
+	await RenderingServer.frame_post_draw
+	var viewport_texture := get_viewport().get_texture()
+	if viewport_texture == null:
+		_screenshot_capture_in_progress = false
+		push_warning("MenuController: screenshot skipped because viewport texture was unavailable")
+		return
+
+	var image := viewport_texture.get_image()
+	if image == null or image.is_empty():
+		_screenshot_capture_in_progress = false
+		push_warning("MenuController: screenshot skipped because viewport image was empty")
+		return
+
+	var file_name := _build_screenshot_file_name()
+	var saved_path := _save_screenshot_image(image, SCREENSHOT_RES_DIR, file_name)
+	if saved_path.is_empty():
+		saved_path = _save_screenshot_image(image, SCREENSHOT_USER_DIR, file_name)
+
+	_screenshot_capture_in_progress = false
+	if saved_path.is_empty():
+		push_error("MenuController: failed to save screenshot")
+		return
+
+	print("Screenshot saved to: %s" % saved_path)
+
+func _build_screenshot_file_name() -> String:
+	var timestamp := Time.get_datetime_dict_from_system()
+	return "Screenshot_%04d%02d%02d_%02d%02d%02d.png" % [
+		int(timestamp.get("year", 0)),
+		int(timestamp.get("month", 0)),
+		int(timestamp.get("day", 0)),
+		int(timestamp.get("hour", 0)),
+		int(timestamp.get("minute", 0)),
+		int(timestamp.get("second", 0))
+	]
+
+func _save_screenshot_image(image: Image, dir_path: String, file_name: String) -> String:
+	var global_dir := ProjectSettings.globalize_path(dir_path)
+	if not DirAccess.dir_exists_absolute(global_dir):
+		var make_dir_error := DirAccess.make_dir_recursive_absolute(global_dir)
+		if make_dir_error != OK:
+			return ""
+
+	var global_path := global_dir.path_join(file_name)
+	if image.save_png(global_path) != OK:
+		return ""
+	return global_path
 
 func show_level_select() -> void:
 	"""Load and show the level selection screen"""

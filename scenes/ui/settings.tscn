@@ -27,10 +27,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -550.0
-offset_top = -420.0
-offset_right = 550.0
-offset_bottom = 420.0
+offset_left = -570.0
+offset_top = -438.0
+offset_right = 570.0
+offset_bottom = 438.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -39,10 +39,10 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = -20.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
 horizontal_scroll_mode = 0
@@ -51,7 +51,7 @@ vertical_scroll_mode = 1
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 20
+theme_override_constants/separation = 14
 
 [node name="TitleLabel" type="Label" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
@@ -65,7 +65,7 @@ layout_mode = 2
 
 [node name="TopRow" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_constants/separation = 40
+theme_override_constants/separation = 28
 
 [node name="EffectsSection" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/TopRow"]
 layout_mode = 2
@@ -80,8 +80,8 @@ theme_override_font_sizes/font_size = 18
 [node name="EffectsGrid" type="GridContainer" parent="Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection"]
 layout_mode = 2
 columns = 2
-theme_override_constants/h_separation = 20
-theme_override_constants/v_separation = 6
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 4
 
 [node name="ParticlesCheck" type="CheckBox" parent="Panel/ScrollContainer/VBoxContainer/TopRow/EffectsSection/EffectsGrid"]
 layout_mode = 2
@@ -118,26 +118,26 @@ theme_override_font_sizes/font_size = 18
 
 [node name="ShakeButtons" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 alignment = 0
 
 [node name="OffButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons"]
-custom_minimum_size = Vector2(80, 40)
+custom_minimum_size = Vector2(72, 34)
 layout_mode = 2
 text = "OFF"
 
 [node name="LowButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons"]
-custom_minimum_size = Vector2(80, 40)
+custom_minimum_size = Vector2(72, 34)
 layout_mode = 2
 text = "LOW"
 
 [node name="MediumButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons"]
-custom_minimum_size = Vector2(80, 40)
+custom_minimum_size = Vector2(86, 34)
 layout_mode = 2
 text = "MEDIUM"
 
 [node name="HighButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons"]
-custom_minimum_size = Vector2(80, 40)
+custom_minimum_size = Vector2(72, 34)
 layout_mode = 2
 text = "HIGH"
 
@@ -155,7 +155,7 @@ theme_override_font_sizes/font_size = 18
 
 [node name="AudioGrid" type="GridContainer" parent="Panel/ScrollContainer/VBoxContainer/AudioSection"]
 layout_mode = 2
-theme_override_constants/h_separation = 40
+theme_override_constants/h_separation = 28
 columns = 3
 
 [node name="MusicColumn" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/AudioSection/AudioGrid"]
@@ -220,7 +220,7 @@ theme_override_font_sizes/font_size = 18
 
 [node name="ControlsHBox" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/ControlsSection"]
 layout_mode = 2
-theme_override_constants/separation = 40
+theme_override_constants/separation = 28
 
 [node name="SensitivityColumn" type="VBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/ControlsSection/ControlsHBox"]
 layout_mode = 2
@@ -238,7 +238,7 @@ step = 0.1
 value = 1.0
 
 [node name="KeybindingsButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/ControlsSection/ControlsHBox"]
-custom_minimum_size = Vector2(250, 45)
+custom_minimum_size = Vector2(220, 40)
 layout_mode = 2
 size_flags_vertical = 4
 theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
@@ -260,7 +260,7 @@ theme_override_font_sizes/font_size = 18
 
 [node name="ProfileHBox" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection"]
 layout_mode = 2
-theme_override_constants/separation = 40
+theme_override_constants/separation = 24
 
 [node name="CurrentProfileLabel" type="Label" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox"]
 layout_mode = 2
@@ -271,15 +271,15 @@ text = "Current Profile: Player"
 [node name="ProfileButtons" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="RenameProfileButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/ProfileButtons"]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 40)
 size_flags_horizontal = 3
 text = "RENAME"
 
 [node name="DeleteProfileButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileHBox/ProfileButtons"]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 40)
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.9, 0.3, 0.4, 1)
 text = "DELETE"
@@ -298,10 +298,10 @@ theme_override_font_sizes/font_size = 18
 
 [node name="DataHBox" type="HBoxContainer" parent="Panel/ScrollContainer/VBoxContainer/DataSection"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 12
 
 [node name="ResetSettingsButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/DataSection/DataHBox"]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
@@ -310,7 +310,7 @@ theme_override_font_sizes/font_size = 20
 text = "RESET SETTINGS"
 
 [node name="ClearSaveButton" type="Button" parent="Panel/ScrollContainer/VBoxContainer/DataSection/DataHBox"]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.9, 0.3, 0.4, 1)
