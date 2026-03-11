@@ -23,6 +23,13 @@ This document tracks assets present in the repo that are intentionally not refer
 - Unused single variant:
   - `element_purple_cube_glossy.png`
 
+### Background graphics
+- Location: `assets/graphics/backgrounds/`
+- Unused:
+  - `bg_abyssal_deep.jpg`
+  - `bg_cosmic_dust.jpg`
+  - `bg_cyber_void.jpg`
+
 ### Paddle graphics
 - Location: `assets/graphics/paddles/`
 - Unused:
@@ -33,6 +40,11 @@ This document tracks assets present in the repo that are intentionally not refer
 - Unused:
   - `attract.png`
   - `bine.png`
+  - `curse_brick_armor.png`
+  - `curse_heavy_paddle.png`
+  - `curse_power_drain.png`
+  - `curse_split_paddle.png`
+  - `curse_wild_bounce.png`
   - `powerups.jpg`
   - `powerups-transparent.png`
   - `shield.png`
@@ -48,4 +60,4 @@ This document tracks assets present in the repo that are intentionally not refer
 - Move an asset here only when runtime references are removed or never existed.
 - Keep future-intent notes short; avoid speculative cleanup plans unless a decision has been made.
 
-*Last updated: March 10, 2026*
+*Last updated: March 11, 2026*
