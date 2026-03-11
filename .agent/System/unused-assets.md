@@ -41,10 +41,16 @@ This document tracks assets present in the repo that are intentionally not refer
   - `attract.png`
   - `bine.png`
   - `curse_brick_armor.png`
+  - `curse_drop_jam.png`
   - `curse_heavy_paddle.png`
   - `curse_power_drain.png`
   - `curse_split_paddle.png`
   - `curse_wild_bounce.png`
+  - `hazard_gravity_well.png`
+  - `hazard_pinball_bumper.png`
+  - `hazard_portal_warp.png`
+  - `hazard_speed_zone_fast.png`
+  - `hazard_speed_zone_slow.png`
   - `powerups.jpg`
   - `powerups-transparent.png`
   - `shield.png`

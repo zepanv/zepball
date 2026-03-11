@@ -83,13 +83,21 @@ Expand the existing red-highlighted negative drop pool. The current risky pool (
 
 These are the cleanest additions because they are easy to understand, mechanically distinct from the existing bad pool, and relatively low-cost compared with more bespoke curses like `Split Paddle`.
 
-**Suggested asset direction:**
-- **Heavy Paddle** — dark iron weight / anvil / chained paddle icon; optional darker paddle tint or subtle drag trail while active
-- **Power Drain** — broken star / cracked buff icon / downward spark icon; optional brief drain pulse on the HUD power-up stack when it removes an effect
-- **Split Paddle** — paddle icon snapped into two halves with a glowing gap; requires a visible altered paddle state during effect
-- **Brick Armor** — shield plate / riveted panel icon; bricks should gain a thin temporary armor overlay, rim glow, or crackable shell effect
-- **Wild Bounce** — crooked ricochet arrows / wobble path icon; optional unstable ball trail color while active
-- **Drop Jam** — crossed-out capsule / jammed chute icon; optional muted or “locked” treatment on spawned drop indicators while active
+**Asset status (2026-03-11):**
+- `assets/graphics/powerups/curse_heavy_paddle.png` exists for `Heavy Paddle`
+- `assets/graphics/powerups/curse_power_drain.png` exists for `Power Drain`
+- `assets/graphics/powerups/curse_split_paddle.png` exists for `Split Paddle`
+- `assets/graphics/powerups/curse_brick_armor.png` exists for `Brick Armor`
+- `assets/graphics/powerups/curse_wild_bounce.png` exists for `Wild Bounce`
+- `assets/graphics/powerups/curse_drop_jam.png` exists for `Drop Jam`
+
+**Runtime visual follow-up still needed:**
+- **Heavy Paddle** — optional darker paddle tint or subtle drag trail while active
+- **Power Drain** — optional brief drain pulse on the HUD power-up stack when it removes an effect
+- **Split Paddle** — requires a visible altered paddle state during effect
+- **Brick Armor** — bricks should gain a thin temporary armor overlay, rim glow, or crackable shell effect
+- **Wild Bounce** — optional unstable ball trail color while active
+- **Drop Jam** — add a muted or "locked" treatment on spawned drop indicators while active
 
 **Avoid for now:**
 - Reverse controls
@@ -99,7 +107,7 @@ These are the cleanest additions because they are easy to understand, mechanical
 
 These are more likely to feel unfair than tense.
 
-**Blocker:** New entries require art assets and, for some entries, temporary runtime state visuals. Revisit when an asset pass is planned.
+**Blocker:** Icon art now exists for the current curse shortlist, but implementation still needs runtime state visuals for several effects before the full set is ready to ship cleanly.
 
 ---
 
@@ -127,6 +135,19 @@ New tile types that modify the field rather than the bricks:
 - **Ball Speed Zones** — square or hex field tile with animated directional bands or pulse rings; matching fast/slow ball glow while active
 - **Portal/Warp** — paired gate visuals with linked colors/shapes, clear entry pulse, and an exit burst so the destination reads immediately
 - **Gravity Well** — swirling lens, concentric rings, and subtle orbiting particles to communicate pull radius and center
+
+**Asset status (2026-03-11):**
+- `assets/graphics/powerups/hazard_pinball_bumper.png` exists for `Pinball Bumper`
+- `assets/graphics/powerups/hazard_speed_zone_fast.png` exists for `Ball Speed Zones` fast state
+- `assets/graphics/powerups/hazard_speed_zone_slow.png` exists for `Ball Speed Zones` slow state
+- `assets/graphics/powerups/hazard_portal_warp.png` exists for `Portal/Warp`
+- `assets/graphics/powerups/hazard_gravity_well.png` exists for `Gravity Well`
+
+**Runtime visual follow-up still needed:**
+- **Pinball Bumper** — hit flash and strong contact particles
+- **Ball Speed Zones** — matching fast/slow ball glow while active plus tile animation at runtime
+- **Portal/Warp** — clear destination pairing, entry pulse, and exit burst in-scene
+- **Gravity Well** — readable pull radius treatment and orbiting particles at runtime
 
 **Editor impact:** These features also require level-editor support so designers can place, configure, and preview them in authored levels. Pairing/parameterized hazards such as `Portal/Warp`, `Gravity Well`, and speed zones will need editor-side property controls, not just runtime implementation.
 
