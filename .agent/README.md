@@ -14,6 +14,7 @@ This folder contains implementation-facing docs for contributors and agents.
 | Runtime architecture and behavior | `System/architecture.md` |
 | Runtime subsystem internals (deep reference) | `System/architecture-details.md` |
 | Engine/config/input/autoload facts | `System/tech-stack.md` |
+| Visual asset style/specs | `System/asset-specs.md` |
 | Required procedures (save/assets/commit/release) | `SOP/critical-workflows.md` |
 | Asset usage inventory | `System/used-assets.md`, `System/unused-assets.md` |
 
@@ -35,6 +36,6 @@ This folder contains implementation-facing docs for contributors and agents.
 - Keep index docs concise; prefer links over repeated instructions.
 - Remove stale path/version claims when no longer true.
 - Prefer documenting non-obvious contracts over easily discoverable file inventories.
-- Run docs lint after `.agent` doc edits: `scripts/check_agent_docs.sh`
+- Run docs lint before commit if `.agent` docs were edited: `scripts/check_agent_docs.sh`
 
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-03-11

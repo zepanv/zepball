@@ -177,7 +177,7 @@ This script will:
 ## Quick Pre-Commit Gate
 - [ ] Save schema touched? Migration and default-save updates added.
 - [ ] Asset usage touched? Used/unused asset docs updated.
-- [ ] `.agent` docs touched? Run `scripts/check_agent_docs.sh`.
+- [ ] `.agent` docs touched? Run `scripts/check_agent_docs.sh` before commit.
 - [ ] Commit message matches required format and includes co-author.
 - [ ] Version changed only if explicitly requested.
 

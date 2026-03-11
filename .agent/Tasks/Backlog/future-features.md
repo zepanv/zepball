@@ -10,7 +10,14 @@ Last Updated: 2026-03-11
 
 ### Mutators
 
-Pre-run rule modifier — one applied automatically via a random toggle, no selection menu. Show active modifier as a small badge/label in-game. Modifiers change *rules*, not *stats* (stats are covered by the 16 existing power-ups).
+Pre-run rule modifier for Survival. Expose a single dropdown before run start, defaulting to `None`. Show the active modifier as a small badge/label in-game. Modifiers change *rules*, not *stats* (stats are covered by the 16 existing power-ups).
+
+**Selection UI:**
+- Single dropdown in the Survival hub
+- Default option: `None`
+- Additional options: `Random`, `No Walls`, `Ricochet Chaos`, `Countdown`, `Speed Ramp`, `Shrinking Playfield`
+- `Random` resolves to one concrete mutator at run start and surfaces that resolved mutator in HUD / run-end results
+- Explicit mutator picks are allowed for player experimentation and deterministic testing; no separate test-only UI needed
 
 **Modifier pool:**
 - **No Walls** — ball wraps screen edges instead of bouncing
@@ -18,13 +25,18 @@ Pre-run rule modifier — one applied automatically via a random toggle, no sele
 - **Countdown** — bricks regenerate after N seconds if not cleared as part of a chain
 - **Speed Ramp** — ball accelerates permanently each time it hits something
 - **Shrinking Playfield** — walls slowly close in, increasing spatial pressure each wave
-- *Reverse Controls* — keep for hard/challenge pool only, not the casual random pool
+- *Reverse Controls* — keep out of the initial pool; does not currently seem fun enough to justify inclusion.
 
-**Leaderboard policy:** Random-only mutators → tag shared boards with a filter/toggle in the leaderboard header. Player-selectable mutators would need separate score buckets.
+**Leaderboard policy:**
+- `None` uses the normal Survival leaderboard
+- Any mutator run (`Random` or a named mutator) writes to a new Survival Mutators leaderboard
+- Survival Mutators leaderboard should include a filter/toggle in the header so players can inspect `Random` vs specific named mutators
+- Default leaderboard filter should be `Random`
+- This keeps player choice available without fragmenting score storage into one board per mutator in v1
 
 **Key risk:** Curate carefully — some combinations become unfun or unplayable.
 
-**Implementation shape:** Run modifier descriptor above gameplay scene setup; apply through `MenuController`, `game_manager.gd`, `ball.gd`, `paddle.gd`, and brick spawning hooks.
+**Implementation shape:** Run modifier descriptor above gameplay scene setup; apply through the Endless Waves / Survival entry UI, `MenuController`, `game_manager.gd`, `ball.gd`, `paddle.gd`, and brick spawning hooks.
 
 ---
 
@@ -54,9 +66,40 @@ After every N waves, pause and present 3 power-up options — pick 1. Adds meani
 
 ### Curse / Negative Power-Ups
 
-Expand the existing red-highlighted negative drop pool. More entries add tension to every drop decision without structural changes.
+Expand the existing red-highlighted negative drop pool. The current risky pool (`Contract`, `Speed Up`, `Small Ball`) is functional but too small, so more entries would add tension to every drop decision without changing the overall pickup/drop architecture.
 
-**Blocker:** New entries require art assets. Revisit when an asset pass is planned.
+**Good v1 candidates:**
+- **Heavy Paddle** — paddle movement speed is reduced for a short duration. Pressures recovery and positioning without changing paddle size.
+- **Power Drain** — remove one active beneficial timed power-up at random. Stronger once run-identity systems exist, but still readable in the current game.
+- **Split Paddle** — paddle opens a center dead zone for a short duration, forcing cleaner tracking and edge catches.
+- **Brick Armor** — remaining breakable bricks gain a temporary extra hit layer. Increases wave pressure without directly sabotaging controls.
+- **Wild Bounce** — paddle hits add a small angle jitter, making precision routing less reliable without making the ball uncontrollable.
+- **Drop Jam** — suppress positive random power-up drops for a short duration. Hurts resource flow instead of directly attacking survival.
+
+**Suggested ship-first shortlist:**
+- `Heavy Paddle`
+- `Power Drain`
+- `Drop Jam`
+
+These are the cleanest additions because they are easy to understand, mechanically distinct from the existing bad pool, and relatively low-cost compared with more bespoke curses like `Split Paddle`.
+
+**Suggested asset direction:**
+- **Heavy Paddle** — dark iron weight / anvil / chained paddle icon; optional darker paddle tint or subtle drag trail while active
+- **Power Drain** — broken star / cracked buff icon / downward spark icon; optional brief drain pulse on the HUD power-up stack when it removes an effect
+- **Split Paddle** — paddle icon snapped into two halves with a glowing gap; requires a visible altered paddle state during effect
+- **Brick Armor** — shield plate / riveted panel icon; bricks should gain a thin temporary armor overlay, rim glow, or crackable shell effect
+- **Wild Bounce** — crooked ricochet arrows / wobble path icon; optional unstable ball trail color while active
+- **Drop Jam** — crossed-out capsule / jammed chute icon; optional muted or “locked” treatment on spawned drop indicators while active
+
+**Avoid for now:**
+- Reverse controls
+- Visibility-denial effects
+- Instant life loss
+- Pure score punishment with no gameplay change
+
+These are more likely to feel unfair than tense.
+
+**Blocker:** New entries require art assets and, for some entries, temporary runtime state visuals. Revisit when an asset pass is planned.
 
 ---
 
@@ -72,6 +115,20 @@ New tile types that modify the field rather than the bricks:
 - **Portal/Warp** — tile-triggered teleport to a paired location; Air Ball's teleport logic is the starting point
 - **Gravity Well** — radial force with distance falloff; variant of the existing Force Arrow system (same proximity-force pattern already in `ball.gd`)
 - **Pinball Bumper** — non-breakable obstacle, high-energy bounce at randomized angle
+
+**Suggested implementation order:**
+- `Pinball Bumper` first — highest spectacle, clearest readability, strongest “pinball” identity
+- `Ball Speed Zones` second — easy to teach and creates route-planning pressure without too much rules overhead
+- `Portal/Warp` third — strong once paired-entry/exit readability is solved cleanly
+- `Gravity Well` later — highest tuning risk; easiest to make confusing or unfair if the force is too subtle or too strong
+
+**Suggested asset direction:**
+- **Pinball Bumper** — circular bumper cap with a bright ring, illuminated center, hit flash, and strong contact particles
+- **Ball Speed Zones** — square or hex field tile with animated directional bands or pulse rings; matching fast/slow ball glow while active
+- **Portal/Warp** — paired gate visuals with linked colors/shapes, clear entry pulse, and an exit burst so the destination reads immediately
+- **Gravity Well** — swirling lens, concentric rings, and subtle orbiting particles to communicate pull radius and center
+
+**Editor impact:** These features also require level-editor support so designers can place, configure, and preview them in authored levels. Pairing/parameterized hazards such as `Portal/Warp`, `Gravity Well`, and speed zones will need editor-side property controls, not just runtime implementation.
 
 *Note: some unused assets may exist — audit before committing. Godot-generated visuals (particles, shaders) are a fallback.*
 

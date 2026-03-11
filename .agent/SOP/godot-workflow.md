@@ -16,7 +16,7 @@ Use this doc for:
 2. Read only the needed canonical docs for the change.
 3. Implement in small increments and run focused tests.
 4. Update canonical docs only when behavior/procedure facts change.
-5. If `.agent` docs changed, run `scripts/check_agent_docs.sh`.
+5. If `.agent` docs changed, run `scripts/check_agent_docs.sh` before commit.
 
 ## Scene and Script Conventions
 - Keep one clear purpose per scene/script pair.

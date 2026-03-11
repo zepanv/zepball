@@ -8,6 +8,7 @@ Use this file for routing only. Canonical details live in Layer 2 docs.
 | Understand runtime behavior | `.agent/System/architecture.md` |
 | Deep-dive subsystem internals | `.agent/System/architecture-details.md` |
 | Check project settings/input/autoloads | `.agent/System/tech-stack.md` |
+| Spec or request new visual assets | `.agent/System/asset-specs.md` |
 | Change save structure safely | `.agent/SOP/critical-workflows.md` |
 | Add/remove assets correctly | `.agent/SOP/critical-workflows.md` |
 | Prepare commit or release/version bump | `.agent/SOP/critical-workflows.md` |
@@ -26,6 +27,6 @@ Use this file for routing only. Canonical details live in Layer 2 docs.
 1. Keep one source of truth per topic.
 2. Prefer links in index docs over copied detail.
 3. Remove stale legacy references when found.
-4. Run `scripts/check_agent_docs.sh` after `.agent` doc edits.
+4. Run `scripts/check_agent_docs.sh` before commit if `.agent` docs changed.
 
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-03-11

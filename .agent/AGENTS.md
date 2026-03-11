@@ -36,7 +36,7 @@ Update canonical docs when behavior changes. Avoid repeating the same detail in 
 - User-visible release notes/history: git history and release notes drafts during release prep
 
 ## Pre-Commit Doc Gate
-- Run `.agent` docs lint after doc updates:
+- Run `.agent` docs lint before commit when `.agent` docs were touched:
   - `scripts/check_agent_docs.sh`
 
 ## Anti-Bloat Rules
