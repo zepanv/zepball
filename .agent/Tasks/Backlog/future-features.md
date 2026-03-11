@@ -2,88 +2,164 @@
 
 ## Status: 📋 BACKLOG
 
-Features that have been designed but not yet implemented.
-
-Last Updated: 2026-03-09
+Last Updated: 2026-03-11
 
 ---
 
-## Game Modes
+## Survival & Run Depth
 
-### Time Attack Mode & Survival Mode
-> **Implemented**: See `Tasks/Completed/new-game-modes.md` for implementation details and verification notes.
+### Mutators
 
-### Iron Ball Mode & One Life Mode
-> **Implemented**: See `Tasks/Completed/challenge-modes.md` for implementation details and verification notes.
+Pre-run rule modifier — one applied automatically via a random toggle, no selection menu. Show active modifier as a small badge/label in-game. Modifiers change *rules*, not *stats* (stats are covered by the 16 existing power-ups).
 
-### Run Variety Expansion
-> **Extracted to dedicated task**: See `Tasks/Backlog/run-variety-expansion.md` for the exploration brief.
-> Covers: Mutators, Drafted Power-Ups, Boss Waves, Daily Run, Brick Affixes, Combo Cashout, Paddle Modules, Ghost Replays.
+**Modifier pool:**
+- **No Walls** — ball wraps screen edges instead of bouncing
+- **Ricochet Chaos** — ball bounces off bricks at randomized angles (±15°)
+- **Countdown** — bricks regenerate after N seconds if not cleared as part of a chain
+- **Speed Ramp** — ball accelerates permanently each time it hits something
+- **Shrinking Playfield** — walls slowly close in, increasing spatial pressure each wave
+- *Reverse Controls* — keep for hard/challenge pool only, not the casual random pool
 
-## Advanced Gameplay Features
+**Leaderboard policy:** Random-only mutators → tag shared boards with a filter/toggle in the leaderboard header. Player-selectable mutators would need separate score buckets.
 
-### Advanced Tile Elements
-> **Extracted to dedicated task**: See `Tasks/Backlog/advanced-tile-elements.md` for full PRD and implementation plan.
-> Covers: Force Arrow tiles, Power-up Bricks, Enhanced Spin (dramatic curve), Penetrating Spin.
+**Key risk:** Curate carefully — some combinations become unfun or unplayable.
 
-### Ball Speed Zones
-- **Description**: Special floor tiles that affect ball speed temporarily
-- **Features**:
-  - **Slow Zone Brick** (Blue): Slows ball to 60% speed for 3 seconds
-  - **Fast Zone Brick** (Red): Speeds ball to 140% speed for 3 seconds
-  - Visual indicator on ball (glow effect)
-  - Stack with power-ups
-  - Adds strategic layer to brick breaking
-- **Implementation**:
-  - New brick types: SLOW_ZONE, FAST_ZONE
-  - Temporary speed modifiers in ball.gd
-  - Visual effects for zones
-
-### Brick Chains
-- **Description**: Connected bricks that break in sequence
-- **Features**:
-  - Chain reaction effect
-  - Bonus points for chain length
-  - Special brick type to trigger
-- **Implementation**:
-  - Add chain metadata in level JSON
-  - Propagate break events
-  - Add chain score bonus in GameManager
-
-### Paddle Abilities
-- **Description**: Skill-based paddle actions with cooldowns
-- **Features**:
-  - **Pulse**: Send shockwave to knock nearby balls upward
-  - **Shield**: Temporary block on right edge to prevent ball loss
-  - Visual indicators for charge/cooldown state
-- **Implementation**:
-  - Add ability system to paddle.gd
-  - Cooldown timers in PowerUpManager
-  - Visual feedback for charge levels
-  - HUD indicators for ability status
+**Implementation shape:** Run modifier descriptor above gameplay scene setup; apply through `MenuController`, `game_manager.gd`, `ball.gd`, `paddle.gd`, and brick spawning hooks.
 
 ---
 
----
+### Boss / Elite Waves
 
-## Implementation Priority
+Milestone waves that break the rhythm of ordinary brick fields. Two-phase approach — ship Elite first, Boss second.
 
-**High Priority:**
-1. Advanced Tile Elements → see `Tasks/Backlog/advanced-tile-elements.md`
-2. Time Attack Mode + Survival Mode → completed (`Tasks/Completed/new-game-modes.md`)
+**Phase A — Elite Waves:** Every N waves in Survival, inject a hand-crafted harder layout with a score multiplier. Uses existing level editor format — no custom nodes or AI needed. Immediate spectacle at low cost.
 
-**Medium Priority:**
-3. Ball Speed Zones (simple mechanic, strategic depth)
+**Phase B — Boss Waves:** Replace Elite layout with a scripted encounter:
+- Weak-point boss made from moving breakable segments
+- Shield phases requiring side targets first
+- Hazard emitters spawning force arrows, blocks, or projectile lanes
 
-**Low Priority:**
-5. Paddle Abilities (complex, needs careful balancing)
-6. Brick Chains (nice to have, not essential)
-7. New Game Modes (Time Attack, Survival) → completed (`Tasks/Completed/new-game-modes.md`)
+**Key risk:** Phase B has the highest implementation and balancing cost on the list. Best implemented after Advanced Tile Elements ships — strong synergy with force arrow tiles.
 
 ---
 
-## Notes
-- All features designed to work without additional art assets
-- Features use existing sprites, colors, and Godot built-ins
-- Most features integrate with existing SaveManager system
-- Consider user feedback before implementing complex features
+### Drafted Power-Ups
+
+After every N waves, pause and present 3 power-up options — pick 1. Adds meaningful mid-run decisions and run identity.
+
+- Options: reroll, "skip for score," RNG weighting to avoid dead picks when effects are already active
+- **Key risk:** If only timed effects are offered, choices may feel too temporary to matter — consider persistent run bonuses alongside timed ones.
+
+---
+
+### Curse / Negative Power-Ups
+
+Expand the existing red-highlighted negative drop pool. More entries add tension to every drop decision without structural changes.
+
+**Blocker:** New entries require art assets. Revisit when an asset pass is planned.
+
+---
+
+## Field & Tile Systems
+
+### Environmental Hazards / Pinball Elements
+
+> **Prerequisite**: Advanced Tile Elements is ✅ complete (`Tasks/Completed/advanced-tile-elements.md`). Force Arrow tiles, Enhanced Spin, Power-up Bricks, etc. are already shipped. These are the next wave of tile types to build on that foundation.
+
+New tile types that modify the field rather than the bricks:
+
+- **Ball Speed Zones** — Slow Zone (60% speed, 3s) and Fast Zone (140% speed, 3s) brick types; visual glow on ball; stacks with power-ups
+- **Portal/Warp** — tile-triggered teleport to a paired location; Air Ball's teleport logic is the starting point
+- **Gravity Well** — radial force with distance falloff; variant of the existing Force Arrow system (same proximity-force pattern already in `ball.gd`)
+- **Pinball Bumper** — non-breakable obstacle, high-energy bounce at randomized angle
+
+*Note: some unused assets may exist — audit before committing. Godot-generated visuals (particles, shaders) are a fallback.*
+
+---
+
+### Brick Affixes
+
+Individual bricks gain traits that change how they behave:
+
+- **Shielded** — requires two hits
+- **Splitting** — breaks into smaller bricks
+- **Healing** — regenerates HP over time
+- **Timed** — disappears after N seconds if not broken
+
+Strong long-term depth — likely requires new assets.
+
+---
+
+## Scoring & Replayability
+
+### Combo Cashout
+
+Deliberately cash in a current combo for a bonus score reward — one explicit decision point per wave. Low implementation cost, fits the arcade-first philosophy with no new UI surface needed beyond a prompt or button.
+
+---
+
+### Daily Run
+
+Fixed daily seed with a shared leaderboard and optionally one curated mutator set. Low-content replayability driver — viable once seeded generation is confirmed deterministic.
+
+---
+
+### Ghost Replays
+
+Record and replay the best run (personal or friend) as a ghost. No new gameplay logic — input recording only. Social replayability hook with minimal implementation surface.
+
+---
+
+## Character & Build Systems
+
+### Paddle Enhancements
+
+Two complementary layers — active ability and pre-run passive selection.
+
+**Active — Pulse:**
+An on-demand shockwave that knocks nearby bricks/ball upward. Useful for dislodging a stubborn brick that's hard to reach. Cooldown-gated to prevent abuse.
+
+**Passive — Paddle Modules:**
+Pre-run selection of a passive trait:
+- Wider catch zone
+- Better spin control
+- Improved power-up magnetism
+
+**Implementation shape:** Ability system in `paddle.gd`; cooldown timer in `PowerUpManager`; HUD indicator for Pulse charge state; module selection in pre-run flow.
+
+---
+
+## Implementation Order
+
+| Phase | Feature | Notes |
+|-------|---------|-------|
+| **Next** | Mutators | Low cost, high run variety impact |
+| **Next** | Elite Waves | Low cost, adds Survival milestones |
+| **Next** | Combo Cashout | Very low cost, scoring depth |
+| **Soon** | Drafted Power-Ups | New inter-wave UI needed |
+| **Soon** | Environmental Hazards / Pinball Elements | Builds on completed tile system |
+| **Soon** | Boss Waves | After Advanced Tile Elements ships |
+| **Later** | Daily Run | Needs deterministic seeded gen |
+| **Later** | Ghost Replays | Nice-to-have replayability hook |
+| **Later** | Curse Power-Ups | Asset-gated |
+| **Later** | Brick Affixes | Likely asset-gated |
+| **Later** | Paddle Enhancements | Complex; balancing risk |
+
+---
+
+## Open Questions
+
+- Are run-level choices (Drafted Power-Ups, Modules) ephemeral per session, or do they persist through unlocks/profile progression?  Leaning towards session.
+- Should Daily Run and Survival share the same seeded-generation system?
+- How much UI complexity between waves is acceptable before pacing drags? (preference: minimal — banners over menus)
+- Do mutator-enabled runs need separate leaderboard buckets, or is a filter/tag sufficient? Filter or "badge"?
+
+---
+
+## Related Docs
+
+- `Tasks/Completed/phase1-wave-objectives-blitz.md` — Wave Objectives + Blitz (implemented)
+- `Tasks/Completed/ui-overhaul.md` — menu/HUD overhaul (implemented)
+- `Tasks/Completed/new-game-modes.md` — Time Attack + Survival (implemented)
+- `Tasks/Completed/challenge-modes.md` — Iron Ball + One Life (implemented)
+- `Tasks/Completed/advanced-tile-elements.md` — tile elements (implemented: Enhanced Spin, Force Arrows, Power-up Bricks)
