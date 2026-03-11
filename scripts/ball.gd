@@ -643,6 +643,10 @@ func _jump_to_level_center_x(hit_y: float):
 	var center_x = landing_data["center_x"]
 	var step_x = landing_data["step_x"]
 	position = Vector2(center_x, hit_y) + velocity.normalized() * AIR_BALL_LANDING_OFFSET
+	# Clear spin on teleport — spin was acquired from the paddle hit and is no longer
+	# contextually valid once the ball has jumped to the level center. Without this,
+	# high paddle spin curves the ball back toward the paddle immediately after landing.
+	spin_amount = 0.0
 	_resolve_air_ball_landing(center_x, hit_y, step_x)
 
 func _get_air_ball_helper() -> RefCounted:

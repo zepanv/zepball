@@ -16,7 +16,27 @@ const DEFAULT_SETTINGS = {
 	"combo_flash_enabled": false,
 	"skip_level_intro": false,
 	"show_fps": false,
+	"wall_color": "Pink",
 	"keybindings": {}
+}
+
+const WALL_COLOR_OPTIONS: Dictionary = {
+	"White":      Color(0.93, 0.93, 0.93),
+	"Light Gray": Color(0.63, 0.63, 0.63),
+	"Gray":       Color(0.40, 0.40, 0.40),
+	"Black":      Color(0.15, 0.15, 0.15),
+	"Brown":      Color(0.53, 0.33, 0.12),
+	"Red":        Color(0.75, 0.17, 0.17),
+	"Orange":     Color(0.87, 0.47, 0.10),
+	"Yellow":     Color(0.87, 0.80, 0.10),
+	"Lime":       Color(0.37, 0.82, 0.18),
+	"Green":      Color(0.17, 0.53, 0.17),
+	"Cyan":       Color(0.17, 0.67, 0.73),
+	"Light Blue": Color(0.42, 0.70, 0.87),
+	"Blue":       Color(0.18, 0.28, 0.73),
+	"Purple":     Color(0.50, 0.17, 0.73),
+	"Magenta":    Color(0.73, 0.23, 0.73),
+	"Pink":       Color(0.93, 0.55, 0.73),
 }
 
 const REBIND_ACTIONS = [
@@ -126,6 +146,16 @@ func save_show_fps(save_data: Dictionary, save_to_disk: Callable, enabled: bool)
 func get_show_fps(save_data: Dictionary) -> bool:
 	return save_data["settings"].get("show_fps", false)
 
+func save_wall_color(save_data: Dictionary, save_to_disk: Callable, color_name: String) -> void:
+	if not WALL_COLOR_OPTIONS.has(color_name):
+		push_warning("Invalid wall color: " + color_name)
+		return
+	save_data["settings"]["wall_color"] = color_name
+	save_to_disk.call()
+
+func get_wall_color(save_data: Dictionary) -> String:
+	return save_data["settings"].get("wall_color", "Pink")
+
 func save_paddle_sensitivity(save_data: Dictionary, save_to_disk: Callable, sensitivity: float) -> void:
 	sensitivity = clampf(sensitivity, 0.5, 2.0)
 	save_data["settings"]["paddle_sensitivity"] = sensitivity
@@ -225,6 +255,9 @@ func migrate_settings(save_data: Dictionary, save_to_disk: Callable) -> void:
 		updated = true
 	if not save_data["settings"].has("show_fps"):
 		save_data["settings"]["show_fps"] = false
+		updated = true
+	if not save_data["settings"].has("wall_color") or not WALL_COLOR_OPTIONS.has(save_data["settings"].get("wall_color", "")):
+		save_data["settings"]["wall_color"] = "Pink"
 		updated = true
 
 	# Migrate keybindings to add gamepad support (reset if no gamepad events found)

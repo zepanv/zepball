@@ -18,6 +18,7 @@ var _objective_complete: bool = false
 var _objective_failed: bool = false
 var _wave_start_msec: int = 0
 var _wave_start_score: int = 0
+var _last_poll_display_text: String = ""
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 func _init() -> void:
@@ -41,6 +42,7 @@ func assign_objective(wave_data: Dictionary, wave_number: int, current_score: in
 	_objective_failed = false
 	_wave_start_msec = Time.get_ticks_msec()
 	_wave_start_score = current_score
+	_last_poll_display_text = ""
 
 	var objective_odds: float = EARLY_WAVE_OBJECTIVE_ODDS if wave_number <= EARLY_WAVE_CUTOFF else DEFAULT_OBJECTIVE_ODDS
 	if _rng.randf() > objective_odds:
@@ -120,7 +122,6 @@ func poll_timed_objective() -> Dictionary:
 	if objective_id != OBJECTIVE_SPEED_CLEAR and objective_id != OBJECTIVE_OPENING_SALVO:
 		return _make_result(false, "none")
 
-	var text_before: String = get_display_text()
 	var was_failed: bool = _objective_failed
 	var elapsed_seconds: float = _get_wave_elapsed_seconds()
 
@@ -135,10 +136,12 @@ func poll_timed_objective() -> Dictionary:
 				_objective_failed = true
 
 	if not was_failed and _objective_failed:
+		_last_poll_display_text = get_display_text()
 		return _make_result(true, "failed")
 
-	var text_after: String = get_display_text()
-	if text_after != text_before:
+	var text_now: String = get_display_text()
+	if text_now != _last_poll_display_text:
+		_last_poll_display_text = text_now
 		return _make_result(true, "progress")
 	return _make_result(false, "none")
 
@@ -208,6 +211,25 @@ func get_display_text() -> String:
 	if show_progress and target > 0:
 		return "%s: %d/%d | %s" % [objective_label, progress, target, reward_text]
 	return "%s | %s" % [objective_label, reward_text]
+
+func get_timed_seconds_remaining() -> float:
+	var objective_id: String = str(current_objective.get("id", ""))
+	var time_limit: float = 0.0
+	match objective_id:
+		OBJECTIVE_SPEED_CLEAR:
+			time_limit = float(current_objective.get("target_seconds", 0.0))
+		OBJECTIVE_OPENING_SALVO:
+			time_limit = float(current_objective.get("window_seconds", OPENING_SALVO_WINDOW_SECONDS))
+	return max(0.0, time_limit - _get_wave_elapsed_seconds())
+
+func get_timed_seconds_total() -> float:
+	var objective_id: String = str(current_objective.get("id", ""))
+	match objective_id:
+		OBJECTIVE_SPEED_CLEAR:
+			return float(current_objective.get("target_seconds", 0.0))
+		OBJECTIVE_OPENING_SALVO:
+			return float(current_objective.get("window_seconds", OPENING_SALVO_WINDOW_SECONDS))
+	return 0.0
 
 func _build_candidates(wave_data: Dictionary, wave_number: int) -> Array[Dictionary]:
 	var candidates: Array[Dictionary] = []

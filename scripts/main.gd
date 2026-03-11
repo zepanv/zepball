@@ -152,6 +152,8 @@ func _ready() -> void:
 		# Connect existing bricks
 		connect_brick_signals()
 
+	_apply_wall_color()
+
 func _restore_set_state(saved_score: int, saved_lives: int, saved_perfect: bool, saved_combo: int, saved_no_miss: int) -> void:
 	"""Restore game state when continuing a set (called deferred to ensure HUD is ready)"""
 	game_manager.score = saved_score
@@ -787,6 +789,19 @@ func _spawn_replacement_main_ball() -> Node:
 
 	ball = replacement_ball
 	return replacement_ball
+
+func _apply_wall_color() -> void:
+	if not play_area:
+		return
+	var walls_root: Node = play_area.get_node_or_null("Walls")
+	if not walls_root:
+		return
+	var color_name: String = SaveManager.get_wall_color()
+	var color: Color = SaveSettingsHelper.WALL_COLOR_OPTIONS.get(color_name, SaveSettingsHelper.WALL_COLOR_OPTIONS["Pink"])
+	for wall_name in ["TopWall", "BottomWall", "LeftWall"]:
+		var visual: Node = walls_root.get_node_or_null(wall_name + "/Visual")
+		if visual and visual is ColorRect:
+			(visual as ColorRect).color = color
 
 func _apply_brick_hit_shake(score_value: int) -> void:
 	if not camera or not camera.has_method("shake"):

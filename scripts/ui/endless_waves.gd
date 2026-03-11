@@ -21,6 +21,7 @@ const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
 func _ready() -> void:
 	_apply_theme()
+	_populate_descriptions()
 	_populate_run_summaries()
 	_update_focus_neighbors()
 	await get_tree().process_frame
@@ -46,6 +47,9 @@ func _apply_theme() -> void:
 	UI_THEME.style_muted_button(back_button)
 	UI_THEME.style_meta(footer_hint_label)
 	blitz_start_button.disabled = false
+
+func _populate_descriptions() -> void:
+	blitz_description_label.text = "Rows push toward the paddle on a timer. Survive pressure by clearing lanes before they close.\nPush interval by difficulty — Easy: 18s  |  Normal: 16s  |  Hard: 14s"
 
 func _populate_run_summaries() -> void:
 	var survival_runs: Array = SaveManager.get_survival_top_runs()

@@ -15,6 +15,11 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 		if parent.paddle_reference == null and collider is Node2D:
 			parent.paddle_reference = collider as Node2D
 		var hit_y = parent.position.y
+		# Pass through paddle during launch immunity window — prevents freshly-launched balls
+		# (especially stacked triple-ball grabs) from immediately bouncing off the paddle face
+		# and reversing direction toward the right boundary.
+		if parent.grab_immunity_timer > 0.0:
+			return
 		# Special case: Allow ball to pass through paddle if stuck near walls and moving left
 		# This prevents the ball from getting wedged between paddle and walls
 		if parent.position.y < parent.TOP_ESCAPE_ZONE_Y and parent.velocity.x < 0:

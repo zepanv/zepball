@@ -106,7 +106,14 @@ func _process_survival(parent: Node, _delta: float) -> void:
 	if not parent.is_survival_mode or objective_helper == null:
 		return
 	var timed_result: Dictionary = objective_helper.poll_timed_objective()
-	_emit_objective_result(parent, timed_result)
+	if not bool(timed_result.get("changed", false)):
+		return
+	if str(timed_result.get("state", "")) == "progress" and parent.hud and parent.hud.has_method("set_timed_objective_status"):
+		var remaining: float = objective_helper.get_timed_seconds_remaining()
+		var total: float = objective_helper.get_timed_seconds_total()
+		parent.hud.set_timed_objective_status(str(timed_result.get("text", "")), remaining, total)
+	else:
+		_emit_objective_result(parent, timed_result)
 
 func _clear_non_main_balls(parent: Node, preserved_ball: Node = null) -> void:
 	if preserved_ball == null and parent.has_method("ensure_primary_ball"):

@@ -677,6 +677,12 @@ func save_show_fps(enabled: bool) -> void:
 func get_show_fps() -> bool:
 	return settings_helper.get_show_fps(save_data)
 
+func save_wall_color(color_name: String) -> void:
+	settings_helper.save_wall_color(save_data, save_to_disk, color_name)
+
+func get_wall_color() -> String:
+	return settings_helper.get_wall_color(save_data)
+
 func save_paddle_sensitivity(sensitivity: float) -> void:
 	settings_helper.save_paddle_sensitivity(save_data, save_to_disk, sensitivity)
 

@@ -3,7 +3,9 @@ extends RefCounted
 
 const BLITZ_PUSH_TIMER_NAME = "BlitzPushTimer"
 const BLITZ_PACK_ID = "__blitz__"
-const BLITZ_START_INTERVAL = 18.0
+const BLITZ_START_INTERVAL_EASY = 18.0
+const BLITZ_START_INTERVAL_NORMAL = 16.0
+const BLITZ_START_INTERVAL_HARD = 14.0
 const BLITZ_INTERVAL_STEP = 1.0
 const BLITZ_INTERVAL_STEP_PUSHES = 4
 const BLITZ_INTERVAL_FLOOR = 8.0
@@ -20,7 +22,7 @@ var _push_timer: Timer = null
 var _push_count: int = 0
 var _rows_spawned: int = 0
 var _rows_survived: int = 0
-var _current_push_interval: float = BLITZ_START_INTERVAL
+var _current_push_interval: float = BLITZ_START_INTERVAL_NORMAL
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _parent_ref: Node = null
 var _all_clear_bonus_awarded_for_cycle: bool = false
@@ -35,7 +37,7 @@ func _start_blitz_run(parent: Node) -> void:
 	_push_count = 0
 	_rows_spawned = 0
 	_rows_survived = 0
-	_current_push_interval = BLITZ_START_INTERVAL
+	_current_push_interval = _get_start_interval()
 	_all_clear_bonus_awarded_for_cycle = false
 	_blitz_grid_rows = DEFAULT_BLITZ_GRID_ROWS
 	_blitz_top_row_y = float(parent.LEVEL_START_Y)
@@ -144,9 +146,18 @@ func _push_bricks_forward(parent: Node) -> void:
 		parent.hud._configure_topbar_mode()
 	_update_hud_status(parent)
 
+func _get_start_interval() -> float:
+	match DifficultyManager.get_difficulty():
+		DifficultyManager.Difficulty.EASY:
+			return BLITZ_START_INTERVAL_EASY
+		DifficultyManager.Difficulty.HARD:
+			return BLITZ_START_INTERVAL_HARD
+		_:
+			return BLITZ_START_INTERVAL_NORMAL
+
 func _recalculate_push_interval() -> void:
 	var reduction_steps: int = int(floor(float(_push_count) / float(BLITZ_INTERVAL_STEP_PUSHES)))
-	var target_interval: float = BLITZ_START_INTERVAL - (float(reduction_steps) * BLITZ_INTERVAL_STEP)
+	var target_interval: float = _get_start_interval() - (float(reduction_steps) * BLITZ_INTERVAL_STEP)
 	_current_push_interval = max(BLITZ_INTERVAL_FLOOR, target_interval)
 
 func _trigger_blitz_game_over(parent: Node) -> void:

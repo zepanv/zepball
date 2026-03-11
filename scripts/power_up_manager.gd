@@ -133,18 +133,7 @@ func remove_effect(type: PowerUpType):
 			return
 		PowerUpType.SPEED_UP, PowerUpType.SLOW_DOWN:
 			active_effects.erase(type)
-			var speed_target: Node = target
-			if speed_target and not is_instance_valid(speed_target):
-				speed_target = null
-			if not speed_target:
-				speed_target = _get_speed_target()
-			if speed_target:
-				if active_effects.has(PowerUpType.SPEED_UP) and speed_target.has_method("apply_speed_up_effect"):
-					speed_target.apply_speed_up_effect()
-				elif active_effects.has(PowerUpType.SLOW_DOWN) and speed_target.has_method("apply_slow_down_effect"):
-					speed_target.apply_slow_down_effect()
-				elif speed_target.has_method("reset_ball_speed"):
-					speed_target.reset_ball_speed()
+			_sync_speed_to_all_balls()
 			effect_expired.emit(type)
 			_refresh_processing_state()
 			return
@@ -304,6 +293,11 @@ func register_ball(ball: Node) -> void:
 	if tracked_balls.has(ball):
 		return
 	tracked_balls.append(ball)
+	# Sync active per-ball speed effects so multiball balls match the current state
+	if active_effects.has(PowerUpType.SPEED_UP) and ball.has_method("apply_speed_up_effect"):
+		ball.apply_speed_up_effect()
+	elif active_effects.has(PowerUpType.SLOW_DOWN) and ball.has_method("apply_slow_down_effect"):
+		ball.apply_slow_down_effect()
 
 func unregister_ball(ball: Node) -> void:
 	if not ball:
@@ -326,6 +320,17 @@ func _compact_tracked_balls() -> void:
 	for i in range(tracked_balls.size() - 1, -1, -1):
 		if not is_instance_valid(tracked_balls[i]):
 			tracked_balls.remove_at(i)
+
+func _sync_speed_to_all_balls() -> void:
+	for ball in get_active_balls():
+		if not is_instance_valid(ball):
+			continue
+		if active_effects.has(PowerUpType.SPEED_UP) and ball.has_method("apply_speed_up_effect"):
+			ball.apply_speed_up_effect()
+		elif active_effects.has(PowerUpType.SLOW_DOWN) and ball.has_method("apply_slow_down_effect"):
+			ball.apply_slow_down_effect()
+		elif ball.has_method("reset_ball_speed"):
+			ball.reset_ball_speed()
 
 func _refresh_processing_state() -> void:
 	set_process(not active_effects.is_empty())

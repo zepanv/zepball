@@ -142,6 +142,15 @@ func set_blitz_push_status(remaining_seconds: int, rows_survived: int, interval_
 		status_color = UI_THEME.GOLD
 	set_objective_text("BLITZ PUSH IN: %ds | ROWS %d" % [seconds_left, rows_value], false, status_color)
 
+func set_timed_objective_status(text: String, remaining_seconds: float, total_seconds: float) -> void:
+	var ratio_left: float = clampf(remaining_seconds / max(total_seconds, 0.001), 0.0, 1.0)
+	var status_color: Color = UI_THEME.SUCCESS
+	if ratio_left <= 0.33:
+		status_color = UI_THEME.DANGER
+	elif ratio_left <= 0.66:
+		status_color = UI_THEME.GOLD
+	set_objective_text(text, false, status_color)
+
 func show_blitz_all_clear_bonus(points: int) -> void:
 	if combo_overlay == null or combo_label == null:
 		return

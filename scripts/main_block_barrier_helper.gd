@@ -1,6 +1,9 @@
 class_name MainBlockBarrierHelper
 extends RefCounted
 
+const PLAY_AREA_TOP_Y = 20.0
+const PLAY_AREA_BOTTOM_Y = 700.0
+
 func _spawn_block_barrier(parent: Node, duration: float) -> void:
 	if not parent.paddle or not parent.play_area:
 		return
@@ -14,7 +17,12 @@ func _spawn_block_barrier(parent: Node, duration: float) -> void:
 	var segment_width = parent.BLOCK_BRICK_WIDTH
 	var segment_count = parent.BLOCK_SEGMENT_COUNT
 	var step = segment_height + parent.BRICK_SPACING
+	var half_h = segment_height / 2.0
 	var start_y = parent.paddle.position.y - ((segment_count - 1) * step) / 2.0
+	# Clamp so bricks stay within the play area walls
+	start_y = clampf(start_y,
+		PLAY_AREA_TOP_Y + half_h,
+		PLAY_AREA_BOTTOM_Y - (segment_count - 1) * step - half_h)
 	var base_x = parent.paddle.position.x + (paddle_width / 2.0) + (segment_width / 2.0) + parent.BLOCK_OFFSET_X
 
 	var block_texture = load("res://assets/graphics/bricks/element_green_rectangle.png")

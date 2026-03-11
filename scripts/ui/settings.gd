@@ -14,6 +14,8 @@ const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 @onready var profile_title = $Panel/ScrollContainer/VBoxContainer/ProfileSection/ProfileTitle
 @onready var data_title = $Panel/ScrollContainer/VBoxContainer/DataSection/DataTitle
 
+@onready var shake_section: VBoxContainer = $Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection
+
 # Screen shake controls
 @onready var shake_off_button = $Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons/OffButton
 @onready var shake_low_button = $Panel/ScrollContainer/VBoxContainer/TopRow/ScreenShakeSection/ShakeButtons/LowButton
@@ -62,6 +64,7 @@ var switch_profile_dropdown: OptionButton = null
 @onready var reset_confirm_dialog = $ResetSettingsConfirmDialog
 
 var is_loading_settings: bool = false
+var wall_color_option: OptionButton = null
 var opened_from_pause: bool = false
 
 signal closed_from_pause
@@ -88,6 +91,8 @@ func _ready():
 	shake_low_button.pressed.connect(func(): _set_screen_shake("Low"))
 	shake_medium_button.pressed.connect(func(): _set_screen_shake("Medium"))
 	shake_high_button.pressed.connect(func(): _set_screen_shake("High"))
+
+	_create_wall_color_row()
 
 	# Effect toggles
 	particles_check.toggled.connect(_on_particles_toggled)
@@ -187,6 +192,20 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_back_pressed()
 		accept_event()
 
+func _create_wall_color_row() -> void:
+	var label = Label.new()
+	label.text = "Wall Color"
+	UI_THEME.style_meta(label)
+	shake_section.add_child(label)
+
+	wall_color_option = OptionButton.new()
+	wall_color_option.custom_minimum_size = Vector2(0, 40)
+	for color_name in SaveSettingsHelper.WALL_COLOR_OPTIONS.keys():
+		wall_color_option.add_item(color_name)
+	UI_THEME.style_option_button(wall_color_option)
+	wall_color_option.item_selected.connect(_on_wall_color_selected)
+	shake_section.add_child(wall_color_option)
+
 func _load_current_settings():
 	"""Load settings from SaveManager and update UI"""
 	is_loading_settings = true
@@ -196,6 +215,14 @@ func _load_current_settings():
 	# Screen shake intensity
 	var shake_intensity = SaveManager.get_screen_shake_intensity()
 	_update_shake_buttons(shake_intensity)
+
+	# Wall color
+	if wall_color_option:
+		var saved_color = SaveManager.get_wall_color()
+		for i in range(wall_color_option.get_item_count()):
+			if wall_color_option.get_item_text(i) == saved_color:
+				wall_color_option.select(i)
+				break
 
 	# Particle effects
 	particles_check.button_pressed = SaveManager.get_particle_effects()
@@ -242,6 +269,18 @@ func _set_screen_shake(intensity: String):
 	"""Set screen shake intensity"""
 	SaveManager.save_screen_shake_intensity(intensity)
 	_update_shake_buttons(intensity)
+
+func _on_wall_color_selected(index: int) -> void:
+	if is_loading_settings:
+		return
+	var color_name: String = wall_color_option.get_item_text(index)
+	SaveManager.save_wall_color(color_name)
+	_apply_live_wall_color()
+
+func _apply_live_wall_color() -> void:
+	var main_node = get_tree().get_first_node_in_group("main_controller")
+	if main_node and main_node.has_method("_apply_wall_color"):
+		main_node._apply_wall_color()
 
 func _update_shake_buttons(intensity: String):
 	"""Update button highlights based on selected intensity"""
@@ -318,6 +357,8 @@ func _apply_live_settings() -> void:
 	var hud = get_parent()
 	if hud and hud.has_method("apply_settings_from_save"):
 		hud.apply_settings_from_save()
+
+	_apply_live_wall_color()
 
 func _on_sensitivity_changed(value: float):
 	"""Handle paddle sensitivity slider"""
@@ -575,6 +616,13 @@ func _on_reset_settings_confirmed():
 	var track_id = SaveManager.get_music_track_id()
 	if track_id != "":
 		AudioManager.set_music_track(track_id)
+	if wall_color_option:
+		var saved_color = SaveManager.get_wall_color()
+		for i in range(wall_color_option.get_item_count()):
+			if wall_color_option.get_item_text(i) == saved_color:
+				wall_color_option.select(i)
+				break
+	_apply_live_wall_color()
 	_apply_live_settings()
 
 func _on_back_pressed():
