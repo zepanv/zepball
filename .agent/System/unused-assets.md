@@ -23,12 +23,6 @@ This document tracks assets present in the repo that are intentionally not refer
 - Unused single variant:
   - `element_purple_cube_glossy.png`
 
-### Background graphics
-- Location: `assets/graphics/backgrounds/`
-- Unused:
-  - `bg_abyssal_deep.jpg`
-  - `bg_cosmic_dust.jpg`
-  - `bg_cyber_void.jpg`
 
 ### Paddle graphics
 - Location: `assets/graphics/paddles/`

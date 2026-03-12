@@ -103,13 +103,14 @@ Create a transparent-background arcade tile sprite for a breakout-style game. Cl
 
 Observed current assets:
 - Source folder: `assets/graphics/backgrounds/`
-- Current shipped size: `1024x1024`
+- Current shipped size: `1024x576` (16:9)
 - Runtime consumer: `scripts/main_background_manager.gd`
 - Runtime behavior: stretched full-screen and dimmed to alpha `0.85`
+- Note: the gameplay window is resizable but locks to 16:9 aspect ratio
 
 Requirements:
 - Format: JPG
-- Size: `1024x1024`
+- Size: `1024x576` (16:9) — do not use square sources; they will distort when stretched to a 16:9 viewport
 - Style: dark, subdued, low-distraction, playfield-friendly
 - No text, logos, or focal subjects that compete with the ball/paddle/bricks
 - Avoid harsh contrast bands or bright hotspots near the center of the play area
@@ -118,11 +119,12 @@ Guidance:
 - Backgrounds should support the arcade field, not become the point of attention.
 - Space/nebula/minimal abstract directions fit the current set well.
 - Use depth, gradient, light haze, and sparse structure over high-frequency detail.
+- Existing assets in the repo were generated at 1024x1024 and are acceptable for now; replace or regenerate them at 1024x576 when refreshing the set.
 
 Prompt template:
 
 ```text
-Create a square 1024x1024 background for an arcade breakout game. Dark, refined, low-distraction, subtle sci-fi/space atmosphere, soft gradients, restrained contrast, no text, no characters, no large central focal object. The image should remain readable after being dimmed and stretched full-screen behind bright gameplay elements.
+Create a 1024x576 widescreen background for an arcade breakout game. Dark, refined, low-distraction, subtle sci-fi/space atmosphere, soft gradients, restrained contrast, no text, no characters, no large central focal object. The image should remain readable after being dimmed and stretched full-screen behind bright gameplay elements.
 ```
 
 ### Paddle Variants

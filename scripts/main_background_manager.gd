@@ -14,7 +14,11 @@ const BACKGROUNDS = [
 	"res://assets/graphics/backgrounds/bg_refined_1_1769629758259.jpg",
 	"res://assets/graphics/backgrounds/bg_refined_2_1769629770443.jpg",
 	"res://assets/graphics/backgrounds/bg_nebula_dark_1769629799342.jpg",
-	"res://assets/graphics/backgrounds/bg_stars_subtle_1769629782553.jpg"
+	"res://assets/graphics/backgrounds/bg_stars_subtle_1769629782553.jpg",
+	"res://assets/graphics/backgrounds/bg_abyssal_deep.jpg",
+	"res://assets/graphics/backgrounds/bg_cosmic_dust.jpg",
+	"res://assets/graphics/backgrounds/bg_cgase.jpg",
+	"res://assets/graphics/backgrounds/bg_cyber_void.jpg"
 ]
 
 func setup_background(root: Node, background_node: Node) -> Control:

@@ -88,6 +88,7 @@ var cached_level_bricks: Array[Node] = []
 var cached_force_arrows: Array[Node] = []
 var background_manager: RefCounted = null
 var power_up_handler: RefCounted = null
+var _pending_extra_ball_spawns: int = 0  # Triple ball spawns deferred until ball is released
 var is_survival_mode: bool = false
 var is_blitz_mode: bool = false
 
@@ -118,6 +119,7 @@ func _ready() -> void:
 	# Connect ball signals to game manager
 	if ball:
 		ball.ball_lost.connect(_on_ball_lost)
+		ball.ball_launched.connect(_on_any_ball_launched)
 
 	# Connect game manager signals to HUD
 	if game_manager and hud:
@@ -354,6 +356,11 @@ func connect_brick_signals():
 	if remaining_breakable_bricks == 0:
 		call_deferred("check_level_complete")
 
+func get_blitz_rows_spawned() -> int:
+	if blitz_helper and blitz_helper.has_method("get_rows_spawned"):
+		return blitz_helper.get_rows_spawned()
+	return 0
+
 func get_cached_level_bricks() -> Array[Node]:
 	"""Return live level bricks with in-place compaction to avoid full container scans."""
 	for i in range(cached_level_bricks.size() - 1, -1, -1):
@@ -411,6 +418,18 @@ func check_level_complete():
 
 func _on_ball_lost(lost_ball):
 	"""Handle ball loss - only lose life if this is the last ball in play"""
+	# Debug: log all ball loss events with context
+	if is_instance_valid(lost_ball):
+		var pos = lost_ball.position
+		var vel = lost_ball.velocity if "velocity" in lost_ball else Vector2.ZERO
+		var spd = lost_ball.current_speed if "current_speed" in lost_ball else vel.length()
+		var is_main = lost_ball.is_main_ball if "is_main_ball" in lost_ball else true
+		var since_paddle = lost_ball.time_since_paddle_hit if "time_since_paddle_hit" in lost_ball else -1.0
+		var paddle_str = "%.2fs" % since_paddle if since_paddle >= 0.0 else "never"
+		var legit = pos.x >= 1260.0  # right boundary area = legitimate exit
+		var reason = "LEGIT_RIGHT_EXIT" if legit else "SUSPECT_BOUNDARY"
+		print("[BALL_LOST] pos=(%.1f,%.1f) vel=(%.1f,%.1f) speed=%.1f is_main=%s paddle_ago=%s reason=%s" % [
+			pos.x, pos.y, vel.x, vel.y, spd, is_main, paddle_str, reason])
 	# Get all balls currently in play (before removing this one)
 	var balls_in_play = _get_active_balls()
 	var is_life_loss: bool = balls_in_play.size() <= 1
@@ -578,7 +597,14 @@ func _on_power_up_collected(type):
 		power_up_handler.call("apply_collected_power_up", self, int(type))
 
 func spawn_additional_balls_with_retry(retries_remaining: int = 3):
-	"""Try to spawn additional balls, retrying if ball is in a bad position"""
+	"""Try to spawn additional balls, retrying if ball is in a bad position.
+	If all balls are currently held, defer until the next ball is launched."""
+	var active_balls = _get_active_balls()
+	var all_held = active_balls.size() > 0 and active_balls.all(func(b): return b.is_attached_to_paddle)
+	if all_held:
+		_pending_extra_ball_spawns += 1
+		return
+
 	var result = try_spawn_additional_balls()
 
 	if not result and retries_remaining > 1:
@@ -586,6 +612,17 @@ func spawn_additional_balls_with_retry(retries_remaining: int = 3):
 		spawn_additional_balls_with_retry(retries_remaining - 1)
 	elif not result:
 		push_warning("Failed to spawn triple ball after all retries")
+
+func _on_any_ball_launched(launched_ball) -> void:
+	"""Trigger any pending extra-ball spawns that were deferred while the ball was held."""
+	if _pending_extra_ball_spawns <= 0:
+		return
+	var source = launched_ball if is_instance_valid(launched_ball) else ball
+	if not is_instance_valid(source):
+		return
+	while _pending_extra_ball_spawns > 0:
+		_pending_extra_ball_spawns -= 1
+		spawn_additional_balls(source)
 
 func try_spawn_additional_balls() -> bool:
 	"""Attempt to spawn additional balls - returns true if successful, false if position is bad"""
@@ -650,40 +687,17 @@ func spawn_additional_balls(source_ball):
 		var perpendicular_offset = Vector2(0, TRIPLE_BALL_OFFSET_DISTANCE * (1 if i == 0 else -1))
 		new_ball.position = source_ball.position + perpendicular_offset
 
-		# Launch with safe angles based on current ball position
-		# Angles: 0° = right, 90° = down, 180° = left, 270° = up
-		# CRITICAL: Use only SAFE angles (120°-240°) to prevent any escapes
-		var angle_offset = 0.0
-		var base_angle = TRIPLE_BALL_DEFAULT_BASE_ANGLE
+		# Fan from the source ball's current direction with a 30° spread.
+		# Clamp base to [120°, 240°] so both spread angles stay in the left hemisphere.
+		var src_vel = source_ball.velocity if source_ball.velocity.length_squared() > 1.0 else Vector2(-1.0, 0.0)
+		var base_angle_rad = atan2(src_vel.y, src_vel.x)
+		if cos(base_angle_rad) > 0.0:
+			base_angle_rad = PI - base_angle_rad  # reflect to left hemisphere, keep y sign
+		# Clamp to [120°, 240°] so ±30° spread stays fully in left hemisphere
+		base_angle_rad = clampf(base_angle_rad, deg_to_rad(120.0), deg_to_rad(240.0))
 
-		# CRITICAL: Check boundaries and adjust angles to prevent escapes
-		# All angles constrained to 120°-240° range (safe zone)
-		# Check left wall (X < 100) - shoot RIGHT-DOWN
-		if source_ball.position.x < TRIPLE_BALL_LEFT_ZONE_X:
-			# Near left: shoot toward right-down quadrant (90° to 120°)
-			base_angle = TRIPLE_BALL_LEFT_BASE_ANGLE
-			angle_offset = -TRIPLE_BALL_LEFT_ZONE_ANGLE_OFFSET if i == 0 else TRIPLE_BALL_LEFT_ZONE_ANGLE_OFFSET
-		# Check top wall (Y < 150) - shoot DOWN-LEFT
-		elif source_ball.position.y < TRIPLE_BALL_TOP_ZONE_Y:
-			# Near top: shoot down-left (200°-220°)
-			base_angle = TRIPLE_BALL_TOP_BASE_ANGLE
-			angle_offset = -TRIPLE_BALL_STANDARD_ANGLE_OFFSET if i == 0 else TRIPLE_BALL_STANDARD_ANGLE_OFFSET
-		# Check bottom wall (Y > 570) - shoot LEFT-UP (but still safe)
-		elif source_ball.position.y > TRIPLE_BALL_BOTTOM_ZONE_Y:
-			# Near bottom: shoot left-up but stay in safe range (150°-160°)
-			base_angle = TRIPLE_BALL_BOTTOM_BASE_ANGLE
-			angle_offset = -TRIPLE_BALL_STANDARD_ANGLE_OFFSET if i == 0 else TRIPLE_BALL_STANDARD_ANGLE_OFFSET
-		# Normal position - horizontal spread
-		else:
-			# Center area - horizontal spread (175°-185°)
-			base_angle = TRIPLE_BALL_DEFAULT_BASE_ANGLE
-			angle_offset = -TRIPLE_BALL_STANDARD_ANGLE_OFFSET if i == 0 else TRIPLE_BALL_STANDARD_ANGLE_OFFSET
-
-		var target_angle = base_angle + angle_offset
-
-		# SAFETY CLAMP: Ensure angle is always in safe range
-		target_angle = clamp(target_angle, TRIPLE_BALL_SAFE_ANGLE_MIN, TRIPLE_BALL_SAFE_ANGLE_MAX)
-		var angle_rad = deg_to_rad(target_angle)
+		var spread_rad = deg_to_rad(30.0)
+		var angle_rad = base_angle_rad + (spread_rad * (1.0 if i == 0 else -1.0))
 
 		new_ball.velocity = Vector2(cos(angle_rad), sin(angle_rad)) * source_ball.current_speed
 		new_ball.is_attached_to_paddle = false
@@ -783,6 +797,8 @@ func _spawn_replacement_main_ball() -> Node:
 
 	if replacement_ball.has_signal("ball_lost"):
 		replacement_ball.ball_lost.connect(_on_ball_lost)
+	if replacement_ball.has_signal("ball_launched"):
+		replacement_ball.ball_launched.connect(_on_any_ball_launched)
 
 	if replacement_ball.has_method("reset_ball"):
 		replacement_ball.reset_ball()

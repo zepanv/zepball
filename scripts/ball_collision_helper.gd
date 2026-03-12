@@ -15,6 +15,7 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 		if parent.paddle_reference == null and collider is Node2D:
 			parent.paddle_reference = collider as Node2D
 		var hit_y = parent.position.y
+		parent.time_since_paddle_hit = 0.0
 		# Pass through paddle during launch immunity window — prevents freshly-launched balls
 		# (especially stacked triple-ball grabs) from immediately bouncing off the paddle face
 		# and reversing direction toward the right boundary.
@@ -47,6 +48,12 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 			# Paddle collision: reflect + add spin
 			parent.velocity = parent.velocity.bounce(normal)
 
+			# A fast swipe can catch the ball on the back face and produce a rightward
+			# bounce normal — that would send the ball straight through the right boundary.
+			# The paddle is always on the right side, so the ball must always leave leftward.
+			if parent.velocity.x > 0.0:
+				parent.velocity.x = -parent.velocity.x
+
 			# Add paddle spin influence
 			if parent.paddle_reference and parent.paddle_reference.has_method("get_velocity_for_spin"):
 				var paddle_velocity = parent.paddle_reference.get_velocity_for_spin()
@@ -54,7 +61,7 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 
 			# Prevent pure vertical motion
 			if abs(parent.velocity.x) < parent.current_speed * (1.0 - parent.MAX_VERTICAL_ANGLE):
-				parent.velocity.x = sign(parent.velocity.x) * parent.current_speed * (1.0 - parent.MAX_VERTICAL_ANGLE)
+				parent.velocity.x = -abs(parent.velocity.x)  # always leftward
 
 			# Prevent paddle-bottom wall wedge by nudging ball upward at the boundary
 			var min_y = parent.TOP_WALL_Y + parent.ball_radius
@@ -87,8 +94,8 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 		# normal.x <= 0 means ball hit from the field side — don't pass through even if velocity.x < 0
 		# (prevents escaping the barrier after bouncing off one brick and clipping the next)
 		var from_behind = normal.x > 0.0
-		if is_block_brick and ((from_behind and parent.velocity.x < 0.0) or parent.grab_immunity_timer > 0.0 or parent.block_pass_timer > 0.0):
-			# Allow held/just-launched balls to pass block bricks when moving left
+		if is_block_brick and (from_behind and parent.velocity.x < 0.0):
+			# Allow balls approaching from behind the barrier (field side) to pass through
 			parent.position += parent.velocity * parent.last_physics_delta
 			return
 
@@ -126,7 +133,16 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 			if collider.has_method("_get_brick_shape"):
 				brick_shape = collider._get_brick_shape()
 
-			if brick_shape == "square":
+			if is_block_brick:
+				# Block barrier bricks are a lateral wall — always bounce on the X axis.
+				# Using the hit-position offset can resolve to a Y-axis bounce when the ball
+				# clips a top/bottom edge, which leaves velocity.x unchanged and lets the
+				# ball knife through the remaining barrier bricks.
+				var x_sign = sign(parent.position.x - collider.global_position.x)
+				if x_sign == 0:
+					x_sign = -sign(parent.velocity.x)
+				bounce_normal = Vector2(x_sign, 0)
+			elif brick_shape == "square":
 				var hit_pos = collision.get_position()
 				var offset = hit_pos - collider.global_position
 				if abs(offset.x) > abs(offset.y):
@@ -144,7 +160,10 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 
 			# Push ball away from brick to prevent rapid re-collision
 			# This is especially important for polygon/diamond shapes with angled faces
-			if is_unbreakable:
+			if is_block_brick:
+				# Separate ball from barrier face so next frame doesn't start embedded
+				parent.position += bounce_normal * (parent.ball_radius * 0.5)
+			elif is_unbreakable:
 				# Add a small random deflection to avoid edge hugging
 				parent.velocity = parent.velocity.rotated(deg_to_rad(randf_range(-12.0, 12.0)))
 				parent.position += bounce_normal * (parent.ball_radius * 0.6)

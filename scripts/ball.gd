@@ -80,6 +80,7 @@ var is_main_ball: bool = true  # Identifies the original ball in the scene
 var paddle_offset: Vector2 = Vector2(-30, 0)  # Offset from paddle when attached/grabbed
 var grab_immunity_timer: float = 0.0  # Prevents immediate re-grab after launch
 var block_pass_timer: float = 0.0  # Allow pass-through behind block right after launch
+var time_since_paddle_hit: float = -1.0  # Seconds since last paddle contact; -1 = never hit
 
 var ball_radius: float = BASE_RADIUS
 var last_physics_delta: float = 0.0
@@ -104,6 +105,7 @@ var force_arrow_audio: AudioStreamPlayer = null
 
 # Signals
 signal ball_lost
+signal ball_launched(launched_ball: Node)
 signal brick_hit(brick)
 
 func _emit_brick_hit(brick: Variant) -> void:
@@ -164,6 +166,8 @@ func _physics_process(delta):
 		grab_immunity_timer -= delta
 	if block_pass_timer > 0.0:
 		block_pass_timer -= delta
+	if time_since_paddle_hit >= 0.0:
+		time_since_paddle_hit += delta
 	if paddle_reference == null or not is_instance_valid(paddle_reference):
 		_ensure_paddle_reference()
 	_refresh_effect_flags()
@@ -311,6 +315,7 @@ func launch_ball():
 		game_manager.start_playing()
 
 	aim_helper.aim_available = false
+	ball_launched.emit(self)
 
 func handle_collision(collision: KinematicCollision2D):
 	collision_helper.handle_collision(self, collision)
@@ -595,26 +600,30 @@ func _handle_out_of_bounds() -> void:
 		_handle_error_boundary_escape(BOUNDARY_BOTTOM_ERROR_LABEL)
 
 func _handle_error_boundary_escape(boundary_name: String) -> void:
-	push_warning("Ball escaped %s boundary at %s, recovering" % [boundary_name, str(position)])
+	push_warning("[BALL_ESCAPE] %s boundary pos=(%.1f,%.1f) vel=(%.1f,%.1f) speed=%.1f is_main=%s" % [
+		boundary_name, position.x, position.y, velocity.x, velocity.y, current_speed, is_main_ball])
 
 	# Nudge back inside the boundary and reflect — no life penalty for a physics edge case
 	if position.x < LEFT_BOUNDARY_X:
-		position.x = LEFT_BOUNDARY_X + ball_radius
+		# Wall inner face is at x=20 (wall centre 10 + half-width 10).
+		# Nudge past the wall geometry so move_and_collide can't re-embed the ball.
+		position.x = 20.0 + ball_radius + 2.0
 		velocity.x = abs(velocity.x)
 	elif position.y < TOP_BOUNDARY_Y:
-		position.y = TOP_BOUNDARY_Y + ball_radius
+		# Top wall inner face is at y=20 (wall centre 10 + half-height 10).
+		position.y = 20.0 + ball_radius + 2.0
 		velocity.y = abs(velocity.y)
 	elif position.y > BOTTOM_BOUNDARY_Y:
-		position.y = BOTTOM_BOUNDARY_Y - ball_radius
+		# Bottom wall inner face is at y=700 (wall centre 710 - half-height 10).
+		position.y = 700.0 - ball_radius - 2.0
 		velocity.y = -abs(velocity.y)
 
 	if not is_main_ball:
-		# Extra balls are removed silently without emitting ball_lost
-		set_physics_process(false)
-		visible = false
-		set_deferred("collision_layer", 0)
-		set_deferred("collision_mask", 0)
-		call_deferred("queue_free")
+		# Extra ball escaped a non-right boundary. Position and velocity have been
+		# corrected above — let it continue playing rather than removing it.
+		# If it truly can't be recovered the right boundary will remove it normally.
+		print("[BALL_ESCAPE_RECOVER] extra ball recovered at pos=(%.1f,%.1f) vel=(%.1f,%.1f)" % [
+			position.x, position.y, velocity.x, velocity.y])
 
 func _refresh_effect_flags() -> void:
 	if PowerUpManager:
@@ -655,46 +664,32 @@ func _get_air_ball_helper() -> RefCounted:
 	return air_ball_helper
 
 func _get_air_ball_landing_data() -> Dictionary:
-	var center_x = _get_fallback_center_x()
 	var step_x = ball_radius * 2.0 + AIR_BALL_STEP_FALLBACK_PADDING
-	var helper = _get_air_ball_helper()
+	var center_x = _get_fallback_center_x()
 
+	# Resolve step_x from level grid data when available (regular levels).
+	# Blitz/survival packs are not in PackLoader so they use the fallback step.
 	if game_manager:
 		var pack_id: String = str(game_manager.current_pack_id)
 		var level_index: int = int(game_manager.current_level_index)
-		var level_key: String = "%s:%d" % [pack_id, level_index]
-		if helper and helper.has_method("is_cached_level") and helper.call("is_cached_level", level_key):
-			return helper.call("get_landing_data", level_key, center_x, step_x)
-
 		var level_data: Dictionary = PackLoader.get_level_data(pack_id, level_index)
 		if not level_data.is_empty():
 			var grid: Dictionary = level_data.get("grid", {})
-			var brick_size: int = int(grid.get("brick_size", 48))
-			var spacing: int = int(grid.get("spacing", 3))
-			var start_x: int = int(grid.get("start_x", 150))
-			step_x = float(brick_size + spacing)
+			step_x = float(int(grid.get("brick_size", 48)) + int(grid.get("spacing", 3)))
 
-			var bricks: Array = level_data.get("bricks", [])
-			if bricks.size() > 0:
-				var first_brick: Variant = bricks[0]
-				var min_col: int = int(first_brick.get("col", 0)) if first_brick is Dictionary else 0
-				var max_col: int = min_col
-				for brick_def in bricks:
-					if not (brick_def is Dictionary):
-						continue
-					var col: int = int(brick_def.get("col", 0))
-					min_col = min(min_col, col)
-					max_col = max(max_col, col)
-				center_x = float(start_x) + ((min_col + max_col) / 2.0) * step_x
-			else:
-				center_x = float(start_x)
-			if helper and helper.has_method("cache_landing_data"):
-				helper.call("cache_landing_data", level_key, center_x, step_x)
+	# Land in the second column from the leftmost live brick ("second-to-back row").
+	# Using live positions makes this predictable across both regular levels and blitz,
+	# and it adapts naturally as the leftmost bricks are cleared.
+	var cached_bricks = _get_cached_level_bricks()
+	if not cached_bricks.is_empty():
+		var min_x: float = INF
+		for brick in cached_bricks:
+			if brick is Node2D:
+				min_x = minf(min_x, (brick as Node2D).position.x)
+		if min_x < INF:
+			center_x = min_x + step_x
 
-	return {
-		"center_x": center_x,
-		"step_x": step_x
-	}
+	return {"center_x": center_x, "step_x": step_x}
 
 func _get_fallback_center_x() -> float:
 	if viewport_ref:

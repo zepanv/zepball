@@ -828,7 +828,7 @@ func show_blitz_over(final_score: int) -> void:
 		else:
 			SaveManager.set_last_played_in_progress(false)
 		if not is_editor_test_mode and SaveManager.has_method("save_blitz_run"):
-			SaveManager.save_blitz_run(final_score)
+			SaveManager.save_blitz_run(final_score, _get_active_blitz_rows())
 
 	get_tree().change_scene_to_file(GAME_OVER_SCENE)
 	scene_changed.emit(GAME_OVER_SCENE)
@@ -1030,7 +1030,7 @@ func _finalize_endless_run_on_exit_if_needed() -> void:
 			else:
 				SaveManager.set_last_played_in_progress(false)
 			if SaveManager.has_method("save_blitz_run"):
-				SaveManager.save_blitz_run(final_score)
+				SaveManager.save_blitz_run(final_score, _get_active_blitz_rows())
 
 func _get_active_gameplay_score() -> int:
 	var game_manager: Node = get_tree().get_first_node_in_group("game_manager")
@@ -1039,6 +1039,12 @@ func _get_active_gameplay_score() -> int:
 		if score_value != null:
 			return max(0, int(score_value))
 	return max(0, current_score)
+
+func _get_active_blitz_rows() -> int:
+	var main_node: Node = get_tree().get_first_node_in_group("main_controller")
+	if main_node and main_node.has_method("get_blitz_rows_spawned"):
+		return max(1, main_node.get_blitz_rows_spawned())
+	return 1
 
 func _get_active_survival_wave() -> int:
 	var game_manager: Node = get_tree().get_first_node_in_group("game_manager")

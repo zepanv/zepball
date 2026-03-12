@@ -21,6 +21,9 @@ const DEFAULT_BLITZ_GRID_ROWS = 9
 var _push_timer: Timer = null
 var _push_count: int = 0
 var _rows_spawned: int = 0
+
+func get_rows_spawned() -> int:
+	return _rows_spawned
 var _rows_survived: int = 0
 var _current_push_interval: float = BLITZ_START_INTERVAL_NORMAL
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()

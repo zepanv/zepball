@@ -169,13 +169,14 @@ func get_blitz_top_runs(parent: Node) -> Array:
 		parent.save_to_disk()
 	return parent.progression_helper._sanitize_blitz_runs(parent, parent.save_data.get("blitz_top_runs", []))
 
-func save_blitz_run(parent: Node, score: int) -> void:
+func save_blitz_run(parent: Node, score: int, rows: int = 1) -> void:
 	if not parent.save_data.has("blitz_top_runs"):
 		parent.save_data["blitz_top_runs"] = []
 
 	var runs = parent.progression_helper._sanitize_blitz_runs(parent, parent.save_data.get("blitz_top_runs", []))
 	runs.append({
 		"score": max(0, score),
+		"rows": max(1, rows),
 		"date": Time.get_datetime_string_from_system()
 	})
 	parent.save_data["blitz_top_runs"] = parent.progression_helper._sanitize_blitz_runs(parent, runs)
@@ -291,6 +292,7 @@ func get_all_leaderboards(parent: Node, use_cache: bool = true) -> Dictionary:
 			leaderboards["blitz_runs"].append({
 				"name": p_name,
 				"score": int(run.get("score", 0)),
+				"rows": int(run.get("rows", 1)),
 				"date": str(run.get("date", "Unknown"))
 			})
 			

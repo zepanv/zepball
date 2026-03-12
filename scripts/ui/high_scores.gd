@@ -306,7 +306,7 @@ func _render_blitz_view() -> void:
 		"Endless push-mode high scores.",
 		""
 	)
-	_set_column_headers("MODE", false, "SCORE")
+	_set_column_headers("ROWS", true, "SCORE")
 
 	var blitz_runs: Array = leaderboards.get("blitz_runs", [])
 	if blitz_runs.is_empty():
@@ -318,7 +318,8 @@ func _render_blitz_view() -> void:
 		if not (run_variant is Dictionary):
 			continue
 		var run_entry: Dictionary = (run_variant as Dictionary).duplicate()
-		_add_score_row(run_entry, index + 1, false, "score", index % 2 == 1)
+		run_entry["context"] = "ROWS %d" % int(run_entry.get("rows", 1))
+		_add_score_row(run_entry, index + 1, true, "score", index % 2 == 1)
 
 func _set_view_text(subtitle_text: String, footer_text: String) -> void:
 	subtitle_label.text = subtitle_text

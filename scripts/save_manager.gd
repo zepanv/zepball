@@ -589,8 +589,8 @@ func save_survival_run(score: int, wave: int) -> void:
 func get_blitz_top_runs() -> Array:
 	return high_scores_helper.get_blitz_top_runs(self)
 
-func save_blitz_run(score: int) -> void:
-	high_scores_helper.save_blitz_run(self, score)
+func save_blitz_run(score: int, rows: int = 1) -> void:
+	high_scores_helper.save_blitz_run(self, score, rows)
 
 func update_set_pack_high_score(pack_id: String, score: int) -> bool:
 	return high_scores_helper.update_set_pack_high_score(self, pack_id, score)

@@ -38,7 +38,9 @@ func check(ball: CharacterBody2D, delta: float, current_speed: float, ball_radiu
 						used_collision_escape = true
 
 			if not used_collision_escape:
-				var escape_angle = randf_range(135.0, 225.0)
+				# Escape rightward (toward paddle/center) — leftward angles risk
+				# driving the ball into or through the left wall.
+				var escape_angle = randf_range(-45.0, 45.0)
 				var angle_rad = deg_to_rad(escape_angle)
 				ball.velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
 

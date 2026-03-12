@@ -648,6 +648,7 @@ func _sanitize_blitz_runs(_parent: Node, raw_runs: Variant) -> Array:
 			var run: Dictionary = run_variant
 			sanitized.append({
 				"score": max(0, int(run.get("score", 0))),
+				"rows": max(1, int(run.get("rows", 1))),
 				"date": str(run.get("date", "Unknown"))
 			})
 

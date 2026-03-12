@@ -296,7 +296,7 @@ func _on_score_changed(new_score: int) -> void:
 	score_label.text = str(new_score)
 
 func _on_lives_changed(new_lives: int) -> void:
-	lives_label.text = str(new_lives)
+	lives_label.text = str(max(0, new_lives - 1))
 
 func _on_effect_applied(type: int) -> void:
 	powerup_helper.on_effect_applied(type, powerup_container)
