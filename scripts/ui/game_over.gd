@@ -34,7 +34,13 @@ func _ready():
 		retry_button.text = "PLAY AGAIN"
 		if survival_label:
 			survival_label.visible = true
-			survival_label.text = "Wave Reached: " + str(max(1, int(MenuController.get_survival_wave_reached())))
+			var wave = max(1, int(MenuController.get_survival_wave_reached()))
+			var max_combo = MenuController.get_run_max_combo()
+			var bricks = MenuController.get_run_bricks_broken()
+			var run_time = MenuController.get_run_time_seconds()
+			survival_label.text = "Wave Reached: %d  |  Time: %s" % [wave, _format_time(run_time)]
+			if max_combo > 0 or bricks > 0:
+				survival_label.text += "\nBest Combo: %d  |  Bricks: %d" % [max_combo, bricks]
 		high_score_label.text = "SURVIVAL RUN COMPLETE"
 		high_score_label.set("theme_override_colors/font_color", Color(0.9, 0.8, 0.35, 1))
 		_show_survival_comparison()
@@ -42,7 +48,13 @@ func _ready():
 		retry_button.text = "PLAY AGAIN"
 		if survival_label:
 			survival_label.visible = true
-			survival_label.text = "Rows Survived: " + str(max(0, int(MenuController.get_blitz_rows_survived())))
+			var rows = max(0, int(MenuController.get_blitz_rows_survived()))
+			var max_combo = MenuController.get_run_max_combo()
+			var bricks = MenuController.get_run_bricks_broken()
+			var run_time = MenuController.get_run_time_seconds()
+			survival_label.text = "Rows Survived: %d  |  Time: %s" % [rows, _format_time(run_time)]
+			if max_combo > 0 or bricks > 0:
+				survival_label.text += "\nBest Combo: %d  |  Bricks: %d" % [max_combo, bricks]
 		high_score_label.text = "BLITZ RUN COMPLETE"
 		high_score_label.set("theme_override_colors/font_color", Color(0.9, 0.8, 0.35, 1))
 		_show_blitz_comparison()
@@ -193,4 +205,11 @@ func _show_blitz_comparison() -> void:
 
 func _format_blitz_run(run: Dictionary) -> String:
 	var score = int(run.get("score", 0))
-	return "%d pts" % score
+	var rows = int(run.get("rows", 0))
+	return "%d rows, %d pts" % [rows, score]
+
+func _format_time(seconds: float) -> String:
+	var total: int = int(seconds)
+	var mins: int = total / 60
+	var secs: int = total % 60
+	return "%d:%02d" % [mins, secs]

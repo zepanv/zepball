@@ -386,6 +386,7 @@ func _on_brick_broken(score_value: int, brick_ref: Node):
 	# Track statistic
 	if not MenuController.is_editor_test_mode:
 		SaveManager.increment_stat("total_bricks_broken")
+		game_manager.bricks_broken_this_run += 1
 
 	# Trigger screen shake (intensity scales with score and combo)
 	_apply_brick_hit_shake(score_value)
@@ -722,6 +723,11 @@ func spawn_additional_balls(source_ball):
 
 		# Connect signals
 		new_ball.ball_lost.connect(_on_ball_lost)
+		if new_ball.has_signal("ball_launched"):
+			new_ball.ball_launched.connect(_on_any_ball_launched)
+		# Prevent immediate re-grab after spawning at paddle position
+		if "grab_immunity_timer" in new_ball:
+			new_ball.grab_immunity_timer = 0.2
 
 func _get_active_balls() -> Array:
 	if not play_area:
@@ -773,6 +779,9 @@ func _set_primary_ball(primary_ball: Node) -> void:
 			active_ball.is_main_ball = should_be_main
 
 	ball = primary_ball
+	# Ensure ball_launched is connected for the promoted primary ball
+	if primary_ball.has_signal("ball_launched") and not primary_ball.ball_launched.is_connected(_on_any_ball_launched):
+		primary_ball.ball_launched.connect(_on_any_ball_launched)
 
 func _spawn_replacement_main_ball() -> Node:
 	if not BALL_SCENE or not play_area:

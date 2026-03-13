@@ -41,6 +41,9 @@ var is_survival_mode: bool = false
 var is_blitz_mode: bool = false
 var survival_wave_reached: int = 1
 var blitz_rows_survived: int = 0
+var run_max_combo: int = 0
+var run_bricks_broken: int = 0
+var run_time_seconds: float = 0.0
 var time_attack_elapsed_base_seconds: int = 0
 var time_attack_final_seconds: int = 0
 var was_perfect_clear: bool = false
@@ -698,6 +701,9 @@ func start_survival() -> void:
 	is_blitz_mode = false
 	survival_wave_reached = 1
 	blitz_rows_survived = 0
+	run_max_combo = 0
+	run_bricks_broken = 0
+	run_time_seconds = 0.0
 	current_score = 0
 	current_pack_id = ""
 	current_level_index = 0
@@ -735,6 +741,9 @@ func start_blitz() -> void:
 	is_blitz_mode = true
 	survival_wave_reached = 1
 	blitz_rows_survived = 0
+	run_max_combo = 0
+	run_bricks_broken = 0
+	run_time_seconds = 0.0
 	current_score = 0
 	current_pack_id = ""
 	current_level_index = 0
@@ -802,6 +811,11 @@ func show_survival_over(final_score: int, wave: int) -> void:
 	"""Show game over screen for Survival mode and persist the run."""
 	current_score = final_score
 	survival_wave_reached = max(1, wave)
+	var game_mgr = get_tree().get_first_node_in_group("game_manager")
+	if game_mgr:
+		run_max_combo = game_mgr.max_combo_this_run
+		run_bricks_broken = game_mgr.bricks_broken_this_run
+		run_time_seconds = game_mgr.level_time_seconds
 	is_in_gameplay = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	DifficultyManager.unlock_difficulty()
@@ -819,6 +833,11 @@ func show_survival_over(final_score: int, wave: int) -> void:
 func show_blitz_over(final_score: int) -> void:
 	"""Show game over screen for Blitz mode and persist the run."""
 	current_score = final_score
+	var game_mgr = get_tree().get_first_node_in_group("game_manager")
+	if game_mgr:
+		run_max_combo = game_mgr.max_combo_this_run
+		run_bricks_broken = game_mgr.bricks_broken_this_run
+		run_time_seconds = game_mgr.level_time_seconds
 	is_in_gameplay = false
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	DifficultyManager.unlock_difficulty()
@@ -1081,6 +1100,15 @@ func get_survival_wave_reached() -> int:
 
 func get_blitz_rows_survived() -> int:
 	return max(0, blitz_rows_survived)
+
+func get_run_max_combo() -> int:
+	return run_max_combo
+
+func get_run_bricks_broken() -> int:
+	return run_bricks_broken
+
+func get_run_time_seconds() -> float:
+	return run_time_seconds
 
 func get_time_attack_elapsed_base_seconds() -> int:
 	return time_attack_elapsed_base_seconds

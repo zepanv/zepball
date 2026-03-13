@@ -27,6 +27,8 @@ var current_level_index: int = 0
 var current_level_key: String = "classic-challenge:0"
 var current_wave: int = 1
 var combo: int = 0  # Consecutive brick hits
+var max_combo_this_run: int = 0  # Highest combo reached in this run
+var bricks_broken_this_run: int = 0  # Bricks broken in this run
 var no_miss_hits: int = 0  # Consecutive hits without losing ball
 var is_perfect_clear: bool = true  # True if no lives lost this level
 var had_continue: bool = false  # True if player used continue in set mode
@@ -222,6 +224,9 @@ func add_objective_bonus_score(points: int) -> int:
 func increment_combo():
 	combo += 1
 	combo_changed.emit(combo)
+
+	if combo > max_combo_this_run:
+		max_combo_this_run = combo
 
 	# Track highest combo statistic
 	SaveManager.update_stat_if_higher("highest_combo", combo)

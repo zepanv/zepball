@@ -201,6 +201,10 @@ func _ensure_audio_buses() -> void:
 	_ensure_bus("SFX")
 	_ensure_bus(HIT_SFX_BUS)
 	_ensure_bus("Music")
+	# Always ensure HitSFX routes through SFX so the SFX volume slider affects it
+	var hit_sfx_index = AudioServer.get_bus_index(HIT_SFX_BUS)
+	if hit_sfx_index != -1:
+		AudioServer.set_bus_send(hit_sfx_index, "SFX")
 
 func _ensure_bus(bus_name: String) -> void:
 	if AudioServer.get_bus_index(bus_name) != -1:

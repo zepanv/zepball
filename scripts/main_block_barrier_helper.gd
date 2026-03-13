@@ -91,6 +91,7 @@ func _on_block_brick_broken(score_value: int, parent: Node) -> void:
 	"""Handle block brick destruction without affecting level completion"""
 	if parent.game_manager:
 		parent.game_manager.add_score(score_value)
+		parent.game_manager.bricks_broken_this_run += 1
 	SaveManager.increment_stat("total_bricks_broken")
 
 	# Trigger screen shake similar to normal bricks
