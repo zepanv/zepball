@@ -121,9 +121,12 @@ func _physics_process(delta):
 	velocity.x = 0.0
 	velocity.y = input_velocity_y
 
-	# Move paddle (only matters for keyboard control now)
+	# Move paddle via direct position update (mirrors mouse control path).
+	# move_and_slide() is intentionally avoided here: it runs physics collision which
+	# can block upward movement when a grabbed ball's CharacterBody2D is sitting above
+	# the paddle center. Ball-paddle collision is handled by the ball's move_and_collide().
 	if input_velocity_y != 0.0:
-		move_and_slide()
+		position.y += input_velocity_y * delta
 
 	# Clamp position to boundaries (dynamic based on paddle height)
 	if position.y < min_bound_y:

@@ -68,6 +68,7 @@ custom_minimum_size = Vector2(0, 450)
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_horizontal = 3
+follow_focus = true
 
 [node name="SetsContainer" type="VBoxContainer" parent="VBoxContainer/ContentContainer/PackListContainer/ScrollContainer"]
 layout_mode = 2

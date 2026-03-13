@@ -91,6 +91,7 @@ var power_up_handler: RefCounted = null
 var _pending_extra_ball_spawns: int = 0  # Triple ball spawns deferred until ball is released
 var is_survival_mode: bool = false
 var is_blitz_mode: bool = false
+var _restart_confirm: ConfirmationDialog = null
 
 const MAIN_SURVIVAL_HELPER_SCRIPT: GDScript = preload("res://scripts/main_survival_helper.gd")
 var survival_helper: RefCounted = null
@@ -155,6 +156,28 @@ func _ready() -> void:
 		connect_brick_signals()
 
 	_apply_wall_color()
+	_create_restart_confirm()
+
+func _create_restart_confirm() -> void:
+	_restart_confirm = ConfirmationDialog.new()
+	_restart_confirm.title = "Restart Level"
+	_restart_confirm.dialog_text = "Restart the level and lose your current progress?"
+	_restart_confirm.process_mode = Node.PROCESS_MODE_ALWAYS
+	_restart_confirm.confirmed.connect(_on_restart_confirmed)
+	_restart_confirm.canceled.connect(_on_restart_confirm_canceled)
+	_restart_confirm.close_requested.connect(_on_restart_confirm_canceled)
+	add_child(_restart_confirm)
+
+func _show_restart_confirm() -> void:
+	get_tree().paused = true
+	_restart_confirm.popup_centered()
+
+func _on_restart_confirmed() -> void:
+	get_tree().paused = false
+	MenuController.restart_current_level()
+
+func _on_restart_confirm_canceled() -> void:
+	get_tree().paused = false
 
 func _restore_set_state(saved_score: int, saved_lives: int, saved_perfect: bool, saved_combo: int, saved_no_miss: int) -> void:
 	"""Restore game state when continuing a set (called deferred to ensure HUD is ready)"""
@@ -508,9 +531,15 @@ func _on_game_over():
 
 func _input(event):
 	"""Handle input for restart and debug/testing"""
-	# Restart with input action
 	if Input.is_action_just_pressed("restart_game"):
-		MenuController.restart_current_level()
+		var in_active_gameplay: bool = game_manager != null and (
+			game_manager.game_state == game_manager.GameState.PLAYING or
+			game_manager.game_state == game_manager.GameState.READY
+		)
+		if in_active_gameplay:
+			_show_restart_confirm()
+		else:
+			MenuController.restart_current_level()
 
 	if event is InputEventKey and event.pressed and not event.echo:
 		if OS.is_debug_build() and event.keycode == KEY_C:

@@ -184,7 +184,7 @@ func _set_bonus_line(label: Label, name: String, value: int) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if Time.get_ticks_msec() - _ready_time < 500:
 		return
-	if event.is_action_pressed("ui_accept"):
+	if event.is_action_pressed("restart_game"):
 		get_viewport().set_input_as_handled()
 		if not next_level_button.disabled:
 			_on_next_level_button_pressed()

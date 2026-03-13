@@ -3,6 +3,8 @@ extends Control
 ## Stats Screen - Display player statistics and achievements
 const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 
+const SCROLL_STEP := 80
+
 @onready var background = $Background
 @onready var panel = $ScreenMargin/CenterContainer/Panel
 @onready var title_label = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/TitleLabel
@@ -21,6 +23,7 @@ const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
 @onready var playtime_label = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ContentRow/StatsSection/PlaytimeLabel
 
 # Achievements container
+@onready var achievements_scroll_container = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ContentRow/AchievementsSection/ScrollContainer
 @onready var achievements_container = $ScreenMargin/CenterContainer/Panel/MarginContainer/VBoxContainer/ContentRow/AchievementsSection/ScrollContainer/AchievementsContainer
 
 func _ready():
@@ -45,6 +48,12 @@ func _apply_theme() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_pressed()
+		accept_event()
+	elif event.is_action_pressed("ui_down", true):
+		achievements_scroll_container.scroll_vertical += SCROLL_STEP
+		accept_event()
+	elif event.is_action_pressed("ui_up", true):
+		achievements_scroll_container.scroll_vertical -= SCROLL_STEP
 		accept_event()
 
 func _populate_statistics():

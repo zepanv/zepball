@@ -2,6 +2,8 @@ extends Control
 
 ## High Scores Menu - Display cross-profile leaderboards with a shared layout contract
 const UI_THEME = preload("res://scripts/ui/ui_theme.gd")
+
+const SCROLL_STEP := 80
 const ROW_SCENE = preload("res://scenes/ui/components/high_score_row.tscn")
 
 const FILTER_TABS := [
@@ -131,6 +133,25 @@ func _configure_set_filter_dropdown() -> void:
 		set_filter_dropdown.add_item(str(set_filter.get("title", "")))
 	set_filter_dropdown.select(_get_set_filter_index(current_set_challenge_filter))
 
+func _input(event: InputEvent) -> void:
+	# Set filter dropdown handles its own up/down navigation
+	if get_viewport().gui_get_focus_owner() == set_filter_dropdown:
+		return
+	if event.is_action_pressed("ui_down", true):
+		var vbar := scroll_container.get_v_scroll_bar()
+		var scroll_max := int(vbar.max_value - vbar.page)
+		if scroll_container.scroll_vertical < scroll_max:
+			scroll_container.scroll_vertical += SCROLL_STEP
+		elif get_viewport().gui_get_focus_owner() != back_button:
+			back_button.grab_focus()
+		accept_event()
+	elif event.is_action_pressed("ui_up", true):
+		if scroll_container.scroll_vertical > 0:
+			scroll_container.scroll_vertical -= SCROLL_STEP
+		elif get_viewport().gui_get_focus_owner() != filter_tabs:
+			filter_tabs.grab_focus()
+		accept_event()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_pressed()
@@ -175,16 +196,13 @@ func _sync_filter_controls() -> void:
 	set_filter_dropdown.disabled = not showing_set_filter
 	column_header_panel.visible = true
 
-	filter_tabs.focus_neighbor_bottom = filter_tabs.get_path_to(back_button)
-	back_button.focus_neighbor_top = back_button.get_path_to(filter_tabs)
-
 	if showing_set_filter:
 		filter_tabs.focus_neighbor_right = filter_tabs.get_path_to(set_filter_dropdown)
 		set_filter_dropdown.focus_neighbor_left = set_filter_dropdown.get_path_to(filter_tabs)
 		set_filter_dropdown.focus_neighbor_bottom = set_filter_dropdown.get_path_to(back_button)
-		back_button.focus_neighbor_top = back_button.get_path_to(set_filter_dropdown)
 	else:
 		filter_tabs.focus_neighbor_right = NodePath("")
+		set_filter_dropdown.focus_neighbor_bottom = NodePath("")
 
 func _render_overall_view() -> void:
 	_set_view_text(
