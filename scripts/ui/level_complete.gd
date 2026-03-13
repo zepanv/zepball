@@ -173,10 +173,10 @@ func _apply_theme() -> void:
 	UI_THEME.style_muted_button(level_select_button)
 	UI_THEME.style_muted_button(menu_button)
 
-func _set_bonus_line(label: Label, name: String, value: int) -> void:
+func _set_bonus_line(label: Label, bonus_name: String, value: int) -> void:
 	"""Show bonus line only if non-zero."""
 	if value > 0:
-		label.text = name + " Bonus: " + Helpers.format_bonus(value)
+		label.text = bonus_name + " Bonus: " + Helpers.format_bonus(value)
 		label.visible = true
 	else:
 		label.visible = false
