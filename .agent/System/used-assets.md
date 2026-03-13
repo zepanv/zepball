@@ -63,6 +63,13 @@ Do not duplicate line-level references here; use `rg` when you need the exact ca
 - Active contract:
   - all current SFX in this folder are in use, including `bzzrt.mp3` for Force Arrow feedback
 
+### Audio Music
+- Location: `assets/audio/music/`
+- Used by: `scripts/audio_manager.gd`, `scripts/ui/settings.gd`
+- Active contract:
+  - all shipped `.ogg` music tracks in this folder are auto-discovered for runtime rotation and loop-one selection
+  - current shipped tracks are `zepball-01.ogg` through `zepball-06.ogg`
+
 ## Maintenance Rule
 - Update this file when an asset starts or stops being referenced by runtime code or scenes.
 - Prefer grouping by owning system over recording line numbers or percentages.
