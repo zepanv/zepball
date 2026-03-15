@@ -34,9 +34,10 @@ func apply_collected_power_up(controller: Node, power_up_type: int) -> void:
 			_apply_paddle_effect(controller, PowerUpManager.PowerUpType.CONTRACT)
 		TYPE_SPEED_UP:
 			var ball_target = _get_valid_node(controller.get("ball"))
-			if ball_target and ball_target.has_method("apply_speed_up_effect"):
-				ball_target.apply_speed_up_effect()
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SPEED_UP, ball_target)
+			for ball in PowerUpManager.get_active_balls():
+				if is_instance_valid(ball) and ball.has_method("apply_speed_up_effect"):
+					ball.apply_speed_up_effect()
 		TYPE_TRIPLE_BALL:
 			# Defer spawning to avoid physics query conflicts in collision callback paths.
 			controller.call_deferred("spawn_additional_balls_with_retry", TRIPLE_BALL_RETRY_COUNT)
@@ -48,9 +49,10 @@ func apply_collected_power_up(controller: Node, power_up_type: int) -> void:
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SMALL_BALL, ball_target)
 		TYPE_SLOW_DOWN:
 			var ball_target = _get_valid_node(controller.get("ball"))
-			if ball_target and ball_target.has_method("apply_slow_down_effect"):
-				ball_target.apply_slow_down_effect()
 			PowerUpManager.apply_effect(PowerUpManager.PowerUpType.SLOW_DOWN, ball_target)
+			for ball in PowerUpManager.get_active_balls():
+				if is_instance_valid(ball) and ball.has_method("apply_slow_down_effect"):
+					ball.apply_slow_down_effect()
 		TYPE_EXTRA_LIFE:
 			if MenuController and MenuController.has_method("get_challenge_mode") and str(MenuController.get_challenge_mode()) == MenuController.CHALLENGE_MODE_ONE_LIFE:
 				return

@@ -38,11 +38,16 @@ func check(ball: CharacterBody2D, delta: float, current_speed: float, ball_radiu
 						used_collision_escape = true
 
 			if not used_collision_escape:
-				# Escape rightward (toward paddle/center) — leftward angles risk
-				# driving the ball into or through the left wall.
+				# Escape toward the field center so the ball is not driven deeper into a corner.
+				# Right half (near paddle/right wall): escape leftward.
+				# Left half (near bricks/left wall): escape rightward toward paddle.
 				var escape_angle = randf_range(-45.0, 45.0)
 				var angle_rad = deg_to_rad(escape_angle)
-				ball.velocity = Vector2(cos(angle_rad), sin(angle_rad)) * current_speed
+				var field_center_x = 650.0  # ~half of RIGHT_BOUNDARY_X (1300)
+				var escape_x = abs(cos(angle_rad))
+				if ball.position.x > field_center_x:
+					escape_x = -escape_x  # Force leftward when near paddle / right wall
+				ball.velocity = Vector2(escape_x, sin(angle_rad)) * current_speed
 
 			stuck_check_timer = 0.0
 	else:

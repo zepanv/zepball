@@ -10,6 +10,12 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 	if collider.is_in_group("ball"):
 		return
 
+	# Any wall or brick hit means the ball has traveled away from the paddle.
+	# Clear grab immunity so the ball can be caught/grabbed normally on return.
+	# Immunity only needs to cover the launch frame itself, not a full bounce cycle.
+	if not collider.is_in_group("paddle") and parent.grab_immunity_timer > 0.0:
+		parent.grab_immunity_timer = 0.0
+
 	# Check what we hit
 	if collider.is_in_group("paddle"):
 		if parent.paddle_reference == null and collider is Node2D:
@@ -21,25 +27,36 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 		# and reversing direction toward the right boundary.
 		if parent.grab_immunity_timer > 0.0:
 			return
-		# Allow ball to pass through paddle when it's behind the paddle (to the right)
-		# and moving rightward. Prevents "ghost hits" where a fast paddle catches a ball
-		# that already passed it, applying spin and pulling it back through.
-		if parent.paddle_reference and parent.position.x > parent.paddle_reference.position.x and parent.velocity.x > 0.0:
-			return
-		# Special case: Allow ball to escape through paddle if pinched near walls.
-		# Forces leftward velocity so the ball returns to play instead of exiting.
-		if parent.position.y < parent.TOP_ESCAPE_ZONE_Y:
+		# Escape zone: handle wall-pinch FIRST, before the ghost-hit pass-through check.
+		# This prevents the ball from slipping behind the paddle when near the top/bottom walls.
+		# If grab is active, skip the forced-leftward escape and fall through to grab logic below.
+		var in_escape_zone = parent.position.y < parent.TOP_ESCAPE_ZONE_Y or \
+			parent.position.y > parent.BOTTOM_ESCAPE_ZONE_Y
+		if in_escape_zone and not parent.frame_grab_active:
 			parent.velocity.x = -abs(parent.velocity.x)
+			if parent.frame_air_ball_active:
+				parent._jump_to_level_center_x(hit_y)
+			AudioManager.play_sfx("hit_paddle")
 			return
-		elif parent.position.y > parent.BOTTOM_ESCAPE_ZONE_Y:
-			parent.velocity.x = -abs(parent.velocity.x)
-			return
+		# Ghost-hit: ball contacted the back face of the paddle - pass through.
+		# normal.x > 0 means the collision surface faces rightward (back face).
+		# Exception: if grab is active and ball is on the front (left) side, allow grab.
+		if normal.x > 0.0 and parent.velocity.x > 0.0:
+			var grab_from_front = parent.frame_grab_active and \
+				parent.paddle_reference != null and \
+				parent.position.x <= parent.paddle_reference.position.x
+			if not grab_from_front:
+				return
 
 		# Check if grab is enabled and ball is not immune to grab
 		if parent.frame_grab_active and parent.grab_immunity_timer <= 0.0:
 			# Attach ball to paddle (grab mode) at the exact contact point
 			parent.is_attached_to_paddle = true
 			parent.velocity = Vector2.ZERO
+			# Disable collision so other balls approaching the paddle don't pile up
+			# against this grabbed ball and skip the paddle collision entirely.
+			if parent.collision_shape_node:
+				parent.collision_shape_node.disabled = true
 			# Store the current offset from paddle so ball sticks where it was grabbed
 			if parent.paddle_reference:
 				parent.paddle_offset = parent.position - parent.paddle_reference.position

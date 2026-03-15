@@ -34,8 +34,8 @@ const RIGHT_BOUNDARY_X = 1300.0
 const LEFT_BOUNDARY_X = 0.0
 const TOP_BOUNDARY_Y = 0.0
 const BOTTOM_BOUNDARY_Y = 720.0
-const TOP_ESCAPE_ZONE_Y = 40.0
-const BOTTOM_ESCAPE_ZONE_Y = 660.0
+const TOP_ESCAPE_ZONE_Y = 80.0
+const BOTTOM_ESCAPE_ZONE_Y = 620.0
 const SPEED_UP_MULTIPLIER = 1.30
 const SLOW_DOWN_MULTIPLIER = 0.70
 const SLOW_SPEED_MULTIPLIER = 0.85
@@ -146,6 +146,10 @@ func _ready():
 
 	if collision_shape_node and collision_shape_node.shape is CircleShape2D:
 		ball_radius = collision_shape_node.shape.radius
+	# Grabbed/attached balls have their collision disabled so approaching balls
+	# can reach the paddle directly instead of piling up against them.
+	if collision_shape_node:
+		collision_shape_node.disabled = is_attached_to_paddle
 	if visual_node:
 		visual_node.scale = BASE_VISUAL_SCALE
 	_refresh_effect_flags()
@@ -247,6 +251,8 @@ func launch_ball():
 	If paddle is moving, impart spin. Otherwise, shoot straight left.
 	"""
 	is_attached_to_paddle = false
+	if collision_shape_node:
+		collision_shape_node.disabled = false
 	var launched_with_aim = false
 	spin_amount = 0.0
 	if aim_helper.aim_active:
@@ -324,6 +330,9 @@ func handle_collision(collision: KinematicCollision2D):
 func reset_ball():
 	"""Reset ball to paddle after losing a life"""
 	is_attached_to_paddle = true
+	paddle_offset = Vector2(-30, 0)  # Restore default front-of-paddle position
+	if collision_shape_node:
+		collision_shape_node.disabled = true
 	velocity = Vector2.ZERO
 	spin_amount = 0.0
 	force_arrow_dwell_time = 0.0

@@ -210,6 +210,6 @@ func _format_blitz_run(run: Dictionary) -> String:
 
 func _format_time(seconds: float) -> String:
 	var total: int = int(seconds)
-	var mins: int = total / 60
+	var mins: int = int(total / 60.0)
 	var secs: int = total % 60
 	return "%d:%02d" % [mins, secs]

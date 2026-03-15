@@ -705,6 +705,8 @@ func spawn_additional_balls(source_ball):
 		var new_ball = BALL_SCENE.instantiate()
 		if is_survival_mode and new_ball.has_method("set_external_speed_multiplier"):
 			new_ball.set_external_speed_multiplier(survival_helper.survival_speed_multiplier)
+		elif is_blitz_mode and blitz_helper != null and new_ball.has_method("set_external_speed_multiplier"):
+			new_ball.set_external_speed_multiplier(blitz_helper.blitz_speed_multiplier)
 
 		# Mark as extra ball (won't count as life loss)
 		if new_ball.has_method("set_is_main_ball"):
@@ -826,6 +828,8 @@ func _spawn_replacement_main_ball() -> Node:
 
 	if is_survival_mode and replacement_ball.has_method("set_external_speed_multiplier"):
 		replacement_ball.set_external_speed_multiplier(survival_helper.survival_speed_multiplier)
+	elif is_blitz_mode and blitz_helper != null and replacement_ball.has_method("set_external_speed_multiplier"):
+		replacement_ball.set_external_speed_multiplier(blitz_helper.blitz_speed_multiplier)
 
 	if PowerUpManager:
 		if replacement_ball.has_method("set_ball_size_multiplier"):

@@ -18,6 +18,7 @@ const LEFT_WALL_HALF_WIDTH_FALLBACK = 10.0
 const WALL_HALF_HEIGHT_FALLBACK = 10.0
 const DEFAULT_BLITZ_GRID_ROWS = 9
 
+var blitz_speed_multiplier: float = 1.0  # Current external speed multiplier (mirrors survival_helper pattern)
 var _push_timer: Timer = null
 var _push_count: int = 0
 var _rows_spawned: int = 0
@@ -176,6 +177,7 @@ func _apply_blitz_speed_step(parent: Node) -> void:
 	var wave_one_speed: float = parent.SURVIVAL_BASE_BALL_SPEED * DifficultyManager.get_speed_multiplier()
 	var target_speed: float = float(parent.SURVIVAL_GENERATOR_SCRIPT.get_speed_for_wave(_push_count + 1, wave_one_speed))
 	var external_multiplier: float = target_speed / wave_one_speed if wave_one_speed > 0.0 else 1.0
+	blitz_speed_multiplier = external_multiplier
 
 	for active_ball in parent._get_active_balls():
 		if not is_instance_valid(active_ball):

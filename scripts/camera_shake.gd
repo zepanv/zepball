@@ -55,6 +55,7 @@ func shake(intensity: float, duration: float):
 	intensity: How far the camera shakes (pixels)
 	duration: How long the shake lasts (seconds)
 	"""
+	_load_intensity_setting()
 	if intensity_multiplier <= 0.0:
 		return
 	# Apply intensity multiplier from settings
