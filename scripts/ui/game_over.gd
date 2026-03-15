@@ -28,7 +28,7 @@ func _ready():
 	var in_blitz = MenuController.is_blitz_mode
 
 	# Display final score
-	score_label.text = "Final Score: " + str(final_score)
+	score_label.text = "Final Score: " + ScoreBreakdownHelpers.comma_sep(final_score)
 
 	if in_survival:
 		retry_button.text = "PLAY AGAIN"
@@ -68,7 +68,7 @@ func _ready():
 				high_score_label.text = "NEW HIGH SCORE!"
 				high_score_label.set("theme_override_colors/font_color", Color(1, 1, 0, 1))
 			else:
-				high_score_label.text = "High Score: " + str(high_score)
+				high_score_label.text = "High Score: " + ScoreBreakdownHelpers.comma_sep(high_score)
 				high_score_label.set("theme_override_colors/font_color", Color(0.5, 1, 0.5, 1))
 		else:
 			high_score_label.text = ""
@@ -184,7 +184,7 @@ func _show_survival_comparison() -> void:
 func _format_survival_run(run: Dictionary) -> String:
 	var wave = int(run.get("wave", 1))
 	var score = int(run.get("score", 0))
-	return "Wave %d, %d pts" % [wave, score]
+	return "Wave %d, %s pts" % [wave, ScoreBreakdownHelpers.comma_sep(score)]
 
 func _show_blitz_comparison() -> void:
 	var personal_runs: Array = SaveManager.get_blitz_top_runs()
@@ -206,10 +206,10 @@ func _show_blitz_comparison() -> void:
 func _format_blitz_run(run: Dictionary) -> String:
 	var score = int(run.get("score", 0))
 	var rows = int(run.get("rows", 0))
-	return "%d rows, %d pts" % [rows, score]
+	return "%d rows, %s pts" % [rows, ScoreBreakdownHelpers.comma_sep(score)]
 
 func _format_time(seconds: float) -> String:
 	var total: int = int(seconds)
-	var mins: int = int(total / 60)
+	var mins: int = total / 60
 	var secs: int = total % 60
 	return "%d:%02d" % [mins, secs]

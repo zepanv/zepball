@@ -4,10 +4,23 @@ extends RefCounted
 ## Shared formatting and challenge-mode helpers used by both
 ## Level Complete and Set Complete screens.
 
+static func comma_sep(value: int) -> String:
+	var s := str(abs(value))
+	var result := ""
+	var count := 0
+	for i in range(s.length() - 1, -1, -1):
+		if count > 0 and count % 3 == 0:
+			result = "," + result
+		result = s[i] + result
+		count += 1
+	if value < 0:
+		result = "-" + result
+	return result
+
 static func format_bonus(value: int) -> String:
 	if value > 0:
-		return "+" + str(value)
-	return str(value)
+		return "+" + comma_sep(value)
+	return comma_sep(value)
 
 static func format_time(seconds: float) -> String:
 	var total_seconds = int(seconds)

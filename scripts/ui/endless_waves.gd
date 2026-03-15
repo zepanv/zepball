@@ -59,7 +59,7 @@ func _populate_run_summaries() -> void:
 		var best_run: Dictionary = survival_runs[0]
 		var best_wave: int = int(max(1, int(best_run.get("wave", 1))))
 		var best_score: int = int(max(0, int(best_run.get("score", 0))))
-		survival_best_label.text = "BEST RUN: WAVE %d | %d PTS" % [best_wave, best_score]
+		survival_best_label.text = "BEST RUN: WAVE %d | %s PTS" % [best_wave, ScoreBreakdownHelpers.comma_sep(best_score)]
 
 	var blitz_runs: Array = SaveManager.get_blitz_top_runs()
 	if blitz_runs.is_empty():
@@ -67,7 +67,7 @@ func _populate_run_summaries() -> void:
 	else:
 		var best_blitz_run: Dictionary = blitz_runs[0]
 		var best_blitz_score: int = int(max(0, int(best_blitz_run.get("score", 0))))
-		blitz_best_label.text = "BEST RUN: %d PTS" % best_blitz_score
+		blitz_best_label.text = "BEST RUN: %s PTS" % ScoreBreakdownHelpers.comma_sep(best_blitz_score)
 
 func _update_focus_neighbors() -> void:
 	survival_start_button.focus_neighbor_right = survival_start_button.get_path_to(blitz_start_button)

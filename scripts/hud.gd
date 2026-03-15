@@ -293,7 +293,7 @@ func _on_combo_milestone(combo_value: int) -> void:
 	tween.tween_property(combo_overlay, "scale", Vector2.ONE, 0.4)
 
 func _on_score_changed(new_score: int) -> void:
-	score_label.text = str(new_score)
+	score_label.text = ScoreBreakdownHelpers.comma_sep(new_score)
 
 func _on_lives_changed(new_lives: int) -> void:
 	lives_label.text = str(max(0, new_lives - 1))

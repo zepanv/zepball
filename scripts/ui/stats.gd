@@ -60,13 +60,13 @@ func _populate_statistics():
 	"""Load and display all statistics from SaveManager"""
 	var stats = SaveManager.get_all_statistics()
 
-	bricks_label.text = "Bricks Broken: " + str(int(stats.get("total_bricks_broken", 0)))
-	powerups_label.text = "Power-ups: " + str(int(stats.get("total_power_ups_collected", 0)))
-	levels_label.text = "Levels Completed: " + str(int(stats.get("total_levels_completed", 0)))
-	combo_label.text = "Highest Combo: " + str(int(stats.get("highest_combo", 0))) + "x"
-	score_label.text = "Highest Score: " + str(int(stats.get("highest_score", 0)))
-	games_label.text = "Games Played: " + str(int(stats.get("total_games_played", 0)))
-	perfect_label.text = "Perfect Clears: " + str(int(stats.get("perfect_clears", 0)))
+	bricks_label.text = "Bricks Broken: " + ScoreBreakdownHelpers.comma_sep(int(stats.get("total_bricks_broken", 0)))
+	powerups_label.text = "Power-ups: " + ScoreBreakdownHelpers.comma_sep(int(stats.get("total_power_ups_collected", 0)))
+	levels_label.text = "Levels Completed: " + ScoreBreakdownHelpers.comma_sep(int(stats.get("total_levels_completed", 0)))
+	combo_label.text = "Highest Combo: " + ScoreBreakdownHelpers.comma_sep(int(stats.get("highest_combo", 0))) + "x"
+	score_label.text = "Highest Score: " + ScoreBreakdownHelpers.comma_sep(int(stats.get("highest_score", 0)))
+	games_label.text = "Games Played: " + ScoreBreakdownHelpers.comma_sep(int(stats.get("total_games_played", 0)))
+	perfect_label.text = "Perfect Clears: " + ScoreBreakdownHelpers.comma_sep(int(stats.get("perfect_clears", 0)))
 
 	# Format playtime as hours:minutes
 	var total_seconds = stats.get("total_playtime", 0.0)

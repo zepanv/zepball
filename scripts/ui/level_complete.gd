@@ -49,9 +49,9 @@ func _ready():
 
 	# Display score
 	if MenuController.current_play_mode == MenuController.PlayMode.SET:
-		score_label.text = "Level Score: " + str(level_score_final)
+		score_label.text = "Level Score: " + Helpers.comma_sep(level_score_final)
 	else:
-		score_label.text = "Score: " + str(level_score_final)
+		score_label.text = "Score: " + Helpers.comma_sep(level_score_final)
 
 	# Display perfect clear message if achieved
 	if was_perfect:
@@ -71,7 +71,7 @@ func _ready():
 	else:
 		var personal_best = SaveManager.get_level_key_high_score(level_key)
 		if personal_best > 0:
-			high_score_label.text = "Personal Best: " + str(personal_best)
+			high_score_label.text = "Personal Best: " + Helpers.comma_sep(personal_best)
 			UI_THEME.style_subtitle(high_score_label)
 
 	# Populate score breakdown
@@ -85,7 +85,7 @@ func _ready():
 	breakdown_title_label.text = "SCORE BREAKDOWN"
 	if is_challenge_set_run:
 		breakdown_title_label.text = challenge_mode_label + " LEVEL BREAKDOWN"
-	base_score_label.text = "Base Score: " + str(base_points)
+	base_score_label.text = "Base Score: " + Helpers.comma_sep(base_points)
 
 	# Hide zero-value bonus lines
 	_set_bonus_line(difficulty_bonus_label, "Difficulty", difficulty_bonus)
@@ -94,7 +94,7 @@ func _ready():
 	_set_bonus_line(double_bonus_label, "Power-Up", double_bonus)
 	_set_bonus_line(perfect_bonus_label, "Perfect Clear", perfect_bonus)
 
-	total_score_label.text = "Total: " + str(level_score_raw + perfect_bonus)
+	total_score_label.text = "Total: " + Helpers.comma_sep(level_score_raw + perfect_bonus)
 	if challenge_mode == "time_attack" and is_challenge_set_run:
 		var run_time_seconds: int = int(MenuController.get_time_attack_elapsed_base_seconds())
 		if run_time_seconds < 0:
@@ -120,9 +120,9 @@ func _ready():
 	elif MenuController.current_play_mode == MenuController.PlayMode.SET:
 		set_total_label.visible = true
 		if is_challenge_set_run:
-			set_total_label.text = challenge_mode_label + " Total: " + str(final_score)
+			set_total_label.text = challenge_mode_label + " Total: " + Helpers.comma_sep(final_score)
 		else:
-			set_total_label.text = "Set Total: " + str(final_score)
+			set_total_label.text = "Set Total: " + Helpers.comma_sep(final_score)
 		# In set mode, show continue button (no auto-advance - let player take a break)
 		next_level_button.text = "CONTINUE SET"
 		unlocked_label.text = "Ready for next level"
@@ -146,7 +146,7 @@ func _ready():
 		next_level_button.grab_focus()
 
 	if legacy_level_id == 0:
-		score_label.text = "Level %d Score: %d" % [level_index + 1, level_score_final]
+		score_label.text = "Level %d Score: %s" % [level_index + 1, Helpers.comma_sep(level_score_final)]
 
 func _apply_theme() -> void:
 	UI_THEME.apply_to(self)

@@ -60,7 +60,7 @@ func _ready():
 		set_name_label.text += " - " + challenge_mode_label
 
 	# Display final score
-	score_label.text = "Final Score: " + str(final_score)
+	score_label.text = "Final Score: " + Helpers.comma_sep(final_score)
 
 	# Check for perfect set clear (3x bonus)
 	var game_manager = get_tree().get_first_node_in_group("game_manager")
@@ -80,7 +80,7 @@ func _ready():
 	breakdown_title_label.text = "SET SCORE BREAKDOWN"
 	if is_challenge_set_run:
 		breakdown_title_label.text = challenge_mode_label + " SET BREAKDOWN"
-	base_score_label.text = "Base Score: " + str(base_points)
+	base_score_label.text = "Base Score: " + Helpers.comma_sep(base_points)
 
 	# Hide zero-value bonus lines
 	_set_bonus_line(difficulty_bonus_label, "Difficulty", difficulty_bonus)
@@ -90,7 +90,7 @@ func _ready():
 	_set_bonus_line(perfect_clear_bonus_label, "Perfect Clear", perfect_clear_bonus)
 	_set_bonus_line(perfect_set_bonus_label, "Perfect Set", set_bonus)
 
-	total_score_label.text = "Total: " + str(final_score)
+	total_score_label.text = "Total: " + Helpers.comma_sep(final_score)
 	if challenge_mode == "time_attack":
 		time_label.text = "Time Attack Time: " + Helpers.format_time(float(displayed_time_seconds))
 	else:
@@ -123,14 +123,14 @@ func _ready():
 		else:
 			var challenge_personal_best = SaveManager.get_challenge_set_high_score(pack_id, challenge_mode)
 			if challenge_personal_best > 0:
-				set_high_score_label.text = "%s Best: %d" % [challenge_mode_label, challenge_personal_best]
+				set_high_score_label.text = "%s Best: %s" % [challenge_mode_label, Helpers.comma_sep(challenge_personal_best)]
 				UI_THEME.style_subtitle(set_high_score_label)
 			else:
 				set_high_score_label.text = ""
 	else:
 		var personal_best = SaveManager.get_set_pack_high_score(pack_id)
 		if personal_best > 0:
-			set_high_score_label.text = "Set Personal Best: " + str(personal_best)
+			set_high_score_label.text = "Set Personal Best: " + Helpers.comma_sep(personal_best)
 			UI_THEME.style_subtitle(set_high_score_label)
 		else:
 			set_high_score_label.text = ""

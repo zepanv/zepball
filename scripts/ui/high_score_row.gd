@@ -134,7 +134,7 @@ func _format_score(entry: Dictionary, score_mode: String) -> String:
 	var value := int(entry.get("score", 0))
 	if score_mode == "time":
 		return _format_time(value)
-	return str(value)
+	return ScoreBreakdownHelpers.comma_sep(value)
 
 func _format_date(raw_date: String) -> String:
 	if raw_date == "" or raw_date == "Unknown":
