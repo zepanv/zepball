@@ -21,13 +21,18 @@ func handle_collision(parent: Node, collision: KinematicCollision2D) -> void:
 		# and reversing direction toward the right boundary.
 		if parent.grab_immunity_timer > 0.0:
 			return
-		# Special case: Allow ball to pass through paddle if stuck near walls and moving left
-		# This prevents the ball from getting wedged between paddle and walls
-		if parent.position.y < parent.TOP_ESCAPE_ZONE_Y and parent.velocity.x < 0:
-			# Ball is near top wall and moving left - let it pass through paddle
+		# Allow ball to pass through paddle when it's behind the paddle (to the right)
+		# and moving rightward. Prevents "ghost hits" where a fast paddle catches a ball
+		# that already passed it, applying spin and pulling it back through.
+		if parent.paddle_reference and parent.position.x > parent.paddle_reference.position.x and parent.velocity.x > 0.0:
 			return
-		elif parent.position.y > parent.BOTTOM_ESCAPE_ZONE_Y and parent.velocity.x < 0:
-			# Ball is near bottom wall and moving left - let it pass through paddle
+		# Special case: Allow ball to escape through paddle if pinched near walls.
+		# Forces leftward velocity so the ball returns to play instead of exiting.
+		if parent.position.y < parent.TOP_ESCAPE_ZONE_Y:
+			parent.velocity.x = -abs(parent.velocity.x)
+			return
+		elif parent.position.y > parent.BOTTOM_ESCAPE_ZONE_Y:
+			parent.velocity.x = -abs(parent.velocity.x)
 			return
 
 		# Check if grab is enabled and ball is not immune to grab
