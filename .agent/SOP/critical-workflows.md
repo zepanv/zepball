@@ -98,7 +98,7 @@ Follow these steps **in order**. Do not skip ahead — build and publish only af
 - [ ] Game runs and no regressions observed.
 
 ### Step 2 — Draft Release Notes (Requires Approval Before Continuing)
-Create `temp/release-vX.Y.Z-notes.md` using this format:
+Create `.agent/Releases/release-vX.Y.Z-notes.md` using this format:
 
 ```markdown
 ## ZepBall vX.Y.Z
@@ -162,7 +162,7 @@ Verify the zips open correctly and the game launches before continuing.
 
 ### Step 5 — Tag and Publish
 ```bash
-scripts/publish_github_release.sh X.Y.Z --notes-file temp/release-vX.Y.Z-notes.md
+scripts/publish_github_release.sh X.Y.Z --notes-file .agent/Releases/release-vX.Y.Z-notes.md
 ```
 
 This script will:
@@ -172,7 +172,7 @@ This script will:
 
 ### Step 6 — Post-Release Cleanup
 - [ ] Confirm the GitHub release page looks correct (assets, notes, tag).
-- [ ] Delete or archive `temp/release-vX.Y.Z-notes.md` (already published).
+- [ ] Release notes remain in `.agent/Releases/` as a permanent historical record — no deletion needed.
 
 ## Quick Pre-Commit Gate
 - [ ] Save schema touched? Migration and default-save updates added.
@@ -181,7 +181,7 @@ This script will:
 - [ ] Commit message matches required format and includes co-author.
 - [ ] Version changed only if explicitly requested.
 
-**Last Updated:** 2026-03-08
+**Last Updated:** 2026-03-15
 
 **Related Docs:**
 - `.agent/System/architecture.md`
