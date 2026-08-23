@@ -2,7 +2,7 @@
 
 ## Status: 📋 BACKLOG
 
-Last Updated: 2026-03-11
+Last Updated: 2026-03-12
 
 ---
 
@@ -10,33 +10,9 @@ Last Updated: 2026-03-11
 
 ### Mutators
 
-Pre-run rule modifier for Survival. Expose a single dropdown before run start, defaulting to `None`. Show the active modifier as a small badge/label in-game. Modifiers change *rules*, not *stats* (stats are covered by the 16 existing power-ups).
+Pre-run rule modifier for Survival (`None` / `Random` / `No Walls` / `Ricochet Chaos` / `Countdown` / `Speed Ramp` / `Shrinking Playfield`).
 
-**Selection UI:**
-- Single dropdown in the Survival hub
-- Default option: `None`
-- Additional options: `Random`, `No Walls`, `Ricochet Chaos`, `Countdown`, `Speed Ramp`, `Shrinking Playfield`
-- `Random` resolves to one concrete mutator at run start and surfaces that resolved mutator in HUD / run-end results
-- Explicit mutator picks are allowed for player experimentation and deterministic testing; no separate test-only UI needed
-
-**Modifier pool:**
-- **No Walls** — ball wraps screen edges instead of bouncing
-- **Ricochet Chaos** — ball bounces off bricks at randomized angles (±15°)
-- **Countdown** — bricks regenerate after N seconds if not cleared as part of a chain
-- **Speed Ramp** — ball accelerates permanently each time it hits something
-- **Shrinking Playfield** — walls slowly close in, increasing spatial pressure each wave
-- *Reverse Controls* — keep out of the initial pool; does not currently seem fun enough to justify inclusion.
-
-**Leaderboard policy:**
-- `None` uses the normal Survival leaderboard
-- Any mutator run (`Random` or a named mutator) writes to a new Survival Mutators leaderboard
-- Survival Mutators leaderboard should include a filter/toggle in the header so players can inspect `Random` vs specific named mutators
-- Default leaderboard filter should be `Random`
-- This keeps player choice available without fragmenting score storage into one board per mutator in v1
-
-**Key risk:** Curate carefully — some combinations become unfun or unplayable.
-
-**Implementation shape:** Run modifier descriptor above gameplay scene setup; apply through the Endless Waves / Survival entry UI, `MenuController`, `game_manager.gd`, `ball.gd`, `paddle.gd`, and brick spawning hooks.
+Full spec, implementation plan, and open questions now live in [`survival-mutators.md`](survival-mutators.md) (extracted 2026-03-12). That file is the single source of truth for this feature.
 
 ---
 
@@ -211,7 +187,7 @@ Pre-run selection of a passive trait:
 
 | Phase | Feature | Notes |
 |-------|---------|-------|
-| **Next** | Mutators | Low cost, high run variety impact |
+| **Next** | [Mutators](survival-mutators.md) | Low cost, high run variety impact — see task file for plan + open questions |
 | **Next** | Elite Waves | Low cost, adds Survival milestones |
 | **Next** | Combo Cashout | Very low cost, scoring depth |
 | **Soon** | Drafted Power-Ups | New inter-wave UI needed |
@@ -230,7 +206,7 @@ Pre-run selection of a passive trait:
 - Are run-level choices (Drafted Power-Ups, Modules) ephemeral per session, or do they persist through unlocks/profile progression?  Leaning towards session.
 - Should Daily Run and Survival share the same seeded-generation system?
 - How much UI complexity between waves is acceptable before pacing drags? (preference: minimal — banners over menus)
-- Do mutator-enabled runs need separate leaderboard buckets, or is a filter/tag sufficient? Filter or "badge"?
+- ~~Do mutator-enabled runs need separate leaderboard buckets, or is a filter/tag sufficient?~~ Resolved: one new Survival Mutators board + `Random`/named header filter — see [survival-mutators.md](survival-mutators.md).
 
 ---
 
